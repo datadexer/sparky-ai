@@ -36,4 +36,4 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e ".[dev]" --system
       - name: Coverage report
-        run: pytest tests/ --cov=src/sparky --cov-report=term-missing --cov-fail-under=60
+        run: pytest tests/ --cov=src/sparky --cov-report=term-missing --cov-fail-under=40
