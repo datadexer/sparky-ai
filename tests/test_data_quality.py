@@ -48,7 +48,7 @@ def df_with_gaps():
     # Create dates with a 5-day gap
     dates1 = pd.date_range("2026-02-01", periods=5, freq="D", tz="UTC")
     dates2 = pd.date_range("2026-02-10", periods=5, freq="D", tz="UTC")
-    dates = dates1.append(dates2)
+    dates = dates1.union(dates2)
     return pd.DataFrame(
         {
             "close": [100.0, 110.0, 105.0, 115.0, 108.0, 120.0, 118.0, 125.0, 122.0, 130.0],

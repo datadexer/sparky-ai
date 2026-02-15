@@ -6,12 +6,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from sparky.data.storage import DataStore, MANIFEST_PATH
+from sparky.data.storage import DataStore
 
 
 @pytest.fixture
-def store():
-    return DataStore()
+def store(tmp_path):
+    """DataStore with manifest pointing to tmp_path to avoid polluting real manifest."""
+    return DataStore(manifest_path=tmp_path / "test_manifest.json")
 
 
 @pytest.fixture
@@ -99,15 +100,12 @@ class TestDataStoreIncremental:
 
 
 class TestDataManifest:
-    def test_manifest_updated_on_save(self, store, sample_df, tmp_path, monkeypatch):
-        manifest_path = tmp_path / "manifest.json"
-        monkeypatch.setattr("sparky.data.storage.MANIFEST_PATH", manifest_path)
-
+    def test_manifest_updated_on_save(self, store, sample_df, tmp_path):
         path = tmp_path / "test.parquet"
         store.save(sample_df, path)
 
-        assert manifest_path.exists()
-        with open(manifest_path) as f:
+        assert store.manifest_path.exists()
+        with open(store.manifest_path) as f:
             manifest = json.load(f)
 
         assert str(path) in manifest

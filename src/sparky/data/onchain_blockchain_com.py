@@ -130,12 +130,14 @@ class BlockchainComFetcher:
         self,
         timespan: str = "5years",
         metrics: Optional[list[str]] = None,
+        start_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """Fetch multiple metrics and merge into a single DataFrame.
 
         Args:
-            timespan: Timespan string.
+            timespan: Timespan string (used when start_date is not given).
             metrics: List of metric names. Default: all available.
+            start_date: Optional start date "YYYY-MM-DD" for incremental fetches.
 
         Returns:
             DataFrame with DatetimeIndex and one column per metric.
@@ -146,7 +148,7 @@ class BlockchainComFetcher:
         dfs = []
         for metric in metrics:
             try:
-                df = self.fetch_metric(metric, timespan=timespan)
+                df = self.fetch_metric(metric, timespan=timespan, start_date=start_date)
                 if not df.empty:
                     dfs.append(df)
             except Exception as e:

@@ -13,14 +13,10 @@ Usage:
 import argparse
 import json
 import logging
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from sparky.data.storage import DataStore
 from sparky.data.price import CCXTPriceFetcher
@@ -46,10 +42,8 @@ RESULTS_DIR = Path("results")
 BTC_START = "2017-01-01"
 ETH_START = "2017-07-30"  # ETH had sufficient liquidity by mid-2017
 
-store = DataStore()
 
-
-def fetch_price_data(incremental: bool = False) -> dict:
+def fetch_price_data(store: DataStore, incremental: bool = False) -> dict:
     """Fetch BTC and ETH OHLCV from CCXT/Binance."""
     results = {}
     fetcher = CCXTPriceFetcher()
@@ -88,7 +82,7 @@ def fetch_price_data(incremental: bool = False) -> dict:
 
 
 def fetch_bgeometrics_data(
-    incremental: bool = False, token: str | None = None
+    store: DataStore, incremental: bool = False, token: str | None = None
 ) -> dict:
     """Fetch BTC computed on-chain from BGeometrics."""
     path = DATA_RAW / "btc" / "onchain_bgeometrics.parquet"
@@ -118,7 +112,7 @@ def fetch_bgeometrics_data(
         return {"rows": 0, "error": str(e)}
 
 
-def fetch_coinmetrics_data(incremental: bool = False) -> dict:
+def fetch_coinmetrics_data(store: DataStore, incremental: bool = False) -> dict:
     """Fetch BTC + ETH raw on-chain from CoinMetrics."""
     results = {}
 
@@ -158,15 +152,29 @@ def fetch_coinmetrics_data(incremental: bool = False) -> dict:
     return results
 
 
-def fetch_blockchain_com_data() -> dict:
+def fetch_blockchain_com_data(store: DataStore, incremental: bool = False) -> dict:
     """Fetch BTC raw on-chain from Blockchain.com (validation reference)."""
     path = DATA_RAW / "btc" / "onchain_blockchain_com.parquet"
 
     try:
         fetcher = BlockchainComFetcher()
-        df = fetcher.fetch_all_metrics(timespan="5years")
+
+        if incremental:
+            last_ts = store.get_last_timestamp(path)
+            if last_ts:
+                start_date = last_ts.strftime("%Y-%m-%d")
+                logger.info(f"Incremental: Blockchain.com from {start_date}")
+                df = fetcher.fetch_all_metrics(start_date=start_date)
+            else:
+                df = fetcher.fetch_all_metrics(timespan="5years")
+        else:
+            df = fetcher.fetch_all_metrics(timespan="5years")
+
         if not df.empty:
-            store.save(df, path, metadata={"source": "blockchain_com", "asset": "btc"})
+            if incremental and path.exists():
+                store.append(df, path, metadata={"source": "blockchain_com", "asset": "btc"})
+            else:
+                store.save(df, path, metadata={"source": "blockchain_com", "asset": "btc"})
             return {
                 "rows": len(df),
                 "metrics": list(df.columns),
@@ -178,7 +186,7 @@ def fetch_blockchain_com_data() -> dict:
         return {"rows": 0, "error": str(e)}
 
 
-def fetch_coingecko_data() -> dict:
+def fetch_coingecko_data(store: DataStore) -> dict:
     """Fetch market context snapshot from CoinGecko."""
     path = DATA_RAW / "market_context.parquet"
 
@@ -194,7 +202,7 @@ def fetch_coingecko_data() -> dict:
         return {"rows": 0, "error": str(e)}
 
 
-def run_source_selection() -> dict:
+def run_source_selection(store: DataStore) -> dict:
     """Run source selector on fetched on-chain data."""
     selector = SourceSelector()
     results = {}
@@ -255,7 +263,7 @@ def run_source_selection() -> dict:
     return results
 
 
-def run_quality_checks() -> dict:
+def run_quality_checks(store: DataStore) -> dict:
     """Run quality checks on all fetched data."""
     checker = DataQualityChecker()
     reports = {}
@@ -312,19 +320,20 @@ def main():
         logger.info("  Market context snapshot from CoinGecko (top 250 coins)")
         return
 
+    store = DataStore()
     all_results = {}
 
     # 1. Price data (most important, fewest rate limit concerns)
     logger.info("=" * 60)
     logger.info("STEP 1: Fetching price data (CCXT/Binance)")
     logger.info("=" * 60)
-    all_results["price"] = fetch_price_data(args.incremental)
+    all_results["price"] = fetch_price_data(store, args.incremental)
 
     # 2. CoinMetrics (free, no auth, generous rate limit)
     logger.info("=" * 60)
     logger.info("STEP 2: Fetching CoinMetrics on-chain data")
     logger.info("=" * 60)
-    all_results["coinmetrics"] = fetch_coinmetrics_data(args.incremental)
+    all_results["coinmetrics"] = fetch_coinmetrics_data(store, args.incremental)
 
     # 3. BGeometrics (limited: 8 req/hour, 15 req/day)
     if not args.skip_bgeometrics:
@@ -332,7 +341,7 @@ def main():
         logger.info("STEP 3: Fetching BGeometrics on-chain data")
         logger.info("=" * 60)
         all_results["bgeometrics"] = fetch_bgeometrics_data(
-            args.incremental, args.bgeometrics_token
+            store, args.incremental, args.bgeometrics_token
         )
 
     # 4. Blockchain.com (validation reference)
@@ -340,26 +349,26 @@ def main():
         logger.info("=" * 60)
         logger.info("STEP 4: Fetching Blockchain.com reference data")
         logger.info("=" * 60)
-        all_results["blockchain_com"] = fetch_blockchain_com_data()
+        all_results["blockchain_com"] = fetch_blockchain_com_data(store, args.incremental)
 
     # 5. CoinGecko (market context snapshot)
     if not args.skip_coingecko:
         logger.info("=" * 60)
         logger.info("STEP 5: Fetching CoinGecko market context")
         logger.info("=" * 60)
-        all_results["coingecko"] = fetch_coingecko_data()
+        all_results["coingecko"] = fetch_coingecko_data(store)
 
     # 6. Source selection
     logger.info("=" * 60)
     logger.info("STEP 6: Running source selection")
     logger.info("=" * 60)
-    all_results["source_selection"] = run_source_selection()
+    all_results["source_selection"] = run_source_selection(store)
 
     # 7. Quality checks
     logger.info("=" * 60)
     logger.info("STEP 7: Running quality checks")
     logger.info("=" * 60)
-    all_results["quality"] = run_quality_checks()
+    all_results["quality"] = run_quality_checks(store)
 
     # Save summary
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)

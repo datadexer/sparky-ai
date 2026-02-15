@@ -18,7 +18,7 @@ import pyarrow.parquet as pq
 
 logger = logging.getLogger(__name__)
 
-MANIFEST_PATH = Path("data/data_manifest.json")
+DEFAULT_MANIFEST_PATH = Path("data/data_manifest.json")
 
 
 class DataStore:
@@ -29,6 +29,9 @@ class DataStore:
         store.save(df, "data/raw/btc/ohlcv.parquet", metadata={"source": "binance"})
         df, meta = store.load("data/raw/btc/ohlcv.parquet")
     """
+
+    def __init__(self, manifest_path: Optional[Path] = None):
+        self.manifest_path = Path(manifest_path) if manifest_path else DEFAULT_MANIFEST_PATH
 
     def save(
         self,
@@ -153,8 +156,8 @@ class DataStore:
             sha256 = self._compute_sha256(path)
 
             manifest = {}
-            if MANIFEST_PATH.exists():
-                with open(MANIFEST_PATH) as f:
+            if self.manifest_path.exists():
+                with open(self.manifest_path) as f:
                     manifest = json.load(f)
 
             manifest[str(path)] = {
@@ -163,8 +166,8 @@ class DataStore:
                 "size_bytes": path.stat().st_size,
             }
 
-            MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(MANIFEST_PATH, "w") as f:
+            self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.manifest_path, "w") as f:
                 json.dump(manifest, f, indent=2)
 
         except OSError as e:
