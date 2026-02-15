@@ -151,10 +151,11 @@ cost_model = TransactionCostModel.for_btc()
 detector = LeakageDetector()
 tracker = ExperimentTracker()
 
-# Run backtest
-result = backtester.run(model, X, y, cost_model=cost_model)
+# Run backtest (returns is the 4th positional arg)
+result = backtester.run(model, X, y, returns, cost_model=cost_model)
 
 # Check leakage BEFORE logging
+# NOTE: run_all_checks() does NOT corrupt the model — shuffle trials use a deep copy.
 report = detector.run_all_checks(model, X_train, y_train, X_test, y_test)
 if not report.passed:
     # DO NOT LOG — write error to RESEARCH_LOG.md

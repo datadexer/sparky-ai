@@ -83,8 +83,8 @@ class WalkForwardBacktester:
     Configuration:
         train_min_length: Minimum number of training rows required.
         embargo_days: Gap between train end and test start (prevents leakage).
-        test_length_days: Length of each test period.
-        step_days: How far to advance the test window each fold.
+        test_length: Number of rows per test period (for 24/7 crypto data, rows ≈ days).
+        step_size: Number of rows to advance the test window each fold.
 
     The backtester requires at least 5 test folds to produce results.
     """
@@ -93,21 +93,26 @@ class WalkForwardBacktester:
         self,
         train_min_length: int,
         embargo_days: int = 7,
-        test_length_days: int = 30,
-        step_days: int = 30,
+        test_length: int = 30,
+        step_size: int = 30,
+        # Legacy aliases for backward compatibility
+        test_length_days: int | None = None,
+        step_days: int | None = None,
     ):
         """Initialize the walk-forward backtester.
 
         Args:
             train_min_length: Minimum number of training rows.
-            embargo_days: Days between train end and test start.
-            test_length_days: Length of each test period in days.
-            step_days: Step size for advancing test window.
+            embargo_days: Rows between train end and test start (rows ≈ days for 24/7 crypto).
+            test_length: Number of rows per test period.
+            step_size: Number of rows to advance the test window each fold.
+            test_length_days: Deprecated alias for test_length.
+            step_days: Deprecated alias for step_size.
         """
         self.train_min_length = train_min_length
         self.embargo_days = embargo_days
-        self.test_length_days = test_length_days
-        self.step_days = step_days
+        self.test_length = test_length_days if test_length_days is not None else test_length
+        self.step_size = step_days if step_days is not None else step_size
 
     def run(
         self,
@@ -116,6 +121,7 @@ class WalkForwardBacktester:
         y: pd.Series,
         returns: pd.Series,
         cost_model: CostModelProtocol | None = None,
+        asset: str = "BTC",
     ) -> BacktestResult:
         """Run walk-forward backtest.
 
@@ -125,6 +131,7 @@ class WalkForwardBacktester:
             y: Target labels (1=long, 0=flat) with DatetimeIndex.
             returns: Daily returns series with DatetimeIndex (for computing equity).
             cost_model: Optional cost model for transaction costs.
+            asset: Asset symbol for cost model (default: "BTC").
 
         Returns:
             BacktestResult with trades, equity curve, metrics, and fold count.
@@ -176,7 +183,7 @@ class WalkForwardBacktester:
 
             # Compute fold equity curve (for sharpe/return calculation)
             fold_equity = self._compute_equity_curve(
-                fold_returns, position_series, cost_model=None  # No costs for fold metrics
+                fold_returns, position_series, cost_model=None, asset=asset  # No costs for fold metrics
             )
             fold_total_return = fold_equity.iloc[-1] - 1.0
             fold_pnl_returns = fold_equity.pct_change().dropna()
@@ -202,7 +209,7 @@ class WalkForwardBacktester:
         test_dates = all_predictions.dropna().index
         position_series = pd.Series(all_predictions.loc[test_dates], index=test_dates)
         equity_curve = self._compute_equity_curve(
-            returns.loc[test_dates], position_series, cost_model
+            returns.loc[test_dates], position_series, cost_model, asset=asset
         )
 
         # Generate trade log
@@ -229,7 +236,7 @@ class WalkForwardBacktester:
 
         while True:
             # Define test window
-            test_end_offset = test_start_offset + self.test_length_days
+            test_end_offset = test_start_offset + self.test_length
             if test_end_offset > len(dates):
                 break
 
@@ -245,7 +252,7 @@ class WalkForwardBacktester:
                 folds.append((train_dates, test_dates))
 
             # Step forward
-            test_start_offset += self.step_days
+            test_start_offset += self.step_size
 
         return folds
 
@@ -254,6 +261,7 @@ class WalkForwardBacktester:
         returns: pd.Series,
         positions: pd.Series,
         cost_model: CostModelProtocol | None,
+        asset: str = "BTC",
     ) -> pd.Series:
         """Compute equity curve from returns and positions.
 
@@ -285,7 +293,7 @@ class WalkForwardBacktester:
             if current_position != prev_position and cost_model is not None:
                 cost = cost_model.compute_cost(
                     position_change=abs(current_position - prev_position),
-                    asset="BTC",  # Assume BTC for now
+                    asset=asset,
                 )
                 current_equity *= (1 - cost)
 

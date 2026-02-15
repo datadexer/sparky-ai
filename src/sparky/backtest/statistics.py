@@ -16,33 +16,40 @@ class BacktestStatistics:
     def sharpe_confidence_interval(
         returns: pd.Series,
         n_bootstrap: int = 10000,
-        ci: float = 0.95
+        ci: float = 0.95,
+        annualize: bool = True,
+        random_state: int | None = None,
     ) -> tuple[float, float]:
-        """Calculate confidence interval for Sharpe ratio using bootstrap.
+        """Calculate confidence interval for annualized Sharpe ratio using bootstrap.
 
         Uses bootstrap resampling to estimate the distribution of the Sharpe ratio
-        and compute confidence intervals.
+        and compute confidence intervals. By default, the Sharpe is annualized
+        (multiplied by sqrt(252)) to be comparable with annualized_sharpe().
 
         Args:
-            returns: Series of returns
-            n_bootstrap: Number of bootstrap samples to generate
-            ci: Confidence interval level (e.g., 0.95 for 95% CI)
+            returns: Series of daily returns.
+            n_bootstrap: Number of bootstrap samples to generate.
+            ci: Confidence interval level (e.g., 0.95 for 95% CI).
+            annualize: If True (default), multiply Sharpe by sqrt(252).
+            random_state: Optional seed for reproducibility.
 
         Returns:
-            Tuple of (lower_bound, upper_bound) for the confidence interval
+            Tuple of (lower_bound, upper_bound) for the confidence interval.
         """
         if len(returns) == 0:
             raise ValueError("Returns series cannot be empty")
 
         returns_array = returns.values
         n = len(returns_array)
+        rng = np.random.RandomState(random_state)
+        annualization_factor = np.sqrt(252) if annualize else 1.0
 
         # Generate bootstrap samples and calculate Sharpe ratio for each
         sharpe_ratios = np.zeros(n_bootstrap)
 
         for i in range(n_bootstrap):
             # Resample with replacement
-            bootstrap_sample = np.random.choice(returns_array, size=n, replace=True)
+            bootstrap_sample = rng.choice(returns_array, size=n, replace=True)
 
             # Calculate Sharpe ratio for this sample
             mean_return = np.mean(bootstrap_sample)
@@ -50,7 +57,7 @@ class BacktestStatistics:
 
             # Handle case where std is zero
             if std_return > 0:
-                sharpe_ratios[i] = mean_return / std_return
+                sharpe_ratios[i] = (mean_return / std_return) * annualization_factor
             else:
                 sharpe_ratios[i] = 0.0
 

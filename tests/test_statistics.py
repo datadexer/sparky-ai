@@ -197,7 +197,9 @@ class TestBacktestStatistics:
         # Large sample with known properties
         returns = pd.Series(np.random.normal(0.01, 0.02, 1000))
 
-        lower, upper = BacktestStatistics.sharpe_confidence_interval(returns, n_bootstrap=2000, ci=0.95)
+        lower, upper = BacktestStatistics.sharpe_confidence_interval(
+            returns, n_bootstrap=2000, ci=0.95, random_state=42
+        )
 
         # CI width should be positive and finite
         width = upper - lower
@@ -206,4 +208,37 @@ class TestBacktestStatistics:
 
         # Width should be reasonable (not too large)
         # For 1000 samples, CI should be fairly tight
-        assert width < 5.0  # Loose upper bound
+        assert width < 100.0  # Loose upper bound (annualized now)
+
+    def test_sharpe_ci_is_annualized_by_default(self):
+        """Test that bootstrap CI is annualized (comparable to annualized_sharpe)."""
+        np.random.seed(42)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 252))
+
+        # Annualized (default)
+        lower_ann, upper_ann = BacktestStatistics.sharpe_confidence_interval(
+            returns, n_bootstrap=1000, random_state=42, annualize=True
+        )
+        # Daily (not annualized)
+        lower_daily, upper_daily = BacktestStatistics.sharpe_confidence_interval(
+            returns, n_bootstrap=1000, random_state=42, annualize=False
+        )
+
+        # Annualized CI should be sqrt(252) times wider than daily
+        scale = np.sqrt(252)
+        assert abs(lower_ann - lower_daily * scale) < 0.5  # Allow some bootstrap noise
+        assert abs(upper_ann - upper_daily * scale) < 0.5
+
+    def test_sharpe_ci_random_state_reproducibility(self):
+        """Test that random_state produces reproducible results."""
+        returns = pd.Series(np.random.normal(0.001, 0.02, 100))
+
+        lower1, upper1 = BacktestStatistics.sharpe_confidence_interval(
+            returns, n_bootstrap=1000, random_state=42
+        )
+        lower2, upper2 = BacktestStatistics.sharpe_confidence_interval(
+            returns, n_bootstrap=1000, random_state=42
+        )
+
+        assert lower1 == pytest.approx(lower2)
+        assert upper1 == pytest.approx(upper2)

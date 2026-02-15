@@ -3,11 +3,12 @@
 Three tests:
 1. Shuffled-label test: model should not predict random noise
 2. Temporal boundary test: no future info at train/test boundary
-3. Feature timestamp audit: max feature timestamp <= row timestamp
+3. Index overlap audit: no shared timestamps between train and test
 
 If any check fails → result is NOT logged, error written to RESEARCH_LOG.md.
 """
 
+import copy
 import logging
 from dataclasses import dataclass
 
@@ -89,8 +90,8 @@ class LeakageDetector:
         # 2. Temporal boundary test
         checks.append(self.temporal_boundary_test(X_train, X_test))
 
-        # 3. Feature timestamp audit
-        checks.append(self.feature_timestamp_audit(X_train, X_test))
+        # 3. Index overlap audit
+        checks.append(self.index_overlap_audit(X_train, X_test))
 
         all_passed = all(c.passed for c in checks)
 
@@ -116,8 +117,11 @@ class LeakageDetector:
         Randomly permute target labels, retrain, and check accuracy.
         If accuracy > threshold, leakage is present (model is learning
         from features that contain target information).
+
+        Uses a deep copy of the model so the original is never modified.
         """
         accuracies = []
+        model_copy = copy.deepcopy(model)
 
         for trial in range(self.n_shuffle_trials):
             # Shuffle training labels
@@ -128,10 +132,10 @@ class LeakageDetector:
                 index=y_shuffled.index,
             )
 
-            # Retrain on shuffled labels
+            # Retrain copy on shuffled labels (original model untouched)
             try:
-                model.fit(X_train, y_shuffled)
-                predictions = model.predict(X_test)
+                model_copy.fit(X_train, y_shuffled)
+                predictions = model_copy.predict(X_test)
                 accuracy = np.mean(predictions == y_test.values)
                 accuracies.append(accuracy)
             except Exception as e:
@@ -194,41 +198,38 @@ class LeakageDetector:
             metric_value=float(gap_days),
         )
 
-    def feature_timestamp_audit(
+    def index_overlap_audit(
         self,
         X_train: pd.DataFrame,
         X_test: pd.DataFrame,
     ) -> LeakageCheckResult:
-        """Test 3: Feature values don't contain future information.
+        """Test 3: Check that train and test indices do not overlap.
 
-        Check that no feature column contains values that appear to be
-        from future dates (e.g., a rolling mean that starts too early,
-        suggesting min_periods wasn't set correctly).
+        Verifies that no timestamps appear in both the training and test sets,
+        which would indicate a data split error.
 
-        Heuristic: for each feature, check if non-NaN values exist in
-        positions where the lookback window hasn't been filled yet.
-        This is a conservative check — actual lookback validation depends
-        on the feature definition.
+        # TODO Phase 3: implement actual lookback validation using FeatureDefinition.lookback
+        # to check that rolling features use proper min_periods.
         """
         if not isinstance(X_train.index, pd.DatetimeIndex):
             return LeakageCheckResult(
-                check_name="feature_timestamp_audit",
+                check_name="index_overlap_audit",
                 passed=True,
-                detail="Non-datetime index — skipping timestamp audit",
+                detail="Non-datetime index — skipping index overlap audit",
             )
 
         # Check no test data timestamps appear in train data
         overlap = X_train.index.intersection(X_test.index)
         if len(overlap) > 0:
             return LeakageCheckResult(
-                check_name="feature_timestamp_audit",
+                check_name="index_overlap_audit",
                 passed=False,
                 detail=f"FAIL — {len(overlap)} overlapping timestamps between train and test",
                 metric_value=float(len(overlap)),
             )
 
         return LeakageCheckResult(
-            check_name="feature_timestamp_audit",
+            check_name="index_overlap_audit",
             passed=True,
             detail="No timestamp overlap between train and test. PASS",
             metric_value=0.0,

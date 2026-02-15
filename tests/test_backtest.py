@@ -494,3 +494,71 @@ class TestWalkForwardBacktester:
 
         # With always flat, equity should stay at 1.0 despite large returns
         assert (result.equity_curve == 1.0).all()
+
+    def test_transaction_cost_model_end_to_end(self):
+        """TransactionCostModel.for_btc() works end-to-end through WalkForwardBacktester."""
+        from sparky.backtest.costs import TransactionCostModel
+
+        # Use threshold model to generate multiple trades
+        np.random.seed(42)
+        dates = pd.date_range("2020-01-01", periods=300, freq="D")
+        X = pd.DataFrame({"feature1": np.random.randn(300)}, index=dates)
+        y = pd.Series(np.random.randint(0, 2, 300), index=dates)
+        returns = pd.Series(np.ones(300) * 0.01, index=dates)  # 1% daily
+
+        backtester = WalkForwardBacktester(
+            train_min_length=50,
+            embargo_days=7,
+            test_length_days=30,
+            step_days=30,
+        )
+        model = ThresholdModel("feature1", threshold=0.0)
+
+        # Run without costs
+        result_no_cost = backtester.run(model, X, y, returns)
+
+        # Run with real TransactionCostModel
+        cost_model = TransactionCostModel.for_btc()
+        result_with_cost = backtester.run(model, X, y, returns, cost_model=cost_model)
+
+        # Both should produce valid equity curves
+        assert result_no_cost.equity_curve.iloc[0] == pytest.approx(1.0)
+        assert result_with_cost.equity_curve.iloc[0] == pytest.approx(1.0)
+
+        # With costs, equity should be lower
+        assert result_with_cost.equity_curve.iloc[-1] < result_no_cost.equity_curve.iloc[-1]
+
+        # Verify trades happened
+        assert len(result_with_cost.trades) > 1
+
+    def test_asset_parameter_passed_to_cost_model(self):
+        """Asset parameter is passed through to cost model."""
+
+        class AssetTrackingCostModel:
+            def __init__(self):
+                self.assets_seen = []
+
+            def compute_cost(self, position_change: int, asset: str) -> float:
+                self.assets_seen.append(asset)
+                return 0.001 * abs(position_change)
+
+        np.random.seed(42)
+        dates = pd.date_range("2020-01-01", periods=300, freq="D")
+        X = pd.DataFrame({"feature1": np.random.randn(300)}, index=dates)
+        y = pd.Series(np.random.randint(0, 2, 300), index=dates)
+        returns = pd.Series(np.random.normal(0.001, 0.02, 300), index=dates)
+
+        backtester = WalkForwardBacktester(
+            train_min_length=50,
+            embargo_days=7,
+            test_length_days=30,
+            step_days=30,
+        )
+        cost_model = AssetTrackingCostModel()
+        model = ThresholdModel("feature1", threshold=0.0)
+
+        backtester.run(model, X, y, returns, cost_model=cost_model, asset="ETH")
+
+        # All cost model calls should have received "ETH"
+        assert len(cost_model.assets_seen) > 0
+        assert all(a == "ETH" for a in cost_model.assets_seen)

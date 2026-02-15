@@ -286,6 +286,11 @@ class BGeometricsFetcher:
         return result
 
     @property
+    def request_count(self) -> int:
+        """Number of API requests made by this instance."""
+        return self._request_count
+
+    @property
     def available_metrics(self) -> list[str]:
         """List available metric names."""
         return list(METRIC_ENDPOINTS.keys())

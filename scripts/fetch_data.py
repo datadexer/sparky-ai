@@ -106,7 +106,7 @@ def fetch_bgeometrics_data(
     try:
         fetcher = BGeometricsFetcher(token=token)
         df = fetcher.fetch_all_metrics(effective_start)
-        api_calls = fetcher._request_count
+        api_calls = fetcher.request_count
         if not df.empty:
             if path.exists():
                 store.append(df, path, metadata={"source": "bgeometrics", "asset": "btc"})

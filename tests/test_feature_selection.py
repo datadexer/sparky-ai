@@ -334,9 +334,14 @@ class TestSelectionPipeline:
             assert dropped['reason'] in [
                 'correlation',
                 'low_importance',
-                'unstable_importance',
                 'max_features_cap'
             ]
+
+        # Unstable features go to flagged_features, not dropped_features
+        for flagged in result.flagged_features:
+            assert 'name' in flagged
+            assert 'reason' in flagged
+            assert flagged['reason'] == 'unstable_importance'
 
     def test_empty_dataframe(self):
         """Handles empty dataframe gracefully."""

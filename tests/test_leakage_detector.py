@@ -3,8 +3,9 @@
 Tests cover:
 - Shuffled-label test: model predicting shuffled data above/below threshold
 - Temporal boundary test: overlapping vs non-overlapping train/test timestamps
-- Feature timestamp audit: overlapping indices detection
+- Index overlap audit: overlapping indices detection
 - run_all_checks: integration test for all checks
+- Model preservation: run_all_checks does not corrupt the model
 - LeakageReport: passed/failed check reporting
 """
 
@@ -241,8 +242,8 @@ class TestTemporalBoundaryTest:
         assert 'Gap:' in result.detail
 
 
-class TestFeatureTimestampAudit:
-    """Tests for feature timestamp audit."""
+class TestIndexOverlapAudit:
+    """Tests for index overlap audit."""
 
     def test_fails_with_overlapping_indices(self):
         """Feature timestamp audit fails when train/test have overlapping indices."""
@@ -258,10 +259,10 @@ class TestFeatureTimestampAudit:
         }, index=dates[10:20])  # Jan 11-20 (overlaps with train)
 
         detector = LeakageDetector()
-        result = detector.feature_timestamp_audit(X_train, X_test)
+        result = detector.index_overlap_audit(X_train, X_test)
 
         assert not result.passed
-        assert result.check_name == 'feature_timestamp_audit'
+        assert result.check_name == 'index_overlap_audit'
         assert 'FAIL' in result.detail
         assert 'overlapping' in result.detail.lower()
         assert result.metric_value > 0  # Number of overlapping timestamps
@@ -271,10 +272,10 @@ class TestFeatureTimestampAudit:
         X_train, y_train, X_test, y_test = temporal_data_no_overlap
 
         detector = LeakageDetector()
-        result = detector.feature_timestamp_audit(X_train, X_test)
+        result = detector.index_overlap_audit(X_train, X_test)
 
         assert result.passed
-        assert result.check_name == 'feature_timestamp_audit'
+        assert result.check_name == 'index_overlap_audit'
         assert 'PASS' in result.detail
         assert result.metric_value == 0.0
 
@@ -283,7 +284,7 @@ class TestFeatureTimestampAudit:
         X_train, y_train, X_test, y_test = non_temporal_data
 
         detector = LeakageDetector()
-        result = detector.feature_timestamp_audit(X_train, X_test)
+        result = detector.index_overlap_audit(X_train, X_test)
 
         assert result.passed
         assert 'Non-datetime index' in result.detail
@@ -351,7 +352,7 @@ class TestRunAllChecks:
         assert check_names == {
             'shuffled_label',
             'temporal_boundary',
-            'feature_timestamp_audit'
+            'index_overlap_audit'
         }
 
 
@@ -436,3 +437,37 @@ class TestDetectorConfiguration:
         """LeakageDetector uses default number of shuffle trials."""
         detector = LeakageDetector()
         assert detector.n_shuffle_trials == 5
+
+
+class TestModelPreservation:
+    """Tests that run_all_checks does not corrupt the model."""
+
+    def test_model_predictions_unchanged_after_run_all_checks(self):
+        """Model predictions must be identical before and after run_all_checks."""
+        from sklearn.tree import DecisionTreeClassifier
+
+        np.random.seed(42)
+        n_train, n_test = 100, 20
+        train_dates = pd.date_range("2025-01-01", periods=n_train, freq="D")
+        test_dates = pd.date_range("2025-05-01", periods=n_test, freq="D")
+
+        X_train = pd.DataFrame({"f1": np.random.randn(n_train), "f2": np.random.randn(n_train)}, index=train_dates)
+        y_train = pd.Series(np.random.randint(0, 2, n_train), index=train_dates)
+        X_test = pd.DataFrame({"f1": np.random.randn(n_test), "f2": np.random.randn(n_test)}, index=test_dates)
+        y_test = pd.Series(np.random.randint(0, 2, n_test), index=test_dates)
+
+        model = DecisionTreeClassifier(max_depth=3, random_state=42)
+        model.fit(X_train, y_train)
+
+        # Get predictions BEFORE leakage checks
+        predictions_before = model.predict(X_test).copy()
+
+        # Run all leakage checks (shuffled-label test used to corrupt the model)
+        detector = LeakageDetector(n_shuffle_trials=5)
+        detector.run_all_checks(model, X_train, y_train, X_test, y_test)
+
+        # Get predictions AFTER leakage checks
+        predictions_after = model.predict(X_test)
+
+        # Predictions must be identical
+        np.testing.assert_array_equal(predictions_before, predictions_after)

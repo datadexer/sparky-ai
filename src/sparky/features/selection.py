@@ -25,7 +25,8 @@ class SelectionResult:
     """Result of feature selection process."""
 
     selected_features: list[str]
-    dropped_features: list[dict]  # [{name, reason, detail}]
+    dropped_features: list[dict]  # [{name, reason, detail}] — actually removed features
+    flagged_features: list[dict] = field(default_factory=list)  # [{name, reason, detail}] — flagged but kept
     correlation_matrix: Optional[pd.DataFrame] = None
     importance_scores: Optional[dict[str, float]] = None
     stability_scores: Optional[dict[str, float]] = None
@@ -71,6 +72,7 @@ class FeatureSelector:
             SelectionResult with selected features and diagnostics.
         """
         dropped = []
+        flagged = []
         remaining = list(X.columns)
 
         # Step 1: Correlation filter
@@ -94,10 +96,10 @@ class FeatureSelector:
             for feat_info in stability_flagged:
                 logger.warning(
                     f"Unstable feature '{feat_info['name']}': "
-                    f"importance variance = {feat_info['detail']:.3f}"
+                    f"importance variance = {feat_info['detail']}"
                 )
             # Don't drop unstable features, just flag them
-            dropped.extend(stability_flagged)
+            flagged.extend(stability_flagged)
 
         # Step 4: Cap at max_features
         if len(remaining) > self.max_features:
@@ -121,12 +123,13 @@ class FeatureSelector:
 
         logger.info(
             f"Feature selection: {len(remaining)} selected, "
-            f"{len(dropped)} dropped/flagged"
+            f"{len(dropped)} dropped, {len(flagged)} flagged"
         )
 
         return SelectionResult(
             selected_features=remaining,
             dropped_features=dropped,
+            flagged_features=flagged,
             correlation_matrix=corr_matrix,
             importance_scores=importance_scores,
             stability_scores=stability_scores,

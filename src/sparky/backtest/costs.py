@@ -6,8 +6,9 @@ import pandas as pd
 class TransactionCostModel:
     """Model transaction costs including fees, slippage, and spread.
 
-    Position changes incur costs on both sides of the trade (entry and exit).
-    Total round trip cost = 2 * (fee + slippage + spread).
+    total_cost_pct is the one-way (per-change) cost applied to each position
+    change. A round trip (enter + exit) incurs 2 position changes, so the
+    total round trip cost is 2 × total_cost_pct.
 
     Args:
         fee_pct: Trading fee as a fraction (e.g., 0.001 = 0.1%)
@@ -46,6 +47,20 @@ class TransactionCostModel:
             - Round trip cost: ~0.28%
         """
         return cls(fee_pct=0.001, slippage_pct=0.0003, spread_pct=0.0001)
+
+    def compute_cost(self, position_change: int, asset: str) -> float:
+        """Compute fractional cost for a position change.
+
+        Used by WalkForwardBacktester._compute_equity_curve() via CostModelProtocol.
+
+        Args:
+            position_change: Absolute size of position change (e.g., 1 for 0->1 or 1->0).
+            asset: Asset symbol (unused — cost params are set at construction).
+
+        Returns:
+            Fractional cost (e.g., 0.0013 for 0.13%).
+        """
+        return abs(position_change) * self.total_cost_pct
 
     def apply(self, returns: pd.Series, positions: pd.Series) -> pd.Series:
         """Apply transaction costs to returns based on position changes.
