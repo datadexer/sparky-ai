@@ -193,3 +193,14 @@ For each experiment/model training:
   Use `check_freq=False` in assert_frame_equal.
 - **numpy copy-on-write**: When extracting `.values` from a pandas operation chain,
   the array may be read-only. Always `.copy()` before in-place mutation.
+
+## 8. Integration Testing
+
+Every phase requires tests/test_integration_phase{N}.py. These tests wire
+real modules together with synthetic data — no mocks for internal code.
+See CLAUDE.md "Integration Testing" section for full rules. CI will fail
+if the file is missing.
+
+When adding a new module, ask: "what other modules consume this?" and add
+an integration test that passes the real implementation through the real
+consumer.
