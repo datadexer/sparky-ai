@@ -1,0 +1,166 @@
+# DATA SOURCES — Sparky AI
+# All sources are free tier. No API keys required except where noted.
+
+# =============================================================
+# PRICE & DERIVATIVES DATA
+# =============================================================
+price:
+  primary:
+    provider: binance
+    interface: ccxt
+    symbols: ["BTC/USDT", "ETH/USDT"]
+    timeframes:
+      training: "1d"
+      live: "1h"
+    history_start: "2017-01-01"
+    rate_limit: 1200
+    failover:
+      - bybit
+      - okx
+      - coinbase
+
+  derivatives:
+    provider: binance
+    interface: ccxt
+    data_types:
+      - funding_rate
+      - open_interest
+    symbols: ["BTC/USDT:USDT", "ETH/USDT:USDT"]
+    history_start: "2019-09-01"
+    note: "Derivatives features deferred to Phase 3 experimentation"
+
+# =============================================================
+# ON-CHAIN DATA — DUAL SOURCE WITH CROSS-VALIDATION
+# =============================================================
+onchain_bgeometrics:
+  provider: bgeometrics
+  base_url: "https://bgeometrics.com/api"
+  auth: none
+  rate_limit: "1 req/sec (polite)"
+  assets: [btc]
+  metrics:
+    computed_indicators:
+      - mvrv_zscore
+      - sopr
+      - nupl
+      - realized_price
+      - hodl_waves
+      - cdd
+      - puell_multiple
+      - hash_ribbons
+      - reserve_risk
+      - supply_in_profit
+    raw_metrics:
+      - active_addresses
+      - hash_rate
+      - difficulty
+  risk_level: "MEDIUM — small provider, could discontinue"
+  mitigation: "Always persist raw fetched data to Parquet. CoinMetrics is fallback."
+
+onchain_coinmetrics:
+  provider: coinmetrics
+  interface: coinmetrics-api-client
+  base_url: "https://community-api.coinmetrics.io/v4"
+  auth: none
+  rate_limit: 1.6
+  assets: [btc, eth]
+  metrics:
+    btc:
+      - HashRate
+      - AdrActCnt
+      - TxCnt
+      - TxTfrValAdjUSD
+      - FeeTotUSD
+      - RevUSD
+      - SplyCur
+      - CapMrktCurUSD
+      - NVTAdj
+      - PriceUSD
+    eth:
+      - HashRate
+      - AdrActCnt
+      - TxCnt
+      - TxTfrValAdjUSD
+      - FeeTotUSD
+      - SplyCur
+      - CapMrktCurUSD
+      - NVTAdj
+      - PriceUSD
+      - AdrBalCnt
+  note: "CoinMetrics Community does NOT provide computed indicators (MVRV, SOPR, etc).
+         That's why we need BGeometrics. CoinMetrics is our ETH on-chain source and BTC fallback."
+
+onchain_blockchain_com:
+  provider: blockchain.com
+  base_url: "https://api.blockchain.info"
+  auth: none
+  rate_limit: "10-30 req/min"
+  assets: [btc]
+  role: "VALIDATION REFERENCE — not primary source"
+  endpoints:
+    charts: "GET /charts/{metric}?timespan=5years&format=json&sampled=false"
+    stats: "GET /stats"
+  metrics:
+    - hash-rate
+    - n-unique-addresses
+    - n-transactions
+    - estimated-transaction-volume-usd
+    - miners-revenue
+    - total-fees-btc
+    - mempool-size
+    - mempool-count
+
+# =============================================================
+# MARKET CONTEXT
+# =============================================================
+market_context:
+  provider: coingecko
+  base_url: "https://api.coingecko.com/api/v3"
+  auth: "demo key (free signup)"
+  rate_limit: 30
+  monthly_quota: 10000
+  schedule: "1 batch call/day"
+  endpoint: "GET /coins/markets?vs_currency=usd&per_page=250"
+  features_generated:
+    - market_cap
+    - total_volume
+    - circulating_supply
+    - fdv
+    - price_change_24h_pct
+    - price_change_7d_pct
+    - price_change_30d_pct
+    - ath_distance_pct
+
+# =============================================================
+# SENTIMENT — DEFERRED
+# =============================================================
+sentiment:
+  status: DEFERRED
+  reason: "Wait until Phase 3 proves on-chain + price features generate alpha"
+  planned_source: reddit_api_plus_finbert
+  when_to_revisit: "After Phase 3 results"
+
+# =============================================================
+# SOURCE SELECTION LOGIC
+# =============================================================
+source_selection:
+  strategy: "dual_fetch_cross_validate"
+  overlapping_btc_metrics:
+    hash_rate: [bgeometrics, coinmetrics, blockchain_com]
+    active_addresses: [bgeometrics, coinmetrics, blockchain_com]
+    transaction_count: [coinmetrics, blockchain_com]
+    miner_revenue: [coinmetrics, blockchain_com]
+    fees: [coinmetrics, blockchain_com]
+  bgeometrics_exclusive:
+    - mvrv_zscore
+    - sopr
+    - nupl
+    - realized_price
+    - hodl_waves
+    - cdd
+    - puell_multiple
+    - reserve_risk
+    - supply_in_profit
+  coinmetrics_exclusive:
+    - eth_all_metrics
+    - nvt_adjusted

@@ -1,0 +1,48 @@
+# research_strategy.yaml — Research Direction & Oversight Configuration
+# OWNED BY: AK (human). Agents read this, only AK modifies it.
+# USED BY: Experiment proposer, Research Strategy Analyst, weekly reports
+
+strategic_goals:
+  validate_onchain_alpha:
+    description: "Prove on-chain features add predictive power beyond technical indicators"
+    priority: 1
+    success_criteria: "Validated Sharpe improvement >0.1 with on-chain vs without"
+    phase: 3
+
+  eth_specific_features:
+    description: "Determine if ETH-specific features (gas, staking) add unique alpha"
+    priority: 2
+    success_criteria: "ETH ablation A6 vs A7 shows Sharpe improvement >0.1"
+    phase: 3
+
+  optimal_horizon:
+    description: "Identify which prediction horizon (7/14/30d) is most profitable"
+    priority: 2
+    success_criteria: "One horizon significantly outperforms others (p<0.05)"
+    phase: 3
+
+  model_robustness:
+    description: "Ensure chosen model is stable across seeds, folds, and regimes"
+    priority: 1
+    success_criteria: "Multi-seed std<0.3, no single fold >50% of return"
+    phase: 3
+
+  paper_trading_confirmation:
+    description: "Confirm backtest results hold in forward-looking paper trading"
+    priority: 1
+    success_criteria: "Paper Sharpe within 50% of backtest Sharpe over 90 days"
+    phase: 4
+
+  autonomous_discovery:
+    description: "Research loop generates novel validated hypotheses without human input"
+    priority: 3
+    success_criteria: "1+ validated finding per week from autonomous loop"
+    phase: 5
+
+# Oversight thresholds
+oversight:
+  drift_threshold_pct: 30
+  diminishing_returns_experiment_count: 10
+  diminishing_returns_improvement_pct: 5
+  min_validation_rate_pct: 70
+  max_unresolved_contradictions: 3
