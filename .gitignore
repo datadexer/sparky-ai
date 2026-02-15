@@ -1,5 +1,5 @@
-data/
-!data/data_manifest.json
+/data/
+!/data/data_manifest.json
 mlruns/
 logs/
 configs/secrets.yaml

@@ -1,1 +1,212 @@
-{}
+{
+  "/tmp/pytest-of-akamath/pytest-5/test_save_and_load0/test.parquet": {
+    "sha256": "a16d1f59a56044bf038b123224cc3361c03528b616c36c26eef7ac3229d161a3",
+    "updated_at": "2026-02-15T22:27:19.352460+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "94a2b57b29c83abaaf464893b333895cee4c69526d9baea8f2733048b920b581",
+    "updated_at": "2026-02-15T22:27:19.376877+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "d2e4049dfdd7b6e7921b4be244aeefd13049dc54f4783794bdc864c27d30f1d5",
+    "updated_at": "2026-02-15T22:27:19.379556+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_empty_dataframe0/empty.parquet": {
+    "sha256": "ace7dcb1f31bfbeb09fc038b5b78256fa9e1d6b9cfac890c068f50848b4a0798",
+    "updated_at": "2026-02-15T22:27:19.380430+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_get_last_timestamp0/test.parquet": {
+    "sha256": "c56d2080cb00aa37d6073cf047ecb77de88be075409e64e81e980bdfe580bc98",
+    "updated_at": "2026-02-15T22:27:19.382664+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_append_new_data0/test.parquet": {
+    "sha256": "14f1fb1a7b444d4dacd5d9d72bfa4e203ead8f25b73cbb9e68291ebc42194daf",
+    "updated_at": "2026-02-15T22:27:19.394692+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-5/test_append_deduplicates0/test.parquet": {
+    "sha256": "e08603c106351f4af25550b36811b2502f05b0f303d9ec5c1e444d9c22b337b9",
+    "updated_at": "2026-02-15T22:27:19.400593+00:00",
+    "size_bytes": 3249
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_save_and_load0/test.parquet": {
+    "sha256": "8cb37bb8060d8444ab645e161e447c734f02e529f2295d388b8eb594d25ac43a",
+    "updated_at": "2026-02-15T22:27:34.897528+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "91f5da0f7e910ad7ea328ddd2864f377b3f993276fa7acdbf94c6285f732269a",
+    "updated_at": "2026-02-15T22:27:34.905564+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "39b0aafe83e69c9ed01446fa7b8f82f613b2571f34ac7d2f585c708a1bc15c56",
+    "updated_at": "2026-02-15T22:27:34.910024+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_empty_dataframe0/empty.parquet": {
+    "sha256": "469a2744976d4df81a87f9264ed8de3402b73b42b9b856b8eee6b20dcec7eeda",
+    "updated_at": "2026-02-15T22:27:34.910947+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_get_last_timestamp0/test.parquet": {
+    "sha256": "6ec38fa04774602c1ae8a5abd990eaaa7ae10116b70ee7a9a86e988154df668a",
+    "updated_at": "2026-02-15T22:27:34.913066+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_append_new_data0/test.parquet": {
+    "sha256": "05a633b97074b658a69d207f955ec795b1404830c3d363bd6ae92251e4bcf76d",
+    "updated_at": "2026-02-15T22:27:34.917948+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-6/test_append_deduplicates0/test.parquet": {
+    "sha256": "483ba4a77acbd30748dd82c95c7f2543b73e14946474c1c9eda01be1fe0f00b4",
+    "updated_at": "2026-02-15T22:27:34.922624+00:00",
+    "size_bytes": 3249
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_save_and_load0/test.parquet": {
+    "sha256": "5dc9d36cc31bef283dbbc44873e018f1fb6b36bd4e3177d3f3a1248a4eb67ce9",
+    "updated_at": "2026-02-15T22:37:53.815074+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "f154da32ed0a0ace5add0e20019b5f7bcca68b15f92dcca489e273c25eba28aa",
+    "updated_at": "2026-02-15T22:37:53.821285+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "1d7297e863495f311ec85e48be6b7264ccb7cb93a7f78399087c47cad1f7976c",
+    "updated_at": "2026-02-15T22:37:53.828026+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_empty_dataframe0/empty.parquet": {
+    "sha256": "67be6721db610182126a8c29bfc017bf844e44894d07465e6759069a85cd9e30",
+    "updated_at": "2026-02-15T22:37:53.828956+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_get_last_timestamp0/test.parquet": {
+    "sha256": "e70b293342c1d47e719b8bdce9a05a7ec7cf0bac5a78cd1f24a0fb612955c6a7",
+    "updated_at": "2026-02-15T22:37:53.831092+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_append_new_data0/test.parquet": {
+    "sha256": "9555b282a9055f7bfaf86b952050c23e865d33a3f647538fe3f52c2c3e3263a6",
+    "updated_at": "2026-02-15T22:37:53.835248+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-7/test_append_deduplicates0/test.parquet": {
+    "sha256": "25a7bfe755a5df10729d4c63cdda78781d94662031f3f460a213ae078d759ceb",
+    "updated_at": "2026-02-15T22:37:53.840324+00:00",
+    "size_bytes": 3249
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_save_and_load0/test.parquet": {
+    "sha256": "3f5d3321adfb99ecdb297d7218f153a1495a2103402669a9495cefbf56d8e5f1",
+    "updated_at": "2026-02-15T22:38:25.438430+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "5c193fdeb12a0a2f9a2a1fc99b4fb5ed447ab2c3ef713537f4497cfb3711ef3a",
+    "updated_at": "2026-02-15T22:38:25.444810+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "10be8f74b4538af43837702231bfeb252785db2c37aa3477c192f88d21684806",
+    "updated_at": "2026-02-15T22:38:25.450177+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_empty_dataframe0/empty.parquet": {
+    "sha256": "a272f8b393029a148b4d405e741fef55ab03f169953594224bd52fc0d3dbd733",
+    "updated_at": "2026-02-15T22:38:25.451098+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_get_last_timestamp0/test.parquet": {
+    "sha256": "e0b4d1ad6a8809746e0397cd95ffb359c4de5f49b038fe7376dc098e5f7dcc1e",
+    "updated_at": "2026-02-15T22:38:25.452792+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_append_new_data0/test.parquet": {
+    "sha256": "c33b68835167eca2cfd256db3afc9444f3ea92c66ee1ed2d8b4e4caa4b3d7fd2",
+    "updated_at": "2026-02-15T22:38:25.457711+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-8/test_append_deduplicates0/test.parquet": {
+    "sha256": "79d814ee6dce6a61238311a633053127dabc5ee3f0e4943f9af0682119b736c5",
+    "updated_at": "2026-02-15T22:38:25.463159+00:00",
+    "size_bytes": 3249
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_save_and_load0/test.parquet": {
+    "sha256": "b2bda35b0c822e98b9a1678c1f9f61f538a727e91dc056dd9d7f4cbc62358f58",
+    "updated_at": "2026-02-15T22:43:12.701035+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "1700a488f1547b447969be9d63118657b875e333fb5462195f1f4109d1fc8105",
+    "updated_at": "2026-02-15T22:43:12.708144+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "e0d08df2b85d2c7afe8b454eafc4f73b1d9d20d7e0f2b44ca3d805c0b5a0b5a9",
+    "updated_at": "2026-02-15T22:43:12.713278+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_empty_dataframe0/empty.parquet": {
+    "sha256": "32876fcdd2a4d6df0ebd1fdae62ad8be0bf0afae4519692f170cfe991ee7f5ae",
+    "updated_at": "2026-02-15T22:43:12.714214+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_get_last_timestamp0/test.parquet": {
+    "sha256": "5c6cd7a9b1ed48f13e182beeacdb8a8f9cbccface79f0704f5dd740546c45907",
+    "updated_at": "2026-02-15T22:43:12.716661+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_append_new_data0/test.parquet": {
+    "sha256": "53f4cc4d988cdf124917a9e452a970fcefc6e4f18800dd5f7ea50e5f1544e3d4",
+    "updated_at": "2026-02-15T22:43:12.721592+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-9/test_append_deduplicates0/test.parquet": {
+    "sha256": "96e8fa2979c9480c45e13ae3fac676dba80101878716bc724c73eb654ddaf33a",
+    "updated_at": "2026-02-15T22:43:12.728382+00:00",
+    "size_bytes": 3249
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_save_and_load0/test.parquet": {
+    "sha256": "7b94f8f630a925f96a9af03166f419f80798edf462d1ff0eeea0db57264cd823",
+    "updated_at": "2026-02-15T22:47:00.321731+00:00",
+    "size_bytes": 3254
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_metadata_includes_date_ra0/test.parquet": {
+    "sha256": "7905a0b187e64df2c68bafe3db6ddae94fe3af5b4be79f55873603fa698cf9f5",
+    "updated_at": "2026-02-15T22:47:00.328803+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_creates_parent_dirs0/deep/nested/dir/test.parquet": {
+    "sha256": "4956ee47c65fa6cd3ced0ff9bc9fa2431b42df6c44a2303d367719e473b659df",
+    "updated_at": "2026-02-15T22:47:00.333810+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_empty_dataframe0/empty.parquet": {
+    "sha256": "87ff11755167355afba8605d87e9d147a508a34c03d1aecb8bb163c60a174e64",
+    "updated_at": "2026-02-15T22:47:00.334814+00:00",
+    "size_bytes": 1675
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_get_last_timestamp0/test.parquet": {
+    "sha256": "9c1c4bec0182c192e2a3bee0435026372ab526e547a748b66db24022d1122afa",
+    "updated_at": "2026-02-15T22:47:00.336789+00:00",
+    "size_bytes": 3216
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_append_new_data0/test.parquet": {
+    "sha256": "a4b5e5eb1f70a640b538dfa970e77af753d96213bdbc7298f63712020479bee0",
+    "updated_at": "2026-02-15T22:47:00.342177+00:00",
+    "size_bytes": 3264
+  },
+  "/tmp/pytest-of-akamath/pytest-11/test_append_deduplicates0/test.parquet": {
+    "sha256": "259a4a297f1aec2b52278cf6cf024b3af2d1b9d971fb10f18ae66fc477a00d44",
+    "updated_at": "2026-02-15T22:47:00.347403+00:00",
+    "size_bytes": 3249
+  }
+}
