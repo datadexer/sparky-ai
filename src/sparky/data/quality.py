@@ -130,13 +130,18 @@ class DataQualityChecker:
         return result
 
     def check_staleness(
-        self, df: pd.DataFrame, max_stale_days: int = 2
+        self,
+        df: pd.DataFrame,
+        max_stale_days: int = 2,
+        reference_date: Optional[pd.Timestamp] = None,
     ) -> dict[str, Any]:
         """Check if data is too old.
 
         Args:
             df: DataFrame with DatetimeIndex.
             max_stale_days: Maximum acceptable age in days.
+            reference_date: Date to compare against (default: now UTC).
+                Useful for deterministic tests.
 
         Returns:
             Dict with: last_date, days_old, max_stale_days, pass.
@@ -154,7 +159,7 @@ class DataQualityChecker:
             return result
 
         last_date = df.index.max()
-        now = pd.Timestamp.now(tz="UTC")
+        now = reference_date if reference_date is not None else pd.Timestamp.now(tz="UTC")
 
         if last_date.tz is None:
             last_date = last_date.tz_localize("UTC")

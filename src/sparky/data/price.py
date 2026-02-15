@@ -96,6 +96,7 @@ class CCXTPriceFetcher:
     ) -> list:
         """Fetch candles, falling back to alternative exchanges on failure."""
         exchanges = [self.exchange_id] + self.FAILOVER_EXCHANGES
+        original_exchange = self.exchange
 
         for exch_id in exchanges:
             try:
@@ -103,12 +104,17 @@ class CCXTPriceFetcher:
                     logger.info(f"[DATA] Failing over to {exch_id}")
                     self.exchange = self._create_exchange(exch_id)
 
-                return self._paginated_fetch(symbol, start_ts, end_ts)
+                result = self._paginated_fetch(symbol, start_ts, end_ts)
+                # Restore original exchange after successful failover
+                self.exchange = original_exchange
+                return result
 
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                 logger.warning(f"[DATA] {exch_id} failed: {e}")
                 continue
 
+        # Restore original exchange even on total failure
+        self.exchange = original_exchange
         logger.error(f"[DATA] All exchanges failed for {symbol}")
         return []
 

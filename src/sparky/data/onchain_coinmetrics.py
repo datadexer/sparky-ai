@@ -187,6 +187,13 @@ class CoinMetricsFetcher:
         """List supported assets."""
         return list(ASSET_METRICS.keys())
 
-    def available_metrics(self, asset: str) -> list[str]:
-        """List available metrics for an asset."""
+    def get_available_metrics(self, asset: str) -> list[str]:
+        """List available metrics for an asset.
+
+        Args:
+            asset: "btc" or "eth".
+
+        Returns:
+            List of metric names for the asset, or empty list if unknown.
+        """
         return ASSET_METRICS.get(asset.lower(), [])

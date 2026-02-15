@@ -122,7 +122,11 @@ class SourceSelector:
 
                 # Composite score: completeness * 0.4 + (1 - freshness_normalized) * 0.3 + agreement * 0.3
                 freshness_norm = min(score.freshness_days / 30.0, 1.0)
-                agreement = 1.0 - min(score.reference_mape or 0.0, 1.0)
+                # NaN MAPE → neutral 0.5 agreement (not perfect 1.0)
+                if score.reference_mape is not None:
+                    agreement = 1.0 - min(score.reference_mape, 1.0)
+                else:
+                    agreement = 0.5
                 composite = (
                     score.completeness * 0.4
                     + (1.0 - freshness_norm) * 0.3

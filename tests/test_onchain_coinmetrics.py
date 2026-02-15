@@ -328,26 +328,26 @@ class TestAvailableAssetsAndMetrics:
         assert set(assets) == {"btc", "eth"}
 
     def test_available_metrics_btc(self, fetcher):
-        metrics = fetcher.available_metrics("btc")
+        metrics = fetcher.get_available_metrics("btc")
         assert isinstance(metrics, list)
         assert set(metrics) == set(ASSET_METRICS["btc"])
         assert "HashRate" in metrics
         assert "AdrActCnt" in metrics
 
     def test_available_metrics_eth(self, fetcher):
-        metrics = fetcher.available_metrics("eth")
+        metrics = fetcher.get_available_metrics("eth")
         assert isinstance(metrics, list)
         assert set(metrics) == set(ASSET_METRICS["eth"])
         assert "HashRate" in metrics
         assert "AdrBalCnt" in metrics
 
     def test_available_metrics_case_insensitive(self, fetcher):
-        metrics_lower = fetcher.available_metrics("btc")
-        metrics_upper = fetcher.available_metrics("BTC")
+        metrics_lower = fetcher.get_available_metrics("btc")
+        metrics_upper = fetcher.get_available_metrics("BTC")
         assert metrics_lower == metrics_upper
 
     def test_available_metrics_unknown_asset(self, fetcher):
-        metrics = fetcher.available_metrics("unknown")
+        metrics = fetcher.get_available_metrics("unknown")
         assert metrics == []
 
 

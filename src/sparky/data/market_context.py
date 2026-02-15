@@ -113,7 +113,9 @@ class CoinGeckoFetcher:
                     ),
                     "ath_distance_pct": ath_distance,
                 })
-            except (KeyError, TypeError):
+            except (KeyError, TypeError) as e:
+                coin_id = coin.get("id", "unknown") if isinstance(coin, dict) else "unknown"
+                logger.warning(f"[DATA] Skipping malformed CoinGecko entry '{coin_id}': {e}")
                 continue
 
         if not records:
