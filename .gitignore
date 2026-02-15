@@ -1,0 +1,13 @@
+data/
+!data/data_manifest.json
+mlruns/
+logs/
+configs/secrets.yaml
+.venv/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/

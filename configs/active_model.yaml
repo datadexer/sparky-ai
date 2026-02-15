@@ -1,0 +1,11 @@
+# ACTIVE MODEL — Points to current production model artifact
+# Updated when a model is promoted from experiment to production
+# Empty until Phase 3 produces validated models
+
+# btc_30d:
+#   mlflow_run_id: "abc123"
+#   model_type: xgboost
+#   artifact_path: "models/xgboost_btc_30d_abc123"
+#   promoted_at: "2025-01-15T00:00:00Z"
+#   backtest_sharpe: 0.85
+#   backtest_sharpe_ci: [0.31, 1.39]

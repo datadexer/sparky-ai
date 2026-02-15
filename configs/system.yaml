@@ -1,0 +1,29 @@
+# SYSTEM CONFIG — Sparky AI
+# Global settings, paths, API endpoints
+
+project_name: sparky-ai
+version: 0.1.0
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  quality_reports: data/quality_reports
+  logs: logs
+  agent_activity_logs: logs/agent_activity
+  mlflow_tracking: mlruns
+  results: results
+
+logging:
+  level: INFO
+  file: logs/sparky.log
+  format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+
+assets:
+  - BTC
+  - ETH
+
+timeframes:
+  training: 1d
+  live: 1h
+
+history_start: "2017-01-01"
