@@ -1,7 +1,25 @@
-"""MLflow experiment tracking for Sparky AI."""
+"""MLflow experiment tracking for Sparky AI.
+
+Provides experiment logging, dedup via config hashing, and querying.
+
+Usage:
+    tracker = ExperimentTracker()
+
+    # Check for duplicates before running
+    h = tracker.config_hash({"model": "xgboost", "lr": 0.05})
+    if tracker.is_duplicate(h):
+        print("SKIP — already ran")
+    else:
+        run_id = tracker.log_experiment("xgb_v1", config={...}, metrics={...})
+
+    # Query results
+    best = tracker.get_best_run("sharpe")
+    summary = tracker.get_summary()
+"""
 
 import hashlib
 import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
@@ -9,9 +27,33 @@ from typing import Any, Optional
 import mlflow
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
+
+def config_hash(config: dict[str, Any]) -> str:
+    """Deterministic hash of an experiment config.
+
+    Sorts keys recursively to ensure stable hashing regardless of
+    insertion order.
+
+    Args:
+        config: Dictionary of model config (hyperparams, features, etc.)
+
+    Returns:
+        SHA-256 hex digest (first 16 chars).
+    """
+    serialized = json.dumps(config, sort_keys=True, default=str)
+    return hashlib.sha256(serialized.encode()).hexdigest()[:16]
+
 
 class ExperimentTracker:
-    """Track experiments using MLflow."""
+    """Track experiments using MLflow with config-hash dedup.
+
+    Wraps MLflow to provide:
+    - Experiment logging with automatic git/data provenance
+    - Config hashing for dedup (is_duplicate check before running)
+    - Best-run and summary queries
+    """
 
     def __init__(self, experiment_name: str = "sparky", tracking_uri: str = "mlruns"):
         """Initialize experiment tracker.
@@ -63,6 +105,33 @@ class ExperimentTracker:
         except Exception:
             return "error_reading"
 
+    @staticmethod
+    def config_hash(config: dict[str, Any]) -> str:
+        """Deterministic hash of an experiment config. Delegates to module-level function."""
+        return config_hash(config)
+
+    def is_duplicate(self, cfg_hash: str) -> bool:
+        """Check if an experiment config has already been run.
+
+        Searches MLflow for any run with a matching config_hash param.
+
+        Args:
+            cfg_hash: Hash from config_hash().
+
+        Returns:
+            True if this config was already logged.
+        """
+        experiment = mlflow.get_experiment_by_name(self.experiment_name)
+        if experiment is None:
+            return False
+
+        runs = mlflow.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            filter_string=f"params.config_hash = '{cfg_hash}'",
+            max_results=1,
+        )
+        return not runs.empty
+
     def log_experiment(
         self,
         name: str,
@@ -73,6 +142,8 @@ class ExperimentTracker:
         date_range: Optional[tuple[str, str]] = None,
     ) -> str:
         """Log an experiment run to MLflow.
+
+        Automatically computes and stores a config_hash param for dedup.
 
         Args:
             name: Run name
@@ -86,6 +157,10 @@ class ExperimentTracker:
             MLflow run ID
         """
         with mlflow.start_run(run_name=name) as run:
+            # Log config hash for dedup
+            cfg_hash = config_hash(config)
+            mlflow.log_param("config_hash", cfg_hash)
+
             # Log git hash
             git_hash = self._get_git_hash()
             mlflow.log_param("git_hash", git_hash)
