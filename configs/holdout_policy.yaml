@@ -1,0 +1,61 @@
+# HOLDOUT DATA POLICY — IMMUTABLE WITHOUT HUMAN APPROVAL
+# Last modified: 2026-02-16
+# Modified by: AK (initial creation via Oversight Opus)
+#
+# This file defines which data periods are reserved for out-of-sample (OOS)
+# evaluation. NO agent may run experiments on holdout data without explicit
+# approval from the RBM or AK.
+
+holdout_periods:
+  btc:
+    oos_start: "2024-07-01"
+    oos_end: null  # through present
+    embargo_days: 30  # gap between training end and OOS start
+    description: "Final 18+ months reserved for true OOS evaluation"
+
+  eth:
+    oos_start: "2024-07-01"
+    oos_end: null
+    embargo_days: 30
+    description: "Final 18+ months reserved for true OOS evaluation"
+
+  cross_asset:
+    oos_start: "2024-07-01"
+    oos_end: null
+    embargo_days: 30
+    description: "Same OOS boundary for all cross-asset data"
+
+# Rules governing holdout usage
+policy:
+  # Who can approve OOS evaluation
+  approvers:
+    - "human-ak"
+    - "research-business-manager"
+
+  # When OOS evaluation is allowed
+  prerequisites:
+    - "Walk-forward validation complete with ≥5 folds on in-sample data"
+    - "Multi-seed stability confirmed (std < 0.3) on in-sample data"
+    - "Leakage detector passes all checks"
+    - "RBM or human has explicitly approved OOS run in writing"
+
+  # What happens after OOS
+  post_oos_rules:
+    - "OOS results are FINAL — no re-tuning on OOS data allowed"
+    - "If OOS fails, return to in-sample research with new hypothesis"
+    - "OOS data NEVER enters training set — ever"
+    - "Each model gets exactly ONE OOS evaluation — no repeated peeking"
+
+  # How many times OOS can be evaluated per research direction
+  max_oos_evaluations_per_approach: 1
+
+  # Logging requirement
+  oos_evaluation_log: "results/oos_evaluations.jsonl"
+  log_fields:
+    - timestamp
+    - model_name
+    - approach_family
+    - approved_by
+    - in_sample_sharpe
+    - oos_sharpe
+    - verdict

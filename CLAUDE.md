@@ -125,6 +125,17 @@ sparky-ai/
 - **Data versioning via hash manifest.** After each fetch, update `data/data_manifest.json`.
 - **Structured agent activity logging is mandatory.** Every agent session MUST initialize `AgentActivityLogger`.
 
+## Time Tracking (mandatory)
+Every task must be bracketed with `TaskTimer.start()` and `TaskTimer.end()`:
+```python
+from sparky.oversight.time_tracker import TaskTimer
+timer = TaskTimer(agent_id="ceo")
+timer.start("regime_detection_sweep")
+# ... work ...
+timer.end(claimed_duration_minutes=120)
+```
+Do NOT estimate times. The timer records wall-clock truth. Discrepancies >2x are flagged for review.
+
 ## Integration Testing (mandatory)
 
 ### Rule: No mocks for internal modules
@@ -185,16 +196,64 @@ External API clients: singleton, rate-limited, retry with backoff, graceful fail
 - Sharpe claims require bootstrap 95% CI and p-value
 - Cross-validate calculations against pandas_ta before trusting them
 
+## Mandatory Exploration Depth
+Before declaring ANY approach "failed" or escalating to human:
+1. You must have tested at least **5 meaningfully different configurations** (not just default params)
+2. You must have spent at least **2 hours of wall-clock time** on the approach
+3. You must have tried at least **2 implementation variants** (e.g., for regime detection: volatility-based AND trend-based AND HMM)
+4. You must have run at least **1 ablation study** (what happens if I remove X?)
+5. You must document ALL results, not just the best/worst
+
+Escalation is permitted ONLY when ALL of the above are satisfied AND no promising leads remain, OR there is a genuine external blocker (API down, data unavailable, dependency on human-owned config).
+
+If you catch yourself writing "ESCALATION:" or "OPTION A/B/C/D" — STOP. You probably haven't explored enough. Go back and try more configurations.
+
+## Graduated Success Thresholds
+Do NOT use binary pass/fail. Use these tiers:
+
+| Tier | Criteria | Action |
+|------|----------|--------|
+| TIER 1 — Deploy | Sharpe ≥1.0, MC >80%, MaxDD <50% | Request deployment approval from human |
+| TIER 2 — Paper Trade | Sharpe ≥0.7, MC >70%, beats B&H | Build paper trading, continue improving |
+| TIER 3 — Continue | Sharpe ≥0.4, shows edge over B&H | Keep iterating, try new features/params |
+| TIER 4 — Pivot | Sharpe <0.4 after 5+ configs | Try fundamentally different approach |
+| TIER 5 — Abandon | Sharpe <0.2 after 10+ configs across 2+ approach families | Document learnings, move to next research area |
+
+Only TIER 5 warrants termination of a research direction. Everything else means keep working.
+
+## Pre-Validation Protocol (MANDATORY)
+Before reporting ANY positive result:
+1. Run standard validation suite: check all years included, holdout data separate, baseline comparison, look-ahead bias check
+2. Report as "PRELIMINARY — pending validation" until validation passes
+3. Use neutral language. NEVER use "breakthrough", "genuine alpha", or "ready for deployment" until TIER 1 validated
+4. If validation reveals issues, report the CORRECTED result as primary finding
+5. The corrected result is the real result. The pre-correction number should be noted as "invalidated"
+
 ## Human Gates (stop and wait for AK)
 - Before any live API calls that cost money
 - Before paper trading goes live
 - Before any live trading decision
 - Before adding a new paid data source
-- When a phase is fully complete
-- When results are surprising (good or bad)
+- When a phase is fully complete AND all deliverables verified
+- When a TIER 1 result (see graduated thresholds below) needs deployment approval
+
+## When NOT to Stop
+- A single experiment failing is NOT a reason to stop or escalate
+- Marginal results are NOT a reason to stop — they are data points, continue exploring
+- "I'm not sure what to try next" is NOT a reason to stop — read literature, try ablations, vary hyperparameters
+- You must NEVER present "OPTION A/B/C/D — awaiting your decision" menus. Instead: state what you tried, what partially worked, what you're doing next, and only ask a specific blocking question if one exists.
 
 ## Trading Rules
 See `configs/trading_rules.yaml` — these are IMMUTABLE.
+
+## Holdout Data Policy
+See `configs/holdout_policy.yaml` — these boundaries are IMMUTABLE.
+- All data after 2024-07-01 is OUT-OF-SAMPLE. You may NOT train on it or validate against it.
+- There is a 30-day embargo buffer before the OOS boundary.
+- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from RBM or AK.
+- Each model/approach gets exactly ONE OOS evaluation. No repeated peeking.
+- Import and use `HoldoutGuard` in any script that loads data for model work.
+- Violation of holdout policy is a CRITICAL offense that invalidates all results.
 
 ## Multi-Agent Coordination
 You are part of a multi-agent system. Other agents (validation, data engineering) may send you messages and reports.
@@ -221,22 +280,22 @@ PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py status           
 - Always have at least one task IN_PROGRESS. If your queue is empty, create new tasks.
 - Sub-agents MUST use model: sonnet (haiku for simple lookups). NEVER use opus for sub-agents.
 
-**RESOURCE PROTECTION RULES (CRITICAL — PREVENT SYSTEM CRASHES)**:
-- **HARD LIMIT**: NEVER spawn more than 3 concurrent Task tool agents at once
-- **SEQUENTIAL SPAWNING**: Spawn 1 agent, wait for completion, then spawn next
-- **BATCH LIMIT**: If spawning multiple agents, MAX 2 agents in a single message, then WAIT
-- **MEMORY-INTENSIVE WORK**: For model training or large data processing, MAX 1 agent at a time
-- **CHECK BEFORE SPAWN**: Before any Task tool call, verify no more than 2 agents currently running
-- **COMPLETION REQUIRED**: An agent is only "complete" when TaskOutput returns final status
-- **NO FIRE-AND-FORGET**: Never spawn agents in background without tracking completion
-- **FALLBACK RULE**: If unsure about resource usage, spawn 1 agent, wait, proceed serially
+**RESOURCE PROTECTION RULES (CRITICAL — ENFORCED BY OVERSIGHT)**:
+- **CEO LIMIT**: Up to 3 concurrent Task tool sub-agents. Sub-agents should NOT spawn their own sub-agents unless truly necessary for context management and short-lived tasks.
+- **MEMORY-INTENSIVE**: For model training or data loading into DataFrames >1GB, run ONLY 1 agent at a time with no other agents.
+- **BEFORE SPAWNING**: Run `bash scripts/system_health_check.sh /tmp/health.txt && cat /tmp/health.txt` and check the status. If DEGRADED or CRITICAL, do NOT spawn — wait or kill existing agents first.
+- **IF MACHINE BECOMES SLOW**: Immediately stop spawning. Run `scripts/system_health_check.sh`. If CRITICAL, run `scripts/emergency_cleanup.sh`.
+- **OVERSIGHT MONITORS THIS**: The Oversight Opus session runs periodic health checks. If it detects system status CRITICAL, it will terminate your session.
+
+These rules exist because the DGX Spark has 128GB shared memory. A single CatBoost training run can consume 20-40GB. Three simultaneous training runs = OOM kill = lost work.
 
 ## Communication Protocol
-- Write findings to `roadmap/02_RESEARCH_LOG.md`
-- Write decisions needing human input to `roadmap/01_DECISIONS.md`
+- Write findings to `roadmap/02_RESEARCH_LOG.md` — one-line summary per experiment, full details only for TIER 1-2 results
 - Update `roadmap/00_STATE.yaml` after completing any task
 - Tag human-required decisions with `[HUMAN GATE]`
 - Tag autonomous decisions with `[AUTO]`
+- Do NOT write to DECISIONS.md with option menus. Instead write: "What I tried: [...], What I'm doing next: [...], Blocking question (if any): [...]"
+- Failed experiments get ONE LINE in the research log, not full analysis sections with tables
 
 ## Commit Conventions
 ```

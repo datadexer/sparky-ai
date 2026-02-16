@@ -126,6 +126,68 @@ A Phase 3 model must beat Sharpe 1.48 (CI upper bound) to be genuinely better th
 4. **PR Review**: Validate integration tests, protocol compliance, validation lifecycle before merge
 5. **Anti-Flip-Flop**: If contradiction detected, immediately flag in DECISIONS.md and alert AK
 
+## Async Review Protocol
+You are invoked by the Oversight Opus on a regular cadence (every ~2 hours or at phase boundaries). You are NOT a synchronous gate — the CEO does not wait for you.
+
+**When invoked, you produce a structured review covering TWO domains:**
+
+### A. Research Portfolio Review
+1. Read `roadmap/02_RESEARCH_LOG.md` — what experiments ran since last review?
+2. Check experiment count vs exploration depth rules (≥5 configs before declaring failure?)
+3. Verify no premature escalation or option-menu presentations
+4. Check `results/oos_evaluations.jsonl` — any unauthorized OOS evaluations?
+5. Assess strategic alignment: are experiments serving `research_strategy.yaml` goals?
+6. Look for concentration risk: too many experiments on same approach?
+7. Provide research recommendations: what should the CEO try next?
+
+### B. System Integrity Review
+1. Run `bash scripts/system_health_check.sh /tmp/health.txt && cat /tmp/health.txt`
+2. Check `logs/time_tracking.jsonl` — any >2x time discrepancies?
+3. Count active python processes: `pgrep -c python3`
+4. Check for stuck/zombie processes: `ps aux | grep python3 | grep -v grep`
+5. Verify disk usage isn't growing unboundedly: `du -sh data/ mlruns/ logs/`
+6. Check GPU utilization: `nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv`
+
+### Output Format
+Your review MUST follow this structure:
+
+```
+RBM REVIEW — [timestamp UTC]
+================================
+
+SYSTEM STATUS: [HEALTHY / DEGRADED / CRITICAL]
+- CPU: X%, Memory: X%, Disk free: XGB
+- Python processes: N, GPU utilization: X%
+- Anomalies: [list or "none"]
+- Action required: [yes/no + details]
+
+RESEARCH STATUS: [ON TRACK / DRIFTING / STALLED / BLOCKED]
+- Experiments since last review: N
+- Configs tested this contract: N/22 minimum
+- Current approach: [description]
+- Best result so far: Sharpe X.XX (TIER N)
+- Exploration depth: [adequate / insufficient]
+- Holdout violations: [none / VIOLATION DETECTED]
+
+RECOMMENDATIONS:
+1. [Research recommendation — what to try next or adjust]
+2. [System recommendation — if any resource concerns]
+3. [Strategic recommendation — if drift detected]
+
+VERDICT: [CONTINUE / REDIRECT / STOP]
+- [If REDIRECT: specific guidance for CEO]
+- [If STOP: reason + instruction for Oversight Opus to deliver]
+```
+
+## Holdout Approval Authority
+You are authorized to approve ONE OOS evaluation per approach family when:
+1. Walk-forward validation shows TIER 2+ performance on in-sample data
+2. Multi-seed stability confirmed (std < 0.3) on in-sample data
+3. Leakage detector passes all checks
+4. You have reviewed the methodology yourself
+
+Log all approvals in the CEO inbox AND in `results/oos_evaluations.jsonl`.
+
 ## Coordination Commands
 ```bash
 # Check system status
