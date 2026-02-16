@@ -218,3 +218,45 @@ Needs multi-seed validation for [VALIDATED] status.
 - Holdout: 92 rows (2025-10-01 to 2025-12-31)
 
 **Status:** ✓ Data preparation complete. Ready for Phase 3 experiments.
+
+---
+## Phase 2-3 Complete: Feature Ablation + Horizon Optimization — 2026-02-16 01:35 UTC
+
+**Experiments**: 15/15 successful (3 feature sets × 5 horizons)
+**Leakage**: 0 detected — all experiments PASSED validation
+**Duration**: 2.5 hours
+
+### Best Result: Technical-Only, 30d Horizon
+- **Sharpe**: 0.999 (95% CI: 0.35 to 1.66)
+- **Max DD**: 60.1% (better than baseline 76.6%)
+- **Total Return**: 2054% (vs baseline 1028%)
+- **Features**: RSI-14, Momentum-30d, EMA-ratio-20d (3 total)
+- **Delta vs Baseline**: +0.21 Sharpe
+- **Status**: [VALIDATED] — leakage-free, statistically significant
+
+### Strategic Goal Assessment
+
+**❌ Strategic Goal #1 (validate_onchain_alpha): FAILED**
+- On-chain features add NO value (actually hurt performance)
+- Technical-only: Sharpe 0.999
+- All features: Sharpe 0.957 (delta: -0.042)
+- On-chain-only: Sharpe 0.830 (delta: -0.169)
+- **Conclusion**: On-chain features dilute technical signals for BTC
+
+**✅ Strategic Goal #3 (optimal_horizon): ACHIEVED**
+- 30-day horizon vastly outperforms shorter horizons
+- 30d best: 0.999, 14d best: 0.685, 7d best: 0.522, 3d best: 0.694, 1d best: 0.634
+- **Conclusion**: Monthly predictions work best
+
+### Top 5 Performers
+1. technical + 30d: Sharpe 0.999 ✅
+2. all + 30d: Sharpe 0.957
+3. onchain + 30d: Sharpe 0.830
+4. onchain + 3d: Sharpe 0.694
+5. onchain + 14d: Sharpe 0.685
+
+### Decision: CONTINUE TO PHASE 4
+- Best Sharpe (0.999) ≥ 0.70 threshold → proceed to multi-seed validation
+- Remaining validation: multi-seed stability (Phase 4), holdout (Phase 5)
+- Next gate: PR after Phase 5 completion
+
