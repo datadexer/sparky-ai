@@ -177,3 +177,18 @@ These findings inform our hypotheses but must be independently validated.
 - without_returns: Sharpe=0.0347, MaxDD=80.03%, Delta=0.4800
 
 **Finding**: [VALIDATED] On-chain features add significant alpha
+
+---
+## Horizon Sensitivity Experiment — 2026-02-16 01:01:25 UTC
+
+**Hypothesis**: Identify optimal prediction horizon (1d-30d) for maximum Sharpe (Priority 2 strategic goal)
+
+**Results**:
+- 1d: Sharpe=-0.4310, MaxDD=91.92%
+- 3d: Sharpe=-0.5608, MaxDD=93.79%
+- 7d: Sharpe=-0.4452, MaxDD=93.91%
+- 14d: Sharpe=0.2174, MaxDD=82.11%
+- 30d: Sharpe=0.8645, MaxDD=57.73%
+
+**Finding**: [PRELIMINARY] Optimal horizon appears to be 30d (Sharpe=0.8645)
+Needs multi-seed validation for [VALIDATED] status.
