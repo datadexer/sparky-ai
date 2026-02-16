@@ -2,14 +2,14 @@
 # CEO Watchdog — keeps the CEO agent running across rate limits and context resets.
 #
 # Usage:
-#   tmux new-session -d -s ceo './scripts/ceo_watchdog.sh'
-#   tmux attach -t ceo          # to watch
-#   tmux kill-session -t ceo    # to stop
+#   ./scripts/ceo_watchdog.sh start   # start daemon (background)
+#   ./scripts/ceo_watchdog.sh stop    # stop daemon
+#   ./scripts/ceo_watchdog.sh logs    # tail -f latest session log
+#   ./scripts/ceo_watchdog.sh status  # check if running
 #
 # Environment:
 #   CEO_COOLDOWN_SECS   — base cooldown between sessions (default: 300)
 #   CEO_MAX_BUDGET_USD  — max spend per session (default: 15.00)
-#   CEO_LOG_DIR         — log directory (default: logs/ceo_sessions)
 #   CEO_MODEL           — model to use (default: sonnet)
 #   CEO_PERMISSION_MODE — permission mode (default: bypassPermissions)
 
@@ -20,75 +20,116 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 BASE_COOLDOWN="${CEO_COOLDOWN_SECS:-300}"
 MAX_BUDGET="${CEO_MAX_BUDGET_USD:-15.00}"
-LOG_DIR="${CEO_LOG_DIR:-$PROJECT_ROOT/logs/ceo_sessions}"
+LOG_DIR="$PROJECT_ROOT/logs/ceo_sessions"
 MODEL="${CEO_MODEL:-sonnet}"
 PERM_MODE="${CEO_PERMISSION_MODE:-bypassPermissions}"
-SESSION_COUNT=0
+PID_FILE="$LOG_DIR/watchdog.pid"
+LATEST_LINK="$LOG_DIR/latest.log"
 
 mkdir -p "$LOG_DIR"
 
-# Minimal prompt — CEO reads CLAUDE.md + STATE.yaml for full context
 CEO_PROMPT='Continue work. Read CLAUDE.md, roadmap/00_STATE.yaml, coordination/TASK_CONTRACTS.md, check inbox (PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo). Use GPU for all model training. Do not narrate — execute experiments and log results to files. Commit frequently.'
 
-echo "=== CEO Watchdog started ==="
-echo "  Project:    $PROJECT_ROOT"
-echo "  Cooldown:   ${BASE_COOLDOWN}s + jitter"
-echo "  Max budget: \$${MAX_BUDGET} per session"
-echo "  Model:      $MODEL"
-echo "  Perms:      $PERM_MODE"
-echo "  Logs:       $LOG_DIR"
-echo ""
+run_daemon() {
+    echo $$ > "$PID_FILE"
+    SESSION_COUNT=0
 
-while true; do
-    SESSION_COUNT=$((SESSION_COUNT + 1))
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    LOG_FILE="$LOG_DIR/ceo_session_${SESSION_COUNT}_${TIMESTAMP}.log"
-
-    # === Health gate: wait until system is healthy before launching ===
-    echo "[$TIMESTAMP] Checking system health before session #$SESSION_COUNT..."
     while true; do
-        bash "$PROJECT_ROOT/scripts/system_health_check.sh" > /dev/null 2>&1 && break
-        EXIT=$?
-        if [ "$EXIT" -eq 2 ]; then
-            echo "[$(date +%Y%m%d_%H%M%S)] System CRITICAL — waiting 60s..."
-        else
-            echo "[$(date +%Y%m%d_%H%M%S)] System DEGRADED — waiting 30s..."
+        SESSION_COUNT=$((SESSION_COUNT + 1))
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        LOG_FILE="$LOG_DIR/ceo_session_${SESSION_COUNT}_${TIMESTAMP}.log"
+        ln -sf "$LOG_FILE" "$LATEST_LINK"
+
+        # Health gate
+        while true; do
+            bash "$PROJECT_ROOT/scripts/system_health_check.sh" > /dev/null 2>&1 && break
+            sleep 60
+        done
+
+        echo "[$(date)] Starting CEO session #$SESSION_COUNT" >> "$LOG_FILE"
+
+        # Run claude, all output to log file
+        cd "$PROJECT_ROOT" && claude -p \
+            --model "$MODEL" \
+            --max-budget-usd "$MAX_BUDGET" \
+            --permission-mode "$PERM_MODE" \
+            "$CEO_PROMPT" \
+            >> "$LOG_FILE" 2>&1 || true
+
+        echo "[$(date)] Session #$SESSION_COUNT ended" >> "$LOG_FILE"
+
+        # Check STOP file
+        if [ -f "$LOG_DIR/STOP" ]; then
+            rm -f "$LOG_DIR/STOP" "$PID_FILE"
+            echo "[$(date)] Stopped by STOP file" >> "$LOG_FILE"
+            exit 0
         fi
-        sleep $((EXIT == 2 ? 60 : 30))
+
+        # Cooldown with jitter
+        JITTER=$((RANDOM % 120))
+        COOLDOWN=$((BASE_COOLDOWN + JITTER))
+        echo "[$(date)] Cooling down ${COOLDOWN}s" >> "$LOG_FILE"
+        sleep "$COOLDOWN"
     done
+}
 
-    echo "[$TIMESTAMP] Starting CEO session #$SESSION_COUNT (log: $LOG_FILE)"
-
-    # Use `script` to allocate a PTY, which forces claude to stream output
-    # line-by-line instead of buffering until exit. The PTY tricks claude into
-    # thinking it's writing to a terminal.
-    set +e
-    cd "$PROJECT_ROOT" && script -qfc "claude -p \
-        --model $MODEL \
-        --max-budget-usd $MAX_BUDGET \
-        --permission-mode $PERM_MODE \
-        '$CEO_PROMPT'" "$LOG_FILE"
-    EXIT_CODE=$?
-    set -e
-
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    echo ""
-    echo "[$TIMESTAMP] CEO session #$SESSION_COUNT ended (exit code: $EXIT_CODE)"
-    echo "[$TIMESTAMP] Log: $LOG_FILE"
-
-    # Check for STOP file
-    if [ -f "$LOG_DIR/STOP" ]; then
-        echo "[$TIMESTAMP] STOP file detected. Shutting down watchdog."
-        rm -f "$LOG_DIR/STOP"
-        break
-    fi
-
-    # Cooldown with jitter (base + 0-120s random)
-    JITTER=$((RANDOM % 120))
-    COOLDOWN=$((BASE_COOLDOWN + JITTER))
-    echo "[$TIMESTAMP] Cooling down ${COOLDOWN}s (${BASE_COOLDOWN}+${JITTER}s jitter)..."
-    echo "  (touch $LOG_DIR/STOP to gracefully stop)"
-    sleep "$COOLDOWN"
-done
-
-echo "=== CEO Watchdog stopped ==="
+case "${1:-help}" in
+    start)
+        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+            echo "Already running (PID $(cat "$PID_FILE"))"
+            exit 1
+        fi
+        echo "Starting CEO watchdog daemon..."
+        nohup bash "$0" _daemon > /dev/null 2>&1 &
+        sleep 1
+        if [ -f "$PID_FILE" ]; then
+            echo "Started (PID $(cat "$PID_FILE"))"
+            echo "Logs: $0 logs"
+        else
+            echo "Failed to start"
+            exit 1
+        fi
+        ;;
+    _daemon)
+        run_daemon
+        ;;
+    stop)
+        if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            # Kill the watchdog and its children (claude process)
+            pkill -P "$PID" 2>/dev/null || true
+            kill "$PID" 2>/dev/null || true
+            rm -f "$PID_FILE"
+            echo "Stopped (was PID $PID)"
+        else
+            echo "Not running"
+        fi
+        ;;
+    logs)
+        if [ -L "$LATEST_LINK" ] || [ -f "$LATEST_LINK" ]; then
+            echo "=== Tailing $(readlink -f "$LATEST_LINK") ==="
+            tail -f "$LATEST_LINK"
+        else
+            LATEST=$(ls -t "$LOG_DIR"/ceo_session_*.log 2>/dev/null | head -1)
+            if [ -n "$LATEST" ]; then
+                echo "=== Tailing $LATEST ==="
+                tail -f "$LATEST"
+            else
+                echo "No logs yet"
+            fi
+        fi
+        ;;
+    status)
+        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+            echo "Running (PID $(cat "$PID_FILE"))"
+            LATEST=$(ls -t "$LOG_DIR"/ceo_session_*.log 2>/dev/null | head -1)
+            [ -n "$LATEST" ] && echo "Latest log: $LATEST ($(wc -c < "$LATEST") bytes)"
+        else
+            echo "Not running"
+            rm -f "$PID_FILE"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|logs|status}"
+        ;;
+esac
