@@ -5,6 +5,35 @@ Newest entries at the top.
 
 ---
 
+## Two-Stage Sweep (58→20 features) — 2026-02-16 22:16 UTC [COMPLETE]
+
+**STATUS**: Complete — ALL configs BELOW BASELINE
+
+**OBJECTIVE**: Feature selection + hyperparameter sweep across CatBoost/XGBoost/LightGBM
+
+**APPROACH**:
+- Stage 0: XGBoost selects top 20/58 features by importance
+- Stage 1: Screen 54 configs (single split)
+- Stage 2: Validate top 5 configs (walk-forward 2019-2023)
+
+**RESULTS**:
+- **Best**: CatBoost (d=4, lr=0.01, l2=1.0) → Sharpe 0.982 ± 1.875
+- **Baseline**: Multi-TF Donchian → Sharpe 1.062
+- **Conclusion**: 20-feature ML does NOT beat baseline (8% underperformance)
+
+**Year-by-year (best config)**:
+- 2019: Sharpe 1.835
+- 2020: Sharpe 2.759
+- 2021: Sharpe 0.704
+- 2022: Sharpe -2.524 (catastrophic failure)
+- 2023: Sharpe 2.134
+
+**Files**: `scripts/sweep_two_stage.py`, `results/validation/sweep_two_stage.json`
+
+**Commit**: a92c7e8
+
+---
+
 ## Cross-Asset Training (XGBoost) — 2026-02-16 21:52 UTC [COMPLETE]
 
 **STATUS**: Complete — result BELOW BASELINE
