@@ -45,6 +45,15 @@ PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-create <id> 
 - Agent testing 30+ configurations on same holdout (data snooping)
 - Agent pivoting to simple rules instead of improving ML models
 - Agent skipping validation steps
+- Agent presenting "OPTION A/B/C/D — awaiting decision" menus (should be continuing work)
+- Agent testing <5 configurations before declaring failure
+- Agent running OOS/holdout evaluation without written RBM/human approval
+- Agent spending >30% of time documenting failures vs running new experiments
+- Time claims that don't match wall-clock logs in logs/time_tracking.jsonl
+- Agent using holdout data (post 2024-07-01) in any training or validation run
+- System health check returning DEGRADED or CRITICAL during agent operation
+- More than 4 python processes running simultaneously
+- Agent spawning sub-agents without checking system_health_check.sh first
 
 ## Monitoring Script
 ```bash

@@ -27,10 +27,11 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 - Human intervention (AK explicitly cancels contract)
 
 **NOT Allowed Termination Reasons**:
-- ❌ "This approach isn't working" after <1 hour
+- ❌ "This approach isn't working" after <5 configs tested
 - ❌ "I found something better" (finish contract first, then propose)
-- ❌ "Results are marginal" (complete all phases before judging)
-- ❌ "I want to try rule-based instead" (contract specifies ML)
+- ❌ "Results are marginal" (complete all configs before judging aggregate)
+- ❌ "I want to try [different approach]" (contract specifies scope)
+- ❌ Presenting OPTION A/B/C/D menus (continue working, don't ask what to do)
 
 **Escalation Protocol**:
 - If CEO attempts to break contract → RBM sends WARNING
