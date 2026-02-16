@@ -5,6 +5,26 @@ Newest entries at the top.
 
 ---
 
+## Ensemble Top-3 — Still NOT Significant — 2026-02-16 23:50 UTC
+
+**STATUS**: TIER 3 — ensemble Sharpe 1.24 ± 2.04, NOT statistically significant (CI -0.57 to 2.60)
+
+**APPROACH**: Average probabilities from top-3 CatBoost configs (d=3/5 lr=0.01 l2=1.0/3.0)
+
+**RESULTS**:
+- Ensemble Sharpe 1.240 ± 2.044 (vs single 1.194 ± 2.003)
+- Bootstrap 95% CI: [-0.57, 2.60] — WORSE than single model
+- 2022 bear: -1.76 Sharpe, -65% DD (still catastrophic)
+- Does NOT beat baseline (not significant)
+
+**INSIGHT**: Ensemble does NOT reduce variance. 2022 failure is systematic across all models, not model-specific. All three configs collapse in bear market. Problem is NOT model selection — it's regime brittleness. Need bear-market filtering or separate regime-specific models.
+
+**FILES**: `scripts/ensemble_top3_expanded.py`, `results/validation/ensemble_top3_expanded.json`
+
+**COMMIT**: b0729f2
+
+---
+
 ## Full Validation — TIER 3, NOT Statistically Significant — 2026-02-16 23:45 UTC
 
 **STATUS**: TIER 3 — mean Sharpe 1.19 > baseline BUT NOT statistically significant (CI -0.17 to 2.53)
