@@ -11,6 +11,10 @@ Total: 58 features on 4,795 daily samples from 115K hourly candles
 import sys
 sys.path.insert(0, "src")
 
+# Force unbuffered output
+import os
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 import pandas as pd
 import numpy as np
 import json
@@ -26,7 +30,7 @@ from sparky.backtest.costs import TransactionCostModel
 
 def load_data():
     """Load 58-feature hourly dataset."""
-    print("Loading 58-feature dataset...")
+    print("Loading 58-feature dataset...", flush=True)
 
     features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
     target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
@@ -35,10 +39,10 @@ def load_data():
     if isinstance(target, pd.DataFrame):
         target = target['target']
 
-    print(f"Features: {features.shape[0]} samples, {features.shape[1]} features")
-    print(f"Targets: {target.shape[0]} samples")
-    print(f"Date range: {features.index.min()} to {features.index.max()}")
-    print(f"Target balance: {target.value_counts(normalize=True).to_dict()}")
+    print(f"Features: {features.shape[0]} samples, {features.shape[1]} features", flush=True)
+    print(f"Targets: {target.shape[0]} samples", flush=True)
+    print(f"Date range: {features.index.min()} to {features.index.max()}", flush=True)
+    print(f"Target balance: {target.value_counts(normalize=True).to_dict()}", flush=True)
 
     return features, target
 
@@ -111,7 +115,7 @@ def validate_config(features, target, model_name, params):
         # Apply transaction costs
         position_changes = signals.diff().abs()
         cost_model = TransactionCostModel.for_btc()
-        costs = position_changes * cost_model.base_rate
+        costs = position_changes * cost_model.total_cost_pct
         net_returns = strategy_returns - costs
 
         # Compute Sharpe
@@ -198,14 +202,14 @@ def run_sweep():
     all_results = []
 
     for i, config in enumerate(configs, 1):
-        print(f"\nConfig {i}/{len(configs)}: {config['model']} - {config['params']}")
+        print(f"\nConfig {i}/{len(configs)}: {config['model']} - {config['params']}", flush=True)
 
         try:
             result = validate_config(features, target, config['model'], config['params'])
             result['config'] = config
             all_results.append(result)
 
-            print(f"  RESULT: Sharpe={result['mean_sharpe']:.3f}, Acc={result['mean_accuracy']:.3f}")
+            print(f"  RESULT: Sharpe={result['mean_sharpe']:.3f}, Acc={result['mean_accuracy']:.3f}", flush=True)
 
         except Exception as e:
             print(f"  ERROR: {e}")
