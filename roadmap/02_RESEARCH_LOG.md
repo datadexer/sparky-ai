@@ -5,9 +5,30 @@ Newest entries at the top.
 
 ---
 
-## Feature Expansion + Sweep BEATS BASELINE — 2026-02-16 23:40 UTC [COMPLETE]
+## Full Validation — TIER 3, NOT Statistically Significant — 2026-02-16 23:45 UTC
 
-**STATUS**: TIER 2 — ML beats Donchian baseline (1.19 vs 1.06), ready for paper trading after validation
+**STATUS**: TIER 3 — mean Sharpe 1.19 > baseline BUT NOT statistically significant (CI -0.17 to 2.53)
+
+**VALIDATION**: Bootstrap 95% CI on CatBoost d=5 lr=0.01 l2=3.0, 5-year walk-forward (2019-2023)
+
+**RESULTS**:
+- Mean Sharpe 1.194 ± 2.003 (baseline 1.06)
+- Bootstrap 95% CI: [-0.17, 2.53] — lower bound BELOW baseline
+- Year breakdown: 2019=2.00✓, 2020=3.55✓, 2021=0.56, 2022=-1.84 (FAIL), 2023=1.69✓
+- 2022 bear: -68% drawdown, -1.84 Sharpe
+- FAILS statistical significance test
+
+**INSIGHT**: High variance driven by 2022 catastrophic failure. Model overfits bull markets but collapses in bear regime. Feature expansion adds alpha but NOT robustness. Need regime-aware modeling.
+
+**FILES**: `scripts/validate_best_expanded.py`, `results/validation/expanded_features_summary.txt`
+
+**COMMIT**: afee333
+
+---
+
+## Feature Expansion + Sweep — 2026-02-16 23:40 UTC [COMPLETE]
+
+**STATUS**: Preliminary result (validation revealed NOT statistically significant — see above)
 
 **APPROACH**: Expand features 58→88 (order book proxies, longer horizons 72h-720h, cross-interactions, mean reversion, volatility breakout) → select top 25 → sweep 12 CatBoost configs → validate top-5 walk-forward
 
