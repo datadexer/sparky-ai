@@ -78,11 +78,13 @@ def backtest_strategy(
     # Compute returns
     price_returns = period_prices.pct_change()
 
-    # Strategy returns (only earn returns when signal == 1)
-    strategy_returns = period_signals * price_returns
+    # Strategy returns: signal at T applies to T+1's return (no look-ahead bias)
+    # Signal at T uses close[T], so position can only be entered at T+1
+    actual_positions = period_signals.shift(1).fillna(0)
+    strategy_returns = actual_positions * price_returns
 
-    # Count trades (position changes)
-    position_changes = period_signals.diff().abs()
+    # Count trades (position changes on actual positions)
+    position_changes = actual_positions.diff().abs()
     n_trades = int(position_changes.sum())
 
     # Apply transaction costs
