@@ -130,6 +130,55 @@ Two potential issues identified:
 
 ---
 
+## ❌ REGIME-FILTERED DONCHIAN: FAILED WORSE — 2026-02-16 06:17 UTC [DAY 2]
+
+**HYPOTHESIS**: Filtering out HIGH volatility periods would fix 2022 catastrophic failure.
+
+**IMPLEMENTATION**: Regime-Filtered Ensemble
+- Compute volatility regime (30-day window): LOW/MEDIUM/HIGH
+- Force FLAT when regime = "high" (>60% annualized vol)
+- Normal Donchian signals otherwise
+
+**RESULTS (Walk-Forward Validation)**:
+
+| Metric | Unfiltered | Regime-Filtered | Change |
+|--------|-----------|----------------|---------|
+| **Mean Sharpe** | +0.365 | **-0.350** | **-0.715** (-196%) ❌ |
+| **Min Sharpe** | -3.534 | **-3.663** | **-0.129** (worse!) |
+| **2022 Sharpe** | -1.902 | **-2.262** | **-0.360** (worse!) |
+| **Positive Folds** | 10/18 | **6/18** | -4 folds |
+
+**CRITICAL FAILURES**:
+
+**1. Missed Bull Runs (Over-Filtering):**
+- 2021Q1: Sharpe 0.000 (filtered, was +2.510 unfiltered) - Missed +57.5% gain!
+- 2020: Sharpe 1.837 (filtered, was +3.196 unfiltered) - Gave up +252% returns!
+- 2023: Sharpe 1.383 (filtered, was +1.845 unfiltered) - Underperformed
+
+**2. Still Caught Whipsaws (Under-Protection):**
+- 2022Q2: Sharpe -3.663 (WORSE than -3.534 unfiltered!)
+- 2022Q3: Sharpe -2.607 (WORSE than -2.087 unfiltered!)
+- Filter didn't protect when needed most
+
+**3. Lagging Indicator Problem:**
+- Volatility spikes AFTER crashes start
+- By the time regime = "high", damage already done
+- Filter then keeps you FLAT during recovery
+- Worst of both worlds: catch crash, miss bounce
+
+**VERDICT**: ❌ **REGIME FILTERING MAKES THINGS WORSE**
+
+- Not a solution to Donchian fragility
+- Reactive (not predictive) regime detection fails
+- Over-conservative in bulls, under-protective in bears
+
+**Files**:
+- Implementation: `src/sparky/models/regime_filtered_donchian.py`
+- Script: `scripts/validate_regime_filtered.py`
+- Results: `results/validation/regime_filtered_validation.json`
+
+---
+
 ## 🎯 DEPLOYMENT DECISION: MULTI-TIMEFRAME ENSEMBLE → PAPER TRADING — 2026-02-16 01:34 UTC
 
 **Status**: ✅ **DEPLOYED TO PAPER TRADING** (RBM SCENARIO A criteria met)

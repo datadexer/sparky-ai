@@ -11,6 +11,76 @@ This file is the async communication channel between AK and the CEO agent.
 
 ## Pending Decisions
 
+### [AGENT -> HUMAN] ESCALATION: No Viable Alpha Strategy Found — 2026-02-16 06:18 UTC
+
+**Status**: 🛑 **BLOCKING** — Need strategic direction
+
+**Summary**: After rigorous walk-forward validation, ALL tested strategies FAILED to demonstrate robust alpha.
+
+**Validation Results**:
+
+| Strategy | Full-Period Sharpe | Walk-Forward Mean | Min Fold | Verdict |
+|----------|-------------------|-------------------|----------|---------|
+| **Multi-Timeframe Ensemble** | 1.624 | **0.365** | -3.534 | ❌ FAIL |
+| **Regime-Filtered** | N/A | **-0.350** | -3.663 | ❌ FAIL WORSE |
+| **Buy & Hold (baseline)** | 1.092 | ~1.0 (stable) | N/A | ✅ Robust |
+
+**Critical Finding**:
+- Full-period metrics (Sharpe 1.624) **grossly misleading**
+- Walk-forward reveals extreme volatility: mean 0.365, range -3.663 to +3.434
+- Strategy works ONLY in sustained bulls (2019-2020, 2023Q4)
+- Fails catastrophically in chops/bears (all 2022 quarters negative)
+
+**Root Cause**:
+Donchian breakout strategies are fundamentally fragile:
+- Require sustained trends to compound gains
+- Whipsaw badly in choppy markets
+- Cannot avoid periods selectively in real trading
+
+**Options**:
+
+**OPTION A: Deploy Buy & Hold (Honest Baseline)**
+- Sharpe 1.092 (vs 0.365 for "best" strategy)
+- More robust across periods
+- Saves development time
+- ❌ No edge, defeats project purpose
+
+**OPTION B: Test Fundamentally Different Strategies**
+- Try mean reversion (opposite of breakout)
+- Try momentum crossovers (different signals)
+- Try machine learning models (Phase 3 approach)
+- ⏰ Requires 10-20 hours more research
+- ⚠️ No guarantee of success
+
+**OPTION C: Pivot to Paper Trading Infrastructure First**
+- Build infrastructure for Buy & Hold
+- Continue research in parallel
+- Deploy baseline, improve later
+- 💡 Makes progress while researching
+
+**OPTION D: Terminate Strategy Research**
+- Accept negative result (no alpha found)
+- Document findings
+- Return to data collection / feature engineering
+- Restart strategy search with more data
+
+**My Recommendation**: **OPTION B** - Test fundamentally different strategy classes
+
+**Rationale**:
+- Only tested 1 strategy family (breakout-based)
+- Mean reversion may work better in crypto's choppy nature
+- Worth 1-2 more attempts before giving up
+- If those also fail → OPTION D (honest negative result)
+
+**Awaiting your decision**: A, B, C, D, or other direction?
+
+**Context Files**:
+- `roadmap/02_RESEARCH_LOG.md` - Full validation results
+- `results/validation/walkforward_validation.json` - Multi-Timeframe results
+- `results/validation/regime_filtered_validation.json` - Regime-filtered results
+
+---
+
 ### [RBM -> HUMAN] On-Chain Features: Conflicting Evidence → RESOLVED
 **[2026-02-16 04:00 UTC]** | **Updated: [2026-02-16 05:15 UTC]**
 
