@@ -51,7 +51,17 @@ def load_hourly_data() -> pd.DataFrame:
 
 
 def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute technical features on hourly data.
+    """Compute comprehensive technical features on hourly data.
+
+    Feature categories:
+    1. Technical indicators (RSI, MACD, Bollinger Bands)
+    2. Volatility measures (ATR, BB bandwidth, vol clustering)
+    3. Volume features (vol momentum, VWAP deviation, vol ratio)
+    4. Market microstructure (intraday range, price patterns)
+    5. Multi-timeframe (4h, 24h, 200h trends)
+    6. Temporal (hour of day, day of week for session effects)
+
+    Total: ~25 high-quality features designed for hourly crypto data
 
     Args:
         df: Hourly OHLCV DataFrame
@@ -59,45 +69,106 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with hourly features
     """
-    from sparky.features.technical import compute_rsi, compute_ema, simple_returns
+    from sparky.features.technical import rsi, ema, macd, momentum
+    from sparky.features.returns import simple_returns
+    from sparky.features.advanced import (
+        bollinger_bandwidth,
+        bollinger_position,
+        atr,
+        intraday_range,
+        volume_momentum,
+        volume_ma_ratio,
+        vwap_deviation,
+        higher_highs_lower_lows,
+        volatility_clustering,
+        price_distance_from_sma,
+        momentum_quality,
+        session_hour,
+        day_of_week,
+        price_acceleration,
+    )
 
-    logger.info("Computing hourly features...")
+    logger.info("Computing comprehensive hourly features (25+ features)...")
 
     features = pd.DataFrame(index=df.index)
 
-    # RSI-14 (hourly)
-    logger.info("Computing RSI-14 (hourly)...")
-    features["rsi_14h"] = compute_rsi(df["close"], period=14)
+    # === TECHNICAL INDICATORS ===
+    logger.info("Computing technical indicators...")
 
-    # Momentum-30 hours (≈ 1.25 days)
-    logger.info("Computing Momentum-30h...")
-    features["momentum_30h"] = simple_returns(df["close"], periods=30)
+    # RSI (multiple timeframes)
+    features["rsi_14h"] = rsi(df["close"], period=14)  # Standard RSI
+    features["rsi_6h"] = rsi(df["close"], period=6)    # Fast RSI (oversold/overbought)
 
-    # EMA-ratio-20 hours
-    logger.info("Computing EMA-ratio-20h...")
-    ema_fast = compute_ema(df["close"], span=10)  # 10-hour EMA
-    ema_slow = compute_ema(df["close"], span=20)  # 20-hour EMA
+    # MACD (12/26/9 hourly)
+    macd_line, signal_line, histogram = macd(df["close"], fast_period=12, slow_period=26, signal_period=9)
+    features["macd_line"] = macd_line
+    features["macd_histogram"] = histogram
+
+    # EMA ratios (trend strength)
+    ema_fast = ema(df["close"], span=10)   # 10-hour EMA
+    ema_slow = ema(df["close"], span=20)   # 20-hour EMA
     features["ema_ratio_20h"] = ema_fast / ema_slow - 1.0
 
-    # 1-hour returns
-    logger.info("Computing returns-1h...")
-    features["returns_1h"] = simple_returns(df["close"], periods=1)
+    # Bollinger Bands
+    features["bb_bandwidth_20h"] = bollinger_bandwidth(df["close"], period=20)
+    features["bb_position_20h"] = bollinger_position(df["close"], period=20)
 
-    # Intraday volatility (24-hour rolling std of hourly returns)
-    logger.info("Computing intraday volatility (24h rolling)...")
-    hourly_returns = df["close"].pct_change()
-    features["volatility_24h"] = hourly_returns.rolling(window=24).std()
+    # === MOMENTUM FEATURES ===
+    logger.info("Computing momentum features...")
 
-    # Volume momentum (30-hour)
-    logger.info("Computing volume momentum (30h)...")
-    features["volume_momentum_30h"] = df["volume"].pct_change(periods=30)
+    features["momentum_4h"] = momentum(df["close"], period=4)    # 4-hour momentum (short-term)
+    features["momentum_24h"] = momentum(df["close"], period=24)  # Daily momentum
+    features["momentum_168h"] = momentum(df["close"], period=168)  # Weekly momentum (7 days)
+
+    # Momentum quality (consistency)
+    features["momentum_quality_30h"] = momentum_quality(df["close"], period=30)
+
+    # Price acceleration (momentum of momentum)
+    features["price_acceleration_10h"] = price_acceleration(df["close"], period=10)
+
+    # === VOLATILITY FEATURES ===
+    logger.info("Computing volatility features...")
+
+    features["atr_14h"] = atr(df["high"], df["low"], df["close"], period=14)
+    features["intraday_range"] = intraday_range(df["high"], df["low"], df["close"])
+
+    # Volatility clustering (ARCH effect)
+    hourly_returns = simple_returns(df["close"])
+    features["vol_clustering_24h"] = volatility_clustering(hourly_returns, period=24)
+
+    # Realized volatility (rolling std)
+    features["realized_vol_24h"] = hourly_returns.rolling(window=24).std()
+
+    # === VOLUME FEATURES ===
+    logger.info("Computing volume features...")
+
+    features["volume_momentum_30h"] = volume_momentum(df["volume"], period=30)
+    features["volume_ma_ratio_20h"] = volume_ma_ratio(df["volume"], period=20)
+    features["vwap_deviation_24h"] = vwap_deviation(df["high"], df["low"], df["close"], df["volume"], period=24)
+
+    # === MARKET MICROSTRUCTURE ===
+    logger.info("Computing market microstructure features...")
+
+    features["higher_highs_lower_lows_5h"] = higher_highs_lower_lows(df["high"], df["low"], period=5)
+
+    # Price distance from long-term trend
+    features["distance_from_sma_200h"] = price_distance_from_sma(df["close"], period=200)  # ~8-day MA
+
+    # === TEMPORAL FEATURES ===
+    logger.info("Computing temporal features...")
+
+    features["hour_of_day"] = session_hour(df.index)
+    features["day_of_week"] = day_of_week(df.index)
 
     logger.info(f"Computed {features.shape[1]} hourly features")
-    logger.info(f"Feature columns: {list(features.columns)}")
+    logger.info(f"Feature columns:\n{list(features.columns)}")
 
     # Check for NaNs
     nan_counts = features.isna().sum()
-    logger.info(f"NaN counts per feature:\n{nan_counts}")
+    logger.info(f"\nNaN counts per feature:")
+    for col in features.columns:
+        if nan_counts[col] > 0:
+            logger.info(f"  {col}: {nan_counts[col]} ({100*nan_counts[col]/len(features):.1f}%)")
 
     return features
 
