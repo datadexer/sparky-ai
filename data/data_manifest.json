@@ -1,1 +1,17 @@
-{}
+{
+  "data/raw/btc/ohlcv.parquet": {
+    "sha256": "844358058d12546fcaad4d5996c23441df36dd4fd0644979f83e8d513cfb3ebd",
+    "updated_at": "2026-02-16T00:12:38.174472+00:00",
+    "size_bytes": 120126
+  },
+  "data/raw/eth/ohlcv.parquet": {
+    "sha256": "ee7149bddc06ac033dd2da81d7e3142ea869e09142a45444bc63035a14e88651",
+    "updated_at": "2026-02-16T00:12:42.048272+00:00",
+    "size_bytes": 118353
+  },
+  "data/raw/btc/onchain_blockchain_com.parquet": {
+    "sha256": "f68c4106490a84cc760dd16ccdb55f3e6c8a2cc23b993186694bcb3c7ad8cbdd",
+    "updated_at": "2026-02-16T00:13:03.763652+00:00",
+    "size_bytes": 3797073
+  }
+}
