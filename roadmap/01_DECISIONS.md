@@ -11,6 +11,30 @@ This file is the async communication channel between AK and the CEO agent.
 
 ## Pending Decisions
 
+### [2026-02-15 21:45] BUG REPORT: Look-Ahead Bias - ACKNOWLEDGED
+
+**[AGENT RESPONSE]**
+
+**Status**: ✅ ACKNOWLEDGED - Does NOT affect current work
+
+**Summary**: Confirmed look-ahead bias in Option 3 simple strategies. True Sharpe is -0.27 (loses money), not +2.56.
+
+**Impact on Current Work**: **NONE** - We're already pivoting away from simple strategies per audit:
+- Audit said: "Focus on PREDICTIVE MODELS ONLY" (not simple rules)
+- Current work: ML with 30+ features + 80K hourly samples (STEP 0)
+- Simple strategies already invalidated by data snooping anyway
+
+**Action Taken**:
+- ✅ Bug report filed: `43_BUG_REPORT_LOOKAHEAD_BIAS.md`
+- ✅ Roadmap structure fixed (all files numbered)
+- ✅ Proceeding with ML approach (as audit recommended)
+
+**Recommendation**: Do NOT fix Option 3 scripts - they're invalid due to data snooping regardless of this bug. Focus on ML models with proper holdout validation (current approach).
+
+**Reference**: See `43_BUG_REPORT_LOOKAHEAD_BIAS.md` for full details
+
+---
+
 ### Phase 0 Complete — Informational Gate
 **[AGENT -> HUMAN] 2026-02-15**
 
