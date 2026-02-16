@@ -301,3 +301,69 @@ This was a critical methodological error. I should have recognized data snooping
 
 See `roadmap/DATA_SNOOPING_ISSUE.md` for full analysis.
 
+---
+
+## ✅ DECISION: Pivot to MORE DATA Strategy
+
+**[HUMAN -> AGENT] 2026-02-15 22:00 UTC**
+
+**User direction**: "1, 3 over 2" — Prioritize MORE DATA and BETTER FEATURES over Advanced Models
+
+**Interpretation**:
+- **Priority 1**: MORE DATA (expand to 10,000+ observations) [HIGHEST]
+- **Priority 3**: BETTER FEATURES (macro, derivatives, cross-asset) [HIGH]
+- **Priority 2**: Advanced Models (skip for now until data is sufficient)
+
+**Key instruction**: "STOP all simple rule testing. FOCUS on: More data → Better models → Proper validation"
+
+**Follow-up directive** (2026-02-15 22:15 UTC):
+> "🎯 CRITICAL MISSION: Expand training data to 10,000+ observations
+>
+> APPROACH 1: Higher Frequency Data (HIGHEST PRIORITY)
+> - Switch from daily → hourly candles
+> - 2,178 days × 24 hours/day = 52,272 hourly candles (24x multiplier)
+> - Train on hourly features, predict daily direction
+>
+> APPROACH 2: Cross-Asset Training (HIGH PRIORITY)
+> - Train on 7 assets (BTC, ETH, SOL, ADA, DOT, MATIC, AVAX)
+> - 7 assets × 70,000 hourly = 490,000 total samples
+> - Add asset_id as categorical feature
+>
+> APPROACH 3: Extended History (MEDIUM PRIORITY)
+> - Extend data back to 2017 (or 2015)
+> - Capture 2017-2018 bull/crash cycle
+>
+> RECOMMENDED: DO ALL THREE"
+
+**Implementation Plan Created**: `roadmap/DATA_EXPANSION_PLAN.md`
+
+**Scripts Created**:
+1. ✅ `scripts/fetch_hourly_btc.py` — Fetch 70K hourly BTC candles
+2. ✅ `scripts/prepare_hourly_features.py` — Compute hourly features, resample to daily
+3. ✅ `scripts/train_on_hourly.py` — Train XGBoost on 52K hourly samples
+4. ✅ `scripts/fetch_cross_asset_hourly.py` — Fetch 7 assets × 70K = 490K samples
+5. ✅ `scripts/prepare_cross_asset_features.py` — Pool assets with asset_id feature
+6. ✅ `scripts/train_cross_asset.py` — Train on 490K pooled samples, test on BTC
+
+**State Updated**: `roadmap/STATE.yaml` — Added `phase_3_data_expansion` (in_progress)
+
+**Next Actions** (Execute in order):
+1. ⏸️ Run `scripts/fetch_hourly_btc.py` — Fetch hourly BTC data
+2. ⏸️ Run `scripts/prepare_hourly_features.py` — Prepare hourly feature matrix
+3. ⏸️ Run `scripts/train_on_hourly.py` — Train on hourly data, validate on 2024-2025 holdout
+4. ⏸️ If hourly Sharpe >= 0.5 → SUCCESS (proceed to cross-asset)
+5. ⏸️ If hourly Sharpe < 0.5 → Run APPROACH 2 (cross-asset training)
+6. ⏸️ Integrate alternative data (ALTERNATIVE_DATA_PLAN.md)
+
+**Critical Methodology**:
+- **NO data snooping**: Use 2021-2023 for experimentation, 2024-2025 holdout for FINAL test (ONE test only)
+- **NO simple rule testing**: Focus on ML models with expanded data
+- **Leakage detection MANDATORY**: Before logging any result to MLflow
+
+**Expected Outcome**:
+- 52K-490K hourly samples (vs current 2,178 daily)
+- 30-50 features (vs current 7)
+- Holdout Sharpe >= 0.7 (vs current -0.295)
+
+**Status**: Implementation complete, ready to execute fetch scripts
+
