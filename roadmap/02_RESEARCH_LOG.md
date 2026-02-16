@@ -48,26 +48,40 @@ Newest entries at the top.
 
 ---
 
-## 58-Feature Hyperparameter Sweep — 2026-02-16 21:43 UTC [RUNNING]
+## 58-Feature Hyperparameter Sweep — 2026-02-16 22:05 UTC [IN PROGRESS]
 
-**STATUS**: In progress (PID 2605731, config 1/54, ~20 hours estimated)
+**STATUS**: 14/54 configs complete (26%), PID 2608913, ~12 hours remaining
 
-**OBJECTIVE**: Test if expanded features beat baseline (Sharpe 1.062)
+**CURRENT RESULTS** (interim):
+- **Best Sharpe**: 0.967 (config 3: CatBoost depth=4, lr=0.03, l2=1.0)
+- **Sharpe range**: 0.629 to 0.967
+- **Accuracy range**: 51.7% to 53.3%
+- **Baseline to beat**: 1.062 (Multi-TF Donchian)
+- **Top 5 Sharpes**: 0.967, 0.964, 0.922, 0.910, 0.820
 
-**APPROACH**:
-- **Features**: 58 total (23 original + 35 new)
-  - Microstructure (10): tick direction, candle patterns, wicks, gaps
-  - Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
-  - Regime indicators (8): drawdown, recovery, vol/volume regime, choppiness
-  - Cross-timeframe divergences (6): momentum/RSI/vol mismatches
-  - Volume-price interaction (8): OBV, MFI, VWAP, volume exhaustion
-- **Configs**: 54 (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05
-- **Validation**: Yearly walk-forward 2020-2023, 4,795 daily samples from 115K hourly candles
-- **Baseline**: Multi-TF Donchian Sharpe 1.062 (corrected)
+**ANALYSIS** (interim):
+- ML models consistently BELOW baseline despite 58 features
+- Best config 9% below baseline (0.967 vs 1.062)
+- Accuracy barely above random (51-53%) — weak predictive signal
+- 40 more configs pending, but trend not promising
 
-**Files**: `scripts/sweep_58_features.py`, `roadmap/FEATURE_EXPANSION_PLAN.md`
+**FEATURES**: 58 total (23 original + 35 new)
+- Microstructure (10): tick direction, candle patterns, wicks, gaps
+- Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
+- Regime indicators (8): drawdown, recovery, vol/volume regime, choppiness
+- Cross-timeframe divergences (6): momentum/RSI/vol mismatches
+- Volume-price interaction (8): OBV, MFI, VWAP, volume exhaustion
 
-**Commit**: 32499db "feat: expand to 58 features — microstructure, regime, divergences, volume-price"
+**VALIDATION**: Yearly walk-forward 2020-2023, 4,795 daily samples from 115K hourly candles
+
+**NEXT STEPS**:
+1. Wait for sweep completion to identify top 5 configs
+2. Try ensemble methods (weighted average, stacking)
+3. Try hybrid approaches (ML filter on Donchian signals)
+
+**FILES**: `scripts/sweep_58_features.py`, `logs/sweep_58_final_20260216_165216.log`
+
+**COMMIT**: 32499db "feat: expand to 58 features"
 
 ---
 
