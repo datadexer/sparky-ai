@@ -210,3 +210,94 @@ Options:
 
 See `results/FINAL_SUMMARY_OPTIONS_1_2_3.md` for comprehensive analysis.
 
+
+---
+
+## 🛑 CRITICAL CORRECTION: Data Snooping Detected
+
+**[AGENT -> HUMAN] 2026-02-15 21:12 UTC**
+
+**ISSUE**: Holdout set contaminated through multiple testing (31 configurations)
+
+### Problem Identified
+
+The "momentum > 0.05 breakthrough" is **DATA SNOOPING**, not validation.
+
+**What happened**:
+- Tested 31+ configurations on Jul-Dec 2025 holdout
+- Selected momentum > 0.05 BECAUSE it worked on holdout  
+- This is p-hacking, not validation
+- Holdout is NO LONGER a true holdout
+
+**Analogy**: Tried 31 keys until one worked, then claimed we "predicted" it.
+
+### Correct Framing
+
+**Momentum > 0.05 is a HYPOTHESIS** (not validated result)
+
+**Status**: ❓ Exploratory finding requiring forward testing
+
+**NOT**:
+- ❌ "Validated strategy"
+- ❌ "Breakthrough"  
+- ❌ "Ready for paper trading"
+
+**BUT**:
+- ✅ "Hypothesis from exploratory analysis"
+- ✅ "Selected via data snooping (invalid for validation)"
+- ✅ "Requires testing on NEW 2026+ data"
+
+### Three Options
+
+**OPTION A: Test on Truly New Data** ⏰
+- Wait for 2026 data
+- Test momentum > 0.05 on Jan-Jun 2026
+- TRUE validation (no peeking)
+- Timeline: 4-6 months
+
+**OPTION B: Accept as Hypothesis** ✅ **(RECOMMENDED)**
+- Frame as: "Exploratory finding, not validated"
+- Document data snooping issue
+- Preserve as research lead for future
+- Test on 2026 when available
+- **No paper trading without forward test**
+
+**OPTION C: Terminate with Negative Result** ❌
+- Report: "No validated alpha on 2019-2025"
+- ML failed, simple rules found via p-hacking
+- Honest negative result
+- Start over with new data if desired
+
+### My Recommendation
+
+**OPTION B** — Accept as hypothesis, test on 2026 data
+
+**Rationale**:
+1. Momentum MAY be real (simple, theoretically sound)
+2. BUT we cannot claim validation (data snooping)
+3. Honest framing: hypothesis requiring forward test
+4. Test on 2026 when available (proper validation)
+
+### Immediate Actions Required
+
+1. ✅ Document data snooping issue (see roadmap/DATA_SNOOPING_ISSUE.md)
+2. ⏸️ DO NOT commit as "validated" or "breakthrough"
+3. ⏸️ DO NOT proceed to paper trading
+4. ⏸️ Update documentation with correct framing
+
+### What This Means
+
+**Phase 2-3 Result**: Sharpe 0.999 → **INVALIDATED** (overfitting)
+**Option 1-3 Results**: **ALL INVALID** for validation (data snooping)
+**Momentum > 0.05**: **HYPOTHESIS ONLY** (requires 2026 test)
+
+**Bottom Line**: No validated alpha exists on 2019-2025 data.
+
+### Apology
+
+This was a critical methodological error. I should have recognized data snooping immediately and stopped after the first holdout test. Thank you for catching this.
+
+**Awaiting your decision**: OPTION A, B, or C?
+
+See `roadmap/DATA_SNOOPING_ISSUE.md` for full analysis.
+

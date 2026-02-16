@@ -40,8 +40,8 @@ def main():
     logger.info("HOLDOUT VALIDATION TEST")
     logger.info("=" * 80)
     logger.info("Configuration: Technical-only features, 30d horizon")
-    logger.info("Training: 2019-01-01 to 2025-09-30")
-    logger.info("Holdout: 2025-10-01 to 2025-12-31 (NEVER SEEN)")
+    logger.info("Training: 2019-01-15 to 2024-12-31")
+    logger.info("Holdout: 2025-01-01 to 2025-12-31 (FULL YEAR)")
     logger.info("=" * 80)
 
     # Load data
@@ -71,7 +71,7 @@ def main():
     logger.info(f"Date range: {X_technical.index[0]} to {X_technical.index[-1]}")
 
     # Split into train+test vs holdout
-    holdout_start = pd.Timestamp("2025-10-01", tz="UTC")
+    holdout_start = pd.Timestamp("2025-01-01", tz="UTC")
 
     train_test_mask = X_technical.index < holdout_start
     holdout_mask = X_technical.index >= holdout_start
@@ -93,10 +93,44 @@ def main():
     model.fit(X_train_test, y_train_test)
     logger.info("✓ Model trained")
 
+    # Run baseline (BuyAndHold) on same holdout for comparison
+    logger.info("\nRunning baseline (BuyAndHold) on same holdout period...")
+    from sparky.models.baselines import BuyAndHold
+
+    baseline_model = BuyAndHold()
+    baseline_predictions = baseline_model.predict(X_holdout)  # All 1s
+    baseline_positions = baseline_predictions
+    baseline_strategy_returns = baseline_positions * returns_holdout
+
+    # Apply costs
+    baseline_costs = np.abs(np.diff(baseline_positions, prepend=0)) * cost_model.compute_cost(1.0, "BTC")
+    baseline_returns_after_costs = baseline_strategy_returns - baseline_costs
+
+    # Compute metrics
+    baseline_equity = (1 + baseline_returns_after_costs).cumprod()
+    baseline_sharpe = annualized_sharpe(baseline_returns_after_costs, periods_per_year=365)
+    baseline_dd = max_drawdown(baseline_equity)
+    baseline_total_return = (baseline_equity.iloc[-1] - 1) * 100
+
+    logger.info(f"Baseline (BuyAndHold) on holdout:")
+    logger.info(f"  Sharpe: {baseline_sharpe:.4f}")
+    logger.info(f"  Max DD: {baseline_dd:.2%}")
+    logger.info(f"  Total Return: {baseline_total_return:.2f}%")
+
     # Predict on holdout
     logger.info("\nPredicting on holdout...")
     predictions = model.predict(X_holdout)
     logger.info(f"Holdout predictions: {predictions.sum()} longs / {len(predictions)} total ({predictions.mean():.1%})")
+
+    # Log prediction distribution with counts
+    predictions_array = predictions.values if hasattr(predictions, 'values') else predictions
+    long_count = int((predictions_array == 1).sum())
+    short_count = len(predictions_array) - long_count
+    long_pct = long_count / len(predictions_array) * 100
+
+    logger.info(f"\nPrediction Distribution (Holdout Period):")
+    logger.info(f"  Long (1):  {long_count:4d} days ({long_pct:5.1f}%)")
+    logger.info(f"  Short (0): {short_count:4d} days ({100-long_pct:5.1f}%)")
 
     # Compute holdout performance
     logger.info("\nComputing holdout performance...")
@@ -139,6 +173,11 @@ def main():
     logger.info(f"Holdout Sharpe (never seen): {holdout_sharpe:.4f}")
     logger.info(f"Delta: {delta:.4f}")
 
+    logger.info(f"\nCOMPARISON TO BASELINE (BuyAndHold on same holdout period):")
+    logger.info(f"Baseline Sharpe (holdout): {baseline_sharpe:.4f}")
+    logger.info(f"Model Sharpe (holdout): {holdout_sharpe:.4f}")
+    logger.info(f"Delta: {holdout_sharpe - baseline_sharpe:+.4f}")
+
     # Verdict
     logger.info("\n" + "=" * 80)
     if holdout_sharpe >= 0.7:
@@ -172,6 +211,12 @@ def main():
             "holdout_samples": len(X_holdout),
             "holdout_period": f"{X_holdout.index[0]} to {X_holdout.index[-1]}",
         },
+        "prediction_distribution": {
+            "long_count": int(long_count),
+            "short_count": int(short_count),
+            "long_pct": float(long_pct),
+            "short_pct": float(100 - long_pct),
+        },
         "results": {
             "holdout_sharpe": float(holdout_sharpe),
             "holdout_max_dd": float(holdout_dd),
@@ -181,10 +226,16 @@ def main():
             "delta": float(delta),
             "verdict": verdict,
         },
+        "baseline": {
+            "baseline_sharpe": float(baseline_sharpe),
+            "baseline_max_dd": float(baseline_dd),
+            "baseline_total_return_pct": float(baseline_total_return),
+            "model_vs_baseline_delta": float(holdout_sharpe - baseline_sharpe),
+        }
     }
 
     import json
-    output_path = "results/experiments/holdout_validation_results.json"
+    output_path = "results/experiments/holdout_validation_1year.json"
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
     logger.info(f"\nResults saved to {output_path}")
@@ -197,8 +248,8 @@ def main():
 **Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
 
 **Data Split**:
-- Training: 2019-01-01 to 2025-09-30 ({len(X_train_test)} samples)
-- Holdout: 2025-10-01 to 2025-12-31 ({len(X_holdout)} samples, NEVER SEEN)
+- Training: 2019-01-15 to 2024-12-31 ({len(X_train_test)} samples)
+- Holdout: 2025-01-01 to 2025-12-31 ({len(X_holdout)} samples, FULL YEAR)
 
 **Results**:
 - Holdout Sharpe: {holdout_sharpe:.4f}
