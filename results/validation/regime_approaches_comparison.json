@@ -1,457 +1,9 @@
 [
   {
-    "approach": "Approach 4: Regime-Weighted Ensemble (aggressive)",
-    "mean_sharpe": 2.6556029125606395,
-    "min_sharpe": 0.17206965980123187,
-    "max_sharpe": 3.884068498709137,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 3.0244992512807554,
-        "total_return": 309.2099342030836,
-        "max_drawdown": 1.7787357159274355,
-        "n_trades": 20
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.884068498709137,
-        "total_return": 553.8686659800774,
-        "max_drawdown": 1.547711927493904,
-        "n_trades": 21
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 2.645602212628158,
-        "total_return": 271.31756623962445,
-        "max_drawdown": 1.5663338911249265,
-        "n_trades": 27
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 0.17206965980123187,
-        "total_return": 1.8608962054406097,
-        "max_drawdown": 2.6627680000862304,
-        "n_trades": 6
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 3.551774940383916,
-        "total_return": 273.56627016927195,
-        "max_drawdown": 1.4358531504972833,
-        "n_trades": 32
-      }
-    ]
-  },
-  {
-    "approach": "Approach 4: Regime-Weighted Ensemble (balanced)",
-    "mean_sharpe": 2.6556029125606395,
-    "min_sharpe": 0.17206965980123187,
-    "max_sharpe": 3.884068498709137,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 3.0244992512807554,
-        "total_return": 309.2099342030836,
-        "max_drawdown": 1.7787357159274355,
-        "n_trades": 20
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.884068498709137,
-        "total_return": 553.8686659800774,
-        "max_drawdown": 1.547711927493904,
-        "n_trades": 21
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 2.645602212628158,
-        "total_return": 271.31756623962445,
-        "max_drawdown": 1.5663338911249265,
-        "n_trades": 27
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 0.17206965980123187,
-        "total_return": 1.8608962054406097,
-        "max_drawdown": 2.6627680000862304,
-        "n_trades": 6
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 3.551774940383916,
-        "total_return": 273.56627016927195,
-        "max_drawdown": 1.4358531504972833,
-        "n_trades": 32
-      }
-    ]
-  },
-  {
-    "approach": "Approach 1: HMM Probabilistic Ensemble (2-state)",
-    "mean_sharpe": 2.6409258535619866,
-    "min_sharpe": 1.1443219249195977,
-    "max_sharpe": 3.4584991035549018,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 2.721914677535376,
-        "total_return": 291.7447064514357,
-        "max_drawdown": 3.3061538240818575,
-        "n_trades": 14
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.4584991035549018,
-        "total_return": 490.99504605917065,
-        "max_drawdown": 1.6682982178813062,
-        "n_trades": 17
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 3.2094817679921483,
-        "total_return": 372.6867166679846,
-        "max_drawdown": 1.4960947936288793,
-        "n_trades": 27
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 1.1443219249195977,
-        "total_return": 41.85459916826182,
-        "max_drawdown": 1.881605870315379,
-        "n_trades": 26
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 2.670411793807909,
-        "total_return": 201.62117440450857,
-        "max_drawdown": 1.5651708226485723,
-        "n_trades": 13
-      }
-    ]
-  },
-  {
-    "approach": "Approach 1: HMM Probabilistic Ensemble (3-state)",
-    "mean_sharpe": 2.483482565771756,
-    "min_sharpe": 1.3260426372521894,
-    "max_sharpe": 3.5021631604708254,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 2.3127879150662136,
-        "total_return": 263.06309688449124,
-        "max_drawdown": 1.7787357159274355,
-        "n_trades": 16
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.5021631604708254,
-        "total_return": 483.5201399274944,
-        "max_drawdown": 1.6682982178813062,
-        "n_trades": 23
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 2.2627919581636586,
-        "total_return": 223.0802175236561,
-        "max_drawdown": 1.7438096746336706,
-        "n_trades": 27
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 1.3260426372521894,
-        "total_return": 49.4537665189162,
-        "max_drawdown": 1.881605870315379,
-        "n_trades": 24
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 3.013627157905893,
-        "total_return": 235.30020407021416,
-        "max_drawdown": 1.5426722211066521,
-        "n_trades": 15
-      }
-    ]
-  },
-  {
-    "approach": "Approach 5: Adaptive Lookback Ensemble",
-    "mean_sharpe": 2.108654370134585,
-    "min_sharpe": 0.623411885357785,
-    "max_sharpe": 3.0339505469213055,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 2.26144676856155,
-        "total_return": 257.23232117362136,
-        "max_drawdown": 3.3061538240818575,
-        "n_trades": 10
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.0339505469213055,
-        "total_return": 398.4505856931203,
-        "max_drawdown": 1.6682982178813062,
-        "n_trades": 13
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 2.1315092102505866,
-        "total_return": 210.08046385123177,
-        "max_drawdown": 1.7438096746336706,
-        "n_trades": 19
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 0.623411885357785,
-        "total_return": 18.603004082269024,
-        "max_drawdown": 2.2400573134539186,
-        "n_trades": 18
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 2.492953439581696,
-        "total_return": 169.04893950684556,
-        "max_drawdown": 1.5651708226485723,
-        "n_trades": 9
-      }
-    ]
-  },
-  {
     "approach": "BASELINE: Multi-TF Donchian (20/40/60)",
-    "mean_sharpe": 1.8781490407532282,
-    "min_sharpe": 0.3373933549644236,
-    "max_sharpe": 3.0394751811053657,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 1.9400009970383965,
-        "total_return": 182.4235340920247,
-        "max_drawdown": 3.3061538240818575,
-        "n_trades": 6
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 3.0394751811053657,
-        "total_return": 431.9012233863525,
-        "max_drawdown": 1.6478573509701435,
-        "n_trades": 7
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 1.5813364568675083,
-        "total_return": 146.04573818519327,
-        "max_drawdown": 2.3393637106666167,
-        "n_trades": 7
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 0.3373933549644236,
-        "total_return": 5.2449561727613725,
-        "max_drawdown": 1.9877149826689593,
-        "n_trades": 8
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 2.4925392137904465,
-        "total_return": 170.77486913613993,
-        "max_drawdown": 1.5651708226485723,
-        "n_trades": 11
-      }
-    ]
-  },
-  {
-    "approach": "Approach 2: Markov-Switching Ensemble",
-    "mean_sharpe": 1.7815906819903105,
-    "min_sharpe": 0.35213125887789953,
-    "max_sharpe": 2.9183586303947453,
-    "positive_count": 5,
-    "total_periods": 5,
-    "results": [
-      {
-        "period": "2018",
-        "start_date": "2018-01-01",
-        "end_date": "2018-12-31",
-        "sharpe": 0.0,
-        "total_return": 0.0,
-        "max_drawdown": 0.0,
-        "n_trades": 0
-      },
-      {
-        "period": "2019",
-        "start_date": "2019-01-01",
-        "end_date": "2019-12-31",
-        "sharpe": 1.5586042648950844,
-        "total_return": 148.0299693120298,
-        "max_drawdown": 3.3061538240818575,
-        "n_trades": 4
-      },
-      {
-        "period": "2020",
-        "start_date": "2020-01-01",
-        "end_date": "2020-12-31",
-        "sharpe": 2.9183586303947453,
-        "total_return": 307.51641856026276,
-        "max_drawdown": 1.7677736075599613,
-        "n_trades": 7
-      },
-      {
-        "period": "2021",
-        "start_date": "2021-01-01",
-        "end_date": "2021-12-31",
-        "sharpe": 1.5527469521651174,
-        "total_return": 145.79990944119118,
-        "max_drawdown": 2.3393637106666167,
-        "n_trades": 5
-      },
-      {
-        "period": "2022",
-        "start_date": "2022-01-01",
-        "end_date": "2022-12-31",
-        "sharpe": 0.35213125887789953,
-        "total_return": 4.168163394778701,
-        "max_drawdown": 1.6514025192248882,
-        "n_trades": 6
-      },
-      {
-        "period": "2023",
-        "start_date": "2023-01-01",
-        "end_date": "2023-12-31",
-        "sharpe": 2.526112303618706,
-        "total_return": 174.83298176439587,
-        "max_drawdown": 1.5651708226485723,
-        "n_trades": 11
-      }
-    ]
-  },
-  {
-    "approach": "Approach 4: Regime-Weighted Multi-TF Ensemble (aggressive)",
-    "mean_sharpe": 1.7203768300895774,
-    "min_sharpe": -0.5568777091671461,
-    "max_sharpe": 2.6732230432439814,
+    "mean_sharpe": 1.061667091384061,
+    "min_sharpe": -1.5385027164300837,
+    "max_sharpe": 2.684347917489888,
     "positive_count": 4,
     "total_periods": 5,
     "results": [
@@ -468,55 +20,55 @@
         "period": "2019",
         "start_date": "2019-01-01",
         "end_date": "2019-12-31",
-        "sharpe": 2.2007429702040824,
-        "total_return": 225.01383919703244,
-        "max_drawdown": 5.716715045816001,
-        "n_trades": 14
+        "sharpe": 1.487071350452745,
+        "total_return": 120.36745787677093,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 6
       },
       {
         "period": "2020",
         "start_date": "2020-01-01",
         "end_date": "2020-12-31",
-        "sharpe": 2.6732230432439814,
-        "total_return": 261.72742434510525,
-        "max_drawdown": 2.1478359570445904,
-        "n_trades": 15
+        "sharpe": 2.684347917489888,
+        "total_return": 330.32521674951727,
+        "max_drawdown": 1.6478573509701435,
+        "n_trades": 7
       },
       {
         "period": "2021",
         "start_date": "2021-01-01",
         "end_date": "2021-12-31",
-        "sharpe": 1.8381324264142338,
-        "total_return": 150.5268298075723,
-        "max_drawdown": 1.7438096746336706,
-        "n_trades": 19
+        "sharpe": 1.0994781214533647,
+        "total_return": 78.54334495926665,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 8
       },
       {
         "period": "2022",
         "start_date": "2022-01-01",
         "end_date": "2022-12-31",
-        "sharpe": -0.5568777091671461,
-        "total_return": -6.430970986917483,
-        "max_drawdown": 2.01316554730763,
-        "n_trades": 4
+        "sharpe": -1.5385027164300837,
+        "total_return": -35.30033028208802,
+        "max_drawdown": Infinity,
+        "n_trades": 8
       },
       {
         "period": "2023",
         "start_date": "2023-01-01",
         "end_date": "2023-12-31",
-        "sharpe": 2.446663419752736,
-        "total_return": 152.41638044399232,
-        "max_drawdown": 1.5651708226485723,
-        "n_trades": 12
+        "sharpe": 1.5759407839543906,
+        "total_return": 78.99791484968442,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 11
       }
     ]
   },
   {
-    "approach": "Approach 3: Volatility Term Structure Ensemble",
-    "mean_sharpe": 1.6529723217183474,
-    "min_sharpe": 0.3373933549644236,
-    "max_sharpe": 2.7086192260075417,
-    "positive_count": 5,
+    "approach": "Approach 2: Markov-Switching Ensemble",
+    "mean_sharpe": 1.0290194535602555,
+    "min_sharpe": -1.5630195956166009,
+    "max_sharpe": 2.484690667061775,
+    "positive_count": 4,
     "total_periods": 5,
     "results": [
       {
@@ -532,8 +84,200 @@
         "period": "2019",
         "start_date": "2019-01-01",
         "end_date": "2019-12-31",
-        "sharpe": 1.7437175372796596,
-        "total_return": 85.95621005297545,
+        "sharpe": 1.4385839535844003,
+        "total_return": 128.83332150092897,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 4
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.484690667061775,
+        "total_return": 221.82764105361233,
+        "max_drawdown": 1.7827380027899442,
+        "n_trades": 7
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 1.1429851245588205,
+        "total_return": 86.69731561745479,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 6
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -1.5630195956166009,
+        "total_return": -28.960305842022905,
+        "max_drawdown": 6.2571795249602244,
+        "n_trades": 6
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.6418571182128818,
+        "total_return": 84.18899347418285,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 11
+      }
+    ]
+  },
+  {
+    "approach": "Approach 4: Regime-Weighted Ensemble (aggressive)",
+    "mean_sharpe": 1.0165866399429024,
+    "min_sharpe": -0.8241977506626467,
+    "max_sharpe": 2.0842377125638087,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.2523189889116508,
+        "total_return": 73.51141954886732,
+        "max_drawdown": 4.208433031806205,
+        "n_trades": 20
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.0842377125638087,
+        "total_return": 164.22030637482945,
+        "max_drawdown": 1.637517388856548,
+        "n_trades": 21
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 1.1188832702394327,
+        "total_return": 69.01356545828921,
+        "max_drawdown": 1.7539145644286995,
+        "n_trades": 28
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -0.8241977506626467,
+        "total_return": -31.339536328340245,
+        "max_drawdown": Infinity,
+        "n_trades": 6
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.4516909786622663,
+        "total_return": 59.34239839439892,
+        "max_drawdown": 1.5651708226485723,
+        "n_trades": 32
+      }
+    ]
+  },
+  {
+    "approach": "Approach 4: Regime-Weighted Ensemble (balanced)",
+    "mean_sharpe": 1.0165866399429024,
+    "min_sharpe": -0.8241977506626467,
+    "max_sharpe": 2.0842377125638087,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.2523189889116508,
+        "total_return": 73.51141954886732,
+        "max_drawdown": 4.208433031806205,
+        "n_trades": 20
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.0842377125638087,
+        "total_return": 164.22030637482945,
+        "max_drawdown": 1.637517388856548,
+        "n_trades": 21
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 1.1188832702394327,
+        "total_return": 69.01356545828921,
+        "max_drawdown": 1.7539145644286995,
+        "n_trades": 28
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -0.8241977506626467,
+        "total_return": -31.339536328340245,
+        "max_drawdown": Infinity,
+        "n_trades": 6
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.4516909786622663,
+        "total_return": 59.34239839439892,
+        "max_drawdown": 1.5651708226485723,
+        "n_trades": 32
+      }
+    ]
+  },
+  {
+    "approach": "Approach 3: Volatility Term Structure Ensemble",
+    "mean_sharpe": 0.9426642752961369,
+    "min_sharpe": -1.5385027164300837,
+    "max_sharpe": 2.3872878353258034,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.2416619181509545,
+        "total_return": 72.76074809960616,
         "max_drawdown": 3.3061538240818575,
         "n_trades": 14
       },
@@ -541,8 +285,8 @@
         "period": "2020",
         "start_date": "2020-01-01",
         "end_date": "2020-12-31",
-        "sharpe": 2.7086192260075417,
-        "total_return": 260.0875939116598,
+        "sharpe": 2.3872878353258034,
+        "total_return": 231.44258046463827,
         "max_drawdown": 1.6478573509701435,
         "n_trades": 19
       },
@@ -550,28 +294,284 @@
         "period": "2021",
         "start_date": "2021-01-01",
         "end_date": "2021-12-31",
-        "sharpe": 1.4922882415659482,
-        "total_return": 95.51954350349412,
-        "max_drawdown": 2.3393637106666167,
-        "n_trades": 19
+        "sharpe": 1.220090302928942,
+        "total_return": 84.42234136787974,
+        "max_drawdown": 2.3711447069253953,
+        "n_trades": 20
       },
       {
         "period": "2022",
         "start_date": "2022-01-01",
         "end_date": "2022-12-31",
-        "sharpe": 0.3373933549644236,
-        "total_return": 5.2449561727613725,
-        "max_drawdown": 1.9877149826689593,
+        "sharpe": -1.5385027164300837,
+        "total_return": -35.30033028208802,
+        "max_drawdown": Infinity,
         "n_trades": 8
       },
       {
         "period": "2023",
         "start_date": "2023-01-01",
         "end_date": "2023-12-31",
-        "sharpe": 1.9828432487741634,
-        "total_return": 83.40307326901377,
+        "sharpe": 1.4027840365050683,
+        "total_return": 57.484253281359244,
         "max_drawdown": 1.6862299981275393,
         "n_trades": 17
+      }
+    ]
+  },
+  {
+    "approach": "Approach 5: Adaptive Lookback Ensemble",
+    "mean_sharpe": 0.8680313685034637,
+    "min_sharpe": -1.7053956910742478,
+    "max_sharpe": 2.2530879259009193,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.4811541347653414,
+        "total_return": 118.02394681507016,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 10
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.2530879259009193,
+        "total_return": 214.5331958082982,
+        "max_drawdown": 1.6682982178813062,
+        "n_trades": 13
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 0.5933489887130339,
+        "total_return": 27.063539817339375,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 20
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -1.7053956910742478,
+        "total_return": -49.333830319111236,
+        "max_drawdown": 2.6171953898191695,
+        "n_trades": 18
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.7179614842122712,
+        "total_return": 89.39159247145953,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 9
+      }
+    ]
+  },
+  {
+    "approach": "Approach 4: Regime-Weighted Multi-TF Ensemble (aggressive)",
+    "mean_sharpe": 0.8507415250128748,
+    "min_sharpe": -1.3491103825216468,
+    "max_sharpe": 2.0638002549254497,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.255512290588899,
+        "total_return": 87.2306528296107,
+        "max_drawdown": Infinity,
+        "n_trades": 14
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.0638002549254497,
+        "total_return": 146.07681742606115,
+        "max_drawdown": Infinity,
+        "n_trades": 15
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 0.5918731077413985,
+        "total_return": 25.957446474000268,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 20
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -1.3491103825216468,
+        "total_return": -15.361918476862046,
+        "max_drawdown": 6.158926805124193,
+        "n_trades": 4
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.6916323543302738,
+        "total_return": 79.23369223915383,
+        "max_drawdown": 1.5651708226485723,
+        "n_trades": 12
+      }
+    ]
+  },
+  {
+    "approach": "Approach 1: HMM Probabilistic Ensemble (2-state)",
+    "mean_sharpe": 0.7416411917658327,
+    "min_sharpe": -2.2577031260189293,
+    "max_sharpe": 2.0055141323164665,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.5756308728824013,
+        "total_return": 107.45868195912695,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 14
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 2.0055141323164665,
+        "total_return": 169.10247219370865,
+        "max_drawdown": 1.6682982178813062,
+        "n_trades": 17
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 0.8498216972693697,
+        "total_return": 45.16733963128154,
+        "max_drawdown": 1.7539145644286995,
+        "n_trades": 28
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -2.2577031260189293,
+        "total_return": -55.674194331985774,
+        "max_drawdown": Infinity,
+        "n_trades": 26
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.5349423823798551,
+        "total_return": 76.20015573413559,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 13
+      }
+    ]
+  },
+  {
+    "approach": "Approach 1: HMM Probabilistic Ensemble (3-state)",
+    "mean_sharpe": 0.6121448385507444,
+    "min_sharpe": -1.535602244304035,
+    "max_sharpe": 1.70330540079893,
+    "positive_count": 4,
+    "total_periods": 5,
+    "results": [
+      {
+        "period": "2018",
+        "start_date": "2018-01-01",
+        "end_date": "2018-12-31",
+        "sharpe": 0.0,
+        "total_return": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0
+      },
+      {
+        "period": "2019",
+        "start_date": "2019-01-01",
+        "end_date": "2019-12-31",
+        "sharpe": 1.0482023568068641,
+        "total_return": 68.16746445577016,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 16
+      },
+      {
+        "period": "2020",
+        "start_date": "2020-01-01",
+        "end_date": "2020-12-31",
+        "sharpe": 1.70330540079893,
+        "total_return": 123.11890209365663,
+        "max_drawdown": 1.6682982178813062,
+        "n_trades": 23
+      },
+      {
+        "period": "2021",
+        "start_date": "2021-01-01",
+        "end_date": "2021-12-31",
+        "sharpe": 0.17329912420951674,
+        "total_return": -2.7580037463160623,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 28
+      },
+      {
+        "period": "2022",
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "sharpe": -1.535602244304035,
+        "total_return": -39.36078558323429,
+        "max_drawdown": Infinity,
+        "n_trades": 24
+      },
+      {
+        "period": "2023",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "sharpe": 1.6715195552424462,
+        "total_return": 83.57891397994774,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 15
       }
     ]
   }

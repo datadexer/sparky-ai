@@ -265,6 +265,11 @@ class WalkForwardBacktester:
     ) -> pd.Series:
         """Compute equity curve from returns and positions.
 
+        IMPORTANT: positions[date] represents the position held DURING date.
+        It must be computed using only data available BEFORE date begins.
+        If your signal uses close[T] to decide position at T, you must shift
+        the signal by 1 day before passing it here (signal.shift(1)).
+
         The equity curve starts at 1.0 and compounds:
         - When position=1 (long), apply the daily return
         - When position=0 (flat), no return
@@ -272,7 +277,8 @@ class WalkForwardBacktester:
 
         Args:
             returns: Daily returns series.
-            positions: Position series (1=long, 0=flat).
+            positions: Position series (1=long, 0=flat). Must be determined
+                      using only data available before each date.
             cost_model: Optional cost model.
 
         Returns:
