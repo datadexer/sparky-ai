@@ -95,9 +95,33 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
         session_hour,
         day_of_week,
         price_acceleration,
+        on_balance_volume,
+        obv_rate_of_change,
+        money_flow_index,
+    )
+    from sparky.features.microstructure import (
+        tick_direction_ratio,
+        candle_body_ratio,
+        upper_wick_ratio,
+        lower_wick_ratio,
+        consecutive_candles,
+        high_low_ratio,
+        bid_ask_imbalance_proxy,
+        intraday_momentum_reversal,
+        overnight_gap,
+    )
+    from sparky.features.regime import (
+        drawdown_from_high,
+        recovery_from_low,
+        volatility_regime,
+        volume_regime,
+        trend_strength_adx_proxy,
+        choppiness_index,
+        breakout_proximity_upper,
+        breakout_proximity_lower,
     )
 
-    logger.info("Computing comprehensive hourly features (25+ features)...")
+    logger.info("Computing comprehensive hourly features (50+ features)...")
 
     features = pd.DataFrame(index=df.index)
 
@@ -169,6 +193,84 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     features["hour_of_day"] = session_hour(df.index)
     features["day_of_week"] = day_of_week(df.index)
 
+    # === ORDER FLOW & MICROSTRUCTURE (10 features) ===
+    logger.info("Computing order flow & microstructure features...")
+
+    features["tick_direction_ratio_24h"] = tick_direction_ratio(df, window=24)
+    features["candle_body_ratio"] = candle_body_ratio(df)
+    features["upper_wick_ratio"] = upper_wick_ratio(df)
+    features["lower_wick_ratio"] = lower_wick_ratio(df)
+    features["consecutive_green_candles"] = consecutive_candles(df, direction="green")
+    features["consecutive_red_candles"] = consecutive_candles(df, direction="red")
+    features["high_low_ratio_20h"] = high_low_ratio(df, window=20)
+    features["bid_ask_imbalance_proxy"] = bid_ask_imbalance_proxy(df)
+    features["intraday_momentum_reversal"] = intraday_momentum_reversal(df)
+    features["overnight_gap"] = overnight_gap(df)
+
+    # === MULTI-RESOLUTION RSI (3 features) ===
+    logger.info("Computing multi-resolution RSI features...")
+
+    features["rsi_4h"] = rsi(df["close"], period=4)
+    features["rsi_12h"] = rsi(df["close"], period=12)
+    features["rsi_168h"] = rsi(df["close"], period=168)  # Weekly RSI
+
+    # === REGIME INDICATORS (8 features) ===
+    logger.info("Computing regime indicator features...")
+
+    features["drawdown_from_20h_high"] = drawdown_from_high(df["close"], window=20)
+    features["recovery_from_20h_low"] = recovery_from_low(df["close"], window=20)
+    features["volatility_regime"] = volatility_regime(hourly_returns, window=168)
+    features["volume_regime"] = volume_regime(df["volume"], window=168)
+    features["trend_strength_adx_proxy"] = trend_strength_adx_proxy(
+        features["momentum_24h"], features["realized_vol_24h"]
+    )
+    features["choppiness_index"] = choppiness_index(hourly_returns, window=168)
+    features["breakout_proximity_upper"] = breakout_proximity_upper(df["close"], window=200)
+    features["breakout_proximity_lower"] = breakout_proximity_lower(df["close"], window=200)
+
+    # === CROSS-TIMEFRAME DIVERGENCES (6 features) ===
+    logger.info("Computing cross-timeframe divergence features...")
+
+    features["momentum_divergence_4h_24h"] = features["momentum_4h"] - features["momentum_24h"]
+    features["momentum_divergence_24h_168h"] = features["momentum_24h"] - features["momentum_168h"]
+    features["vol_divergence_4h_24h"] = (
+        hourly_returns.rolling(window=4).std() - features["realized_vol_24h"]
+    )
+    features["rsi_divergence_4h_24h"] = features["rsi_4h"] - features["rsi_14h"]
+    features["rsi_divergence_14h_168h"] = features["rsi_14h"] - features["rsi_168h"]
+    # Price-momentum divergence: intraday vs daily
+    intraday_direction = np.sign(df["close"] - df["open"])
+    features["price_momentum_divergence"] = (
+        (intraday_direction != np.sign(features["momentum_24h"])).astype(int)
+    )
+
+    # === VOLUME-PRICE INTERACTION (8 features) ===
+    logger.info("Computing volume-price interaction features...")
+
+    features["obv"] = on_balance_volume(df["close"], df["volume"])
+    features["obv_rate_of_change_24h"] = obv_rate_of_change(df["close"], df["volume"], period=24)
+    features["mfi_14h"] = money_flow_index(df["high"], df["low"], df["close"], df["volume"], period=14)
+    features["volume_surge_4h"] = (
+        df["volume"] > (2 * df["volume"].rolling(window=20).mean())
+    ).astype(int)
+    # Price-volume correlation
+    features["price_volume_correlation_24h"] = (
+        hourly_returns.rolling(window=24).corr(df["volume"].pct_change())
+    )
+    # VWAP cross (deviation from VWAP)
+    features["vwap_cross"] = vwap_deviation(
+        df["high"], df["low"], df["close"], df["volume"], period=24
+    )
+    # Volume exhaustion: high volume but negative momentum
+    vol_ma_20h = df["volume"].rolling(window=20).mean()
+    features["volume_exhaustion"] = (
+        (df["volume"] > 3 * vol_ma_20h) & (features["momentum_4h"] < 0)
+    ).astype(int)
+    # Volume-weighted RSI approximation (use VWAP instead of close)
+    typical_price = (df["high"] + df["low"] + df["close"]) / 3
+    vwap_24h = (typical_price * df["volume"]).rolling(window=24).sum() / df["volume"].rolling(window=24).sum()
+    features["volume_weighted_rsi"] = rsi(vwap_24h, period=14)
+
     logger.info(f"Computed {features.shape[1]} hourly features")
     logger.info(f"Feature columns:\n{list(features.columns)}")
 
@@ -198,8 +300,9 @@ def resample_to_daily(features_hourly: pd.DataFrame) -> pd.DataFrame:
     # Resample to daily, taking last value of each day
     features_daily = features_hourly.resample("D").last()
 
-    # Remove timezone info to match existing daily data format
-    features_daily.index = features_daily.index.tz_localize(None)
+    # Ensure timezone-aware (UTC) — do NOT strip timezone
+    if features_daily.index.tz is None:
+        features_daily.index = features_daily.index.tz_localize("UTC")
 
     logger.info(f"Resampled to {len(features_daily)} daily rows")
     logger.info(f"Date range: {features_daily.index.min()} to {features_daily.index.max()}")
@@ -230,7 +333,8 @@ def generate_daily_targets(
 
     # Resample hourly prices to daily close
     prices_daily = prices_hourly.resample("D").last()
-    prices_daily.index = prices_daily.index.tz_localize(None)
+    if prices_daily.index.tz is None:
+        prices_daily.index = prices_daily.index.tz_localize("UTC")
 
     # Target: close at T+horizon > close at T
     future_close = prices_daily["close"].shift(-horizon_days)

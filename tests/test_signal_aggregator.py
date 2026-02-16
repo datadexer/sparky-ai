@@ -98,13 +98,13 @@ class TestHourlyToDailyAggregator:
         with pytest.raises(ValueError, match="hourly_features required"):
             agg.aggregate(hourly_probas)
 
-    def test_timezone_stripped(self):
-        """Output index should not have timezone (for consistency)."""
+    def test_timezone_preserved_utc(self):
+        """Output index should preserve UTC timezone."""
         dates = pd.date_range("2024-01-01", periods=24, freq="h", tz="UTC")
         probas = pd.Series(np.full(24, 0.6), index=dates)
         agg = HourlyToDailyAggregator(method="mean")
         result = agg.aggregate(probas)
-        assert result.index.tz is None
+        assert str(result.index.tz) == "UTC"
 
     def test_threshold_customization(self, hourly_probas):
         """Different thresholds should produce different signals."""

@@ -33,6 +33,11 @@ Fix: `signals.shift(1) * price_returns`. See `CRITICAL_FINDING_LOOKAHEAD_BIAS.md
 
 **Decision needed**: Approve paper trading with Multi-TF Donchian (Sharpe 1.062)?
 
+**UPDATE 2026-02-16 14:12 UTC**: Single-TF Donchian(40/20) achieves Sharpe 1.243 (17% better)
+with fewer trades, higher win rate, and 47% less loss in 2022 bear market. CIs overlap
+(not statistically significant), but Single-TF is better on every metric. Recommend switching
+primary strategy to Single-TF (40/20) for simplicity + performance. See `results/validation/single_tf_vs_multi_tf_summary.md`.
+
 ---
 
 ### [AGENT -> RBM] RIGOROUS TESTING COMPLETE: Multi-TF Best, But Fails Criteria — 2026-02-16 10:30 UTC

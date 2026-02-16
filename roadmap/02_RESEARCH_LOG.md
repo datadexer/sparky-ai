@@ -5,6 +5,310 @@ Newest entries at the top.
 
 ---
 
+## Ensemble Top-3 — Still NOT Significant — 2026-02-16 23:50 UTC
+
+**STATUS**: TIER 3 — ensemble Sharpe 1.24 ± 2.04, NOT statistically significant (CI -0.57 to 2.60)
+
+**APPROACH**: Average probabilities from top-3 CatBoost configs (d=3/5 lr=0.01 l2=1.0/3.0)
+
+**RESULTS**:
+- Ensemble Sharpe 1.240 ± 2.044 (vs single 1.194 ± 2.003)
+- Bootstrap 95% CI: [-0.57, 2.60] — WORSE than single model
+- 2022 bear: -1.76 Sharpe, -65% DD (still catastrophic)
+- Does NOT beat baseline (not significant)
+
+**INSIGHT**: Ensemble does NOT reduce variance. 2022 failure is systematic across all models, not model-specific. All three configs collapse in bear market. Problem is NOT model selection — it's regime brittleness. Need bear-market filtering or separate regime-specific models.
+
+**FILES**: `scripts/ensemble_top3_expanded.py`, `results/validation/ensemble_top3_expanded.json`
+
+**COMMIT**: b0729f2
+
+---
+
+## Full Validation — TIER 3, NOT Statistically Significant — 2026-02-16 23:45 UTC
+
+**STATUS**: TIER 3 — mean Sharpe 1.19 > baseline BUT NOT statistically significant (CI -0.17 to 2.53)
+
+**VALIDATION**: Bootstrap 95% CI on CatBoost d=5 lr=0.01 l2=3.0, 5-year walk-forward (2019-2023)
+
+**RESULTS**:
+- Mean Sharpe 1.194 ± 2.003 (baseline 1.06)
+- Bootstrap 95% CI: [-0.17, 2.53] — lower bound BELOW baseline
+- Year breakdown: 2019=2.00✓, 2020=3.55✓, 2021=0.56, 2022=-1.84 (FAIL), 2023=1.69✓
+- 2022 bear: -68% drawdown, -1.84 Sharpe
+- FAILS statistical significance test
+
+**INSIGHT**: High variance driven by 2022 catastrophic failure. Model overfits bull markets but collapses in bear regime. Feature expansion adds alpha but NOT robustness. Need regime-aware modeling.
+
+**FILES**: `scripts/validate_best_expanded.py`, `results/validation/expanded_features_summary.txt`
+
+**COMMIT**: afee333
+
+---
+
+## Feature Expansion + Sweep — 2026-02-16 23:40 UTC [COMPLETE]
+
+**STATUS**: Preliminary result (validation revealed NOT statistically significant — see above)
+
+**APPROACH**: Expand features 58→88 (order book proxies, longer horizons 72h-720h, cross-interactions, mean reversion, volatility breakout) → select top 25 → sweep 12 CatBoost configs → validate top-5 walk-forward
+
+**RESULTS**:
+- **Best**: CatBoost d=5 lr=0.01 l2=3.0 → Sharpe 1.194 ± 1.79, Acc 53.5%
+- **Runner-up**: CatBoost d=4 lr=0.01 l2=1.0 → Sharpe 1.190 ± 1.74, Acc 53.9%
+- **Baseline**: Multi-TF Donchian Sharpe 1.06
+- **Improvement**: +13% over baseline
+
+**INSIGHT**: Feature engineering (not just hyperparams) unlocks alpha. New features: rsi_divergence_14h_168h, rsi_volume_interaction, momentum_720h, vol_ratio_24h_168h. Longer horizons (30-day momentum) + cross-interactions (RSI*volume) capture regime shifts missed by 58-feature set. High std (±1.79) but consistently >1.0 across configs.
+
+**FILES**: `scripts/expand_features_v2.py`, `scripts/sweep_two_stage_expanded.py`, `results/sweep_expanded_progress.csv`
+
+**COMMIT**: fdcb7a2
+
+**NEXT**: Full validation suite (leakage check, bootstrap CI, year-by-year breakdown) before TIER 2 paper trading
+
+---
+
+## Two-Stage Hyperparameter Sweep — 2026-02-16 22:35 UTC [COMPLETE]
+
+**STATUS**: CatBoost best, does NOT beat Donchian baseline (0.98 vs 1.06)
+
+**APPROACH**: 54 configs (3 models × 3 depths × 3 LRs × 2 regs) → screen on single split → validate top-5 walk-forward
+
+**RESULTS**:
+- **Stage 1**: CatBoost dominates (8/10 top), best screening Sharpe 0.336
+- **Stage 2**: CatBoost d=4 lr=0.01 → Mean Sharpe 0.98 ± 0.73, Acc 53.0%
+- **Baseline**: Multi-TF Donchian Sharpe 1.06
+- **Conclusion**: ML underperforms baseline by 6%
+
+**INSIGHT**: CatBoost >> LightGBM > XGBoost. Shallow trees (d=3-4) + low LR (0.01) best. High variance (±0.73), 2022 bear: -2.02 Sharpe. Accuracy 53% = marginal edge. TIER 3 — continue iterating.
+
+**Files**: `scripts/sweep_two_stage.py`, `results/sweep_progress.csv`, `results/sweep_analysis_20260216.txt`
+
+**Commit**: 454e595
+
+---
+
+## Ridge Regression — 2026-02-16 22:28 UTC [COMPLETE]
+
+**STATUS**: Complete — Ridge matches stacking (both 52.1%)
+
+**APPROACH**: Ridge regression on continuous targets (-1, +1), threshold at 0 for binary prediction.
+
+**RESULTS**:
+- **Ridge accuracy**: 52.1%
+- **CatBoost**: 53.0%
+- **Stacking**: 52.1%
+- **Conclusion**: Linear model performs identically to tree ensemble
+
+**INSIGHT**: Model complexity does NOT matter. Ridge (linear), stacking (meta-ensemble), CatBoost (tree) all converge to ~52% accuracy. The bottleneck is feature informativeness, not model capacity.
+
+**Files**: `scripts/train_ridge_signals.py`, `results/validation/ridge_signals.json`
+
+**Commit**: 6e1eae3
+
+---
+
+## Stacking Meta-Learner — 2026-02-16 22:27 UTC [COMPLETE]
+
+**STATUS**: Complete — stacking underperforms single CatBoost
+
+**APPROACH**: Train Cat/XGB/Light on 60% train, use their predictions as meta-features, train Logistic Regression on remaining 40%, predict on test.
+
+**RESULTS**:
+- **Stacking accuracy**: 52.1%
+- **Single CatBoost**: 53.0%
+- **Conclusion**: Meta-learner does NOT improve over best single model (1.7% worse)
+
+**INSIGHT**: Ensemble methods (soft voting, stacking) fail to beat CatBoost alone. The problem is NOT model capacity — it's signal quality in the features.
+
+**Files**: `scripts/train_stacking_meta.py`, `results/validation/stacking_meta.json`
+
+**Commit**: fa32150
+
+---
+
+## Validation Checkpoint + Failed Experiments — 2026-02-16 22:23 UTC [COMPLETE]
+
+**STATUS**: Best config validated, 3 experiments failed due to data issues
+
+**VALIDATION**: Best config (CatBoost d=4 lr=0.01) re-run across 10 years
+- **Accuracy**: 52.7% (consistent with original 53.0%)
+- **Years tested**: 2016-2025
+- **Conclusion**: Model reproduces — results are stable
+
+**FAILED EXPERIMENTS** (blocked by missing/misaligned price data):
+1. **7-day horizon**: Hourly→daily resampling date mismatch
+2. **Ensemble (Cat+XGB)**: Price loading errors
+3. **Deeper trees (d=6,7,8)**: Price index alignment errors
+
+**ROOT CAUSE**: Scripts assumed `data/raw/btc_hourly_okx.parquet` exists (does not). Price data scattered across `data/raw/btc/ohlcv_*.parquet` with date alignment issues when resampling.
+
+**Files**: `scripts/validate_best_config_only.py`, `results/validation/best_config_validated.json`
+
+**Commit**: c2709c7
+
+---
+
+## Two-Stage Sweep (58→20 features) — 2026-02-16 22:16 UTC [COMPLETE]
+
+**STATUS**: Complete — ALL configs BELOW BASELINE
+
+**OBJECTIVE**: Feature selection + hyperparameter sweep across CatBoost/XGBoost/LightGBM
+
+**APPROACH**:
+- Stage 0: XGBoost selects top 20/58 features by importance
+- Stage 1: Screen 54 configs (single split)
+- Stage 2: Validate top 5 configs (walk-forward 2019-2023)
+
+**RESULTS**:
+- **Best**: CatBoost (d=4, lr=0.01, l2=1.0) → Sharpe 0.982 ± 1.875
+- **Baseline**: Multi-TF Donchian → Sharpe 1.062
+- **Conclusion**: 20-feature ML does NOT beat baseline (8% underperformance)
+
+**Year-by-year (best config)**:
+- 2019: Sharpe 1.835
+- 2020: Sharpe 2.759
+- 2021: Sharpe 0.704
+- 2022: Sharpe -2.524 (catastrophic failure)
+- 2023: Sharpe 2.134
+
+**Files**: `scripts/sweep_two_stage.py`, `results/validation/sweep_two_stage.json`
+
+**Commit**: a92c7e8
+
+---
+
+## Cross-Asset Training (XGBoost) — 2026-02-16 21:52 UTC [COMPLETE]
+
+**STATUS**: Complete — result BELOW BASELINE
+
+**OBJECTIVE**: Train XGBoost on pooled 7-asset dataset (11,931 samples)
+
+**RESULTS**:
+- **Train accuracy**: 73.4% (massive overfitting)
+- **Validation accuracy**: 52.7%
+- **BTC holdout accuracy**: 53.4% (barely above random)
+- **Baseline to beat**: Multi-TF Donchian Sharpe 1.062
+
+**CONCLUSION**: Cross-asset pooling with 11,931 daily samples does NOT beat baseline. XGBoost overfit severely (73.4% → 53.4%). Need either:
+1. More data (currently only ~1,700 samples/asset)
+2. Simpler models (fewer parameters)
+3. Better regularization
+
+**Files**: `scripts/train_cross_asset.py`, `logs/train_cross_asset_v2_20260216_165225.log`
+
+**Commits**: 390bac6 "fix: clean inf/nan at load time"
+
+---
+
+## Cross-Asset Feature Preparation — 2026-02-16 21:47 UTC [COMPLETE]
+
+**STATUS**: Complete (11,931 samples, 58 features + asset_id)
+
+**OBJECTIVE**: Prepare pooled 58-feature dataset across 8 assets for cross-asset training
+
+**APPROACH**:
+- **Assets**: BTC, ETH, SOL, ADA, DOT, LINK, MATIC, AVAX (8 total)
+- **Features**: 58 identical features per asset (same as BTC hourly)
+- **Samples**: ~312K hourly → ~20K daily pooled samples
+- **Strategy**: Train on all assets 2017-2023, test ONLY on BTC 2024-2025
+
+**Expected**: Pooled training learns universal crypto dynamics, not BTC-specific noise
+
+**Files**: `scripts/prepare_cross_asset_features.py`, `data/processed/feature_matrix_cross_asset_hourly.parquet`
+
+**Commit**: 6456928 "feat: update cross-asset features to use 58-feature set"
+
+---
+
+## 58-Feature Hyperparameter Sweep — 2026-02-16 22:05 UTC [IN PROGRESS]
+
+**STATUS**: 14/54 configs complete (26%), PID 2608913, ~12 hours remaining
+
+**CURRENT RESULTS** (interim):
+- **Best Sharpe**: 0.967 (config 3: CatBoost depth=4, lr=0.03, l2=1.0)
+- **Sharpe range**: 0.629 to 0.967
+- **Accuracy range**: 51.7% to 53.3%
+- **Baseline to beat**: 1.062 (Multi-TF Donchian)
+- **Top 5 Sharpes**: 0.967, 0.964, 0.922, 0.910, 0.820
+
+**ANALYSIS** (interim):
+- ML models consistently BELOW baseline despite 58 features
+- Best config 9% below baseline (0.967 vs 1.062)
+- Accuracy barely above random (51-53%) — weak predictive signal
+- 40 more configs pending, but trend not promising
+
+**FEATURES**: 58 total (23 original + 35 new)
+- Microstructure (10): tick direction, candle patterns, wicks, gaps
+- Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
+- Regime indicators (8): drawdown, recovery, vol/volume regime, choppiness
+- Cross-timeframe divergences (6): momentum/RSI/vol mismatches
+- Volume-price interaction (8): OBV, MFI, VWAP, volume exhaustion
+
+**VALIDATION**: Yearly walk-forward 2020-2023, 4,795 daily samples from 115K hourly candles
+
+**NEXT STEPS**:
+1. Wait for sweep completion to identify top 5 configs
+2. Try ensemble methods (weighted average, stacking)
+3. Try hybrid approaches (ML filter on Donchian signals)
+
+**FILES**: `scripts/sweep_58_features.py`, `logs/sweep_58_final_20260216_165216.log`
+
+**COMMIT**: 32499db "feat: expand to 58 features"
+
+---
+
+## Feature Expansion to 58 Features — 2026-02-16 21:37 UTC [COMPLETE]
+
+**OBJECTIVE**: Expand from 23 to 58 hourly features
+
+**RESULTS**:
+- **Feature count**: 23 → 58 (+152%)
+- **Daily samples**: 4,795 (from 115K hourly candles, 2013-2026)
+- **Files**: `src/sparky/features/microstructure.py`, `regime.py`
+- **Tests**: All passing
+
+---
+
+## Smart Hyperparameter Sweep (23 features, OBSOLETE) — 2026-02-16 16:11 UTC [TERMINATED]
+
+**STATUS**: Terminated after 8h28m (obsolete dataset, replaced by 58-feature sweep)
+
+**STATUS**: In progress (5/54 configs after 8.5 hours, PID 2589920)
+
+**OBJECTIVE**: Systematic search for ML configs beating corrected baseline (Sharpe 1.062)
+
+**APPROACH**: 54 configs (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05, L1/L2 regularization variations. Yearly walk-forward validation (2020-2023). Testing with original 23 hourly features.
+
+**EARLY RESULTS** (5/54 configs):
+- Best: CatBoost depth=3 lr=0.01 l2=5 → Sharpe 0.050
+- All configs: Sharpe range -0.251 to 0.050
+- **FAR BELOW BASELINE** (1.062) — no configs approaching competitive performance
+
+**FILES**: `scripts/smart_hyperparam_sweep.py`, `results/validation/smart_sweep_intermediate.json`
+
+**CONCLUSION (preliminary)**: 23 features insufficient. Feature expansion to 58 features underway.
+
+---
+
+## Single-TF (40/20) vs Multi-TF Baseline Investigation — 2026-02-16 14:12 UTC
+
+**OBJECTIVE**: Investigate whether Single-TF Donchian(40/20) is a better strategy than Multi-TF (20/40/60) baseline.
+
+**RESULTS**:
+- Single-TF Mean Sharpe: **1.243** vs Multi-TF: **1.062** (+17%)
+- P(Single-TF > Multi-TF): 0.624 — moderate, not statistically significant
+- Bootstrap 95% CI overlap: [0.622, 2.043] vs [0.587, 2.011]
+- **Bear market (2022)**: Single-TF -0.824 vs Multi-TF -1.539 (47% less loss)
+- **Trades**: 15 vs 19 (21% fewer), Win rate: 66.7% vs 52.6%
+- **Signal overlap**: 96.5% agreement — strategies are nearly identical
+
+**VERDICT**: MODERATE IMPROVEMENT, NOT CONCLUSIVE. Single-TF is better on every metric but CIs overlap. Recommended as primary paper trading strategy due to simplicity + better bear market protection.
+
+**Files**: `results/validation/single_tf_vs_multi_tf_summary.md`, `results/validation/single_tf_vs_multi_tf_investigation.json`
+
+---
+
 ## ❌❌ REGIME-AWARE POSITION SIZING: DOUBLE FAILURE — 2026-02-16 11:07 UTC [DAY 3]
 
 **OBJECTIVE**: Implement regime-aware position sizing for Multi-Timeframe Donchian to achieve Sharpe ≥0.85 (vs current 0.772). Test TWO approaches per STRATEGY_REPORT.md recommendation.

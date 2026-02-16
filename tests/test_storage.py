@@ -18,7 +18,7 @@ def store(tmp_path):
 @pytest.fixture
 def sample_df():
     """Sample DataFrame with DatetimeIndex."""
-    dates = pd.date_range("2024-01-01", periods=5, freq="D")
+    dates = pd.date_range("2024-01-01", periods=5, freq="D", tz="UTC")
     return pd.DataFrame(
         {"close": [100.0, 110.0, 105.0, 115.0, 108.0], "volume": [1000, 1200, 900, 1500, 1100]},
         index=dates,
@@ -71,7 +71,7 @@ class TestDataStoreIncremental:
         store.save(sample_df, path)
 
         # Append 3 more days
-        new_dates = pd.date_range("2024-01-06", periods=3, freq="D")
+        new_dates = pd.date_range("2024-01-06", periods=3, freq="D", tz="UTC")
         new_df = pd.DataFrame(
             {"close": [112.0, 118.0, 109.0], "volume": [1300, 1400, 1000]},
             index=new_dates,
@@ -86,7 +86,7 @@ class TestDataStoreIncremental:
         store.save(sample_df, path)
 
         # Append overlapping data (last 2 days + 2 new)
-        overlap_dates = pd.date_range("2024-01-04", periods=4, freq="D")
+        overlap_dates = pd.date_range("2024-01-04", periods=4, freq="D", tz="UTC")
         overlap_df = pd.DataFrame(
             {"close": [999.0, 998.0, 112.0, 118.0], "volume": [9, 8, 1300, 1400]},
             index=overlap_dates,

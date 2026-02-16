@@ -350,3 +350,195 @@ def compute_ema(series: pd.Series, span: int) -> pd.Series:
         EMA series
     """
     return series.ewm(span=span, adjust=False).mean()
+
+
+# === VOLUME PROFILE FEATURES (VWAP, OBV, MFI) ===
+
+
+def on_balance_volume(close: pd.Series, volume: pd.Series) -> pd.Series:
+    """Compute On-Balance Volume (OBV).
+
+    Formula:
+        OBV_t = OBV_{t-1} + volume_t * sign(close_t - close_{t-1})
+
+    Cumulative volume flow — rising OBV confirms uptrend.
+
+    Args:
+        close: Close price series
+        volume: Volume series
+
+    Returns:
+        OBV series (cumulative)
+    """
+    direction = np.sign(close.diff())
+    direction.iloc[0] = 0
+    obv = (direction * volume).cumsum()
+    return obv
+
+
+def obv_rate_of_change(close: pd.Series, volume: pd.Series, period: int = 20) -> pd.Series:
+    """Compute OBV rate of change (normalized OBV momentum).
+
+    Formula: obv_roc = (OBV_t - OBV_{t-period}) / abs(OBV_{t-period})
+
+    Args:
+        close: Close price series
+        volume: Volume series
+        period: Lookback period
+
+    Returns:
+        OBV ROC series
+    """
+    obv = on_balance_volume(close, volume)
+    obv_shifted = obv.shift(period)
+    return (obv - obv_shifted) / obv_shifted.abs().replace(0, np.nan)
+
+
+def money_flow_index(
+    high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, period: int = 14
+) -> pd.Series:
+    """Compute Money Flow Index (MFI) — volume-weighted RSI.
+
+    Formula:
+        Typical Price = (High + Low + Close) / 3
+        Money Flow = Typical Price * Volume
+        Positive MF = sum of MF when TP > TP_{t-1} over period
+        Negative MF = sum of MF when TP < TP_{t-1} over period
+        MFI = 100 - 100 / (1 + Positive MF / Negative MF)
+
+    Range: 0-100. >80 overbought, <20 oversold.
+
+    Args:
+        high: High price series
+        low: Low price series
+        close: Close price series
+        volume: Volume series
+        period: Lookback period (default 14)
+
+    Returns:
+        MFI series (0-100)
+    """
+    typical_price = (high + low + close) / 3.0
+    money_flow = typical_price * volume
+
+    tp_diff = typical_price.diff()
+    positive_flow = money_flow.where(tp_diff > 0, 0.0)
+    negative_flow = money_flow.where(tp_diff < 0, 0.0)
+
+    positive_sum = positive_flow.rolling(window=period).sum()
+    negative_sum = negative_flow.rolling(window=period).sum()
+
+    money_ratio = positive_sum / negative_sum.replace(0, np.nan)
+    mfi = 100.0 - 100.0 / (1.0 + money_ratio)
+    return mfi
+
+
+def vwap_multi_period(
+    high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series,
+    periods: list[int] | None = None,
+) -> pd.DataFrame:
+    """Compute VWAP deviation at multiple periods.
+
+    Args:
+        high, low, close, volume: OHLCV series
+        periods: List of rolling windows (default [12, 24, 48])
+
+    Returns:
+        DataFrame with vwap_dev_{period} columns
+    """
+    if periods is None:
+        periods = [12, 24, 48]
+
+    result = pd.DataFrame(index=close.index)
+    for p in periods:
+        result[f"vwap_dev_{p}h"] = vwap_deviation(high, low, close, volume, period=p)
+    return result
+
+
+# === CROSS-TIMEFRAME AGGREGATION FEATURES ===
+
+
+def cross_timeframe_features(
+    close: pd.Series, volume: pd.Series, windows: list[int] | None = None
+) -> pd.DataFrame:
+    """Compute features aggregated at multiple timeframe windows.
+
+    Generates rolling mean return, volatility, and volume ratio for each window.
+    This captures trend and vol regime at different time scales.
+
+    Args:
+        close: Close price series (hourly)
+        volume: Volume series (hourly)
+        windows: Aggregation windows in hours (default [4, 12, 48, 168])
+
+    Returns:
+        DataFrame with cross-timeframe features
+    """
+    if windows is None:
+        windows = [4, 12, 48, 168]
+
+    returns = close.pct_change()
+    result = pd.DataFrame(index=close.index)
+
+    for w in windows:
+        label = f"{w}h"
+        # Rolling mean return (trend direction)
+        result[f"mean_ret_{label}"] = returns.rolling(window=w).mean()
+        # Rolling volatility
+        result[f"vol_{label}"] = returns.rolling(window=w).std()
+        # Volume ratio vs longer-term average
+        vol_ma_long = volume.rolling(window=max(w * 4, 48)).mean()
+        vol_ma_short = volume.rolling(window=w).mean()
+        result[f"vol_ratio_{label}"] = vol_ma_short / vol_ma_long
+
+    return result
+
+
+# === LAG FEATURES ===
+
+
+def lag_features(
+    close: pd.Series, lags: list[int] | None = None
+) -> pd.DataFrame:
+    """Compute lagged return features at multiple horizons.
+
+    Each lag captures return over [t-lag, t], providing the model with
+    multi-horizon momentum information.
+
+    Args:
+        close: Close price series
+        lags: Lag horizons in periods (default [1, 2, 4, 8, 12, 24])
+
+    Returns:
+        DataFrame with return_lag_{n} columns
+    """
+    if lags is None:
+        lags = [1, 2, 4, 8, 12, 24]
+
+    result = pd.DataFrame(index=close.index)
+    for lag in lags:
+        result[f"return_lag_{lag}"] = (close - close.shift(lag)) / close.shift(lag)
+    return result
+
+
+def lag_features_daily(
+    close_daily: pd.Series, lags: list[int] | None = None
+) -> pd.DataFrame:
+    """Compute lagged return features on daily data.
+
+    Args:
+        close_daily: Daily close price series
+        lags: Lag horizons in days (default [1, 2, 3, 5, 10, 21])
+
+    Returns:
+        DataFrame with daily_ret_lag_{n} columns
+    """
+    if lags is None:
+        lags = [1, 2, 3, 5, 10, 21]
+
+    result = pd.DataFrame(index=close_daily.index)
+    for lag in lags:
+        result[f"daily_ret_lag_{lag}d"] = (
+            (close_daily - close_daily.shift(lag)) / close_daily.shift(lag)
+        )
+    return result

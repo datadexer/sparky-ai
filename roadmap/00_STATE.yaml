@@ -193,32 +193,32 @@ phases:
     started_at: "2026-02-15"
     completed_at: null
     human_gate_required: false
-    notes: "CRITICAL MISSION: Expand to 10,000+ observations (52K-490K hourly samples)"
+    notes: "Feature expansion to 58 features complete. Hyperparameter sweep in progress."
     tasks:
       data_expansion_plan:
         status: complete
         depends_on: []
-        notes: "DATA_EXPANSION_PLAN.md — 3 approaches: hourly data, cross-asset, extended history"
+        notes: "DATA_EXPANSION_PLAN.md + FEATURE_EXPANSION_PLAN.md complete"
       fetch_hourly_btc:
-        status: pending
+        status: complete
         depends_on: [data_expansion_plan]
-        notes: "scripts/fetch_hourly_btc.py — 70K hourly BTC candles 2017-2025"
+        notes: "115K hourly BTC candles (2013-2026) using max_coverage dataset"
       prepare_hourly_features:
-        status: pending
+        status: complete
         depends_on: [fetch_hourly_btc]
-        notes: "scripts/prepare_hourly_features.py — hourly features resampled to daily"
+        notes: "58 features (23 original + 35 new) on 4,795 daily samples from 115K hourly candles"
       train_on_hourly:
-        status: pending
+        status: in_progress
         depends_on: [prepare_hourly_features]
-        notes: "scripts/train_on_hourly.py — XGBoost on 52K hourly samples"
+        notes: "sweep_58_features.py running (PID 2604055, config 1/54) — 54 configs, CatBoost + LightGBM"
       fetch_cross_asset:
-        status: pending
+        status: complete
         depends_on: [data_expansion_plan]
-        notes: "scripts/fetch_cross_asset_hourly.py — 7 assets × 70K = 490K samples"
+        notes: "8 assets fetched, 312K total hourly samples (BTC/ETH/SOL/ADA/DOT/LINK/MATIC/AVAX)"
       prepare_cross_asset_features:
-        status: pending
+        status: in_progress
         depends_on: [fetch_cross_asset]
-        notes: "scripts/prepare_cross_asset_features.py — pooled features with asset_id"
+        notes: "scripts/prepare_cross_asset_features.py running (PID 2605444) — 58 features per asset"
       train_cross_asset:
         status: pending
         depends_on: [prepare_cross_asset_features]

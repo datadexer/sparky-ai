@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 def load_cross_asset_data():
     """Load cross-asset pooled feature matrix."""
+    import numpy as np
+
     features_path = Path("data/processed/feature_matrix_cross_asset_hourly.parquet")
     targets_path = Path("data/processed/targets_cross_asset_hourly_1d.parquet")
 
@@ -51,6 +53,19 @@ def load_cross_asset_data():
     y = pd.read_parquet(targets_path)["target"]
 
     logger.info(f"Loaded {len(X):,} pooled samples with {X.shape[1]} features")
+
+    # Clean inf/nan values
+    logger.info("Cleaning inf/nan values...")
+    inf_mask = np.isinf(X.select_dtypes(include=[np.number])).any(axis=1)
+    if inf_mask.sum() > 0:
+        logger.warning(f"Removing {inf_mask.sum()} rows with inf values")
+        X = X[~inf_mask]
+        y = y[~inf_mask]
+
+    # Replace remaining inf with NaN (XGBoost handles NaN)
+    X = X.replace([np.inf, -np.inf], np.nan)
+
+    logger.info(f"After cleaning: {len(X):,} samples")
     logger.info(f"Assets: {X['asset_name'].unique()}")
     logger.info(f"Samples per asset:\n{X['asset_name'].value_counts()}")
 
@@ -108,6 +123,7 @@ def train_cross_asset_model(X_train, y_train):
         Trained XGBoost model
     """
     from sparky.models.xgboost_model import XGBoostModel
+    import numpy as np
 
     logger.info("Training XGBoost on pooled cross-asset data...")
 
@@ -121,7 +137,7 @@ def train_cross_asset_model(X_train, y_train):
     logger.info(f"Features after encoding: {X_train_encoded.shape[1]}")
     logger.info(f"Feature columns: {list(X_train_encoded.columns)}")
 
-    # Train model
+    # Train model with GPU acceleration
     model = XGBoostModel(
         max_depth=4,  # Slightly deeper for cross-asset complexity
         learning_rate=0.05,
@@ -130,6 +146,8 @@ def train_cross_asset_model(X_train, y_train):
         colsample_bytree=0.8,
         reg_alpha=0.5,
         reg_lambda=2.0,
+        tree_method="hist",  # GPU-compatible method
+        device="cuda",       # Use GPU
         random_state=42
     )
 
