@@ -83,7 +83,9 @@ def validate_config(features, target, prices, model_name, params):
         X_test = features_in.loc[test_start:test_end]
         y_test = target_in.loc[test_start:test_end]
 
-        if len(X_test) == 0 or len(X_train) == 0:
+        print(f"    Year {year}: Train={len(X_train)}/{len(y_train)}, Test={len(X_test)}/{len(y_test)}")
+
+        if len(X_test) == 0 or len(X_train) == 0 or len(y_train) == 0:
             print(f"    Year {year}: Skipping (no data)")
             continue
 
