@@ -165,7 +165,8 @@ def train_catboost(X_train, y_train):
         l2_leaf_reg=2.0,
         random_seed=42,
         verbose=0,
-        thread_count=2,
+        task_type="GPU",
+        devices="0",
     )
 
     model.fit(X_train, y_train)

@@ -147,6 +147,46 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 
 ---
 
+### CONTRACT #004: Feature-First ML Research Sprint (Post-Refactor)
+**Status**: ACTIVE
+**Signed**: 2026-02-16 UTC
+**Assigned to**: CEO
+**Estimated effort**: 8-12 hours
+**Hard deadline**: 48 hours from contract start
+
+**Context**: v3 structural refactor is complete. CEO now has: enforced data loader (holdout auto-truncated), experiment DB (dedup, query), GPU in all train scripts, timeout decorator, and two-stage sweep script. This contract directs the CEO to use the new infrastructure for a systematic ML research sprint.
+
+**New Infrastructure Available**:
+- `from sparky.data.loader import load` — auto-holdout enforcement
+- `from sparky.tracking.experiment_db import get_db, is_duplicate, log_experiment` — dedup + logging
+- `from sparky.oversight.timeout import with_timeout` — 15 min per config
+- `scripts/sweep_two_stage.py` — two-stage sweep scaffold
+- `scripts/analyze_features.py` — feature importance analysis
+- `scripts/train_regime_aware.py` — regime-aware scaffold
+
+**Binding Commitments**:
+1. [ ] **Step 1: Feature Analysis** — Run `scripts/analyze_features.py`, identify top 20 features, save results
+2. [ ] **Step 2: Two-Stage Sweep** — Run `scripts/sweep_two_stage.py` with top 20 features. Complete Stage 1 screening (all configs). Top 5 → Stage 2 walk-forward.
+3. [ ] **Step 3: Regime-Aware** — Complete the TODO in `scripts/train_regime_aware.py`: implement at least 2 regime methods, wire walk-forward evaluation
+4. [ ] **Step 4: Ensemble** — If any TIER 2+ results, test ensemble of top 3 configs
+5. [ ] I will use experiment DB for ALL experiments (no duplicates)
+6. [ ] I will use data loader for ALL data loading (no raw pd.read_parquet)
+7. [ ] I will NOT present option menus — just work through steps 1-4 sequentially
+8. [ ] I will check `get_summary(get_db())` at session start to avoid repeating work
+
+**Allowed Early Termination**:
+- TIER 1 result found and validated
+- All steps complete with only TIER 4-5 results after 20+ configs (HONEST NEGATIVE)
+- Human intervention
+
+**Success Criteria**:
+- TIER 1 (Sharpe ≥1.0 validated): Request OOS approval
+- TIER 2 (Sharpe ≥0.7 validated): Request OOS → paper trade if confirms
+- TIER 3 (Sharpe ≥0.4): Continue with next contract
+- TIER 4-5 after all steps: Honest report, propose pivot
+
+---
+
 ## Contract Template
 
 ```markdown

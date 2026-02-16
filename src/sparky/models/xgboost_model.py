@@ -80,6 +80,8 @@ class XGBoostModel:
             random_state=self.random_state,
             eval_metric=self.eval_metric,
             use_label_encoder=self.use_label_encoder,
+            tree_method="hist",
+            device="cuda",
         )
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
