@@ -1,0 +1,645 @@
+{
+  "timestamp": "2026-02-16T22:16:50.264190+00:00",
+  "baseline_sharpe": 1.062,
+  "selected_features": [
+    "volume_surge_4h",
+    "tick_direction_ratio_24h",
+    "rsi_divergence_14h_168h",
+    "momentum_24h",
+    "volatility_regime",
+    "breakout_proximity_upper",
+    "intraday_range",
+    "vwap_deviation_24h",
+    "macd_histogram",
+    "intraday_momentum_reversal",
+    "higher_highs_lower_lows_5h",
+    "high_low_ratio_20h",
+    "distance_from_sma_200h",
+    "obv",
+    "price_acceleration_10h",
+    "momentum_168h",
+    "mfi_14h",
+    "momentum_divergence_24h_168h",
+    "rsi_6h",
+    "volume_momentum_30h"
+  ],
+  "n_configs_screened": 54,
+  "top_5_validated": [
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "screening_sharpe": 0.2669497697507703,
+      "mean_sharpe": 0.9816855075196447,
+      "std_sharpe": 1.8751185227758222,
+      "mean_acc": 0.5304109589041095,
+      "mean_auc": 0.5407948007856747,
+      "min_sharpe": -2.523908409359881,
+      "max_sharpe": 2.7586951852549704,
+      "yearly": [
+        {
+          "year": 2019,
+          "sharpe": 1.834974792576639,
+          "acc": 0.5616438356164384,
+          "auc": 0.5682173338141604,
+          "train_size": 2165,
+          "test_size": 365
+        },
+        {
+          "year": 2020,
+          "sharpe": 2.7586951852549704,
+          "acc": 0.5698630136986301,
+          "auc": 0.5548716686157444,
+          "train_size": 2530,
+          "test_size": 365
+        },
+        {
+          "year": 2021,
+          "sharpe": 0.7044126970000718,
+          "acc": 0.5260273972602739,
+          "auc": 0.5317174265633448,
+          "train_size": 2895,
+          "test_size": 365
+        },
+        {
+          "year": 2022,
+          "sharpe": -2.523908409359881,
+          "acc": 0.4876712328767123,
+          "auc": 0.507100555958424,
+          "train_size": 3260,
+          "test_size": 365
+        },
+        {
+          "year": 2023,
+          "sharpe": 2.134253272126424,
+          "acc": 0.5068493150684932,
+          "auc": 0.5420670189766995,
+          "train_size": 3625,
+          "test_size": 365
+        }
+      ]
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "screening_sharpe": 0.3319067343010447,
+      "mean_sharpe": 0.9454834058519739,
+      "std_sharpe": 1.8784895943398756,
+      "mean_acc": 0.5276712328767124,
+      "mean_auc": 0.537611211786109,
+      "min_sharpe": -2.495515865510063,
+      "max_sharpe": 2.8922566479251706,
+      "yearly": [
+        {
+          "year": 2019,
+          "sharpe": 1.6903897679922615,
+          "acc": 0.5616438356164384,
+          "auc": 0.561515807188364,
+          "train_size": 2165,
+          "test_size": 365
+        },
+        {
+          "year": 2020,
+          "sharpe": 2.8922566479251706,
+          "acc": 0.5643835616438356,
+          "auc": 0.5487782359820275,
+          "train_size": 2530,
+          "test_size": 365
+        },
+        {
+          "year": 2021,
+          "sharpe": 0.5528140178711152,
+          "acc": 0.5260273972602739,
+          "auc": 0.5327386315852707,
+          "train_size": 2895,
+          "test_size": 365
+        },
+        {
+          "year": 2022,
+          "sharpe": -2.495515865510063,
+          "acc": 0.4849315068493151,
+          "auc": 0.5022057046168722,
+          "train_size": 3260,
+          "test_size": 365
+        },
+        {
+          "year": 2023,
+          "sharpe": 2.0874724609813846,
+          "acc": 0.5013698630136987,
+          "auc": 0.5428176795580111,
+          "train_size": 3625,
+          "test_size": 365
+        }
+      ]
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "reg_lambda": 1.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "screening_sharpe": 0.2561670992381876,
+      "mean_sharpe": 0.9401490643203576,
+      "std_sharpe": 1.6833923636224444,
+      "mean_acc": 0.5178082191780822,
+      "mean_auc": 0.5387028339375914,
+      "min_sharpe": -2.2561581871369087,
+      "max_sharpe": 2.4156490017563277,
+      "yearly": [
+        {
+          "year": 2019,
+          "sharpe": 1.828698020471809,
+          "acc": 0.5452054794520548,
+          "auc": 0.5666696718355572,
+          "train_size": 2165,
+          "test_size": 365
+        },
+        {
+          "year": 2020,
+          "sharpe": 2.4156490017563277,
+          "acc": 0.5260273972602739,
+          "auc": 0.5424232165938327,
+          "train_size": 2530,
+          "test_size": 365
+        },
+        {
+          "year": 2021,
+          "sharpe": 0.7907152919315569,
+          "acc": 0.5150684931506849,
+          "auc": 0.530831381029615,
+          "train_size": 2895,
+          "test_size": 365
+        },
+        {
+          "year": 2022,
+          "sharpe": -2.2561581871369087,
+          "acc": 0.4876712328767123,
+          "auc": 0.49883671742808805,
+          "train_size": 3260,
+          "test_size": 365
+        },
+        {
+          "year": 2023,
+          "sharpe": 1.9218411945790035,
+          "acc": 0.5150684931506849,
+          "auc": 0.5547531828008647,
+          "train_size": 3625,
+          "test_size": 365
+        }
+      ]
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "screening_sharpe": 0.33582853645487915,
+      "mean_sharpe": 0.7954039201892662,
+      "std_sharpe": 1.5585436362446035,
+      "mean_acc": 0.5161643835616438,
+      "mean_auc": 0.5423822059394734,
+      "min_sharpe": -2.0210365501252343,
+      "max_sharpe": 2.6157045379858683,
+      "yearly": [
+        {
+          "year": 2019,
+          "sharpe": 1.5494714376836554,
+          "acc": 0.5397260273972603,
+          "auc": 0.5842649356893856,
+          "train_size": 2165,
+          "test_size": 365
+        },
+        {
+          "year": 2020,
+          "sharpe": 2.6157045379858683,
+          "acc": 0.5589041095890411,
+          "auc": 0.543269526681849,
+          "train_size": 2530,
+          "test_size": 365
+        },
+        {
+          "year": 2021,
+          "sharpe": 0.5281471958109674,
+          "acc": 0.5123287671232877,
+          "auc": 0.5267916141046435,
+          "train_size": 2895,
+          "test_size": 365
+        },
+        {
+          "year": 2022,
+          "sharpe": -2.0210365501252343,
+          "acc": 0.4712328767123288,
+          "auc": 0.5135061638868745,
+          "train_size": 3260,
+          "test_size": 365
+        },
+        {
+          "year": 2023,
+          "sharpe": 1.3047329795910745,
+          "acc": 0.4986301369863014,
+          "auc": 0.5440787893346145,
+          "train_size": 3625,
+          "test_size": 365
+        }
+      ]
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "screening_sharpe": 0.33222420850235906,
+      "mean_sharpe": 0.6765364453337658,
+      "std_sharpe": 1.577471901723674,
+      "mean_acc": 0.5189041095890411,
+      "mean_auc": 0.5413716550994196,
+      "min_sharpe": -2.10022514402885,
+      "max_sharpe": 2.6689221400632164,
+      "yearly": [
+        {
+          "year": 2019,
+          "sharpe": 1.5290564572366927,
+          "acc": 0.5424657534246575,
+          "auc": 0.5819509556437072,
+          "train_size": 2165,
+          "test_size": 365
+        },
+        {
+          "year": 2020,
+          "sharpe": 2.6689221400632164,
+          "acc": 0.5589041095890411,
+          "auc": 0.5437003754539299,
+          "train_size": 2530,
+          "test_size": 365
+        },
+        {
+          "year": 2021,
+          "sharpe": 0.5140701853848048,
+          "acc": 0.5178082191780822,
+          "auc": 0.5272421457319638,
+          "train_size": 2895,
+          "test_size": 365
+        },
+        {
+          "year": 2022,
+          "sharpe": -2.10022514402885,
+          "acc": 0.4657534246575342,
+          "auc": 0.5107868020304569,
+          "train_size": 3260,
+          "test_size": 365
+        },
+        {
+          "year": 2023,
+          "sharpe": 0.7708585880129654,
+          "acc": 0.5095890410958904,
+          "auc": 0.5431779966370406,
+          "train_size": 3625,
+          "test_size": 365
+        }
+      ]
+    }
+  ],
+  "screening_results": [
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.33582853645487915,
+      "acc": 0.49215922798552475
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.33222420850235906,
+      "acc": 0.48854041013269
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.3319067343010447,
+      "acc": 0.49819059107358266
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.2669497697507703,
+      "acc": 0.4957780458383595
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "reg_lambda": 1.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "sharpe": 0.2561670992381876,
+      "acc": 0.49939686369119424
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 5,
+          "learning_rate": 0.03,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.24608848643367093,
+      "acc": 0.5018094089264173
+    },
+    {
+      "config": {
+        "model": "LightGBM",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "reg_lambda": 1.0,
+          "reg_alpha": 0.5,
+          "device": "gpu",
+          "gpu_platform_id": 0,
+          "gpu_device_id": 0
+        }
+      },
+      "sharpe": 0.22905290886602395,
+      "acc": 0.5006031363088058
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.05,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.20312804594410136,
+      "acc": 0.4957780458383595
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 5,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.18381770133358788,
+      "acc": 0.5138721351025332
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.05,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.17159374157535362,
+      "acc": 0.49215922798552475
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 1.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "sharpe": 0.12554307635410383,
+      "acc": 0.5102533172496985
+    },
+    {
+      "config": {
+        "model": "LightGBM",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "reg_lambda": 1.0,
+          "reg_alpha": 0.0,
+          "device": "gpu",
+          "gpu_platform_id": 0,
+          "gpu_device_id": 0
+        }
+      },
+      "sharpe": 0.11027007716662238,
+      "acc": 0.49939686369119424
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 5,
+          "learning_rate": 0.05,
+          "reg_lambda": 1.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "sharpe": 0.10325455375167433,
+      "acc": 0.5223160434258143
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.03,
+          "l2_leaf_reg": 3.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.09479463600299425,
+      "acc": 0.49336550060313633
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "reg_lambda": 0.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "sharpe": 0.08362125088330805,
+      "acc": 0.49939686369119424
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 5,
+          "learning_rate": 0.01,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.047913549506373145,
+      "acc": 0.5090470446320868
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 5,
+          "learning_rate": 0.03,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.024329119940626368,
+      "acc": 0.5186972255729795
+    },
+    {
+      "config": {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 5,
+          "learning_rate": 0.05,
+          "reg_lambda": 0.0,
+          "tree_method": "hist",
+          "device": "cuda"
+        }
+      },
+      "sharpe": 0.012247974725809576,
+      "acc": 0.49336550060313633
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 3,
+          "learning_rate": 0.03,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": 0.00889108509634052,
+      "acc": 0.49336550060313633
+    },
+    {
+      "config": {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 200,
+          "depth": 4,
+          "learning_rate": 0.03,
+          "l2_leaf_reg": 1.0,
+          "task_type": "GPU",
+          "devices": "0"
+        }
+      },
+      "sharpe": -0.007305746475368736,
+      "acc": 0.4957780458383595
+    }
+  ]
+}
