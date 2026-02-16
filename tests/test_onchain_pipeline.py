@@ -6,6 +6,8 @@ Verifies:
 - Look-ahead bias prevention (1-day shift before hourly alignment)
 - Reasonable value ranges
 - NaN handling (warmup period only)
+
+These tests require local data files and are skipped in CI.
 """
 
 import pytest
@@ -13,31 +15,38 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
+ONCHAIN_PATH = Path('data/processed/onchain_features_hourly.parquet')
+COINMETRICS_PATH = Path('data/raw/onchain/coinmetrics_btc_daily.parquet')
+BTC_HOURLY_PATH = Path('data/raw/btc/ohlcv_hourly_max_coverage.parquet')
+_has_onchain_data = ONCHAIN_PATH.exists()
+
+pytestmark = pytest.mark.skipif(
+    not _has_onchain_data,
+    reason="On-chain features data not available (requires local data files)"
+)
+
 
 @pytest.fixture
 def onchain_features():
     """Load on-chain features hourly data."""
-    path = Path('data/processed/onchain_features_hourly.parquet')
-    assert path.exists(), "Run scripts/prepare_onchain_features.py first"
-    return pd.read_parquet(path)
+    return pd.read_parquet(ONCHAIN_PATH)
 
 
 @pytest.fixture
 def coinmetrics_daily():
     """Load CoinMetrics daily data."""
-    return pd.read_parquet('data/raw/onchain/coinmetrics_btc_daily.parquet')
+    return pd.read_parquet(COINMETRICS_PATH)
 
 
 @pytest.fixture
 def btc_hourly():
     """Load BTC hourly OHLCV data."""
-    return pd.read_parquet('data/raw/btc/ohlcv_hourly_max_coverage.parquet')
+    return pd.read_parquet(BTC_HOURLY_PATH)
 
 
 def test_output_exists():
     """Verify output file exists."""
-    path = Path('data/processed/onchain_features_hourly.parquet')
-    assert path.exists(), "Output file not found"
+    assert ONCHAIN_PATH.exists(), "Output file not found"
 
 
 def test_correct_columns(onchain_features):

@@ -112,7 +112,7 @@ class InboxManager:
             Created message
         """
         timestamp = datetime.now(timezone.utc)
-        message_id = f"{from_agent}_to_{to_agent}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
+        message_id = f"{from_agent}_to_{to_agent}_{timestamp.strftime('%Y%m%d_%H%M%S_%f')}"
 
         message = Message(
             message_id=message_id,
@@ -154,7 +154,7 @@ class InboxManager:
         }
 
         return sorted(
-            unread, key=lambda m: (priority_order[m.priority], m.timestamp), reverse=True
+            unread, key=lambda m: (priority_order[m.priority], m.timestamp)
         )
 
     def mark_as_read(self, message_id: str):
