@@ -5,9 +5,29 @@ Newest entries at the top.
 
 ---
 
-## 58-Feature Hyperparameter Sweep — 2026-02-16 21:39 UTC [RUNNING]
+## Cross-Asset Feature Preparation — 2026-02-16 21:47 UTC [RUNNING]
 
-**STATUS**: In progress (PID 2597624, ~90-120 min estimated)
+**STATUS**: In progress (PID 2605447, ~60 min estimated)
+
+**OBJECTIVE**: Prepare pooled 58-feature dataset across 8 assets for cross-asset training
+
+**APPROACH**:
+- **Assets**: BTC, ETH, SOL, ADA, DOT, LINK, MATIC, AVAX (8 total)
+- **Features**: 58 identical features per asset (same as BTC hourly)
+- **Samples**: ~312K hourly → ~20K daily pooled samples
+- **Strategy**: Train on all assets 2017-2023, test ONLY on BTC 2024-2025
+
+**Expected**: Pooled training learns universal crypto dynamics, not BTC-specific noise
+
+**Files**: `scripts/prepare_cross_asset_features.py`, `data/processed/feature_matrix_cross_asset_hourly.parquet`
+
+**Commit**: 6456928 "feat: update cross-asset features to use 58-feature set"
+
+---
+
+## 58-Feature Hyperparameter Sweep — 2026-02-16 21:43 UTC [RUNNING]
+
+**STATUS**: In progress (PID 2605731, config 1/54, ~20 hours estimated)
 
 **OBJECTIVE**: Test if expanded features beat baseline (Sharpe 1.062)
 
