@@ -108,11 +108,25 @@ def train_cross_asset_model(X_train, y_train):
         Trained XGBoost model
     """
     from sparky.models.xgboost_model import XGBoostModel
+    import numpy as np
 
     logger.info("Training XGBoost on pooled cross-asset data...")
 
     # Prepare features: one-hot encode asset_id
     X_train_encoded = X_train.copy()
+
+    # Clean inf/nan values
+    logger.info(f"Cleaning features: {X_train_encoded.shape}")
+    inf_mask = np.isinf(X_train_encoded.select_dtypes(include=[np.number])).any(axis=1)
+    if inf_mask.sum() > 0:
+        logger.warning(f"Removing {inf_mask.sum()} rows with inf values")
+        X_train_encoded = X_train_encoded[~inf_mask]
+        y_train = y_train[~inf_mask]
+
+    # Replace remaining inf with NaN (XGBoost handles NaN)
+    X_train_encoded = X_train_encoded.replace([np.inf, -np.inf], np.nan)
+
+    logger.info(f"After cleaning: {X_train_encoded.shape}")
 
     # One-hot encode asset_id (categorical feature)
     asset_dummies = pd.get_dummies(X_train_encoded["asset_id"], prefix="asset")
