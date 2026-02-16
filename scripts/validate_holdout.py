@@ -93,6 +93,27 @@ def main():
     model.fit(X_train_test, y_train_test)
     logger.info("✓ Model trained")
 
+    # Predict on holdout
+    logger.info("\nPredicting on holdout...")
+    predictions = model.predict(X_holdout)
+    logger.info(f"Holdout predictions: {predictions.sum()} longs / {len(predictions)} total ({predictions.mean():.1%})")
+
+    # Log prediction distribution with counts
+    predictions_array = predictions.values if hasattr(predictions, 'values') else predictions
+    long_count = int((predictions_array == 1).sum())
+    short_count = len(predictions_array) - long_count
+    long_pct = long_count / len(predictions_array) * 100
+
+    logger.info(f"\nPrediction Distribution (Holdout Period):")
+    logger.info(f"  Long (1):  {long_count:4d} days ({long_pct:5.1f}%)")
+    logger.info(f"  Short (0): {short_count:4d} days ({100-long_pct:5.1f}%)")
+
+    # Compute holdout performance
+    logger.info("\nComputing holdout performance...")
+
+    # Transaction costs setup
+    cost_model = TransactionCostModel.for_btc()
+
     # Run baseline (BuyAndHold) on same holdout for comparison
     logger.info("\nRunning baseline (BuyAndHold) on same holdout period...")
     from sparky.models.baselines import BuyAndHold
@@ -117,30 +138,11 @@ def main():
     logger.info(f"  Max DD: {baseline_dd:.2%}")
     logger.info(f"  Total Return: {baseline_total_return:.2f}%")
 
-    # Predict on holdout
-    logger.info("\nPredicting on holdout...")
-    predictions = model.predict(X_holdout)
-    logger.info(f"Holdout predictions: {predictions.sum()} longs / {len(predictions)} total ({predictions.mean():.1%})")
-
-    # Log prediction distribution with counts
-    predictions_array = predictions.values if hasattr(predictions, 'values') else predictions
-    long_count = int((predictions_array == 1).sum())
-    short_count = len(predictions_array) - long_count
-    long_pct = long_count / len(predictions_array) * 100
-
-    logger.info(f"\nPrediction Distribution (Holdout Period):")
-    logger.info(f"  Long (1):  {long_count:4d} days ({long_pct:5.1f}%)")
-    logger.info(f"  Short (0): {short_count:4d} days ({100-long_pct:5.1f}%)")
-
-    # Compute holdout performance
-    logger.info("\nComputing holdout performance...")
-
-    # Simple equity curve computation
+    # Simple equity curve computation for model
     positions = predictions  # 0 or 1
     strategy_returns = positions * returns_holdout
 
-    # Transaction costs
-    cost_model = TransactionCostModel.for_btc()
+    # Transaction costs for model
     position_changes = np.abs(np.diff(positions, prepend=0))
     costs = position_changes * cost_model.compute_cost(1.0, "BTC")  # 0.13% per trade
     strategy_returns_after_costs = strategy_returns - costs

@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-02-16T02:08:48.655965+00:00",
+  "configuration": {
+    "features": [
+      "rsi_14",
+      "momentum_30d",
+      "ema_ratio_20d"
+    ],
+    "horizon": 30,
+    "seed": 0
+  },
+  "data_split": {
+    "train_test_samples": 2178,
+    "train_test_period": "2019-01-15 00:00:00+00:00 to 2024-12-31 00:00:00+00:00",
+    "holdout_samples": 365,
+    "holdout_period": "2025-01-01 00:00:00+00:00 to 2025-12-31 00:00:00+00:00"
+  },
+  "prediction_distribution": {
+    "long_count": 293,
+    "short_count": 72,
+    "long_pct": 80.27397260273973,
+    "short_pct": 19.726027397260268
+  },
+  "results": {
+    "holdout_sharpe": 0.46621056263278593,
+    "holdout_max_dd": 0.30168177754860553,
+    "holdout_total_return_pct": 11.09412692304268,
+    "num_trades": 97,
+    "phase23_sharpe": 0.999,
+    "delta": -0.5327894373672141,
+    "verdict": "BORDERLINE"
+  },
+  "baseline": {
+    "baseline_sharpe": 0.04737259012184244,
+    "baseline_max_dd": 0.32029308671484613,
+    "baseline_total_return_pct": -6.474236600231409,
+    "model_vs_baseline_delta": 0.4188379725109435
+  }
+}

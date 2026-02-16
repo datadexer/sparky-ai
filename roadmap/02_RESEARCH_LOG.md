@@ -5,6 +5,49 @@ Newest entries at the top.
 
 ---
 
+## VALIDATION 1B: 1-Year Holdout Test — 2026-02-16 02:08:48 UTC
+
+**Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
+
+**Data Split**:
+- Training: 2019-01-15 to 2024-12-31 (2178 samples)
+- Holdout: 2025-01-01 to 2025-12-31 (365 samples, FULL YEAR)
+
+**Results**:
+- Model Sharpe: 0.466
+- Baseline Sharpe: 0.047
+- Delta: +0.419
+- Max Drawdown (model): 30.17%
+- Max Drawdown (baseline): 32.03%
+- Total Return (model): +11.09%
+- Total Return (baseline): -6.47%
+- Trades: 97
+
+**Prediction Distribution**:
+- Long predictions: 293 days (80.3%)
+- Short predictions: 72 days (19.7%)
+- Bias vs training (56.4% long): +23.9%
+
+**Comparison to 3-Month Holdout**:
+- 3-month (Q4 2025 only): Sharpe -1.477, Return -12.84%
+- 1-year (Full 2025): Sharpe 0.466, Return +11.09%
+- Improvement: +1.943 Sharpe
+
+**Verdict**: [BORDERLINE] — Model has predictive power but massive degradation from walk-forward
+
+**Interpretation**:
+- 1-year result (Sharpe 0.466) vastly different from 3-month (Sharpe -1.477)
+- Q4 2025 was exceptionally difficult period (outlier)
+- Full-year more representative: model beats baseline (+0.419 Sharpe)
+- But walk-forward Sharpe 0.999 >> holdout 0.466 indicates severe overfitting
+- Model learned some generalizable patterns (beat baseline on difficult 2025)
+- But overfitted to walk-forward split (degradation of -0.533 Sharpe)
+- 80.3% long bias suggests over-extrapolation of 2019-2024 bull patterns
+
+**Next Step**: Test shorter horizons (1d, 7d, 14d) on same 1-year holdout to see if they generalize better
+
+---
+
 ## Baseline Results — BuyAndHold BTC (Phase 2 Completion)
 
 **Date**: 2026-02-15
@@ -355,3 +398,26 @@ Holdout failure is due to OVERFITTING, not leakage. Model learned noise in train
 **Verdict**: [SUCCESS]
 
 ✅ Found viable approach via strategic pivot
+
+---
+## VALIDATION 1: Holdout Test — 2026-02-16 02:08:48 UTC
+
+**Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
+
+**Data Split**:
+- Training: 2019-01-15 to 2024-12-31 (2178 samples)
+- Holdout: 2025-01-01 to 2025-12-31 (365 samples, FULL YEAR)
+
+**Results**:
+- Holdout Sharpe: 0.4662
+- Max Drawdown: 30.17%
+- Total Return: 11.09%
+- Trades: 97
+
+**Comparison**:
+- Phase 2-3 Sharpe (train+test): 0.9990
+- Holdout Sharpe (never seen): 0.4662
+- Delta: -0.5328
+
+**Verdict**: [BORDERLINE]
+⚠️ Holdout shows degradation. Possible lucky split or marginal alpha.
