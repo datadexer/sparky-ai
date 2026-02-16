@@ -1,5 +1,5 @@
 {
-  "validation_timestamp": "2026-02-16T01:23:46.638271",
+  "validation_timestamp": "2026-02-16T06:03:49.571516",
   "periods": {
     "2017_2023": {
       "period": "Full 2017-2023",
@@ -98,15 +98,15 @@
     }
   },
   "bootstrap_ci": {
-    "mean": 1.62563256102648,
-    "lower": 0.9260689464548499,
-    "upper": 2.3016494153416605
+    "mean": 1.6202061649298767,
+    "lower": 0.9182728983185671,
+    "upper": 2.3581473019383035
   },
   "monte_carlo": {
-    "win_rate": 0.83,
-    "wins": 830,
-    "ties": 0,
-    "losses": 170
+    "win_rate": 0.853,
+    "wins": 853,
+    "ties": 1,
+    "losses": 146
   },
   "criteria": {
     "out_of_sample_sharpe": true,

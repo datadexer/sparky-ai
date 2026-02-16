@@ -119,3 +119,132 @@ class BacktestStatistics:
         t_statistic, p_value = stats.ttest_rel(strat_returns, bench_returns)
 
         return p_value
+
+    @staticmethod
+    def block_bootstrap_monte_carlo(
+        strategy_returns: pd.Series,
+        market_returns: pd.Series,
+        n_simulations: int = 1000,
+        block_size: int | None = None,
+        risk_free_rate: float = 0.0,
+        periods_per_year: int = 252,
+    ) -> dict:
+        """Monte Carlo simulation using block bootstrap to preserve autocorrelation.
+
+        Standard Monte Carlo (simple resampling) destroys time-series structure.
+        Block bootstrap resamples contiguous blocks of returns, preserving
+        short-term momentum and mean-reversion patterns common in crypto markets.
+
+        This is critical for crypto where returns exhibit 2-5 day autocorrelation.
+        Simple resampling underestimates variance → inflates win rates.
+
+        Args:
+            strategy_returns: Strategy return series
+            market_returns: Market (Buy & Hold) return series
+            n_simulations: Number of bootstrap samples (default 1000)
+            block_size: Size of blocks to resample (default: sqrt(n) for optimal bias-variance)
+            risk_free_rate: Annualized risk-free rate (decimal, e.g., 0.045 for 4.5%)
+            periods_per_year: Trading periods per year (252 for daily, 365 for crypto)
+
+        Returns:
+            Dict with:
+                - win_rate: Fraction of simulations where strategy beats market
+                - wins/ties/losses: Count of each outcome
+                - baseline_strategy_sharpe: Strategy Sharpe on original data
+                - baseline_market_sharpe: Market Sharpe on original data
+                - block_size: Block size used
+                - n_simulations: Number of simulations run
+
+        References:
+            Politis & Romano (1994): "The Stationary Bootstrap"
+            Ledoit & Wolf (2008): "Robust performance hypothesis testing with the Sharpe ratio"
+        """
+        from sparky.features.returns import annualized_sharpe
+
+        if len(strategy_returns) == 0 or len(market_returns) == 0:
+            raise ValueError("Returns series cannot be empty")
+
+        # Convert risk-free rate from annual to per-period
+        rf_per_period = risk_free_rate / periods_per_year
+
+        # Auto-select block size using sqrt(n) rule if not specified
+        # This balances bias (small blocks) vs variance (large blocks)
+        if block_size is None:
+            block_size = int(np.sqrt(len(strategy_returns)))
+            block_size = max(5, min(block_size, 50))  # Clamp to reasonable range
+
+        # Align series to same length
+        min_len = min(len(strategy_returns), len(market_returns))
+        strategy_array = strategy_returns.values[:min_len]
+        market_array = market_returns.values[:min_len]
+        n = len(strategy_array)
+
+        # Number of blocks needed to reconstruct full series
+        n_blocks = int(np.ceil(n / block_size))
+
+        wins = 0
+        ties = 0
+        losses = 0
+
+        for i in range(n_simulations):
+            # Resample blocks for strategy
+            strategy_blocks = []
+            for _ in range(n_blocks):
+                start_idx = np.random.randint(0, n - block_size + 1)
+                block = strategy_array[start_idx:start_idx + block_size]
+                strategy_blocks.append(block)
+
+            # Concatenate blocks and trim to original length
+            strategy_resampled = np.concatenate(strategy_blocks)[:n]
+
+            # Resample blocks for market (independent resampling)
+            market_blocks = []
+            for _ in range(n_blocks):
+                start_idx = np.random.randint(0, n - block_size + 1)
+                block = market_array[start_idx:start_idx + block_size]
+                market_blocks.append(block)
+
+            market_resampled = np.concatenate(market_blocks)[:n]
+
+            # Compute Sharpe ratios on resampled data
+            strategy_sharpe = annualized_sharpe(
+                pd.Series(strategy_resampled),
+                risk_free_rate=rf_per_period,
+                periods_per_year=periods_per_year
+            )
+            market_sharpe = annualized_sharpe(
+                pd.Series(market_resampled),
+                risk_free_rate=rf_per_period,
+                periods_per_year=periods_per_year
+            )
+
+            # Compare
+            if strategy_sharpe > market_sharpe + 0.001:  # Small epsilon for numerical stability
+                wins += 1
+            elif abs(strategy_sharpe - market_sharpe) <= 0.001:
+                ties += 1
+            else:
+                losses += 1
+
+        # Compute baseline Sharpe ratios on original data
+        baseline_strategy_sharpe = annualized_sharpe(
+            pd.Series(strategy_array),
+            risk_free_rate=rf_per_period,
+            periods_per_year=periods_per_year
+        )
+        baseline_market_sharpe = annualized_sharpe(
+            pd.Series(market_array),
+            risk_free_rate=rf_per_period,
+            periods_per_year=periods_per_year
+        )
+
+        return {
+            "win_rate": wins / n_simulations,
+            "wins": wins,
+            "ties": ties,
+            "losses": losses,
+            "baseline_strategy_sharpe": float(baseline_strategy_sharpe),
+            "baseline_market_sharpe": float(baseline_market_sharpe),
+            "block_size": block_size,
+            "n_simulations": n_simulations,
+        }
