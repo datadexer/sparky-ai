@@ -125,7 +125,7 @@ sparky-ai/
 - **Data versioning via hash manifest.** After each fetch, update `data/data_manifest.json`.
 - **Structured agent activity logging is mandatory.** Every agent session MUST initialize `AgentActivityLogger`.
 - **GPU for all model training.** This is a DGX Spark — use the GPU:
-  - XGBoost: `tree_method="gpu_hist", device="cuda"`
+  - XGBoost: `tree_method="hist", device="cuda"` (gpu_hist is deprecated in v3+)
   - CatBoost: `task_type="GPU"`
   - LightGBM: `device="gpu"`
 

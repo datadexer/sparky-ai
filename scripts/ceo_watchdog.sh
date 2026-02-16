@@ -84,6 +84,7 @@ while true; do
         --max-budget-usd "$MAX_BUDGET" \
         --permission-mode "$PERM_MODE" \
         --output-format stream-json \
+        --verbose \
         "$CEO_PROMPT" \
         2>"$LOG_FILE.stderr" \
         | while IFS= read -r line; do
