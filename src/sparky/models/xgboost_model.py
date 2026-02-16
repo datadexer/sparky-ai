@@ -54,7 +54,7 @@ class XGBoostModel:
         reg_alpha: float = 0.1,
         reg_lambda: float = 1.0,
         tree_method: str = "hist",
-        device: str = "cpu",
+        device: str = "cuda",
         random_state: int = 42,
         eval_metric: str = "logloss",
         use_label_encoder: bool = False,
@@ -88,8 +88,6 @@ class XGBoostModel:
             random_state=self.random_state,
             eval_metric=self.eval_metric,
             use_label_encoder=self.use_label_encoder,
-            tree_method="hist",
-            device="cuda",
         )
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
