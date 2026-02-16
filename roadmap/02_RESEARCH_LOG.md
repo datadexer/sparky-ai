@@ -5,6 +5,25 @@ Newest entries at the top.
 
 ---
 
+## Stacking Meta-Learner — 2026-02-16 22:27 UTC [COMPLETE]
+
+**STATUS**: Complete — stacking underperforms single CatBoost
+
+**APPROACH**: Train Cat/XGB/Light on 60% train, use their predictions as meta-features, train Logistic Regression on remaining 40%, predict on test.
+
+**RESULTS**:
+- **Stacking accuracy**: 52.1%
+- **Single CatBoost**: 53.0%
+- **Conclusion**: Meta-learner does NOT improve over best single model (1.7% worse)
+
+**INSIGHT**: Ensemble methods (soft voting, stacking) fail to beat CatBoost alone. The problem is NOT model capacity — it's signal quality in the features.
+
+**Files**: `scripts/train_stacking_meta.py`, `results/validation/stacking_meta.json`
+
+**Commit**: fa32150
+
+---
+
 ## Validation Checkpoint + Failed Experiments — 2026-02-16 22:23 UTC [COMPLETE]
 
 **STATUS**: Best config validated, 3 experiments failed due to data issues
