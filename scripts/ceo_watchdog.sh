@@ -28,7 +28,7 @@ LATEST_LINK="$LOG_DIR/latest.log"
 
 mkdir -p "$LOG_DIR"
 
-CEO_PROMPT='Continue work. Read CLAUDE.md, roadmap/00_STATE.yaml, coordination/TASK_CONTRACTS.md, check inbox (PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo). Use GPU for all model training. Do not narrate — execute experiments and log results to files. Commit frequently.'
+CEO_PROMPT='IMMEDIATE: Run the two-stage sweep: source .venv/bin/activate && python3 -u scripts/sweep_two_stage.py 2>&1 | tee logs/sweep_two_stage_$(date +%Y%m%d_%H%M%S).log — then read CLAUDE.md, commit results, continue with next experiment. Do not narrate. Do not summarize. Execute.'
 
 run_daemon() {
     # Unset Claude Code env vars so nested claude can launch
