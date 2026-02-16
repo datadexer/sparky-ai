@@ -5,6 +5,28 @@ Newest entries at the top.
 
 ---
 
+## Validation Checkpoint + Failed Experiments — 2026-02-16 22:23 UTC [COMPLETE]
+
+**STATUS**: Best config validated, 3 experiments failed due to data issues
+
+**VALIDATION**: Best config (CatBoost d=4 lr=0.01) re-run across 10 years
+- **Accuracy**: 52.7% (consistent with original 53.0%)
+- **Years tested**: 2016-2025
+- **Conclusion**: Model reproduces — results are stable
+
+**FAILED EXPERIMENTS** (blocked by missing/misaligned price data):
+1. **7-day horizon**: Hourly→daily resampling date mismatch
+2. **Ensemble (Cat+XGB)**: Price loading errors
+3. **Deeper trees (d=6,7,8)**: Price index alignment errors
+
+**ROOT CAUSE**: Scripts assumed `data/raw/btc_hourly_okx.parquet` exists (does not). Price data scattered across `data/raw/btc/ohlcv_*.parquet` with date alignment issues when resampling.
+
+**Files**: `scripts/validate_best_config_only.py`, `results/validation/best_config_validated.json`
+
+**Commit**: c2709c7
+
+---
+
 ## Two-Stage Sweep (58→20 features) — 2026-02-16 22:16 UTC [COMPLETE]
 
 **STATUS**: Complete — ALL configs BELOW BASELINE
