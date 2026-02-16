@@ -96,19 +96,24 @@ def register_all_features(registry: FeatureRegistry) -> None:
         )
     )
 
-    # Return features
-    registry.register(
-        FeatureDefinition(
-            name="returns_1d",
-            category="returns",
-            compute_fn=lambda data: simple_returns(data["price"]["close"]),
-            input_columns=["close"],
-            lookback=1,
-            data_source="binance",
-            description="1-day simple returns",
-            asset="all",
-        )
-    )
+    # Return features REMOVED — Feature ablation experiments showed returns_1d
+    # caused data leakage (shuffled_label test failed) and removing it IMPROVED
+    # Sharpe by +0.48. The subtle overlap between close_T (used in returns_1d)
+    # and the target (which compares close_T+N to open_T+1) created leakage.
+    # See scripts/debug_leakage.py and scripts/test_simplified_model.py for details.
+    #
+    # registry.register(
+    #     FeatureDefinition(
+    #         name="returns_1d",
+    #         category="returns",
+    #         compute_fn=lambda data: simple_returns(data["price"]["close"]),
+    #         input_columns=["close"],
+    #         lookback=1,
+    #         data_source="binance",
+    #         description="1-day simple returns [REMOVED DUE TO LEAKAGE]",
+    #         asset="all",
+    #     )
+    # )
 
     # BTC on-chain features (only available from blockchain.com data, starting 2021)
     registry.register(

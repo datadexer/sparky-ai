@@ -192,3 +192,29 @@ These findings inform our hypotheses but must be independently validated.
 
 **Finding**: [PRELIMINARY] Optimal horizon appears to be 30d (Sharpe=0.8645)
 Needs multi-seed validation for [VALIDATED] status.
+
+---
+## Phase 3 Data Preparation — 2026-02-16 01:20:01 UTC
+
+**Data Coverage:**
+- BTC OHLCV: 2019-01-01 to 2025-12-31 (2557 rows)
+- BTC on-chain: 2021-02-17 to 2026-02-15 (175092 rows)
+
+**Feature Matrix:**
+- Shape: (2543, 6)
+- Date range: 2019-01-15 to 2025-12-31
+- Features: 6 (rsi_14, momentum_30d, ema_ratio_20d, hash_ribbon_btc, address_momentum_btc, volume_momentum_btc)
+
+**Target Distribution:**
+- 1d horizon: 1359 longs / 2543 total (53.4%)
+- 3d horizon: 1358 longs / 2543 total (53.4%)
+- 7d horizon: 1384 longs / 2543 total (54.4%)
+- 14d horizon: 1412 longs / 2543 total (55.5%)
+- 30d horizon: 1438 longs / 2543 total (56.5%)
+
+**Data Splits (matching baseline for fair comparison):**
+- In-sample: 1083 rows (2019-01-01 to 2022-01-01)
+- Out-of-sample: 1369 rows (2022-01-01 to 2025-09-30)
+- Holdout: 92 rows (2025-10-01 to 2025-12-31)
+
+**Status:** ✓ Data preparation complete. Ready for Phase 3 experiments.
