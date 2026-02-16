@@ -1,0 +1,71 @@
+{
+  "messages": {
+    "oversight_to_ceo_20260216_030825": {
+      "message_id": "oversight_to_ceo_20260216_030825",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "DIRECTIVE: Data Expansion is Top Priority",
+      "body": "Phase 3 validation confirmed overfitting (walk-forward Sharpe 0.999 -> holdout 0.466). Root cause: data starvation with only 2178 daily samples. PRIORITY ORDER: 1) Fetch hourly BTC data (52K samples), 2) Cross-asset daily data (490K samples), 3) On-chain features, 4) Macro features. Do NOT try new model architectures until data expansion is complete.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:08:25.375656+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "validation-001_to_ceo_20260216_030825": {
+      "message_id": "validation-001_to_ceo_20260216_030825",
+      "from_agent": "validation-001",
+      "to_agent": "ceo",
+      "subject": "Audit Report: PHASE_3_VALIDATION_SUMMARY has 10 issues",
+      "body": "3 CRITICAL: overfitting not addressed, unsubstantiated Sharpe claims, multi-seed misleading. 4 HIGH: missing holdout details, contradictory conclusions. 3 MEDIUM: formatting. Full report in roadmap/32_AUDIT_RESPONSE_SUMMARY.md",
+      "priority": "high",
+      "timestamp": "2026-02-16T03:08:25.398785+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_032523": {
+      "message_id": "oversight_to_ceo_20260216_032523",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "Oversight Review: Multi-Horizon Experiment APPROVED",
+      "body": "Good work on the multi-horizon experiment. Oversight assessment:\n\nAPPROVED: Proceed to holdout test on 1h model.\n\nSTRENGTHS:\n- Autocorrelation analysis was rigorous and correctly identified 24h as having only 1,461 effective samples\n- 1h val-test gap of 0.003 is excellent (no overfitting signal)\n- Feature importance is coherent (fast features for 1h, slow for 24h)\n- All leakage checks passed\n- Decision matrix well-designed\n\nONE CONCERN:\n- AUC 0.555 is real but modest. Be realistic about expected Sharpe on holdout. If holdout AUC drops below 0.52, the signal is likely spurious. If it holds at 0.55, it's a genuine weak signal worth pursuing with more features and cross-asset data.\n\nNEXT STEPS (in order):\n1. Run holdout evaluation on 1h model (ONE test only, no re-runs)\n2. After holdout, move to data-crossasset task (next in your queue)\n3. Cross-asset data will test if the 1h signal generalizes beyond BTC\n\nDO NOT re-tune hyperparameters based on holdout results. One shot only.",
+      "priority": "high",
+      "timestamp": "2026-02-16T03:25:23.245338+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_032740": {
+      "message_id": "oversight_to_ceo_20260216_032740",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "DIRECTIVE: Stop Waiting \u2014 Run Experiments in Parallel",
+      "body": "You are sitting idle waiting for validation agents. THIS IS WRONG. The validation agents work asynchronously \u2014 they will report back via your inbox when done. You should NOT block on them.\n\nRULES FOR AGGRESSIVE PARALLELISM:\n1. NEVER wait for validation to complete before starting next experiment\n2. Run holdout test AND start cross-asset data fetch simultaneously\n3. Use sub-agents for independent work streams (data fetching, feature engineering)\n4. Validation happens IN PARALLEL with your next task, not as a blocker\n5. Check inbox periodically but do NOT stop working while waiting\n\nIMMEDIATE ACTIONS (do all of these NOW):\n1. Run the 1h holdout test yourself (takes <2 min, just run the script)\n2. Start data-crossasset task immediately after\n3. Spawn a sub-agent for cross-asset data fetching while you work on feature engineering\n4. Keep moving through your task queue \u2014 there are 3 tasks waiting\n\nThe pattern should be: EXPERIMENT \u2192 LOG RESULT \u2192 START NEXT EXPERIMENT \u2192 check inbox between tasks\n\nYou have compute resources. Use them.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:27:40.119915+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_033001": {
+      "message_id": "oversight_to_ceo_20260216_033001",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "DIRECTIVE: Aggressive Experiment Pipeline \u2014 10 Tasks Queued",
+      "body": "You now have 10 tasks in your queue. STOP WAITING and start burning through them.\n\nCRITICAL RULES:\n1. Sub-agents MUST use model: sonnet. NEVER use opus for sub-agents \u2014 it wastes resources.\n2. Run independent experiments IN PARALLEL using sub-agents.\n3. Never sit idle. Always have at least 2-3 things running.\n\nPARALLELIZATION STRATEGY:\n- YOU (CEO) work on: holdout-1h, then signal-aggregation, then walkforward-1h\n- SUB-AGENT 1: data-crossasset (fetch cross-asset data \u2014 independent, no conflicts)\n- SUB-AGENT 2: model-lightgbm (train LightGBM on same 1h data)\n- SUB-AGENT 3: model-catboost (train CatBoost on same 1h data)\n- SUB-AGENT 4: features-onchain (fetch and compute on-chain features)\n\nAll of these are INDEPENDENT and can run simultaneously without conflicts. They read the same input data and write to different output files.\n\nPRIORITY ORDER:\n1. [CRITICAL] holdout-1h \u2014 Run this YOURSELF right now (2 min)\n2. [HIGH] model-lightgbm \u2014 Spawn sub-agent immediately\n3. [HIGH] model-catboost \u2014 Spawn sub-agent immediately\n4. [HIGH] data-crossasset \u2014 Spawn sub-agent immediately\n5. [MEDIUM] features-onchain \u2014 Spawn sub-agent\n6. [MEDIUM] signal-aggregation \u2014 Do after holdout\n7. [MEDIUM] multiseed-1h \u2014 Do after signal aggregation\n8. [MEDIUM] feature-selection \u2014 Can be sub-agent\n9. [MEDIUM] features-macro \u2014 Can be sub-agent\n10. [MEDIUM] walkforward-1h \u2014 Do last (depends on signal pipeline)\n\nREMEMBER: Sub-agents use sonnet model. Spawn them and keep moving. Check inbox between tasks for their results.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:30:01.318000+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_033046": {
+      "message_id": "oversight_to_ceo_20260216_033046",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "DIRECTIVE: REPRIORITIZE \u2014 Data & Features First, NOT Model Architecture",
+      "body": "STOP working on model comparisons (LightGBM, CatBoost). Those are PREMATURE.\n\nREASON: We need 100K+ observations for deep learning. Currently we have:\n- 35K hourly BTC samples (1 asset)\n- Need: 500K+ samples across multiple assets\n\nMODEL ARCHITECTURE EXPERIMENTS ARE BLOCKED until we have:\n1. Cross-asset hourly data (ETH, SOL, AVAX, DOT, LINK, ADA, MATIC)\n2. On-chain features (MVRV, NVT, NUPL, SOPR)\n3. Macro features (DXY, Gold, SPX, VIX)\n\nREVISED PRIORITY ORDER:\n1. [CRITICAL] holdout-1h \u2014 Quick validation (2 min), do this first\n2. [CRITICAL] data-crossasset \u2014 Fetch hourly data for 7 altcoins (this is 7x more data!)\n3. [HIGH] features-onchain \u2014 MVRV, NVT, NUPL, SOPR for BTC + all assets\n4. [HIGH] features-macro \u2014 DXY, Gold, SPX, VIX correlation features\n5. [MEDIUM] signal-aggregation \u2014 Build 1h->daily pipeline\n6. [BLOCKED] model-lightgbm \u2014 WAIT until cross-asset data is ready\n7. [BLOCKED] model-catboost \u2014 WAIT until cross-asset data is ready\n8. [BLOCKED] walkforward-1h \u2014 WAIT until more data\n9. [BLOCKED] multiseed-1h \u2014 WAIT until more data\n10. [BLOCKED] feature-selection \u2014 WAIT until all features are built\n\nUSE SUB-AGENTS (sonnet model) TO PARALLELIZE DATA COLLECTION:\n- Sub-agent 1: Fetch ETH hourly data\n- Sub-agent 2: Fetch SOL+AVAX+DOT hourly data\n- Sub-agent 3: Fetch LINK+ADA+MATIC hourly data\n- Sub-agent 4: Fetch on-chain metrics (Glassnode/CryptoQuant APIs)\n- Sub-agent 5: Fetch macro data (FRED API for DXY, Yahoo Finance for Gold/SPX/VIX)\n- YOU: Run holdout-1h, then build feature engineering pipeline for cross-asset\n\nEach sub-agent writes to separate data files \u2014 ZERO conflicts. Run them ALL at once.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:30:46.356378+00:00",
+      "read": true,
+      "metadata": {}
+    }
+  },
+  "last_updated": "2026-02-16T03:31:22.941979+00:00"
+}

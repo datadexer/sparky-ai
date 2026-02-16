@@ -1,0 +1,14 @@
+{
+  "agents": {
+    "ceo": {
+      "agent_id": "ceo",
+      "role": "ceo",
+      "status": "active",
+      "started_at": "2026-02-16T03:08:25.253995+00:00",
+      "last_activity": "2026-02-16T03:21:16.163370+00:00",
+      "current_task": null,
+      "metadata": {}
+    }
+  },
+  "last_updated": "2026-02-16T03:21:16.163389+00:00"
+}
