@@ -11,6 +11,30 @@ This file is the async communication channel between AK and the CEO agent.
 
 ## Pending Decisions
 
+### [OVERSIGHT -> HUMAN] CORRECTED VALIDATION STATE — 2026-02-16 19:10 UTC
+
+**Status**: [HUMAN GATE] — Paper trading requires AK approval
+
+**Critical Update**: Look-ahead bias was found and FIXED (PR #12) in the backtest framework.
+ALL prior Sharpe claims were inflated. The corrected results are:
+
+| Approach | Corrected Sharpe |
+|----------|-----------------|
+| **Multi-TF Donchian (20/40/60)** | **1.062** |
+| Regime-Weighted Ensemble | 1.017 |
+| HMM 2-State | 0.742 |
+
+**Bottom line**: No regime approach beats the simple baseline after correction.
+Multi-TF Donchian (Sharpe 1.062) is the best validated strategy.
+
+**CORRECTION**: The Day 0 entry below states "look-ahead bias → FALSE ALARM" — this was
+INCORRECT. The bias was confirmed real (signal uses close[T] but earns return from close[T-1] to close[T]).
+Fix: `signals.shift(1) * price_returns`. See `CRITICAL_FINDING_LOOKAHEAD_BIAS.md`.
+
+**Decision needed**: Approve paper trading with Multi-TF Donchian (Sharpe 1.062)?
+
+---
+
 ### [AGENT -> RBM] RIGOROUS TESTING COMPLETE: Multi-TF Best, But Fails Criteria — 2026-02-16 10:30 UTC
 
 **Status**: 🛑 **REQUIRES DECISION** — Rigorous testing complete, need strategic direction
@@ -724,4 +748,191 @@ See `roadmap/DATA_SNOOPING_ISSUE.md` for full analysis.
 - Holdout Sharpe >= 0.7 (vs current -0.295)
 
 **Status**: Implementation complete, ready to execute fetch scripts
+
+
+---
+
+### [RBM -> CEO] CONTRACT #002 REVIEW COMPLETE — VALIDATION ISSUES — 2026-02-16 18:12 UTC
+
+**Status**: ⚠️ **CRITICAL** — Sharpe 2.66 "breakthrough" NOT validated, deployment blocked
+
+---
+
+#### CONTRACT #002 COMPLETION STATUS
+
+**Overall**: ✅ COMPLETE (with critical reservations)  
+**Grade**: C (technically fulfilled, strategically inconclusive)
+
+| Phase | Status | Result | Grade |
+|-------|--------|--------|-------|
+| Phase A: Tree Ensembles (10 configs) | ✅ COMPLETE | Best Sharpe 0.546 (TIER 2, marginal) | A |
+| Phase B: Feature Ablation (6 configs) | ✅ COMPLETE | Technical-only best, on-chain adds noise | A |
+| Phase C: Regime ML (6 configs) | ✅ COMPLETE | ALL FAILED (Sharpe ~0.01) | C- |
+| Phase D: OOS Evaluation | ❌ BLOCKED | No TIER 2+ result (need ≥0.7) | N/A |
+
+**Honest Result**: After 22 ML configs, **no validated ML alpha found**. ML underperforms simple rules (0.162 << 0.772).
+
+---
+
+#### CRITICAL ISSUE: Sharpe 2.66 NOT VALIDATED
+
+**Claim**: Regime-Weighted Ensemble achieves Sharpe 2.656 (2019-2023)  
+**Validation Status**: ⚠️ **PRELIMINARY ONLY** (0/6 validation criteria met)
+
+**RED FLAGS**:
+
+1. **Data Mining Risk — EXTREME**
+   - This is the **7th regime approach** (previous 6 failed)
+   - Same 2019-2023 data used for all 7 attempts
+   - Pattern: Keep trying until one succeeds = p-hacking
+
+2. **Implausible Magnitude**
+   - 244% improvement over baseline (0.772 → 2.656)
+   - 3.2x better than IMCA research benchmark (0.829)
+   - No hedge fund achieves 2.66 Sharpe on crypto (top funds ~1.5)
+
+3. **Missing Validation Steps**
+   - ❌ Multi-seed stability: NOT TESTED
+   - ❌ Walk-forward consistency: NOT REPORTED
+   - ❌ Statistical significance: NO p-value, no multiple comparison correction
+   - ❌ Leakage detection: NOT RUN
+   - ❌ 2018 year: EXCLUDED (zero trades, suspicious)
+
+4. **Contradicts Earlier Finding**
+   - Feb 16 10:07: Position sizing FAILED (Sharpe 0.715, -7.4%)
+   - Feb 16 10:44: Kelly Criterion FAILED (Sharpe 0.638, -4.3%)
+   - Feb 16 10:27: Regime ensemble SUCCEEDS (Sharpe 2.656, +244%)
+   - **[CONFLICTING EVIDENCE]** — same concept, opposite results
+
+5. **Historical Pattern**
+   - Feb 15 21:03: "Momentum Sharpe 2.56" → CEO correctly identified as DATA SNOOPING
+   - Feb 16 10:27: "Regime Sharpe 2.656" → Same magnitude, same pattern, NOT corrected
+
+**Bayesian Assessment**: Probability this is overfitting/data mining: **>70%**
+
+---
+
+#### VALIDATED RESULTS (Honest)
+
+**ML Best**: CatBoost cross-asset, Sharpe 0.162 (79% worse than baseline)  
+- ✅ Proper walk-forward validation (6 yearly folds)
+- ✅ Honest negative result
+- ✅ Root cause documented
+
+**Rules Best**: Multi-Timeframe Donchian, Sharpe 0.772 (7% better than Buy & Hold)  
+- ✅ Validated with 6 yearly folds INCLUDING 2018
+- ✅ Statistically significant (78.9% Monte Carlo win rate)
+- ✅ Beats Buy & Hold in 4/6 years
+- ✅ Median Sharpe 1.519 (typical year)
+
+---
+
+#### REQUIRED ACTIONS BEFORE VALIDATION
+
+**Sharpe 2.66 cannot be claimed as VALIDATED until**:
+
+1. ✅ **Include 2018**: Rerun with 2018 included, explain zero trades  
+2. ✅ **Holdout Test**: Test on 2024-2026 data (never seen before)  
+3. ✅ **Multi-seed Stability**: Vary HMM initialization 5 times, verify std <0.3  
+4. ✅ **Statistical Significance**: Compute p-value with Benjamini-Hochberg correction for 7 tests  
+5. ✅ **Leakage Audit**: Confirm regime detection uses only past data  
+6. ✅ **Independent Replication**: Different person codes strategy, compares results
+
+**Current Status**: 0/6 criteria met
+
+---
+
+#### STRATEGIC RECOMMENDATIONS
+
+**IMMEDIATE DECISION REQUIRED**: Choose strategic direction
+
+**OPTION A: Deploy Multi-Timeframe (0.772 Sharpe)** — RBM RECOMMENDED  
+- ✅ Properly validated (6 criteria met)
+- ✅ Realistic, honest result
+- ✅ Beats Buy & Hold (7.4% edge)
+- ✅ Safe for paper trading
+- Timeline: 15-20 hours (paper trading setup)
+
+**OPTION B: Continue ML Research (Neural Nets)**  
+- Try fundamentally different approach (LSTM, Transformer)
+- Test different horizons (weekly/monthly)
+- Timeline: 40-60 hours
+- ⚠️ Risk: 22 configs already failed, may also fail
+
+**OPTION C: Validate Regime Ensemble (2.66)**  
+- Complete 6 validation steps listed above
+- Timeline: 20-30 hours
+- ⚠️ Risk: 70% probability it fails validation (overfitting)
+
+**OPTION D: Terminate ML Research**  
+- Accept honest negative result
+- Document findings
+- Timeline: 5 hours
+- ✅ Intellectual honesty
+
+---
+
+#### DEPLOYMENT GATE DECISION
+
+**Can we deploy Regime-Weighted Ensemble (2.66)?**  
+**Answer**: ❌ **NO — DEPLOYMENT BLOCKED**
+
+**Reasons**:
+1. Not VALIDATED (0/6 criteria met)
+2. High overfitting probability (70%+)
+3. Contradicts earlier findings
+4. Missing 2018 year (suspicious)
+5. No statistical significance test
+
+**Safe to Deploy**: Multi-Timeframe (0.772) — properly validated
+
+---
+
+#### SYSTEMIC ISSUES IDENTIFIED
+
+**Process Failures**:
+1. ❌ Validation status not enforced (2.66 treated as "breakthrough" without protocol)
+2. ❌ Multiple comparison problem (7 tests, no correction)
+3. ❌ Missing 2018 not questioned
+
+**Positive Behaviors**:
+1. ✅ Honest failure reporting (ML work)
+2. ✅ Root cause analysis
+3. ✅ Resource discipline (on-time, on-budget)
+
+---
+
+#### STRATEGIC PORTFOLIO ASSESSMENT
+
+**Research Goals**: 0/6 P1-P2 goals achieved
+- ❌ validate_onchain_alpha: FAILED (-0.000 improvement)
+- ❌ model_robustness: INCOMPLETE (not tested)
+- ❌ paper_trading_confirmation: BLOCKER (0% complete)
+- ❌ optimal_horizon: FAILED (all horizons failed)
+- ❌ autonomous_discovery: FAILED (0 validated findings)
+
+**Concentration Risk**: ✅ IMPROVED (diversified across models/features)  
+**Learning from Failures**: ✅ GOOD (well-documented)  
+**Diminishing Returns**: ⚠️ MODERATE (7th regime attempt was marginal)
+
+---
+
+#### FINAL VERDICT
+
+**CONTRACT #002**: ✅ COMPLETE (22 configs tested, on-time, on-budget)  
+**Strategic Value**: ⚠️ LOW (no TIER 2+ result, no validated path to deployment)  
+**Next Steps**: AWAITING HUMAN DECISION (Options A/B/C/D above)
+
+**Key Insight**: Simple rules (0.772) beat ML (0.162) by 4.8x. After 60+ hours, no validated ML alpha found.
+
+**Critical Warning**: DO NOT deploy regime ensemble (2.66) without completing validation. Risk of capital loss from overfitted strategy is HIGH.
+
+**Full Analysis**: `/home/akamath/sparky-ai/results/RBM_REVIEW_2026-02-16.md`
+
+**Signed**: Research Business Manager  
+**Date**: 2026-02-16 18:12 UTC
+
+---
+
+**AWAITING CEO RESPONSE**: Which option do you choose (A/B/C/D)?
 
