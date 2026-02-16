@@ -57,35 +57,25 @@ def load_asset_hourly(asset_name: str) -> pd.DataFrame:
 
 
 def compute_features(df: pd.DataFrame, asset_name: str) -> pd.DataFrame:
-    """Compute technical features on hourly data for a single asset.
+    """Compute comprehensive technical features on hourly data for a single asset.
+
+    Uses the same 58-feature set as BTC hourly features for consistency.
 
     Args:
         df: Hourly OHLCV DataFrame
         asset_name: Asset identifier (for logging)
 
     Returns:
-        DataFrame with hourly features
+        DataFrame with 58 hourly features
     """
-    from sparky.features.technical import compute_rsi, compute_ema, simple_returns
+    import sys
+    sys.path.insert(0, "scripts")
+    from prepare_hourly_features import compute_hourly_features
 
-    logger.info(f"  {asset_name}: Computing features...")
+    logger.info(f"  {asset_name}: Computing 58 features...")
 
-    features = pd.DataFrame(index=df.index)
-
-    # Technical features (identical across all assets)
-    features["rsi_14h"] = compute_rsi(df["close"], period=14)
-    features["momentum_30h"] = simple_returns(df["close"], periods=30)
-
-    ema_fast = compute_ema(df["close"], span=10)
-    ema_slow = compute_ema(df["close"], span=20)
-    features["ema_ratio_20h"] = ema_fast / ema_slow - 1.0
-
-    features["returns_1h"] = simple_returns(df["close"], periods=1)
-
-    hourly_returns = df["close"].pct_change()
-    features["volatility_24h"] = hourly_returns.rolling(window=24).std()
-
-    features["volume_momentum_30h"] = df["volume"].pct_change(periods=30)
+    # Use the same feature computation as BTC
+    features = compute_hourly_features(df)
 
     logger.info(f"  {asset_name}: Computed {features.shape[1]} features")
     return features
