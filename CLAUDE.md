@@ -6,16 +6,27 @@ Your job is to produce trading strategies that generate real alpha on BTC and ET
 
 ## How to Start a Session
 1. Read this file
-2. Read `roadmap/STATE.yaml` to understand current progress
-3. Read `roadmap/DECISIONS.md` for any pending human inputs
-4. Check which branch you're on (`git branch --show-current`)
-5. **Initialize activity logger** (after Phase 0 builds it):
+2. **Run coordination startup** (checks inbox + tasks from other agents):
+   `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo`
+   - Read ALL unread messages before proceeding
+   - Check task assignments to avoid duplicate work
+   - After reading messages: `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox-read ceo`
+3. Read `roadmap/00_STATE.yaml` to understand current progress
+4. Read `roadmap/01_DECISIONS.md` for any pending human inputs
+5. Check which branch you're on (`git branch --show-current`)
+6. **Initialize activity logger** (after Phase 0 builds it):
    `from sparky.oversight.activity_logger import AgentActivityLogger`
    `logger = AgentActivityLogger(agent_id="ceo", session_id="phase-N-description")`
-6. Pick up the next unblocked task from STATE.yaml
-7. Execute it, run tests, commit, update STATE.yaml, log to activity logger
-8. Continue until hitting a human gate or completing the current phase
-9. At phase completion: open a PR on GitHub via `gh pr create`
+7. Pick up the next unblocked task from STATE.yaml or coordination task queue
+8. Before starting work, check for duplicates:
+   `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py check-duplicates "your task description"`
+9. Mark task as started:
+   `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-start <task-id>`
+10. Execute it, run tests, commit, update STATE.yaml, log to activity logger
+11. When task is done:
+    `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-done <task-id>`
+12. Continue until hitting a human gate or completing the current phase
+13. At phase completion: open a PR on GitHub via `gh pr create`
 
 ## Environment Setup
 - **Python:** 3.12+ on aarch64 (NVIDIA DGX Spark)
@@ -185,10 +196,45 @@ External API clients: singleton, rate-limited, retry with backoff, graceful fail
 ## Trading Rules
 See `configs/trading_rules.yaml` — these are IMMUTABLE.
 
+## Multi-Agent Coordination
+You are part of a multi-agent system. Other agents (validation, data engineering) may send you messages and reports.
+
+**CLI commands** (run via Bash):
+```
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo          # Session start
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox ceo            # Check inbox
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox-read ceo       # Mark read
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py tasks ceo            # My tasks
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-start <id>      # Start task
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-done <id>       # Complete task
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py check-duplicates "pattern"  # Avoid duplicate work
+PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py status               # Full system view
+```
+
+**Rules**:
+- ALWAYS run `startup ceo` at session start before doing any work
+- NEVER start work that another agent is already doing (check duplicates first)
+- There is only ONE CEO agent (you). Sub-agents report to you via inbox.
+- NEVER wait idle for validation agents to return. Validation runs async — check inbox between tasks.
+- PIPELINE your work: finish experiment → log result → start next experiment → check inbox
+- Use sub-agents for independent work (data fetching, feature engineering) to parallelize
+- Always have at least one task IN_PROGRESS. If your queue is empty, create new tasks.
+- Sub-agents MUST use model: sonnet (haiku for simple lookups). NEVER use opus for sub-agents.
+
+**RESOURCE PROTECTION RULES (CRITICAL — PREVENT SYSTEM CRASHES)**:
+- **HARD LIMIT**: NEVER spawn more than 3 concurrent Task tool agents at once
+- **SEQUENTIAL SPAWNING**: Spawn 1 agent, wait for completion, then spawn next
+- **BATCH LIMIT**: If spawning multiple agents, MAX 2 agents in a single message, then WAIT
+- **MEMORY-INTENSIVE WORK**: For model training or large data processing, MAX 1 agent at a time
+- **CHECK BEFORE SPAWN**: Before any Task tool call, verify no more than 2 agents currently running
+- **COMPLETION REQUIRED**: An agent is only "complete" when TaskOutput returns final status
+- **NO FIRE-AND-FORGET**: Never spawn agents in background without tracking completion
+- **FALLBACK RULE**: If unsure about resource usage, spawn 1 agent, wait, proceed serially
+
 ## Communication Protocol
-- Write findings to `roadmap/RESEARCH_LOG.md`
-- Write decisions needing human input to `roadmap/DECISIONS.md`
-- Update `roadmap/STATE.yaml` after completing any task
+- Write findings to `roadmap/02_RESEARCH_LOG.md`
+- Write decisions needing human input to `roadmap/01_DECISIONS.md`
+- Update `roadmap/00_STATE.yaml` after completing any task
 - Tag human-required decisions with `[HUMAN GATE]`
 - Tag autonomous decisions with `[AUTO]`
 

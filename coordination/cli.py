@@ -13,6 +13,9 @@ Usage:
     python3 coordination/cli.py send <from> <to> <subject> <body> [priority]  # Send message
     python3 coordination/cli.py register <agent_id> <role>   # Register agent
     python3 coordination/cli.py status                       # Show system status
+    python3 coordination/cli.py resources                    # Show resource usage
+    python3 coordination/cli.py check-spawn [agent_type]     # Check if can spawn agent
+    python3 coordination/cli.py check-duplicates <pattern>   # Check for duplicate work
 """
 
 import sys
@@ -218,6 +221,54 @@ def cmd_check_duplicates(pattern: str):
         print("No duplicates found")
 
 
+def cmd_resources():
+    """Show system resource status."""
+    api = get_api()
+    status = api.get_resource_status()
+
+    if not status:
+        print("Resource manager not available")
+        return
+
+    print("=" * 70)
+    print("SYSTEM RESOURCES")
+    print("=" * 70)
+
+    print(f"\nCPU Usage: {status.cpu_percent:.1f}%")
+    print(f"Memory Usage: {status.memory_percent:.1f}%")
+    print(f"Disk Free: {status.disk_free_gb:.1f} GB")
+
+    print(f"\nActive Agents: {status.active_agents}")
+    if status.agents_by_type:
+        for agent_type, count in status.agents_by_type.items():
+            print(f"  - {agent_type}: {count}")
+
+    if status.circuit_breaker_open:
+        print("\n⚠️  CIRCUIT BREAKER OPEN - No new agents allowed")
+
+    if status.under_pressure:
+        print("\n⚠️  SYSTEM UNDER PRESSURE - Reduced concurrency in effect")
+
+    if status.warnings:
+        print("\nWARNINGS:")
+        for warning in status.warnings:
+            print(f"  ⚠️  {warning}")
+
+    print()
+
+
+def cmd_check_spawn(agent_type: str = "general"):
+    """Check if resources allow spawning a new agent."""
+    api = get_api()
+    can_spawn, reason = api.check_can_spawn_agent(agent_type)
+
+    if can_spawn:
+        print(f"✓ Can spawn {agent_type} agent: {reason}")
+    else:
+        print(f"✗ Cannot spawn {agent_type} agent: {reason}")
+        sys.exit(1)
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -252,6 +303,11 @@ def main():
             cmd_export()
         elif cmd == "check-duplicates" and len(sys.argv) >= 3:
             cmd_check_duplicates(sys.argv[2])
+        elif cmd == "resources":
+            cmd_resources()
+        elif cmd == "check-spawn":
+            agent_type = sys.argv[2] if len(sys.argv) >= 3 else "general"
+            cmd_check_spawn(agent_type)
         else:
             print(f"Unknown command or missing args: {cmd}")
             print(__doc__)

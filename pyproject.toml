@@ -19,6 +19,7 @@ dependencies = [
     "pyarrow>=17.0",
     "pyyaml>=6.0",
     "optuna>=4.0",
+    "psutil>=6.0",
 ]
 
 [project.optional-dependencies]

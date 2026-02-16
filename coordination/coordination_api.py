@@ -1,11 +1,21 @@
 """Main coordination API - single interface for all coordination operations."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
 from .agent_registry import AgentRegistry, AgentRole, AgentStatus
 from .inbox_manager import InboxManager, MessagePriority
 from .task_manager import TaskManager, TaskStatus, TaskPriority
+
+# Import resource manager
+try:
+    from sparky.oversight.resource_manager import get_resource_manager
+    RESOURCE_MANAGER_AVAILABLE = True
+except ImportError:
+    RESOURCE_MANAGER_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class CoordinationAPI:
@@ -27,6 +37,59 @@ class CoordinationAPI:
         self.task_manager = TaskManager(coord_dir / "tasks.json")
         self.inbox_manager = InboxManager(coord_dir / "inbox.json")
         self.agent_registry = AgentRegistry(coord_dir / "agents.json")
+
+        # Initialize resource manager if available
+        self.resource_manager = get_resource_manager() if RESOURCE_MANAGER_AVAILABLE else None
+
+    # ========== Resource Management ==========
+
+    def check_can_spawn_agent(self, agent_type: str = "general") -> tuple[bool, str]:
+        """Check if resources allow spawning a new agent.
+
+        Args:
+            agent_type: Type of agent ("general", "model_training", "data_fetch")
+
+        Returns:
+            (can_spawn, reason) tuple
+        """
+        if not self.resource_manager:
+            # No resource manager, allow (for tests or minimal setup)
+            return True, "Resource manager not available"
+
+        try:
+            self.resource_manager.can_spawn_agent(agent_type)
+            return True, "Resources available"
+        except Exception as e:
+            return False, str(e)
+
+    def register_spawned_agent(self, agent_id: str, agent_type: str = "general"):
+        """Register a newly spawned agent with resource manager.
+
+        Args:
+            agent_id: Unique agent ID
+            agent_type: Type of agent
+        """
+        if self.resource_manager:
+            self.resource_manager.register_agent(agent_id, agent_type)
+
+    def unregister_completed_agent(self, agent_id: str):
+        """Unregister a completed agent from resource manager.
+
+        Args:
+            agent_id: Agent ID
+        """
+        if self.resource_manager:
+            self.resource_manager.unregister_agent(agent_id)
+
+    def get_resource_status(self):
+        """Get current resource status.
+
+        Returns:
+            SystemStatus or None if resource manager unavailable
+        """
+        if self.resource_manager:
+            return self.resource_manager.get_system_status()
+        return None
 
     # ========== Agent Lifecycle ==========
 
