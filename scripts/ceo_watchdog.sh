@@ -59,17 +59,16 @@ while true; do
 
     echo "[$TIMESTAMP] Starting CEO session #$SESSION_COUNT (log: $LOG_FILE)"
 
-    # Simple approach: use plain --print mode and pipe through unbuffered tee.
-    # stdbuf disables buffering so output streams live to both terminal and log.
+    # Use `script` to allocate a PTY, which forces claude to stream output
+    # line-by-line instead of buffering until exit. The PTY tricks claude into
+    # thinking it's writing to a terminal.
     set +e
-    cd "$PROJECT_ROOT" && stdbuf -oL claude -p \
-        --model "$MODEL" \
-        --max-budget-usd "$MAX_BUDGET" \
-        --permission-mode "$PERM_MODE" \
-        "$CEO_PROMPT" \
-        2>"$LOG_FILE.stderr" \
-        | stdbuf -oL tee "$LOG_FILE"
-    EXIT_CODE=${PIPESTATUS[0]}
+    cd "$PROJECT_ROOT" && script -qfc "claude -p \
+        --model $MODEL \
+        --max-budget-usd $MAX_BUDGET \
+        --permission-mode $PERM_MODE \
+        '$CEO_PROMPT'" "$LOG_FILE"
+    EXIT_CODE=$?
     set -e
 
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
