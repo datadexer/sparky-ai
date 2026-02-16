@@ -1,0 +1,81 @@
+{
+  "model": "XGBoost (expanded features)",
+  "features": 44,
+  "train_samples": 33933,
+  "val_samples": 17495,
+  "test_samples": 8736,
+  "val_accuracy": 0.5367819376964847,
+  "val_auc": 0.5504347664487378,
+  "val_precision": 0.536749538595158,
+  "val_recall": 0.5630338230269901,
+  "val_f1": 0.5495775900400178,
+  "val_logloss": 0.692317588829452,
+  "test_accuracy": 0.5278159340659341,
+  "test_auc": 0.5442026117386869,
+  "test_precision": 0.5309928688974218,
+  "test_recall": 0.6505376344086021,
+  "test_f1": 0.584717607973422,
+  "test_logloss": 0.6964361084536493,
+  "feature_importance_top15": [
+    {
+      "feature": "rsi_6h",
+      "importance": 0.04077160730957985
+    },
+    {
+      "feature": "ema_ratio_20h",
+      "importance": 0.028458617627620697
+    },
+    {
+      "feature": "higher_highs_lower_lows_5h",
+      "importance": 0.027175845578312874
+    },
+    {
+      "feature": "macd_histogram",
+      "importance": 0.025674106553196907
+    },
+    {
+      "feature": "mvrv_ratio",
+      "importance": 0.024972129613161087
+    },
+    {
+      "feature": "bb_position_20h",
+      "importance": 0.02423197403550148
+    },
+    {
+      "feature": "price_acceleration_10h",
+      "importance": 0.023425495252013206
+    },
+    {
+      "feature": "vix_level",
+      "importance": 0.02333918772637844
+    },
+    {
+      "feature": "dxy_return_1d",
+      "importance": 0.02331618033349514
+    },
+    {
+      "feature": "btc_gold_corr_30d",
+      "importance": 0.023242175579071045
+    },
+    {
+      "feature": "hour_of_day",
+      "importance": 0.022958384826779366
+    },
+    {
+      "feature": "momentum_4h",
+      "importance": 0.022922445088624954
+    },
+    {
+      "feature": "nvt_ratio",
+      "importance": 0.02290494181215763
+    },
+    {
+      "feature": "macd_line",
+      "importance": 0.022861013188958168
+    },
+    {
+      "feature": "vix_change_1d",
+      "importance": 0.02277287095785141
+    }
+  ]
+}

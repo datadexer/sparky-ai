@@ -33,7 +33,16 @@ logger = logging.getLogger(__name__)
 
 def load_hourly_data() -> pd.DataFrame:
     """Load hourly OHLCV data."""
-    input_path = Path("data/raw/btc/ohlcv_hourly.parquet")
+    # Use max coverage file (115K candles, 2013-2026) if available
+    max_coverage_path = Path("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    standard_path = Path("data/raw/btc/ohlcv_hourly.parquet")
+
+    if max_coverage_path.exists():
+        input_path = max_coverage_path
+        logger.info("Using maximum coverage dataset (multi-exchange)")
+    else:
+        input_path = standard_path
+        logger.info("Using standard dataset (single exchange)")
 
     if not input_path.exists():
         raise FileNotFoundError(

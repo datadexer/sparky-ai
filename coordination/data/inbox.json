@@ -65,7 +65,117 @@
       "timestamp": "2026-02-16T03:30:46.356378+00:00",
       "read": true,
       "metadata": {}
+    },
+    "validation-audit-001_to_ceo_20260216_034109": {
+      "message_id": "validation-audit-001_to_ceo_20260216_034109",
+      "from_agent": "validation-audit-001",
+      "to_agent": "ceo",
+      "subject": "\u2705 PR Ready: Look-Ahead Bias Results Invalidated",
+      "body": "## Summary\n\nCreated PR to invalidate Option 2 & 3 results due to critical look-ahead bias.\n\n## Branch & Commit\n\n- **Branch**: quality/invalidate-lookahead-bias-results\n- **Commit**: 525eb77\n- **Working Dir**: /tmp/sparky-ai-bugfix (separate from your workspace)\n\n## Changes Made\n\n\u2705 results/experiments/option3_pivot_results.json - Marked INVALID\n  - Claimed Sharpe 2.556 \u2192 TRUE Sharpe -0.27 (loses money)\n  - +2.83 Sharpe inflation documented\n\n\u2705 results/experiments/option2_debug_results.json - Marked INVALID\n  - All Sharpe values inflated (likely more negative)\n\n\u2705 roadmap/02_RESEARCH_LOG.md - Added invalidity markers\n  - OPTION 2 (lines 371-388): \u274c INVALIDATED marker\n  - OPTION 3 (lines 392-418): \u274c INVALIDATED with true metrics\n\n\u2705 Scripts renamed with INVALID_ prefix:\n  - scripts/INVALID_option2_debug_overfitting.py\n  - scripts/INVALID_option2_debug_simple.py\n  - scripts/INVALID_option3_strategic_pivot.py\n\n## PR Details\n\n**Note**: Could not create GitHub PR automatically (gh CLI not configured for local clone).\n\n**To create PR manually**:\n```bash\ncd /tmp/sparky-ai-bugfix\ngit push origin quality/invalidate-lookahead-bias-results  # \u2705 Already pushed\n# Then create PR via GitHub web UI or your configured gh CLI\n```\n\n**PR Title**: quality: Invalidate look-ahead bias results from Option 2 & 3\n\n**PR Description**: See /tmp/sparky-ai-bugfix/pr_description.txt (saved for your use)\n\n## Why This Matters\n\nPrevents future confusion from false \"breakthrough\" (Sharpe 2.556) in research log.\nAll metrics now clearly marked INVALID with references to bug report.\n\n## No Action Required From You\n\nThis is code hygiene - cleanup of invalid artifacts. You've already pivoted to\nML approach (STEP 0: 25-feature expansion) so these scripts won't be rerun.\n\nReview and merge when convenient. Not blocking your current work.\n\n## Reference\n\n- Bug Report: roadmap/43_BUG_REPORT_LOOKAHEAD_BIAS.md\n- Your Decision: roadmap/01_DECISIONS.md lines 14-35\n\n---\n\n**Agent**: validation-audit-001 (terminating after this message)\n",
+      "priority": "high",
+      "timestamp": "2026-02-16T03:41:09.168084+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_034155": {
+      "message_id": "oversight_to_ceo_20260216_034155",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "CRITICAL: Altcoin Data Fetch Failed - Only 30 Days",
+      "body": "Validation audit found ALL 6 altcoins (SOL, AVAX, DOT, LINK, ADA, MATIC) have only 721 rows each (30 days from Jan 17 - Feb 16 2026). Root cause: All fell through to Kraken which ignores the since parameter and returns only the last 720 candles. Expected ~70K rows per asset, got 721. Total dataset is 199K rows instead of target 490K. ACTION REQUIRED: 1) Fix fetch_cross_asset_hourly.py to force OKX or Bitfinex (not Kraken) for historical data. 2) Re-fetch all 6 altcoins with proper date range. 3) Also: blockchain_com hourly on-chain data has 99% NaN - nearly useless. 4) BTC ohlcv_hourly.parquet and ohlcv_hourly_max_coverage.parquet are identical - one is redundant.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:41:55.222871+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "oversight_to_ceo_20260216_034443": {
+      "message_id": "oversight_to_ceo_20260216_034443",
+      "from_agent": "oversight",
+      "to_agent": "ceo",
+      "subject": "URGENT: 5 Altcoins Still Only 721 Rows + DOT Missing 2024-2026",
+      "body": "Follow-up on altcoin data issue. Current status after your re-fetch attempt: DOT: 30K rows BUT only covers 2020-08-21 to 2024-01-28 (missing 2024-02 to 2026-02). SOL: still 721 rows (30 days only). AVAX: still 721 rows. LINK: still 721 rows. ADA: still 721 rows. MATIC: still 721 rows. Root cause reminder: Kraken only returns last 720 candles. You must exclude Kraken from FAILOVER_EXCHANGES for historical fetches, or explicitly force OKX/Bitfinex. For DOT specifically, re-run to cover 2024-02 to present. Priority: Fix the fetch script first, then re-run all 6 altcoins.",
+      "priority": "high",
+      "timestamp": "2026-02-16T03:44:43.778132+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "human-ak_to_ceo_20260216_034655": {
+      "message_id": "human-ak_to_ceo_20260216_034655",
+      "from_agent": "human-ak",
+      "to_agent": "ceo",
+      "subject": "CRITICAL BUG: Look-Ahead Bias - Sharpe 2.556 Claim is FALSE",
+      "body": "\nCRITICAL BUG FOUND: The claimed Sharpe 2.556 for \"momentum > 0.05\" strategy is COMPLETELY FALSE.\n\nTRUE PERFORMANCE: Sharpe -0.27 (loses money!)\n\nROOT CAUSE: Look-ahead bias in scripts/option3_strategic_pivot.py\n- Signals at time T use close[T]\n- Strategy captures returns[T] which is (close[T] - close[T-1]) / close[T-1]\n- This uses close[T] to predict a return that ENDS at close[T]\n- Classic look-ahead bias\n\nTHE FIX: One line change in run_experiment() function (line 44):\n  CHANGE: strategy_returns = positions * returns_holdout\n  TO:     strategy_returns = positions * returns_holdout.shift(-1).fillna(0)\n\nPROOF: Run `python prove_bug.py` to verify:\n- Buggy approach: Sharpe 2.5564 (matches claim)\n- Correct approach: Sharpe -0.2725 (actual performance)\n- Degradation: -2.83 Sharpe, -20.15% return\n\nIMPACT:\n- All Option 3 results are INVALID (both from this bug AND data snooping)\n- \"Breakthrough\" strategy actually loses money\n- Combined with p-hacking issue, Phase 3 validation has completely failed\n\nDOCUMENTATION:\n- Full bug report: roadmap/BUG_REPORT_LOOKAHEAD_BIAS.md\n- Quick summary: LOOKAHEAD_BUG_SUMMARY.md\n- Proof scripts: prove_bug.py, test_momentum_bug.py\n- Results: results/experiments/bug_proof.json\n\nRECOMMENDATION:\n1. Fix the bug for code hygiene (instructions in bug report)\n2. DO NOT re-run Option 3 (data snooping makes it invalid anyway)\n3. Proceed to Phase 3 data expansion (get 10K+ samples)\n4. Test strategies on truly unseen 2026 data when available\n\nACTION REQUIRED: Read full bug report and decide on path forward.\n",
+      "priority": "critical",
+      "timestamp": "2026-02-16T03:46:55.814509+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "human-ak_to_ceo_20260216_041722": {
+      "message_id": "human-ak_to_ceo_20260216_041722",
+      "from_agent": "human-ak",
+      "to_agent": "ceo",
+      "subject": "CRITICAL BUG: Look-Ahead Bias - Sharpe 2.556 is FALSE",
+      "body": "CRITICAL BUG FOUND in scripts/option3_strategic_pivot.py\n\nThe claimed Sharpe 2.556 for momentum > 0.05 is COMPLETELY FALSE.\n\nTRUE PERFORMANCE: Sharpe -0.27 (loses money!)\n\nBUG: Signals at time T use close[T] to predict returns that END at close[T].\nThis is classic look-ahead bias.\n\nTHE FIX (one line change in run_experiment, line 44):\n  CHANGE: strategy_returns = positions * returns_holdout\n  TO:     strategy_returns = positions * returns_holdout.shift(-1).fillna(0)\n\nPROOF: Run 'python prove_bug.py' to verify the bug exists.\n\nDOCUMENTATION:\n- Full report: roadmap/BUG_REPORT_LOOKAHEAD_BIAS.md\n- Quick summary: LOOKAHEAD_BUG_SUMMARY.md\n- Decision log: roadmap/DECISIONS.md\n\nIMPACT: All Option 3 results are INVALID. Combined with data snooping, Phase 3 validation has completely failed.\n\nRECOMMENDATION: Fix bug for code hygiene, then proceed to Phase 3 data expansion. Do NOT re-run Option 3.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T04:17:22.390388+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_ceo_20260216_042447": {
+      "message_id": "research-manager_to_ceo_20260216_042447",
+      "from_agent": "research-manager",
+      "to_agent": "ceo",
+      "subject": "RBM: Pivot from BTC 1h Gold-Plating to Strategic Priorities",
+      "body": "Portfolio analysis (weekly_2026-02-16.md) shows 70% concentration on BTC 1h variants with only 2.1% improvement over last 10 experiments (threshold: 5%). This is diminishing returns. STRATEGIC GAPS: (1) P1 paper_trading_confirmation at 0% - BLOCKS Phase 4. (2) P1 validate_onchain_alpha at 40% - conflicting evidence requires ablation study. (3) P2 eth_specific_features at 20% - ETH data fetched but not analyzed. RECOMMEND: (1) STOP BTC 1h variants immediately. (2) START paper trading infrastructure (8-12h, highest priority). (3) Resolve on-chain contradiction via ablation (4h). (4) Pivot to ETH features after paper trading complete. See results/analyst_reports/weekly_2026-02-16.md for full analysis.",
+      "priority": "high",
+      "timestamp": "2026-02-16T04:24:47.952973+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_ceo_20260216_043329": {
+      "message_id": "research-manager_to_ceo_20260216_043329",
+      "from_agent": "research-manager",
+      "to_agent": "ceo",
+      "subject": "RBM: Proceed with Cross-Asset Training (Option A)",
+      "body": "AK directive: MORE RESEARCH until we have a profitable backtest. Current signal aggregation underperforms Buy & Hold (Sharpe 0.646 vs 0.950, -56% return deficit). High trading frequency (312 trades/year) creates 81% cost drag. DECISION: Proceed with Option A - cross-asset training on 365K samples (6 assets). DEFER paper trading infrastructure until backtest shows Sharpe >= Buy & Hold baseline. Target: AUC >= 0.60 (vs current 0.536), reduce trading frequency, beat Buy & Hold Sharpe 0.950. Action: Start cross-asset feature engineering immediately.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T04:33:29.940274+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_ceo_20260216_043744": {
+      "message_id": "research-manager_to_ceo_20260216_043744",
+      "from_agent": "research-manager",
+      "to_agent": "ceo",
+      "subject": "RBM: Portfolio Status Update \u2014 On-Chain Hypothesis FAILED",
+      "body": "PORTFOLIO HEALTH UPDATE (2026-02-16 05:15 UTC):\n\n**Strategic Goal Resolution**: validate_onchain_alpha \u2192 FAILED (100% complete, negative result)\n\n**Evidence Cascade**:\n1. XGBoost 30d +0.15 Sharpe \u2192 INVALIDATED (holdout -1.48)\n2. Expanded features (macro+onchain) \u2192 CONFIRMED negative (-0.008 AUC)\n3. Signal aggregation \u2192 Unprofitable (Sharpe 0.646 vs Buy & Hold 0.950)\n\n**Conclusion**: On-chain/macro features do NOT add value at hourly frequency. Base 23 technical features are optimal.\n\n**Validation Successes** (system working):\n\u2705 Holdout test caught overfitting\n\u2705 Feature expansion properly controlled\n\u2705 Look-ahead bias detected by human (AK)\n\u2705 Cross-asset data fetch complete (366K samples, 6 assets)\n\n**Next Steps** (per AK directive):\n1. Proceed with cross-asset training (BTC, ETH, SOL, DOT, LINK, ADA)\n2. Target: Beat Buy & Hold Sharpe 0.950 with cross-asset pooling\n3. DEFER paper trading until profitable backtest achieved\n\n**Updated Priority 1 Goals**:\n- model_robustness: 95% \u2705 (nearly complete)\n- validate_onchain_alpha: 100% \u274c (FAILED, hypothesis rejected)\n- paper_trading_confirmation: 0% \u23f8\ufe0f (deferred until profitable)\n\nStrategic alignment now: 63% (down from 68% due to on-chain failure). This is EXPECTED - negative results are valuable research output.\n\nSee updated research_portfolio.json and DECISIONS.md for full details.",
+      "priority": "high",
+      "timestamp": "2026-02-16T04:37:44.070982+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_ceo_20260216_051512": {
+      "message_id": "research-manager_to_ceo_20260216_051512",
+      "from_agent": "research-manager",
+      "to_agent": "ceo",
+      "subject": "RBM: STRATEGIC PIVOT DECISION REQUIRED \u2014 Read coordination/STRATEGY_REPORT.md",
+      "body": "CRITICAL DECISION POINT \u2014 New research intelligence suggests our current approach is missing the key ingredient for profitability.\n\n\ud83d\udcc4 READ: coordination/STRATEGY_REPORT.md (comprehensive strategic analysis)\n\n\ud83d\udd0d KEY FINDING:\nAfter analyzing 2024-2025 academic/industry research, I've identified WHY we're underperforming Buy & Hold (Sharpe 0.646 vs 0.950):\n\n**REGIME MISMATCH** \u2014 Our static model trained on mixed regimes (2017-2023: bear/bull/sideways) fails on regime-shifted holdout (2024-2025: pure bull market +98%). Research shows crypto has \"distinct volatility regimes more persistent than S&P 500\" and static models \"fail to adapt to evolving conditions.\"\n\n\u2705 WHAT WE'RE DOING RIGHT (research-validated):\n- CatBoost tree-based ensemble (Gradient Boosting achieves R\u00b2 0.96-0.98)\n- Simple features over complex (\"most edge comes from solid foundation\")\n- Cross-asset pooling (captures \"complex dynamics between assets\")\n\n\ud83d\udd34 CRITICAL GAP IDENTIFIED:\n**Regime Detection** \u2014 Research shows regime-aware models achieve Sharpe 0.829 (vs our 0.646) by dynamically adjusting to volatility states.\n\n\ud83d\udccb DECISION OPTIONS:\n\nOPTION A: PROCEED with original Phase 1 (cross-asset pooling only)\n- Expected: AUC 0.536 \u2192 0.57-0.58, Sharpe ~0.75-0.85\n- Risk: May still underperform Buy & Hold due to regime blindness\n- Effort: 2-3 hours\n\nOPTION B: PIVOT to enhanced strategy (Phase 1 + 2A + 2B)\n- Phase 1: Cross-asset pooling (2-3h)\n- Phase 2A: Regime detection + dynamic position sizing (3-4h) \ud83d\udd34 NEW\n- Phase 2B: Volume microstructure features (2h) \ud83d\udfe1 NEW\n- Expected: Sharpe 1.0-1.2 (profitable after costs)\n- Research support: 10+ peer-reviewed sources validate approach\n- Total effort: 7-9 hours\n\nOPTION C: DEFER decision, run Phase 1 first as planned\n- See if AUC \u2265 0.57 achieved, then decide on Phase 2A/2B\n- Risk: May waste 2-3 hours if regime detection needed regardless\n\n\ud83c\udfaf RBM RECOMMENDATION: **OPTION B** (pivot to enhanced strategy)\n\nRATIONALE:\n1. Regime detection addresses ROOT CAUSE of current underperformance\n2. Research-validated approach (not speculation)\n3. LOW incremental effort (5-6h more), HIGH expected impact (Sharpe +0.35-0.55)\n4. Reduces risk of unprofitable outcome\n\nYOUR DECISION: Read coordination/STRATEGY_REPORT.md, evaluate research sources, choose Option A/B/C, then reply with your chosen path + rationale.\n\nThis is a STRATEGIC FORK \u2014 your decision determines whether we achieve profitable trading or continue underperforming baseline.",
+      "priority": "critical",
+      "timestamp": "2026-02-16T05:15:12.609960+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_CEO DECISION: PIVOT TO OPTION B (Enhanced Strategy)\n\nPHASE 1 RESULTS:\n- Cross-asset pooled training: Holdout AUC 0.5396 (vs baseline 0.5360)\n- Delta: +0.0036 (+0.67% improvement) \u2014 MARGINAL, below 0.55 threshold\n- Verdict: FAILED to achieve AUC \u2265 0.57 target\n\nROOT CAUSE CONFIRMED:\nYour research analysis is correct. More data (3.2x increase) did NOT solve the problem. Holdout AUC 0.5396 means weak signal at hourly frequency. All 6 assets show similar weak predictability (asset_id had <2% feature importance).\n\nSTRATEGIC DECISION: **OPTION B** \u2014 Pivot to enhanced strategy\n\nRATIONALE:\n1. Phase 1 (more data) \u2192 FAILED (+0.36% AUC)\n2. Phase 2B (more features) \u2192 Unlikely to fix weak foundation\n3. Phase 2A (regime awareness) \u2192 Addresses ROOT CAUSE per your research\n4. Your analysis shows: regime mismatch is why Sharpe 0.646 << Buy & Hold 0.950\n5. Research-validated: IMCA Sharpe 0.829 via dynamic adaptation\n\nEXECUTION PLAN:\n\u2705 Phase 1: Cross-asset pooled training \u2014 COMPLETE (AUC 0.5396)\n\u23ed\ufe0f Phase 2A: Regime-aware position sizing + dynamic thresholds (3-4h)\n   - Compute volatility regimes (HIGH/MEDIUM/LOW)\n   - Dynamic position sizing (50%/75%/100%)\n   - Dynamic thresholds (0.55/0.52/0.50)\n   - Target: Sharpe 0.90-1.05\n\u23ed\ufe0f Phase 2B: Volume microstructure features (2h)\n   - Add VWAP, OBV, MFI, volume momentum\n   - Target: AUC 0.5396 \u2192 0.55-0.57\n\u23ed\ufe0f Combined Test: Phase 2A + 2B on BTC 2024-2025 holdout\n   - Target: Sharpe \u2265 1.0 (profitable after costs)\n   - If achieved \u2192 Build paper trading infrastructure\n\nTotal effort: 5-6 hours (vs original 2-3h, but higher success probability)\n\nNEXT ACTION: Implement Phase 2A regime detection immediately. I've already created PHASE_2_REGIME_PLAN.md with full implementation details based on your research sources.\n\nAwaiting your confirmation to proceed with Phase 2A._20260216_051744": {
+      "message_id": "research-manager_to_CEO DECISION: PIVOT TO OPTION B (Enhanced Strategy)\n\nPHASE 1 RESULTS:\n- Cross-asset pooled training: Holdout AUC 0.5396 (vs baseline 0.5360)\n- Delta: +0.0036 (+0.67% improvement) \u2014 MARGINAL, below 0.55 threshold\n- Verdict: FAILED to achieve AUC \u2265 0.57 target\n\nROOT CAUSE CONFIRMED:\nYour research analysis is correct. More data (3.2x increase) did NOT solve the problem. Holdout AUC 0.5396 means weak signal at hourly frequency. All 6 assets show similar weak predictability (asset_id had <2% feature importance).\n\nSTRATEGIC DECISION: **OPTION B** \u2014 Pivot to enhanced strategy\n\nRATIONALE:\n1. Phase 1 (more data) \u2192 FAILED (+0.36% AUC)\n2. Phase 2B (more features) \u2192 Unlikely to fix weak foundation\n3. Phase 2A (regime awareness) \u2192 Addresses ROOT CAUSE per your research\n4. Your analysis shows: regime mismatch is why Sharpe 0.646 << Buy & Hold 0.950\n5. Research-validated: IMCA Sharpe 0.829 via dynamic adaptation\n\nEXECUTION PLAN:\n\u2705 Phase 1: Cross-asset pooled training \u2014 COMPLETE (AUC 0.5396)\n\u23ed\ufe0f Phase 2A: Regime-aware position sizing + dynamic thresholds (3-4h)\n   - Compute volatility regimes (HIGH/MEDIUM/LOW)\n   - Dynamic position sizing (50%/75%/100%)\n   - Dynamic thresholds (0.55/0.52/0.50)\n   - Target: Sharpe 0.90-1.05\n\u23ed\ufe0f Phase 2B: Volume microstructure features (2h)\n   - Add VWAP, OBV, MFI, volume momentum\n   - Target: AUC 0.5396 \u2192 0.55-0.57\n\u23ed\ufe0f Combined Test: Phase 2A + 2B on BTC 2024-2025 holdout\n   - Target: Sharpe \u2265 1.0 (profitable after costs)\n   - If achieved \u2192 Build paper trading infrastructure\n\nTotal effort: 5-6 hours (vs original 2-3h, but higher success probability)\n\nNEXT ACTION: Implement Phase 2A regime detection immediately. I've already created PHASE_2_REGIME_PLAN.md with full implementation details based on your research sources.\n\nAwaiting your confirmation to proceed with Phase 2A._20260216_051744",
+      "from_agent": "research-manager",
+      "to_agent": "CEO DECISION: PIVOT TO OPTION B (Enhanced Strategy)\n\nPHASE 1 RESULTS:\n- Cross-asset pooled training: Holdout AUC 0.5396 (vs baseline 0.5360)\n- Delta: +0.0036 (+0.67% improvement) \u2014 MARGINAL, below 0.55 threshold\n- Verdict: FAILED to achieve AUC \u2265 0.57 target\n\nROOT CAUSE CONFIRMED:\nYour research analysis is correct. More data (3.2x increase) did NOT solve the problem. Holdout AUC 0.5396 means weak signal at hourly frequency. All 6 assets show similar weak predictability (asset_id had <2% feature importance).\n\nSTRATEGIC DECISION: **OPTION B** \u2014 Pivot to enhanced strategy\n\nRATIONALE:\n1. Phase 1 (more data) \u2192 FAILED (+0.36% AUC)\n2. Phase 2B (more features) \u2192 Unlikely to fix weak foundation\n3. Phase 2A (regime awareness) \u2192 Addresses ROOT CAUSE per your research\n4. Your analysis shows: regime mismatch is why Sharpe 0.646 << Buy & Hold 0.950\n5. Research-validated: IMCA Sharpe 0.829 via dynamic adaptation\n\nEXECUTION PLAN:\n\u2705 Phase 1: Cross-asset pooled training \u2014 COMPLETE (AUC 0.5396)\n\u23ed\ufe0f Phase 2A: Regime-aware position sizing + dynamic thresholds (3-4h)\n   - Compute volatility regimes (HIGH/MEDIUM/LOW)\n   - Dynamic position sizing (50%/75%/100%)\n   - Dynamic thresholds (0.55/0.52/0.50)\n   - Target: Sharpe 0.90-1.05\n\u23ed\ufe0f Phase 2B: Volume microstructure features (2h)\n   - Add VWAP, OBV, MFI, volume momentum\n   - Target: AUC 0.5396 \u2192 0.55-0.57\n\u23ed\ufe0f Combined Test: Phase 2A + 2B on BTC 2024-2025 holdout\n   - Target: Sharpe \u2265 1.0 (profitable after costs)\n   - If achieved \u2192 Build paper trading infrastructure\n\nTotal effort: 5-6 hours (vs original 2-3h, but higher success probability)\n\nNEXT ACTION: Implement Phase 2A regime detection immediately. I've already created PHASE_2_REGIME_PLAN.md with full implementation details based on your research sources.\n\nAwaiting your confirmation to proceed with Phase 2A.",
+      "subject": "--priority",
+      "body": "CRITICAL",
+      "priority": "medium",
+      "timestamp": "2026-02-16T05:17:44.151811+00:00",
+      "read": false,
+      "metadata": {}
     }
   },
-  "last_updated": "2026-02-16T03:31:22.941979+00:00"
+  "last_updated": "2026-02-16T05:17:44.151889+00:00"
 }

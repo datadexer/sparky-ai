@@ -262,9 +262,9 @@ def main():
         mlflow.log_metric("leakage_passed", 1.0 if leakage_passed else 0.0)
 
         # Log feature importance
-        importance = model.get_feature_importances()
-        for feat, imp in importance.items():
-            mlflow.log_metric(f"importance_{feat}", imp)
+        importance_df = model.get_feature_importances()
+        for _, row in importance_df.iterrows():
+            mlflow.log_metric(f"importance_{row['feature']}", float(row['importance']))
 
         logger.info(f"Logged to MLflow run: {mlflow.active_run().info.run_id}")
 

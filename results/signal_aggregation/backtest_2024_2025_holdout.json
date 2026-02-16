@@ -1,0 +1,43 @@
+{
+  "model": "CatBoost 1h-ahead (base features)",
+  "aggregation_method": "mean",
+  "aggregation_threshold": 0.5,
+  "holdout_period": {
+    "start": "2024-01-01",
+    "end": "2025-12-31",
+    "n_days": 731
+  },
+  "model_performance": {
+    "val_auc": 0.5573855774153823,
+    "test_auc": 0.5588450358745227,
+    "holdout_auc": 0.5358587784269329
+  },
+  "signal_stats": {
+    "total_signals": 731,
+    "long_signals": 463,
+    "long_pct": 63.33789329685362,
+    "avg_daily_proba": 0.5067598460546878,
+    "std_daily_proba": 0.024429729650248318
+  },
+  "strategy_metrics": {
+    "total_return_pct": 42.154166424556315,
+    "sharpe_ratio": 0.6464667206501269,
+    "max_drawdown_pct": 31.42300282886602,
+    "win_rate": 0.3219178082191781,
+    "n_trades": 312,
+    "avg_daily_return_pct": 0.0686078075756785,
+    "annual_volatility_pct": 38.73648706918589,
+    "n_days": 730
+  },
+  "baseline_metrics": {
+    "total_return_pct": 98.01299024600038,
+    "sharpe_ratio": 0.9498035346134167,
+    "max_drawdown_pct": 32.10906933487264,
+    "win_rate": 0.5123287671232877,
+    "n_trades": 0,
+    "avg_daily_return_pct": 0.12497067006142562,
+    "annual_volatility_pct": 48.024978756249844,
+    "n_days": 730
+  },
+  "timestamp": "2026-02-16T04:16:01.637846"
+}

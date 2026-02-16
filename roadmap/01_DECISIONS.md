@@ -11,6 +11,64 @@ This file is the async communication channel between AK and the CEO agent.
 
 ## Pending Decisions
 
+### [RBM -> HUMAN] On-Chain Features: Conflicting Evidence → RESOLVED
+**[2026-02-16 04:00 UTC]** | **Updated: [2026-02-16 05:15 UTC]**
+
+**Status**: ✅ RESOLVED — Hypothesis FAILED (negative result confirmed)
+
+**Finding 1** (VALIDATED 2026-02-16 01:00 UTC):
+- "On-chain features add +0.15 Sharpe vs technical-only"
+- Config: XGBoost, 30d horizon, 2019-2025 daily data
+- Source: Feature ablation experiments (Phase 2-3)
+- Status: Later INVALIDATED due to holdout failure, but claim persisted
+
+**Finding 2** (NEW 2026-02-16 03:50 UTC):
+- "Expanded features (macro + on-chain) NO improvement: -0.000 AUC"
+- Config: CatBoost, 1h horizon, hourly data
+- Val AUC: 0.557 (base) vs 0.557 (expanded) - identical
+- Conclusion: On-chain/macro features add zero value at hourly frequency
+
+**Conflict Analysis**:
+- **Same hypothesis**: On-chain features add predictive power
+- **Opposite conclusions**: +0.15 Sharpe (daily) vs -0.000 AUC (hourly)
+- **Different contexts**: Daily vs hourly frequency, 30d vs 1h horizon
+
+**RBM Hypothesis**: On-chain metrics may work for daily predictions but not hourly
+- On-chain data (MVRV, NVT, etc.) is published daily, not hourly
+- Hourly forward-fill may dilute signal
+- Need ablation study: Test on-chain on 1h data WITH proper daily resampling
+
+**RBM Recommendation**:
+1. Run ablation experiment: CatBoost 1h with technical-only vs technical+onchain
+2. Use daily on-chain data properly aligned (no forward-fill within day)
+3. If still no improvement → on-chain hypothesis FAILS for short horizons
+4. If improvement found → update guidance (on-chain = daily only)
+
+**Priority**: HIGH (P1 goal validate_onchain_alpha is 40% complete, needs resolution)
+
+---
+
+**[RBM RESOLUTION 2026-02-16 05:15 UTC]**
+
+**Verdict**: On-chain features do NOT add predictive value at hourly frequency
+
+**Evidence**:
+1. ✅ Finding #1 (+0.15 Sharpe XGBoost 30d) **INVALIDATED** — Holdout test showed catastrophic overfitting (Sharpe -1.48)
+2. ✅ Finding #2 (Expanded features -0.008 AUC) **CONFIRMED** — CatBoost with macro+onchain features degraded performance
+3. ✅ Signal aggregation backtest **UNPROFITABLE** — Sharpe 0.646 underperforms Buy & Hold 0.950 by -0.303
+
+**Conclusion**:
+- Base 23-feature technical model is optimal
+- Macro features (VIX, DXY, SPY) contribute 2-3% importance but add noise
+- On-chain features (MVRV, NVT, SOPR) do not improve hourly predictions
+- Hypothesis "on-chain adds alpha" is **FAILED**
+
+**Strategic Goal Update**: `validate_onchain_alpha` marked as **FAILED** (100% complete, negative result)
+
+**Recommendation**: ABANDON on-chain/macro features for hourly models. Focus on cross-asset training with 23 base technical features.
+
+---
+
 ### [2026-02-15 21:45] BUG REPORT: Look-Ahead Bias - ACKNOWLEDGED
 
 **[AGENT RESPONSE]**

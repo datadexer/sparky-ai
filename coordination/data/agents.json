@@ -5,10 +5,19 @@
       "role": "ceo",
       "status": "active",
       "started_at": "2026-02-16T03:08:25.253995+00:00",
-      "last_activity": "2026-02-16T03:21:16.163370+00:00",
+      "last_activity": "2026-02-16T04:50:12.215365+00:00",
+      "current_task": null,
+      "metadata": {}
+    },
+    "validation-audit-001": {
+      "agent_id": "validation-audit-001",
+      "role": "validation",
+      "status": "terminated",
+      "started_at": "2026-02-16T03:41:09.167825+00:00",
+      "last_activity": "2026-02-16T03:41:09.167825+00:00",
       "current_task": null,
       "metadata": {}
     }
   },
-  "last_updated": "2026-02-16T03:21:16.163389+00:00"
+  "last_updated": "2026-02-16T04:50:12.215410+00:00"
 }
