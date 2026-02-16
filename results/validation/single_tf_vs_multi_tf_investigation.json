@@ -1,0 +1,211 @@
+{
+  "Single-TF (40/20)": {
+    "yearly": {
+      "2019": {
+        "sharpe": 1.8006241752166892,
+        "total_return": 159.61355665953732,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 2
+      },
+      "2020": {
+        "sharpe": 2.684347917489888,
+        "total_return": 330.32521674951727,
+        "max_drawdown": 1.6478573509701435,
+        "n_trades": 7
+      },
+      "2021": {
+        "sharpe": 0.8400368349877833,
+        "total_return": 47.5024167726741,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 8
+      },
+      "2022": {
+        "sharpe": -0.8241977506626467,
+        "total_return": -31.339536328340245,
+        "max_drawdown": Infinity,
+        "n_trades": 6
+      },
+      "2023": {
+        "sharpe": 1.712417982543366,
+        "total_return": 90.3129220840395,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 9
+      }
+    },
+    "mean_sharpe": 1.242645831915016,
+    "std_sharpe": 1.327070741134381,
+    "min_sharpe": -0.8241977506626467,
+    "max_sharpe": 2.684347917489888,
+    "positive_years": 4,
+    "bootstrap_ci": {
+      "mean": 1.3365693489641413,
+      "lower_95": 0.6215155480975774,
+      "upper_95": 2.0430680829408843
+    },
+    "trade_analysis": {
+      "n_trades": 15,
+      "avg_holding_days": 50.333333333333336,
+      "median_holding_days": 43.0,
+      "win_rate": 66.66666666666666,
+      "avg_return": 28.14874614351436,
+      "median_return": 7.932164064504366,
+      "best_trade": 191.61412358133668,
+      "worst_trade": -21.534321649647126
+    },
+    "full_period": {
+      "sharpe": 1.3408588536308637,
+      "total_return": 2087.298157407874,
+      "max_drawdown": 3.3061538240818575,
+      "n_trades": 31
+    }
+  },
+  "yearly": null,
+  "mean_sharpe": null,
+  "std_sharpe": null,
+  "min_sharpe": null,
+  "max_sharpe": null,
+  "positive_years": null,
+  "bootstrap_ci": null,
+  "trade_analysis": null,
+  "full_period": null,
+  "Multi-TF (20/40/60)": {
+    "yearly": {
+      "2019": {
+        "sharpe": 1.487071350452745,
+        "total_return": 120.36745787677093,
+        "max_drawdown": 3.3061538240818575,
+        "n_trades": 6
+      },
+      "2020": {
+        "sharpe": 2.684347917489888,
+        "total_return": 330.32521674951727,
+        "max_drawdown": 1.6478573509701435,
+        "n_trades": 7
+      },
+      "2021": {
+        "sharpe": 1.0994781214533647,
+        "total_return": 78.54334495926665,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 8
+      },
+      "2022": {
+        "sharpe": -1.5385027164300837,
+        "total_return": -35.30033028208802,
+        "max_drawdown": Infinity,
+        "n_trades": 8
+      },
+      "2023": {
+        "sharpe": 1.5759407839543906,
+        "total_return": 78.99791484968442,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 11
+      }
+    },
+    "mean_sharpe": 1.061667091384061,
+    "std_sharpe": 1.5685066131019607,
+    "min_sharpe": -1.5385027164300837,
+    "max_sharpe": 2.684347917489888,
+    "positive_years": 4,
+    "bootstrap_ci": {
+      "mean": 1.3010354408215596,
+      "lower_95": 0.5865268765573687,
+      "upper_95": 2.011184155318613
+    },
+    "trade_analysis": {
+      "n_trades": 19,
+      "avg_holding_days": 38.526315789473685,
+      "median_holding_days": 29.0,
+      "win_rate": 52.63157894736842,
+      "avg_return": 21.90798345075659,
+      "median_return": 1.5177619763757866,
+      "best_trade": 191.61412358133668,
+      "worst_trade": -21.534321649647126
+    },
+    "full_period": {
+      "sharpe": 1.3066972474567402,
+      "total_return": 1891.8087631632209,
+      "max_drawdown": 3.3061538240818575,
+      "n_trades": 39
+    }
+  },
+  "Multi-TF (20/30/40)": {
+    "yearly": {
+      "2019": {
+        "sharpe": 1.6523991124834794,
+        "total_return": 141.02841186484972,
+        "max_drawdown": Infinity,
+        "n_trades": 6
+      },
+      "2020": {
+        "sharpe": 2.719814487888246,
+        "total_return": 339.3837446902465,
+        "max_drawdown": 1.6478573509701435,
+        "n_trades": 7
+      },
+      "2021": {
+        "sharpe": 0.4901909138918994,
+        "total_return": 18.23743583962858,
+        "max_drawdown": 2.346064321854196,
+        "n_trades": 12
+      },
+      "2022": {
+        "sharpe": -1.2463051101973395,
+        "total_return": -34.26242367256488,
+        "max_drawdown": 5.003422833877886,
+        "n_trades": 10
+      },
+      "2023": {
+        "sharpe": 1.7300100620416898,
+        "total_return": 91.62444955195184,
+        "max_drawdown": 1.6712521871335422,
+        "n_trades": 9
+      }
+    },
+    "mean_sharpe": 1.069221893221595,
+    "std_sharpe": 1.5164213435975507,
+    "min_sharpe": -1.2463051101973395,
+    "max_sharpe": 2.719814487888246,
+    "positive_years": 4,
+    "bootstrap_ci": {
+      "mean": 1.2503685717984707,
+      "lower_95": 0.5262976823430652,
+      "upper_95": 1.9700746026637026
+    },
+    "trade_analysis": {
+      "n_trades": 21,
+      "avg_holding_days": 34.476190476190474,
+      "median_holding_days": 29.0,
+      "win_rate": 47.61904761904761,
+      "avg_return": 16.28467233029109,
+      "median_return": -0.2876848867094939,
+      "best_trade": 189.84118050547866,
+      "worst_trade": -21.534321649647126
+    },
+    "full_period": {
+      "sharpe": 1.2558096920482462,
+      "total_return": 1502.2914478338241,
+      "max_drawdown": Infinity,
+      "n_trades": 43
+    }
+  },
+  "paired_tests": {
+    "single_vs_multi_2040_60": 0.6241,
+    "single_vs_multi_best_2030_40": 0.7363,
+    "multi_best_vs_multi": 0.3587
+  },
+  "single_vs_multi_2040_60": 0.6241,
+  "single_vs_multi_best_2030_40": 0.7363,
+  "multi_best_vs_multi": 0.3587,
+  "signal_overlap": {
+    "agreement_pct": 96.49507119386638,
+    "both_long_pct": 43.59255202628697,
+    "single_only_long_pct": 2.792990142387733,
+    "multi_only_long_pct": 0.7119386637458927,
+    "both_flat_pct": 52.902519167579406
+  },
+  "agreement_pct": 96.49507119386638,
+  "both_long_pct": 43.59255202628697,
+  "single_only_long_pct": 2.792990142387733,
+  "multi_only_long_pct": 0.7119386637458927,
+  "both_flat_pct": 52.902519167579406
+}

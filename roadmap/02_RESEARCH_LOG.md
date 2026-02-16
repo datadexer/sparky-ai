@@ -5,6 +5,24 @@ Newest entries at the top.
 
 ---
 
+## Single-TF (40/20) vs Multi-TF Baseline Investigation — 2026-02-16 14:12 UTC
+
+**OBJECTIVE**: Investigate whether Single-TF Donchian(40/20) is a better strategy than Multi-TF (20/40/60) baseline.
+
+**RESULTS**:
+- Single-TF Mean Sharpe: **1.243** vs Multi-TF: **1.062** (+17%)
+- P(Single-TF > Multi-TF): 0.624 — moderate, not statistically significant
+- Bootstrap 95% CI overlap: [0.622, 2.043] vs [0.587, 2.011]
+- **Bear market (2022)**: Single-TF -0.824 vs Multi-TF -1.539 (47% less loss)
+- **Trades**: 15 vs 19 (21% fewer), Win rate: 66.7% vs 52.6%
+- **Signal overlap**: 96.5% agreement — strategies are nearly identical
+
+**VERDICT**: MODERATE IMPROVEMENT, NOT CONCLUSIVE. Single-TF is better on every metric but CIs overlap. Recommended as primary paper trading strategy due to simplicity + better bear market protection.
+
+**Files**: `results/validation/single_tf_vs_multi_tf_summary.md`, `results/validation/single_tf_vs_multi_tf_investigation.json`
+
+---
+
 ## ❌❌ REGIME-AWARE POSITION SIZING: DOUBLE FAILURE — 2026-02-16 11:07 UTC [DAY 3]
 
 **OBJECTIVE**: Implement regime-aware position sizing for Multi-Timeframe Donchian to achieve Sharpe ≥0.85 (vs current 0.772). Test TWO approaches per STRATEGY_REPORT.md recommendation.
