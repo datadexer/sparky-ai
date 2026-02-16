@@ -1,16 +1,16 @@
 # Hyperparameter Sweep Status
 
-**Last Updated**: 2026-02-16 16:20 UTC
+**Last Updated**: 2026-02-16 16:30 UTC
 
 ## Current Status
 
-✅ **RUNNING** - Smart hyperparameter sweep in progress
+✅ **RUNNING** - Smart hyperparameter sweep in progress (RESTARTED)
 
-**Process**: PID 2579533
-**Runtime**: ~10 minutes (started 16:11 UTC)
-**Estimated completion**: ~16:11 + 81 min = **17:32 UTC**
-**CPU**: 117% (utilizing GPU)
-**Memory**: 371MB
+**Process**: PID 2589920
+**Started**: 16:30 UTC
+**Estimated completion**: ~17:51 UTC (~81 minutes)
+**CPU**: 87% (utilizing GPU)
+**Note**: First sweep (PID 2579533) was interrupted; restarted from beginning
 
 ## Sweep Configuration
 
