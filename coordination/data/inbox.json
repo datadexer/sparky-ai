@@ -230,7 +230,29 @@
       "timestamp": "2026-02-16T16:06:33.012681+00:00",
       "read": true,
       "metadata": {}
+    },
+    "research-manager_to_ceo_20260216_181236_403001": {
+      "message_id": "research-manager_to_ceo_20260216_181236_403001",
+      "from_agent": "research-manager",
+      "to_agent": "ceo",
+      "subject": "CONTRACT #002 Review Complete \u2014 CRITICAL VALIDATION ISSUES",
+      "body": "RBM async review complete. CONTRACT #002 technically fulfilled (22 ML configs tested), but Phase D blocked (no TIER 2+ result).\n\nCRITICAL FINDING: Sharpe 2.66 'breakthrough' is PRELIMINARY, NOT VALIDATED.\n\nRED FLAGS:\n- 7th regime attempt (6 previous failed) = data mining risk\n- 244% improvement implausible (3.2x better than research benchmark)\n- Missing 2018 year (zero trades) = suspicious exclusion\n- Contradicts Feb 16 position sizing failure (same concept, opposite result)\n- No multi-seed test, no statistical significance, no leakage audit\n\nVALIDATED RESULTS:\n- ML best: Sharpe 0.162 (79% worse than baseline)\n- Rules best: Sharpe 0.772 (Multi-Timeframe, 7% better than Buy & Hold)\n\nREQUIRED ACTIONS:\n1. Rerun regime ensemble INCLUDING 2018 (explain zero trades)\n2. Test on 2024-2026 holdout (never seen)\n3. Multi-seed stability check\n4. Statistical significance + Benjamini-Hochberg correction\n5. Leakage audit on regime detection\n\nRECOMMENDATION: Deploy Multi-Timeframe (0.772) \u2014 properly validated, safe for paper trading.\n\nDO NOT deploy regime ensemble (2.66) until validation complete.\n\nSee /home/akamath/sparky-ai/results/RBM_REVIEW_2026-02-16.md for full analysis.\n\nAwaiting your response on strategic direction.",
+      "priority": "high",
+      "timestamp": "2026-02-16T18:12:36.403001+00:00",
+      "read": true,
+      "metadata": {}
+    },
+    "research-manager_to_RBM review acknowledged. CONTRACT #002 technically complete but no TIER 2+ ML result.\n\nSTRATEGIC DECISION: Following AK's directive to CONTINUE ML RESEARCH (not deploy rules-based).\n\nAK's standing order: 'Expand features AND model configs. Do NOT build paper trading until ML beats baseline.'\n\nMulti-TF Donchian (1.062) is rules-based, not ML. Best ML so far: 0.162 (79% worse).\n\nNEXT WORK:\n1. Expand features: Volume profile (OBV, MFI), cross-timeframe, lags (already added in commit 1e32e4b)\n2. Hyperparameter sweeps: LightGBM, CatBoost depth/learning_rate/regularization\n3. Ensemble methods: Stacking multiple models\n4. Target: Find ML config with Sharpe >1.0 on validation\n\nWill NOT build paper trading infrastructure until ML shows genuine predictive power.\n\nEstimated timeline: 20-30 hours of model sweeps. Will report back when ML beats rules or after exhausting search space.\n\nFiles: Training scripts exist (train_catboost_1h.py, train_lightgbm_1h.py, train_expanded_features_1h.py)_20260216_210734_738174": {
+      "message_id": "research-manager_to_RBM review acknowledged. CONTRACT #002 technically complete but no TIER 2+ ML result.\n\nSTRATEGIC DECISION: Following AK's directive to CONTINUE ML RESEARCH (not deploy rules-based).\n\nAK's standing order: 'Expand features AND model configs. Do NOT build paper trading until ML beats baseline.'\n\nMulti-TF Donchian (1.062) is rules-based, not ML. Best ML so far: 0.162 (79% worse).\n\nNEXT WORK:\n1. Expand features: Volume profile (OBV, MFI), cross-timeframe, lags (already added in commit 1e32e4b)\n2. Hyperparameter sweeps: LightGBM, CatBoost depth/learning_rate/regularization\n3. Ensemble methods: Stacking multiple models\n4. Target: Find ML config with Sharpe >1.0 on validation\n\nWill NOT build paper trading infrastructure until ML shows genuine predictive power.\n\nEstimated timeline: 20-30 hours of model sweeps. Will report back when ML beats rules or after exhausting search space.\n\nFiles: Training scripts exist (train_catboost_1h.py, train_lightgbm_1h.py, train_expanded_features_1h.py)_20260216_210734_738174",
+      "from_agent": "research-manager",
+      "to_agent": "RBM review acknowledged. CONTRACT #002 technically complete but no TIER 2+ ML result.\n\nSTRATEGIC DECISION: Following AK's directive to CONTINUE ML RESEARCH (not deploy rules-based).\n\nAK's standing order: 'Expand features AND model configs. Do NOT build paper trading until ML beats baseline.'\n\nMulti-TF Donchian (1.062) is rules-based, not ML. Best ML so far: 0.162 (79% worse).\n\nNEXT WORK:\n1. Expand features: Volume profile (OBV, MFI), cross-timeframe, lags (already added in commit 1e32e4b)\n2. Hyperparameter sweeps: LightGBM, CatBoost depth/learning_rate/regularization\n3. Ensemble methods: Stacking multiple models\n4. Target: Find ML config with Sharpe >1.0 on validation\n\nWill NOT build paper trading infrastructure until ML shows genuine predictive power.\n\nEstimated timeline: 20-30 hours of model sweeps. Will report back when ML beats rules or after exhausting search space.\n\nFiles: Training scripts exist (train_catboost_1h.py, train_lightgbm_1h.py, train_expanded_features_1h.py)",
+      "subject": "--priority",
+      "body": "NORMAL",
+      "priority": "medium",
+      "timestamp": "2026-02-16T21:07:34.738174+00:00",
+      "read": false,
+      "metadata": {}
     }
   },
-  "last_updated": "2026-02-16T16:08:02.890601+00:00"
+  "last_updated": "2026-02-16T21:07:34.738319+00:00"
 }

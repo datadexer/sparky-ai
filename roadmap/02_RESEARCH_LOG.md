@@ -5,6 +5,18 @@ Newest entries at the top.
 
 ---
 
+## Smart Hyperparameter Sweep (54 configs) — 2026-02-16 16:11 UTC [RUNNING]
+
+**STATUS**: In progress (PID 2579533, ~81 min estimated)
+
+**OBJECTIVE**: Systematic search for ML configs beating corrected baseline (Sharpe 1.062)
+
+**APPROACH**: 54 configs (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05, L1/L2 regularization variations. Yearly walk-forward validation (2020-2023). Will report ALL results to avoid cherry-picking.
+
+**Files**: `scripts/smart_hyperparam_sweep.py`, results will be in `results/validation/smart_hyperparam_sweep.json`
+
+---
+
 ## Single-TF (40/20) vs Multi-TF Baseline Investigation — 2026-02-16 14:12 UTC
 
 **OBJECTIVE**: Investigate whether Single-TF Donchian(40/20) is a better strategy than Multi-TF (20/40/60) baseline.
