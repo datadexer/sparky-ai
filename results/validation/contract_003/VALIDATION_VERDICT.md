@@ -135,11 +135,37 @@ This is a valid mechanistic difference — the approaches are not contradictory.
 
 ---
 
-## Honest Assessment
+## ADDENDUM: Oversight Opus Findings (Post-CEO Validation)
 
-**What Changed**:
-- Original: Sharpe 2.656 "breakthrough"
-- After validation: Sharpe 1.793 "solid improvement"
-- Reality: Good result, not revolutionary
+### Multi-Seed Stability: COMPLETED (2 seconds, not 10-15 hours)
+- HMM 2-State: Median 2.314, std 0.160, CV 0.065 — **STABLE**
+- HMM 3-State: Median 2.326, std 0.190, CV 0.083 — **STABLE**
+- Regime Weighted Ensemble: DETERMINISTIC (no random seed, no multi-seed needed)
 
-**Bottom Line**: Even conservative Sharpe 1.793 is worth pursuing, but multi-seed validation is MANDATORY before deployment.
+### CRITICAL BUG: Look-Ahead Bias in Backtest Framework
+
+`backtest_strategy()` uses `signal[T] * return[T]` but signal[T] is computed
+using `close[T]`. Correct: `signal.shift(1) * return[T]`.
+
+**ALL prior Sharpe claims are invalidated:**
+
+| Approach | Biased Sharpe | Correct Sharpe | Inflation |
+|----------|---------------|----------------|-----------|
+| Multi-TF Donchian (baseline) | 1.878 | **1.062** | +77% |
+| Regime Weighted Ensemble | 2.656 | **1.017** | +161% |
+| HMM 2-State | 2.641 | **0.742** | +256% |
+
+**The regime approaches provide NO improvement over the properly computed baseline.**
+
+See: `CRITICAL_FINDING_LOOKAHEAD_BIAS.md` for full analysis.
+
+### REVISED VERDICT: **DEBUNKED**
+
+The "breakthrough" Sharpe 2.656 was an artifact of look-ahead bias, not real alpha.
+After correction, the regime ensemble (1.017) is WORSE than the baseline (1.062).
+
+### Next Steps
+1. Fix the backtest framework (shift signals by 1 day)
+2. Re-run ALL validation with corrected backtester
+3. Re-derive actual baseline
+4. Consider whether regime approaches can still provide edge after correction
