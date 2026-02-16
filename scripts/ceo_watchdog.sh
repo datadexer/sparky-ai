@@ -28,7 +28,7 @@ LATEST_LINK="$LOG_DIR/latest.log"
 
 mkdir -p "$LOG_DIR"
 
-CEO_PROMPT='IMMEDIATE: Run the two-stage sweep: source .venv/bin/activate && python3 -u scripts/sweep_two_stage.py 2>&1 | tee logs/sweep_two_stage_$(date +%Y%m%d_%H%M%S).log — then read CLAUDE.md, commit results, continue with next experiment. Do not narrate. Do not summarize. Execute.'
+CEO_PROMPT='IMMEDIATE: Read CLAUDE.md and roadmap/02_RESEARCH_LOG.md. DO NOT re-run sweep_two_stage.py — it is already done. Results: ML best Sharpe 0.982 vs Donchian baseline 1.062. ML gets Sharpe 2.7 in bull but -2.5 in bear markets. YOUR TASK: Write a NEW script scripts/train_regime_aware.py that builds a regime-aware hybrid: (1) classify each day as bull/bear/choppy using volatility_regime feature from the top-20 features, (2) use ML (CatBoost d=4 lr=0.01) signals in bull regime, (3) use Donchian signals in bear/choppy regime, (4) validate with walk-forward 2019-2023 yearly folds. Load data from data/processed/feature_matrix_btc_hourly.parquet. Source .venv/bin/activate first. Commit results. Then try other approaches: different regime classifiers, ML+Donchian ensemble weighting, 7-day horizons. Do not narrate. Execute.'
 
 run_daemon() {
     # Unset Claude Code env vars so nested claude can launch
