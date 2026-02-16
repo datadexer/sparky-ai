@@ -61,29 +61,6 @@ Two-stage: (1) Feature selection first, keep top 15-20. (2) Stage 1 screening on
 - At phase completion: push branch, open PR via `gh pr create`
 - Merge conflicts: see `docs/FULL_GUIDELINES.md`
 
-## Coding Standards
-- Python 3.12+, type hints everywhere
-- Every function has a docstring with the formula/logic
-- Every module has tests — no exceptions
-- Use pytest, not unittest
-- Parquet for data storage, YAML for configs
-- Commit after each meaningful unit of work with descriptive messages
-- No code from previous projects (v1 is dead)
-- **ALL timestamps are UTC.** All DataFrames use UTC DatetimeIndex.
-- **Never hardcode API keys or secrets.** Load from env vars or `configs/secrets.yaml` (gitignored).
-- **Data versioning via hash manifest.** After each fetch, update `data/data_manifest.json`.
-- **Structured agent activity logging is mandatory.** Every agent session MUST initialize `AgentActivityLogger`.
-- **GPU for all model training.** This is a DGX Spark — use the GPU:
-  - XGBoost: `tree_method="hist", device="cuda"` (gpu_hist is deprecated in v3+)
-  - CatBoost: `task_type="GPU"`
-  - LightGBM: `device="gpu"`
-- **Mandatory two-stage sweep protocol** for hyperparameter searches:
-  1. **Feature selection FIRST**: Run single default XGBoost, keep top 15-20 features by importance. Never sweep 50+ features raw.
-  2. **Stage 1 — Screening**: Single 80/20 temporal split, ALL configs. ~2 min each. Rank by test Sharpe.
-  3. **Stage 2 — Validation**: Top 5 configs from Stage 1 get full walk-forward validation.
-  4. **Incremental logging**: After EACH config, append one line to `results/sweep_progress.csv`.
-  5. **Cache data**: Load features, targets, and prices ONCE at the start. NEVER re-read parquet inside a loop.
-  6. Use `scripts/sweep_two_stage.py` as the reference implementation.
 ## Holdout Data Policy
 See `configs/holdout_policy.yaml` — IMMUTABLE.
 - All data after 2024-07-01 is OUT-OF-SAMPLE. You may NOT train on it.
