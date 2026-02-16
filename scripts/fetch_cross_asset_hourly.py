@@ -100,6 +100,7 @@ def fetch_asset_hourly(
         for sym in symbols:
             try:
                 ex = getattr(ccxt, ex_id)({"enableRateLimit": True})
+                ex.load_markets()  # Required for OKX/Coinbase historical data
                 # Test with since=start_ts to verify historical support
                 candles = ex.fetch_ohlcv(sym, "1h", since=start_ts, limit=5)
                 if candles:
