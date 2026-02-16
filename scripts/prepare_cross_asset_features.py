@@ -172,7 +172,7 @@ def main():
         )
 
         all_features.append(features_aligned)
-        all_targets.append(targets_aligned.rename(asset_name))
+        all_targets.append(targets_aligned)
 
     # Pool all assets
     logger.info("\n" + "=" * 80)
@@ -182,8 +182,12 @@ def main():
     features_pooled = pd.concat(all_features, axis=0)
     targets_pooled = pd.concat(all_targets, axis=0)
 
-    # Ensure targets index matches features
-    targets_pooled = targets_pooled.loc[features_pooled.index]
+    # Targets should already align with features (both built from common_dates)
+    # Verify alignment
+    if len(targets_pooled) != len(features_pooled):
+        raise ValueError(f"Features ({len(features_pooled)}) and targets ({len(targets_pooled)}) length mismatch!")
+    if not (targets_pooled.index == features_pooled.index).all():
+        raise ValueError("Features and targets index mismatch!")
 
     logger.info(f"Pooled feature matrix: {features_pooled.shape[0]:,} rows × {features_pooled.shape[1]} columns")
     logger.info(f"Pooled targets: {len(targets_pooled):,} daily labels")
