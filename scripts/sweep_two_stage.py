@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Two-stage hyperparameter sweep with experiment DB integration.
+"""Two-stage hyperparameter sweep with MLflow experiment tracking.
 
 Stage 1 — Screening: Single 80/20 temporal split, ALL configs. ~2 min each.
 Stage 2 — Validation: Top 5 configs from Stage 1 get full walk-forward.
 
 Uses:
 - sparky.data.loader for holdout-enforced data loading
-- sparky.tracking.experiment_db for dedup and logging
+- sparky.tracking.experiment.ExperimentTracker for dedup and logging
 - sparky.oversight.timeout for per-config time limits
 
 Usage:
@@ -27,9 +27,7 @@ from sklearn.metrics import roc_auc_score
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sparky.data.loader import load
-from sparky.tracking.experiment_db import (
-    get_db, config_hash, is_duplicate, log_experiment,
-)
+from sparky.tracking.experiment import ExperimentTracker, config_hash
 from sparky.oversight.timeout import with_timeout, ExperimentTimeout
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -158,6 +156,8 @@ def append_progress(config: dict, result: dict):
 
 def main():
     """Run two-stage hyperparameter sweep."""
+    tracker = ExperimentTracker(experiment_name="sweep_two_stage")
+
     # Load data ONCE
     logger.info("Loading data via sparky.data.loader...")
     df = load("btc_1h_features", purpose="training")
@@ -183,7 +183,6 @@ def main():
     y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
     logger.info(f"Stage 1 split: train={len(X_train)}, test={len(X_test)}")
 
-    db = get_db()
     configs = get_sweep_configs()
     logger.info(f"Total configs to sweep: {len(configs)}")
 
@@ -193,7 +192,7 @@ def main():
         h = config_hash(config)
         config["_hash"] = h
 
-        if is_duplicate(db, h):
+        if tracker.is_duplicate(h):
             logger.info(f"  [{i+1}/{len(configs)}] SKIP (duplicate): {config['model_type']} {h}")
             continue
 
@@ -203,27 +202,20 @@ def main():
             result["stage"] = "1"
             stage1_results.append((config, result))
 
-            log_experiment(
-                db,
-                config_hash=h,
-                model_type=config["model_type"],
-                approach_family="sweep_stage1",
-                hyperparams=config["hyperparams"],
-                sharpe=None,  # No Sharpe in Stage 1 (just AUC)
-                wall_clock_seconds=result["wall_clock_seconds"],
-                notes=f"Stage 1 screening: AUC={result['auc']:.4f}",
+            tracker.log_experiment(
+                name=f"stage1_{config['model_type']}_{h}",
+                config={**config["hyperparams"], "model_type": config["model_type"]},
+                metrics={"auc": result["auc"], "accuracy": result["accuracy"]},
             )
             append_progress(config, result)
             logger.info(f"    AUC={result['auc']:.4f}, acc={result['accuracy']:.4f}, {result['wall_clock_seconds']:.1f}s")
 
         except ExperimentTimeout:
             logger.warning(f"    TIMEOUT: {config['model_type']} {h}")
-            log_experiment(
-                db,
-                config_hash=h,
-                model_type=config["model_type"],
-                approach_family="sweep_stage1",
-                notes="TIMEOUT",
+            tracker.log_experiment(
+                name=f"stage1_{config['model_type']}_{h}_TIMEOUT",
+                config={**config["hyperparams"], "model_type": config["model_type"]},
+                metrics={"auc": 0.0, "timeout": 1.0},
             )
         except Exception as e:
             logger.error(f"    ERROR: {e}")
@@ -259,8 +251,6 @@ def main():
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2, default=str)
     logger.info(f"Summary saved to {summary_path}")
-
-    db.close()
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ Your job is to produce trading strategies that generate real alpha on BTC and ET
 3. Read `roadmap/00_STATE.yaml` and `roadmap/01_DECISIONS.md`
 4. `git branch --show-current`
 5. Initialize activity logger + TaskTimer
-6. Check experiment DB for completed work: `from sparky.tracking.experiment_db import get_db, get_summary; print(get_summary(get_db()))`
+6. Check W&B for completed work: `from sparky.tracking.experiment import ExperimentTracker; print(ExperimentTracker().get_summary())`
 7. Pick up next unblocked task, check duplicates, mark started, execute, commit, mark done
 8. At phase completion: `gh pr create`
 
@@ -22,16 +22,16 @@ df = load("btc_1h_features", purpose="analysis")    # full data, warning logged
 ```
 NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout boundaries.
 
-## Experiment Tracking (MANDATORY)
+## Experiment Tracking (MANDATORY — W&B)
 ```python
-from sparky.tracking.experiment_db import get_db, config_hash, is_duplicate, log_experiment
-db = get_db()
+from sparky.tracking.experiment import ExperimentTracker, config_hash
+tracker = ExperimentTracker(experiment_name="my_sweep")  # project=datadex_ai/sparky-ai
 h = config_hash({"model": "catboost", "lr": 0.01, "features": feature_list})
-if is_duplicate(db, h):
+if tracker.is_duplicate(h):
     print("SKIP — already ran this config")
 else:
     # ... run experiment ...
-    log_experiment(db, config_hash=h, model_type="catboost", sharpe=result, tier="TIER 3")
+    tracker.log_experiment("catboost_v1", config={...}, metrics={"sharpe": result})
 ```
 
 ## GPU Training (DGX Spark)
@@ -113,7 +113,7 @@ Before declaring ANY approach "failed":
 
 ## Context Management
 - Keep CLAUDE.md reads to session start only — do not re-read mid-session
-- Use experiment DB to avoid re-running completed configs
+- Use W&B `tracker.is_duplicate()` to avoid re-running completed configs
 - Break work into phases to manage context window (32K limit)
 - Log results to files, not context: `results/`, `roadmap/02_RESEARCH_LOG.md`
 - For detailed protocols: `docs/FULL_GUIDELINES.md`

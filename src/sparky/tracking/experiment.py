@@ -1,4 +1,4 @@
-"""MLflow experiment tracking for Sparky AI.
+"""Weights & Biases experiment tracking for Sparky AI.
 
 Provides experiment logging, dedup via config hashing, and querying.
 
@@ -20,14 +20,39 @@ Usage:
 import hashlib
 import json
 import logging
+import os
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
-import mlflow
-import pandas as pd
+import wandb
+import yaml
 
 logger = logging.getLogger(__name__)
+
+WANDB_PROJECT = "sparky-ai"
+WANDB_ENTITY = "datadex_ai"
+
+
+def _load_wandb_key() -> Optional[str]:
+    """Load W&B API key from secrets.yaml or environment."""
+    key = os.environ.get("WANDB_API_KEY")
+    if key:
+        return key
+    secrets_path = Path("configs/secrets.yaml")
+    if secrets_path.exists():
+        with open(secrets_path) as f:
+            secrets = yaml.safe_load(f)
+        if secrets and "wandb" in secrets:
+            return secrets["wandb"].get("api_key")
+    return None
+
+
+def _ensure_wandb_login() -> None:
+    """Log in to W&B if not already authenticated."""
+    key = _load_wandb_key()
+    if key:
+        wandb.login(key=key, relogin=False)
 
 
 def config_hash(config: dict[str, Any]) -> str:
@@ -47,36 +72,34 @@ def config_hash(config: dict[str, Any]) -> str:
 
 
 class ExperimentTracker:
-    """Track experiments using MLflow with config-hash dedup.
+    """Track experiments using Weights & Biases with config-hash dedup.
 
-    Wraps MLflow to provide:
+    Wraps wandb to provide:
     - Experiment logging with automatic git/data provenance
     - Config hashing for dedup (is_duplicate check before running)
-    - Best-run and summary queries
+    - Best-run and summary queries via the wandb API
     """
 
-    def __init__(self, experiment_name: str = "sparky", tracking_uri: str = "mlruns"):
+    def __init__(
+        self,
+        experiment_name: str = "sparky",
+        project: str = WANDB_PROJECT,
+        entity: str = WANDB_ENTITY,
+    ):
         """Initialize experiment tracker.
 
         Args:
-            experiment_name: Name of the MLflow experiment
-            tracking_uri: URI for MLflow tracking (local directory or remote server)
+            experiment_name: Used as run group in W&B.
+            project: W&B project name.
+            entity: W&B entity (team or user).
         """
         self.experiment_name = experiment_name
-        self.tracking_uri = tracking_uri
-
-        # Set tracking URI
-        mlflow.set_tracking_uri(tracking_uri)
-
-        # Create or get experiment
-        mlflow.set_experiment(experiment_name)
+        self.project = project
+        self.entity = entity
+        _ensure_wandb_login()
 
     def _get_git_hash(self) -> str:
-        """Get current git commit hash.
-
-        Returns:
-            Git commit hash (short form) or 'unknown' if not in a git repo
-        """
+        """Get current git commit hash."""
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--short", "HEAD"],
@@ -89,15 +112,10 @@ class ExperimentTracker:
             return "unknown"
 
     def _get_data_manifest_hash(self) -> str:
-        """Get hash of data manifest file for reproducibility.
-
-        Returns:
-            SHA256 hash of data_manifest.json or 'not_found' if file doesn't exist
-        """
+        """Get hash of data manifest file for reproducibility."""
         manifest_path = Path("data/data_manifest.json")
         if not manifest_path.exists():
             return "not_found"
-
         try:
             with open(manifest_path, "r") as f:
                 content = f.read()
@@ -110,10 +128,30 @@ class ExperimentTracker:
         """Deterministic hash of an experiment config. Delegates to module-level function."""
         return config_hash(config)
 
+    def _get_api(self) -> wandb.Api:
+        """Get a wandb API instance."""
+        return wandb.Api()
+
+    def _fetch_runs(self, filters: Optional[dict] = None) -> list:
+        """Fetch runs from W&B API with optional filters.
+
+        Args:
+            filters: MongoDB-style filter dict for wandb API.
+
+        Returns:
+            List of wandb Run objects.
+        """
+        api = self._get_api()
+        path = f"{self.entity}/{self.project}"
+        base_filters = {"group": self.experiment_name}
+        if filters:
+            base_filters.update(filters)
+        return list(api.runs(path, filters=base_filters))
+
     def is_duplicate(self, cfg_hash: str) -> bool:
         """Check if an experiment config has already been run.
 
-        Searches MLflow for any run with a matching config_hash param.
+        Searches W&B for any run with a matching config_hash in config.
 
         Args:
             cfg_hash: Hash from config_hash().
@@ -121,16 +159,14 @@ class ExperimentTracker:
         Returns:
             True if this config was already logged.
         """
-        experiment = mlflow.get_experiment_by_name(self.experiment_name)
-        if experiment is None:
+        try:
+            runs = self._fetch_runs(
+                filters={"config.config_hash": cfg_hash}
+            )
+            return len(runs) > 0
+        except Exception as e:
+            logger.warning(f"[TRACKER] is_duplicate check failed: {e}")
             return False
-
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment.experiment_id],
-            filter_string=f"params.config_hash = '{cfg_hash}'",
-            max_results=1,
-        )
-        return not runs.empty
 
     def log_experiment(
         self,
@@ -141,159 +177,160 @@ class ExperimentTracker:
         features_used: Optional[list[str]] = None,
         date_range: Optional[tuple[str, str]] = None,
     ) -> str:
-        """Log an experiment run to MLflow.
+        """Log an experiment run to W&B.
 
-        Automatically computes and stores a config_hash param for dedup.
+        Automatically computes and stores a config_hash for dedup.
 
         Args:
-            name: Run name
-            config: Configuration parameters
-            metrics: Metrics to log
-            artifacts: Optional dict of {artifact_name: file_path} to log
-            features_used: Optional list of feature names used
-            date_range: Optional tuple of (start_date, end_date)
+            name: Run name.
+            config: Configuration parameters.
+            metrics: Metrics to log.
+            artifacts: Optional dict of {artifact_name: file_path} to log.
+            features_used: Optional list of feature names used.
+            date_range: Optional tuple of (start_date, end_date).
 
         Returns:
-            MLflow run ID
+            W&B run ID.
         """
-        with mlflow.start_run(run_name=name) as run:
-            # Log config hash for dedup
-            cfg_hash = config_hash(config)
-            mlflow.log_param("config_hash", cfg_hash)
+        cfg_hash = config_hash(config)
+        git_hash = self._get_git_hash()
+        manifest_hash = self._get_data_manifest_hash()
 
-            # Log git hash
-            git_hash = self._get_git_hash()
-            mlflow.log_param("git_hash", git_hash)
+        run_config = {
+            **config,
+            "config_hash": cfg_hash,
+            "git_hash": git_hash,
+            "data_manifest_hash": manifest_hash,
+        }
+        if features_used:
+            run_config["features_used"] = features_used
+        if date_range:
+            run_config["date_range_start"] = date_range[0]
+            run_config["date_range_end"] = date_range[1]
 
-            # Log data manifest hash
-            manifest_hash = self._get_data_manifest_hash()
-            mlflow.log_param("data_manifest_hash", manifest_hash)
+        run = wandb.init(
+            project=self.project,
+            entity=self.entity,
+            name=name,
+            group=self.experiment_name,
+            config=run_config,
+            reinit=True,
+        )
 
-            # Log random seed if present in config
-            if "random_seed" in config:
-                mlflow.log_param("random_seed", config["random_seed"])
+        wandb.log(metrics)
 
-            # Log all config parameters
-            for key, value in config.items():
-                # MLflow has limitations on param types, convert complex types to strings
-                if isinstance(value, (list, dict)):
-                    mlflow.log_param(key, json.dumps(value))
-                else:
-                    mlflow.log_param(key, value)
+        if artifacts:
+            for artifact_name, artifact_path in artifacts.items():
+                if Path(artifact_path).exists():
+                    art = wandb.Artifact(artifact_name, type="result")
+                    art.add_file(artifact_path)
+                    run.log_artifact(art)
 
-            # Log features used
-            if features_used:
-                mlflow.log_param("features_used", json.dumps(features_used))
+        run_id = run.id
+        wandb.finish()
 
-            # Log date range
-            if date_range:
-                mlflow.log_param("date_range_start", date_range[0])
-                mlflow.log_param("date_range_end", date_range[1])
-
-            # Log all metrics
-            for key, value in metrics.items():
-                mlflow.log_metric(key, value)
-
-            # Log artifacts
-            if artifacts:
-                for artifact_name, artifact_path in artifacts.items():
-                    if Path(artifact_path).exists():
-                        mlflow.log_artifact(artifact_path, artifact_name)
-
-            return run.info.run_id
+        logger.info(f"[TRACKER] Logged run {name} ({cfg_hash}) to W&B: {run_id}")
+        return run_id
 
     def get_best_run(
         self,
         metric_name: str,
         maximize: bool = True,
-        experiment_name: Optional[str] = None,
     ) -> dict[str, Any]:
         """Get the best run based on a metric.
 
         Args:
-            metric_name: Name of the metric to optimize
-            maximize: If True, get run with highest metric value. If False, lowest.
-            experiment_name: Optional experiment name (defaults to self.experiment_name)
+            metric_name: Name of the metric to optimize (e.g. "sharpe").
+            maximize: If True, get run with highest metric value.
 
         Returns:
-            Dictionary with run information including run_id, metrics, and params
+            Dict with run_id, metrics, params, and summary.
         """
-        exp_name = experiment_name or self.experiment_name
-        experiment = mlflow.get_experiment_by_name(exp_name)
+        order = f"-summary_metrics.{metric_name}" if maximize else f"+summary_metrics.{metric_name}"
+        api = self._get_api()
+        path = f"{self.entity}/{self.project}"
+        runs = api.runs(path, filters={"group": self.experiment_name}, order=order, per_page=1)
+        runs_list = list(runs)
 
-        if experiment is None:
-            raise ValueError(f"Experiment '{exp_name}' not found")
+        if not runs_list:
+            raise ValueError(f"No runs found for group '{self.experiment_name}'")
 
-        # Search for runs
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment.experiment_id],
-            order_by=[f"metrics.{metric_name} {'DESC' if maximize else 'ASC'}"],
-            max_results=1,
-        )
-
-        if runs.empty:
-            raise ValueError(f"No runs found in experiment '{exp_name}'")
-
-        best_run = runs.iloc[0]
-
-        # Extract relevant information
-        result = {
-            "run_id": best_run["run_id"],
-            "metrics": {
-                col.replace("metrics.", ""): best_run[col]
-                for col in best_run.index
-                if col.startswith("metrics.")
-            },
-            "params": {
-                col.replace("params.", ""): best_run[col]
-                for col in best_run.index
-                if col.startswith("params.")
-            },
-            "start_time": best_run.get("start_time"),
-            "end_time": best_run.get("end_time"),
+        best = runs_list[0]
+        return {
+            "run_id": best.id,
+            "name": best.name,
+            "metrics": dict(best.summary),
+            "params": dict(best.config),
         }
 
-        return result
-
-    def list_runs(self, experiment_name: Optional[str] = None) -> list[dict[str, Any]]:
-        """List all runs in an experiment.
-
-        Args:
-            experiment_name: Optional experiment name (defaults to self.experiment_name)
+    def get_summary(self) -> dict[str, Any]:
+        """Get a summary of all experiments in this group.
 
         Returns:
-            List of run summaries with run_id, metrics, and params
+            Dict with total_runs, by_model_type counts, best run, and recent runs.
         """
-        exp_name = experiment_name or self.experiment_name
-        experiment = mlflow.get_experiment_by_name(exp_name)
+        try:
+            runs = self._fetch_runs()
+        except Exception as e:
+            logger.warning(f"[TRACKER] get_summary failed: {e}")
+            return {"total_runs": 0, "by_model_type": {}, "best": None, "recent": []}
 
-        if experiment is None:
-            raise ValueError(f"Experiment '{exp_name}' not found")
+        if not runs:
+            return {"total_runs": 0, "by_model_type": {}, "best": None, "recent": []}
 
-        # Search for all runs
-        runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
+        total = len(runs)
 
-        if runs.empty:
-            return []
+        # Count by model type
+        by_model: dict[str, int] = {}
+        for r in runs:
+            mt = r.config.get("model_type", "unknown")
+            by_model[mt] = by_model.get(mt, 0) + 1
 
-        # Convert to list of dicts
+        # Best by Sharpe
+        best = None
+        best_sharpe = None
+        for r in runs:
+            s = r.summary.get("sharpe")
+            if s is not None and (best_sharpe is None or s > best_sharpe):
+                best_sharpe = s
+                best = {
+                    "run_id": r.id,
+                    "name": r.name,
+                    "sharpe": s,
+                    "model_type": r.config.get("model_type", "unknown"),
+                }
+
+        # Recent 5 (runs are returned newest first by default)
+        recent = []
+        for r in runs[:5]:
+            recent.append({
+                "run_id": r.id,
+                "name": r.name,
+                "model_type": r.config.get("model_type", "unknown"),
+                "sharpe": r.summary.get("sharpe"),
+            })
+
+        return {
+            "total_runs": total,
+            "by_model_type": by_model,
+            "best": best,
+            "recent": recent,
+        }
+
+    def list_runs(self) -> list[dict[str, Any]]:
+        """List all runs in this experiment group.
+
+        Returns:
+            List of run summaries with run_id, metrics, and params.
+        """
+        runs = self._fetch_runs()
         result = []
-        for _, run in runs.iterrows():
-            run_info = {
-                "run_id": run["run_id"],
-                "metrics": {
-                    col.replace("metrics.", ""): run[col]
-                    for col in run.index
-                    if col.startswith("metrics.") and not pd.isna(run[col])
-                },
-                "params": {
-                    col.replace("params.", ""): run[col]
-                    for col in run.index
-                    if col.startswith("params.") and not pd.isna(run[col])
-                },
-                "start_time": run.get("start_time"),
-                "end_time": run.get("end_time"),
-            }
-            result.append(run_info)
-
+        for r in runs:
+            result.append({
+                "run_id": r.id,
+                "name": r.name,
+                "metrics": dict(r.summary),
+                "params": dict(r.config),
+                "state": r.state,
+            })
         return result

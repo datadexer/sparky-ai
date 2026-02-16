@@ -23,9 +23,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sparky.data.loader import load
-from sparky.tracking.experiment_db import (
-    get_db, config_hash, is_duplicate, log_experiment,
-)
+from sparky.tracking.experiment import ExperimentTracker, config_hash
 from sparky.oversight.timeout import with_timeout
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -135,14 +133,13 @@ def main():
     regime_counts = regimes.value_counts()
     logger.info(f"Regime distribution:\n{regime_counts}")
 
-    # Check experiment DB for duplicates
-    db = get_db()
+    # Check MLflow for duplicates
+    tracker = ExperimentTracker(experiment_name="regime_aware")
     cfg = {"approach": "regime_aware", "regime_method": "volatility_threshold"}
     h = config_hash(cfg)
 
-    if is_duplicate(db, h):
-        logger.info("This exact config already ran — check experiment DB")
-        db.close()
+    if tracker.is_duplicate(h):
+        logger.info("This exact config already ran — check MLflow")
         return
 
     # Train per-regime models
@@ -161,20 +158,14 @@ def main():
 
     elapsed = time.time() - start
 
-    # Log to experiment DB
-    log_experiment(
-        db,
-        config_hash=h,
-        model_type="catboost",
-        approach_family="regime_aware",
-        hyperparams=cfg,
-        sharpe=None,  # TODO: compute after walk-forward
-        wall_clock_seconds=elapsed,
-        notes="Regime-aware scaffold — walk-forward TODO",
+    # Log to MLflow
+    tracker.log_experiment(
+        name=f"regime_aware_{h}",
+        config={**cfg, "model_type": "catboost"},
+        metrics={"wall_clock_seconds": elapsed},
     )
 
     logger.info(f"Done in {elapsed:.1f}s. Walk-forward evaluation pending.")
-    db.close()
 
 
 if __name__ == "__main__":
