@@ -31,6 +31,8 @@ mkdir -p "$LOG_DIR"
 CEO_PROMPT='Continue work. Read CLAUDE.md, roadmap/00_STATE.yaml, coordination/TASK_CONTRACTS.md, check inbox (PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo). Use GPU for all model training. Do not narrate — execute experiments and log results to files. Commit frequently.'
 
 run_daemon() {
+    # Unset Claude Code env vars so nested claude can launch
+    unset CLAUDECODE CLAUDE_CODE_SSE_PORT CLAUDE_CODE_ENTRYPOINT
     echo $$ > "$PID_FILE"
     SESSION_COUNT=0
 
@@ -38,11 +40,15 @@ run_daemon() {
         SESSION_COUNT=$((SESSION_COUNT + 1))
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
         LOG_FILE="$LOG_DIR/ceo_session_${SESSION_COUNT}_${TIMESTAMP}.log"
+        touch "$LOG_FILE"
         ln -sf "$LOG_FILE" "$LATEST_LINK"
 
-        # Health gate
+        # Health gate — only block on CRITICAL (exit 2), allow DEGRADED
         while true; do
-            bash "$PROJECT_ROOT/scripts/system_health_check.sh" > /dev/null 2>&1 && break
+            bash "$PROJECT_ROOT/scripts/system_health_check.sh" > /dev/null 2>&1
+            HC_EXIT=$?
+            [ "$HC_EXIT" -ne 2 ] && break
+            echo "[$(date)] System CRITICAL — waiting 60s" >> "$LOG_FILE"
             sleep 60
         done
 
