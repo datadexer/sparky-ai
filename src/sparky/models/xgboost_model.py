@@ -36,6 +36,8 @@ class XGBoostModel:
         min_child_weight: Minimum sum of instance weight in a child (default 5).
         reg_alpha: L1 regularization (default 0.1).
         reg_lambda: L2 regularization (default 1.0).
+        tree_method: Tree construction algorithm (default "hist" for GPU support).
+        device: Device to use ("cpu" or "cuda", default "cpu").
         random_state: Random seed for reproducibility.
         eval_metric: Evaluation metric (default "logloss").
         use_label_encoder: Disable sklearn label encoder (default False).
@@ -51,6 +53,8 @@ class XGBoostModel:
         min_child_weight: int = 5,
         reg_alpha: float = 0.1,
         reg_lambda: float = 1.0,
+        tree_method: str = "hist",
+        device: str = "cpu",
         random_state: int = 42,
         eval_metric: str = "logloss",
         use_label_encoder: bool = False,
@@ -63,6 +67,8 @@ class XGBoostModel:
         self.min_child_weight = min_child_weight
         self.reg_alpha = reg_alpha
         self.reg_lambda = reg_lambda
+        self.tree_method = tree_method
+        self.device = device
         self.random_state = random_state
         self.eval_metric = eval_metric
         self.use_label_encoder = use_label_encoder
@@ -77,6 +83,8 @@ class XGBoostModel:
             min_child_weight=self.min_child_weight,
             reg_alpha=self.reg_alpha,
             reg_lambda=self.reg_lambda,
+            tree_method=self.tree_method,
+            device=self.device,
             random_state=self.random_state,
             eval_metric=self.eval_metric,
             use_label_encoder=self.use_label_encoder,

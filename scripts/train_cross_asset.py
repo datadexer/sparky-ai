@@ -121,7 +121,7 @@ def train_cross_asset_model(X_train, y_train):
     logger.info(f"Features after encoding: {X_train_encoded.shape[1]}")
     logger.info(f"Feature columns: {list(X_train_encoded.columns)}")
 
-    # Train model
+    # Train model with GPU acceleration
     model = XGBoostModel(
         max_depth=4,  # Slightly deeper for cross-asset complexity
         learning_rate=0.05,
@@ -130,6 +130,8 @@ def train_cross_asset_model(X_train, y_train):
         colsample_bytree=0.8,
         reg_alpha=0.5,
         reg_lambda=2.0,
+        tree_method="hist",  # GPU-compatible method
+        device="cuda",       # Use GPU
         random_state=42
     )
 
