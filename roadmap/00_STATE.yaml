@@ -193,24 +193,24 @@ phases:
     started_at: "2026-02-15"
     completed_at: null
     human_gate_required: false
-    notes: "CRITICAL MISSION: Expand to 10,000+ observations (52K-490K hourly samples)"
+    notes: "Feature expansion to 58 features complete. Hyperparameter sweep in progress."
     tasks:
       data_expansion_plan:
         status: complete
         depends_on: []
-        notes: "DATA_EXPANSION_PLAN.md — 3 approaches: hourly data, cross-asset, extended history"
+        notes: "DATA_EXPANSION_PLAN.md + FEATURE_EXPANSION_PLAN.md complete"
       fetch_hourly_btc:
-        status: pending
+        status: complete
         depends_on: [data_expansion_plan]
-        notes: "scripts/fetch_hourly_btc.py — 70K hourly BTC candles 2017-2025"
+        notes: "115K hourly BTC candles (2013-2026) using max_coverage dataset"
       prepare_hourly_features:
-        status: pending
+        status: complete
         depends_on: [fetch_hourly_btc]
-        notes: "scripts/prepare_hourly_features.py — hourly features resampled to daily"
+        notes: "58 features (23 original + 35 new) on 4,795 daily samples from 115K hourly candles"
       train_on_hourly:
-        status: pending
+        status: in_progress
         depends_on: [prepare_hourly_features]
-        notes: "scripts/train_on_hourly.py — XGBoost on 52K hourly samples"
+        notes: "sweep_58_features.py running (PID 2597624) — 54 configs, CatBoost + LightGBM"
       fetch_cross_asset:
         status: pending
         depends_on: [data_expansion_plan]
