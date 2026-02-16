@@ -5,6 +5,44 @@ Newest entries at the top.
 
 ---
 
+## Baseline Results — BuyAndHold BTC (Phase 2 Completion)
+
+**Date**: 2026-02-15
+**Strategy**: BuyAndHold (100% long BTC at all times)
+**In-sample period**: 2019-01-01 to 2022-01-01
+**Out-of-sample period**: 2022-01-01 to 2025-12-31
+**Data source**: Binance (BTC/USDT daily OHLCV, 2527 rows after feature computation)
+**Transaction costs**: 0.13% per trade (TransactionCostModel.for_btc())
+
+### Results
+- **Annualized Sharpe (full)**: 0.7892
+- **Annualized Sharpe (OOS)**: 0.4737
+- **95% CI**: (0.1374, 1.4777)
+- **Sharpe p-value**: 0.0185
+- **Max drawdown (full)**: 76.63%
+- **Max drawdown (OOS)**: 66.93%
+- **Total return**: 1027.76%
+- **Total return (OOS)**: 89.06%
+- **Walk-forward folds**: 75
+- **MLflow run ID**: 2801374c398a492196cb1ef199965eb0
+
+### Significance
+This is the performance floor for Phase 3 ML models. Any model that cannot
+beat BuyAndHold BTC after costs is not worth deploying. The bootstrap CI
+gives the uncertainty band — a Phase 3 model's Sharpe must exceed the upper
+bound of BuyAndHold's CI (1.48) to be considered genuinely better.
+
+Note: BuyAndHold BTC had a statistically significant Sharpe (p=0.018) over
+this period, driven by BTC's massive 2020-2021 bull run. The OOS Sharpe
+(0.47) is weaker — the 2022 bear market and 2023-2024 recovery partially
+offset each other. The 76.6% max drawdown is the key weakness to beat.
+
+### Leakage Check
+Leakage detector passed all 3 checks (shuffled-label, temporal boundary,
+index overlap audit). Expected — BuyAndHold ignores features entirely.
+
+---
+
 ## BGeometrics API — Rate Limits & Caching Strategy (Phase 1)
 
 **Date**: 2026-02-15

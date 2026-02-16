@@ -43,17 +43,20 @@ BTC_START = "2017-01-01"
 ETH_START = "2017-07-30"  # ETH had sufficient liquidity by mid-2017
 
 
-def fetch_price_data(store: DataStore, incremental: bool = False) -> dict:
+def fetch_price_data(
+    store: DataStore, incremental: bool = False,
+    start_date: str | None = None, end_date: str | None = None,
+) -> dict:
     """Fetch BTC and ETH OHLCV from CCXT/Binance."""
     results = {}
     fetcher = CCXTPriceFetcher()
 
-    for symbol, asset, start in [
+    for symbol, asset, default_start in [
         ("BTC/USDT", "btc", BTC_START),
         ("ETH/USDT", "eth", ETH_START),
     ]:
         path = DATA_RAW / asset / "ohlcv.parquet"
-        effective_start = start
+        effective_start = start_date or default_start
 
         if incremental:
             last_ts = store.get_last_timestamp(path)
@@ -62,7 +65,7 @@ def fetch_price_data(store: DataStore, incremental: bool = False) -> dict:
                 logger.info(f"Incremental: {asset} OHLCV from {effective_start}")
 
         try:
-            df = fetcher.fetch_daily_ohlcv(symbol, effective_start)
+            df = fetcher.fetch_daily_ohlcv(symbol, effective_start, end_date)
             if not df.empty:
                 if incremental and path.exists():
                     store.append(df, path, metadata={"source": "binance", "asset": asset})
@@ -124,7 +127,10 @@ def fetch_bgeometrics_data(
         return {"rows": 0, "error": str(e)}
 
 
-def fetch_coinmetrics_data(store: DataStore, incremental: bool = False) -> dict:
+def fetch_coinmetrics_data(
+    store: DataStore, incremental: bool = False,
+    start_date: str | None = None,
+) -> dict:
     """Fetch BTC + ETH raw on-chain from CoinMetrics."""
     results = {}
 
@@ -134,9 +140,9 @@ def fetch_coinmetrics_data(store: DataStore, incremental: bool = False) -> dict:
         logger.error(f"CoinMetrics client not available: {e}")
         return {"error": str(e)}
 
-    for asset, start in [("btc", BTC_START), ("eth", ETH_START)]:
+    for asset, default_start in [("btc", BTC_START), ("eth", ETH_START)]:
         path = DATA_RAW / asset / "onchain_coinmetrics.parquet"
-        effective_start = start
+        effective_start = start_date or default_start
 
         if incremental:
             last_ts = store.get_last_timestamp(path)
@@ -321,6 +327,8 @@ def main():
     parser.add_argument("--skip-bgeometrics", action="store_true", help="Skip BGeometrics")
     parser.add_argument("--skip-blockchain-com", action="store_true", help="Skip Blockchain.com")
     parser.add_argument("--skip-coingecko", action="store_true", help="Skip CoinGecko")
+    parser.add_argument("--start-date", help="Override start date (YYYY-MM-DD)")
+    parser.add_argument("--end-date", help="Override end date (YYYY-MM-DD)")
     args = parser.parse_args()
 
     if args.dry_run:
@@ -339,13 +347,17 @@ def main():
     logger.info("=" * 60)
     logger.info("STEP 1: Fetching price data (CCXT/Binance)")
     logger.info("=" * 60)
-    all_results["price"] = fetch_price_data(store, args.incremental)
+    all_results["price"] = fetch_price_data(
+        store, args.incremental, start_date=args.start_date, end_date=args.end_date
+    )
 
     # 2. CoinMetrics (free, no auth, generous rate limit)
     logger.info("=" * 60)
     logger.info("STEP 2: Fetching CoinMetrics on-chain data")
     logger.info("=" * 60)
-    all_results["coinmetrics"] = fetch_coinmetrics_data(store, args.incremental)
+    all_results["coinmetrics"] = fetch_coinmetrics_data(
+        store, args.incremental, start_date=args.start_date
+    )
 
     # 3. BGeometrics (limited: 8 req/hour, 15 req/day)
     if not args.skip_bgeometrics:
