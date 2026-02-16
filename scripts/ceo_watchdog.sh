@@ -18,7 +18,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-BASE_COOLDOWN="${CEO_COOLDOWN_SECS:-300}"
+BASE_COOLDOWN="${CEO_COOLDOWN_SECS:-60}"
 MAX_BUDGET="${CEO_MAX_BUDGET_USD:-15.00}"
 LOG_DIR="$PROJECT_ROOT/logs/ceo_sessions"
 MODEL="${CEO_MODEL:-sonnet}"
@@ -72,7 +72,7 @@ run_daemon() {
         fi
 
         # Cooldown with jitter
-        JITTER=$((RANDOM % 120))
+        JITTER=$((RANDOM % 30))
         COOLDOWN=$((BASE_COOLDOWN + JITTER))
         echo "[$(date)] Cooling down ${COOLDOWN}s" >> "$LOG_FILE"
         sleep "$COOLDOWN"
