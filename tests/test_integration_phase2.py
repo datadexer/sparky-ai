@@ -261,10 +261,12 @@ class TestFeatureRegistryToSelectionPipeline:
 
 
 class TestExperimentTrackerLogsRealBacktest:
-    """Run real backtest -> log to ExperimentTracker -> verify MLflow run."""
+    """Run real backtest -> log to ExperimentTracker -> verify W&B run."""
 
     def test_backtest_metrics_logged_correctly(self, backtest_data, tmp_path):
-        """Metrics from a real backtest are correctly stored in MLflow."""
+        """Metrics from a real backtest are correctly passed to W&B."""
+        from unittest.mock import patch, MagicMock
+
         X, y, returns = backtest_data
         model = BuyAndHold()
         cost_model = TransactionCostModel.for_btc()
@@ -276,29 +278,34 @@ class TestExperimentTrackerLogsRealBacktest:
         avg_sharpe = float(np.mean([m["sharpe"] for m in result.per_fold_metrics]))
         total_return = float(result.equity_curve.iloc[-1] - 1.0)
 
-        # Log to experiment tracker
-        tracker = ExperimentTracker(
-            experiment_name="integration_test",
-            tracking_uri=str(tmp_path / "mlruns"),
-        )
-        run_id = tracker.log_experiment(
-            name="test_buy_and_hold",
-            config={"model": "BuyAndHold", "cost_model": "btc"},
-            metrics={"avg_sharpe": avg_sharpe, "total_return": total_return},
-        )
+        # Mock W&B to avoid network calls
+        mock_run = MagicMock()
+        mock_run.id = "test_run_123"
 
-        # Verify run exists and has correct values
-        assert run_id is not None
-        assert len(run_id) > 0
+        with patch("sparky.tracking.experiment._ensure_wandb_login"):
+            with patch("sparky.tracking.experiment.wandb") as mock_wandb:
+                mock_wandb.init.return_value = mock_run
 
-        runs = tracker.list_runs()
-        assert len(runs) == 1
+                tracker = ExperimentTracker(experiment_name="integration_test")
+                run_id = tracker.log_experiment(
+                    name="test_buy_and_hold",
+                    config={"model": "BuyAndHold", "cost_model": "btc"},
+                    metrics={"avg_sharpe": avg_sharpe, "total_return": total_return},
+                )
 
-        logged_metrics = runs[0]["metrics"]
-        assert "avg_sharpe" in logged_metrics
-        assert "total_return" in logged_metrics
-        assert logged_metrics["avg_sharpe"] == pytest.approx(avg_sharpe, rel=1e-6)
-        assert logged_metrics["total_return"] == pytest.approx(total_return, rel=1e-6)
+                # Verify run was created
+                assert run_id == "test_run_123"
+                mock_wandb.init.assert_called_once()
+
+                # Verify metrics were logged
+                logged = mock_wandb.log.call_args[0][0]
+                assert logged["avg_sharpe"] == pytest.approx(avg_sharpe, rel=1e-6)
+                assert logged["total_return"] == pytest.approx(total_return, rel=1e-6)
+
+                # Verify config contains the right params
+                call_config = mock_wandb.init.call_args[1]["config"]
+                assert call_config["model"] == "BuyAndHold"
+                assert "config_hash" in call_config
 
 
 class TestBootstrapCIScaleMatchesFoldSharpe:

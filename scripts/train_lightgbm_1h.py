@@ -148,7 +148,7 @@ def train_lightgbm(X_train, y_train):
         'reg_lambda': 2.0,  # L2 regularization
         'random_state': 42,
         'verbose': -1,
-        'n_jobs': 2,
+        'device': 'gpu',
     }
 
     model = lgb.LGBMClassifier(**params)
