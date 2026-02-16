@@ -5,6 +5,26 @@ Newest entries at the top.
 
 ---
 
+## Two-Stage Hyperparameter Sweep — 2026-02-16 22:35 UTC [COMPLETE]
+
+**STATUS**: CatBoost best, does NOT beat Donchian baseline (0.98 vs 1.06)
+
+**APPROACH**: 54 configs (3 models × 3 depths × 3 LRs × 2 regs) → screen on single split → validate top-5 walk-forward
+
+**RESULTS**:
+- **Stage 1**: CatBoost dominates (8/10 top), best screening Sharpe 0.336
+- **Stage 2**: CatBoost d=4 lr=0.01 → Mean Sharpe 0.98 ± 0.73, Acc 53.0%
+- **Baseline**: Multi-TF Donchian Sharpe 1.06
+- **Conclusion**: ML underperforms baseline by 6%
+
+**INSIGHT**: CatBoost >> LightGBM > XGBoost. Shallow trees (d=3-4) + low LR (0.01) best. High variance (±0.73), 2022 bear: -2.02 Sharpe. Accuracy 53% = marginal edge. TIER 3 — continue iterating.
+
+**Files**: `scripts/sweep_two_stage.py`, `results/sweep_progress.csv`, `results/sweep_analysis_20260216.txt`
+
+**Commit**: 454e595
+
+---
+
 ## Ridge Regression — 2026-02-16 22:28 UTC [COMPLETE]
 
 **STATUS**: Complete — Ridge matches stacking (both 52.1%)
