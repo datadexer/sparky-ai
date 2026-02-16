@@ -344,7 +344,8 @@ def train_model(X_train, y_train, seed=42):
         random_seed=seed,
         cat_features=['asset_id'],  # Categorical feature
         verbose=0,
-        thread_count=4,
+        task_type="GPU",
+        devices="0",
     )
 
     model.fit(X_train, y_train)

@@ -297,7 +297,9 @@ def main():
         random_seed=42,
         verbose=0,
         subsample=0.8,
-        rsm=0.8
+        rsm=0.8,
+        task_type="GPU",
+        devices="0",
     )
 
     results_base, model_base = evaluate_model(
@@ -321,7 +323,9 @@ def main():
         random_seed=42,
         verbose=0,
         subsample=0.8,
-        rsm=0.8
+        rsm=0.8,
+        task_type="GPU",
+        devices="0",
     )
 
     results_catboost, model_catboost = evaluate_model(
