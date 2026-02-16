@@ -5,15 +5,43 @@ Newest entries at the top.
 
 ---
 
-## Smart Hyperparameter Sweep (54 configs) — 2026-02-16 16:11 UTC [RUNNING]
+## Feature Expansion to 58 Features — 2026-02-16 21:39 UTC
 
-**STATUS**: In progress (PID 2579533, ~81 min estimated)
+**OBJECTIVE**: Expand from 23 to 58 hourly features to improve ML model performance
+
+**APPROACH**: Added 35 new features across 5 categories:
+- Microstructure (10): tick_direction_ratio, candle_body_ratio, wicks, consecutive candles, bid/ask imbalance proxy
+- Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
+- Regime indicators (8): drawdown/recovery, volatility/volume regime, trend strength, choppiness, breakout proximity
+- Cross-timeframe divergences (6): momentum/RSI/vol divergences across 4h/24h/168h
+- Volume-price interaction (8): OBV, MFI, volume surge/exhaustion, price-volume correlation, volume-weighted RSI
+
+**RESULTS**:
+- **Feature count**: 23 → 58 (+152%)
+- **Daily samples**: 4,795 (from 115K hourly candles, 2013-2026)
+- **Test coverage**: 19/19 tests pass
+- **Files**: `src/sparky/features/microstructure.py`, `regime.py`, `multi_resolution.py`
+
+**NEXT STEPS**: Run new hyperparameter sweep with 58 features when current sweep (23 features) completes. Early indication: 23 features achieving Sharpe 0.05 (far below baseline 1.062).
+
+---
+
+## Smart Hyperparameter Sweep (54 configs, 23 features) — 2026-02-16 16:11 UTC [RUNNING]
+
+**STATUS**: In progress (5/54 configs after 8.5 hours, PID 2589920)
 
 **OBJECTIVE**: Systematic search for ML configs beating corrected baseline (Sharpe 1.062)
 
-**APPROACH**: 54 configs (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05, L1/L2 regularization variations. Yearly walk-forward validation (2020-2023). Will report ALL results to avoid cherry-picking.
+**APPROACH**: 54 configs (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05, L1/L2 regularization variations. Yearly walk-forward validation (2020-2023). Testing with original 23 hourly features.
 
-**Files**: `scripts/smart_hyperparam_sweep.py`, results will be in `results/validation/smart_hyperparam_sweep.json`
+**EARLY RESULTS** (5/54 configs):
+- Best: CatBoost depth=3 lr=0.01 l2=5 → Sharpe 0.050
+- All configs: Sharpe range -0.251 to 0.050
+- **FAR BELOW BASELINE** (1.062) — no configs approaching competitive performance
+
+**FILES**: `scripts/smart_hyperparam_sweep.py`, `results/validation/smart_sweep_intermediate.json`
+
+**CONCLUSION (preliminary)**: 23 features insufficient. Feature expansion to 58 features underway.
 
 ---
 
