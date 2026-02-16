@@ -65,19 +65,59 @@ while true; do
 
     echo "[$TIMESTAMP] Starting CEO session #$SESSION_COUNT (log: $LOG_FILE)"
 
-    # Launch claude CLI in non-interactive print mode
-    # -p (--print): non-interactive, prints output and exits
-    # --max-budget-usd: caps spend per session
-    # --permission-mode: bypassPermissions for autonomous operation (sandboxed)
-    # --model: use sonnet for cost efficiency
+    # Launch claude CLI with streaming JSON output, pipe through jq to extract
+    # text content in real-time. This avoids the --print buffering problem.
+    # --output-format stream-json emits newline-delimited JSON as tokens arrive.
+    # We extract the text content and tee to both stdout and log file.
     set +e
     cd "$PROJECT_ROOT" && claude -p \
         --model "$MODEL" \
         --max-budget-usd "$MAX_BUDGET" \
         --permission-mode "$PERM_MODE" \
+        --output-format stream-json \
         "$CEO_PROMPT" \
-        2>&1 | tee "$LOG_FILE"
-    EXIT_CODE=$?
+        2>"$LOG_FILE.stderr" \
+        | while IFS= read -r line; do
+            # Each line is a JSON object. Extract text content for readable streaming.
+            # Types: "assistant" (text), "tool_use", "tool_result", "result" (final)
+            TYPE=$(echo "$line" | jq -r '.type // empty' 2>/dev/null)
+            case "$TYPE" in
+                assistant)
+                    TEXT=$(echo "$line" | jq -r '.content // empty' 2>/dev/null)
+                    if [ -n "$TEXT" ]; then
+                        printf '%s' "$TEXT"
+                        printf '%s' "$TEXT" >> "$LOG_FILE"
+                    fi
+                    ;;
+                tool_use)
+                    TOOL=$(echo "$line" | jq -r '.tool // empty' 2>/dev/null)
+                    INPUT=$(echo "$line" | jq -r '.input // empty' 2>/dev/null | head -c 200)
+                    MSG="[TOOL: $TOOL] $INPUT"
+                    echo "$MSG"
+                    echo "$MSG" >> "$LOG_FILE"
+                    ;;
+                tool_result)
+                    CONTENT=$(echo "$line" | jq -r '.content // empty' 2>/dev/null | head -c 500)
+                    if [ -n "$CONTENT" ]; then
+                        echo "[RESULT] $(echo "$CONTENT" | head -3)"
+                        echo "[RESULT] $CONTENT" >> "$LOG_FILE"
+                    fi
+                    ;;
+                result)
+                    # Final message — session complete
+                    COST=$(echo "$line" | jq -r '.cost_usd // "unknown"' 2>/dev/null)
+                    DURATION=$(echo "$line" | jq -r '.duration_ms // "unknown"' 2>/dev/null)
+                    echo ""
+                    echo "[SESSION COMPLETE] Cost: \$$COST | Duration: ${DURATION}ms"
+                    echo "[SESSION COMPLETE] Cost: \$$COST | Duration: ${DURATION}ms" >> "$LOG_FILE"
+                    ;;
+                *)
+                    # Log raw for debugging but don't spam stdout
+                    echo "$line" >> "$LOG_FILE.raw"
+                    ;;
+            esac
+        done
+    EXIT_CODE=${PIPESTATUS[0]}
     set -e
 
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)

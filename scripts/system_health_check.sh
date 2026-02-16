@@ -14,8 +14,8 @@ fi
 # Thresholds
 WARN_CPU=70
 CRIT_CPU=85
-WARN_MEM=70
-CRIT_MEM=85
+WARN_MEM=92
+CRIT_MEM=97
 WARN_DISK_GB=50
 CRIT_DISK_GB=20
 MAX_PYTHON_PROCS=8     # Hard ceiling on total python processes
