@@ -79,9 +79,9 @@ class HourlyToDailyAggregator:
         valid = daily["n_hours"] >= 20
         daily.loc[valid, "signal"] = (daily.loc[valid, "daily_proba"] > self.threshold).astype(int)
 
-        # Remove timezone for consistency
-        if daily.index.tz is not None:
-            daily.index = daily.index.tz_localize(None)
+        # Ensure timezone-aware (UTC)
+        if daily.index.tz is None:
+            daily.index = daily.index.tz_localize("UTC")
 
         logger.info(
             f"Aggregated {len(hourly_probas):,} hourly predictions to {len(daily)} daily signals "
@@ -144,8 +144,8 @@ class HourlyToDailyAggregator:
         daily = self._aggregate_mean(hourly_probas)
 
         # Adjust threshold: high vol → threshold + 0.02, low vol → threshold - 0.01
-        if daily_vol.index.tz is not None:
-            daily_vol.index = daily_vol.index.tz_localize(None)
+        if daily_vol.index.tz is None:
+            daily_vol.index = daily_vol.index.tz_localize("UTC")
 
         daily_vol_aligned = daily_vol.reindex(daily.index)
         high_vol = daily_vol_aligned > vol_median
@@ -239,13 +239,13 @@ class RegimeAwareAggregator:
         # Get daily regime (most common regime that day)
         daily_regime = regimes.resample("D").agg(lambda x: x.mode()[0] if len(x) > 0 else "medium")
 
-        # Remove timezone for consistency (apply to all series)
-        if daily_proba.index.tz is not None:
-            daily_proba.index = daily_proba.index.tz_localize(None)
-            daily_std.index = daily_std.index.tz_localize(None)
-            daily_n_hours.index = daily_n_hours.index.tz_localize(None)
-        if daily_regime.index.tz is not None:
-            daily_regime.index = daily_regime.index.tz_localize(None)
+        # Ensure timezone-aware (UTC)
+        if daily_proba.index.tz is None:
+            daily_proba.index = daily_proba.index.tz_localize("UTC")
+            daily_std.index = daily_std.index.tz_localize("UTC")
+            daily_n_hours.index = daily_n_hours.index.tz_localize("UTC")
+        if daily_regime.index.tz is None:
+            daily_regime.index = daily_regime.index.tz_localize("UTC")
 
         # Generate regime-aware signals
         results = []

@@ -47,6 +47,9 @@ def load_btc_data() -> pd.Series:
     df = pd.read_parquet(data_path)
     prices = df["close"]
     prices.index = pd.to_datetime(df.index)
+    # Ensure timezone-aware (UTC)
+    if prices.index.tz is None:
+        prices.index = prices.index.tz_localize("UTC")
 
     logger.info(f"Loaded BTC data: {len(prices)} days ({prices.index[0]} to {prices.index[-1]})")
     return prices

@@ -46,8 +46,20 @@ class DataStore:
             path: File path for the Parquet file.
             metadata: Optional metadata dict (source, asset, date_range, etc.).
                       Stored in the Parquet file's schema metadata.
+
+        Raises:
+            ValueError: If DataFrame has a DatetimeIndex without timezone info.
+                        ALL timestamps must be timezone-aware (UTC).
         """
         path = Path(path)
+
+        # Enforce timezone-aware timestamps
+        if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is None:
+            raise ValueError(
+                f"DatetimeIndex must be timezone-aware (UTC). "
+                f"Got timezone-naive index when saving to {path}. "
+                f"Use df.index = df.index.tz_localize('UTC') to fix."
+            )
         path.parent.mkdir(parents=True, exist_ok=True)
 
         # Build metadata
@@ -78,10 +90,19 @@ class DataStore:
 
         Returns:
             Tuple of (DataFrame, metadata dict).
+            DatetimeIndex is guaranteed to be timezone-aware (UTC).
         """
         path = Path(path)
         table = pq.read_table(str(path))
         df = table.to_pandas()
+
+        # Ensure timezone-aware DatetimeIndex on load
+        if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is None:
+            logger.warning(
+                f"[DATA] Loaded timezone-naive DatetimeIndex from {path}, "
+                f"localizing to UTC. Re-save this file to fix permanently."
+            )
+            df.index = df.index.tz_localize("UTC")
 
         # Extract metadata
         meta = {}

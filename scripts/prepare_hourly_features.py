@@ -198,8 +198,9 @@ def resample_to_daily(features_hourly: pd.DataFrame) -> pd.DataFrame:
     # Resample to daily, taking last value of each day
     features_daily = features_hourly.resample("D").last()
 
-    # Remove timezone info to match existing daily data format
-    features_daily.index = features_daily.index.tz_localize(None)
+    # Ensure timezone-aware (UTC) — do NOT strip timezone
+    if features_daily.index.tz is None:
+        features_daily.index = features_daily.index.tz_localize("UTC")
 
     logger.info(f"Resampled to {len(features_daily)} daily rows")
     logger.info(f"Date range: {features_daily.index.min()} to {features_daily.index.max()}")
@@ -230,7 +231,8 @@ def generate_daily_targets(
 
     # Resample hourly prices to daily close
     prices_daily = prices_hourly.resample("D").last()
-    prices_daily.index = prices_daily.index.tz_localize(None)
+    if prices_daily.index.tz is None:
+        prices_daily.index = prices_daily.index.tz_localize("UTC")
 
     # Target: close at T+horizon > close at T
     future_close = prices_daily["close"].shift(-horizon_days)

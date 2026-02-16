@@ -120,8 +120,9 @@ class FeatureRegistry:
                 # Apply valid_from mask
                 if feat_def.valid_from:
                     valid_from_ts = pd.Timestamp(feat_def.valid_from, tz="UTC")
+                    # Ensure series index is tz-aware for comparison
                     if series.index.tz is None:
-                        valid_from_ts = valid_from_ts.tz_localize(None)
+                        series.index = series.index.tz_localize("UTC")
                     series = series.copy()
                     series[series.index < valid_from_ts] = np.nan
 
