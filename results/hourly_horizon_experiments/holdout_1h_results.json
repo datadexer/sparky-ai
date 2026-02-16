@@ -1,0 +1,8 @@
+{
+  "horizon": "1h",
+  "holdout_accuracy": 0.5274737802097583,
+  "holdout_roc_auc": 0.5368940126054135,
+  "holdout_samples": 17544,
+  "holdout_balance": 0.5077519379844961,
+  "holdout_positive_rate": 0.5820793433652531
+}
