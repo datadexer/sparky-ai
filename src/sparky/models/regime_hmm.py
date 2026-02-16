@@ -234,6 +234,7 @@ def hmm_regime_donchian(
 def hmm_probabilistic_ensemble(
     prices: pd.Series,
     n_states: int = 2,
+    random_state: int = 42,
 ) -> pd.Series:
     """Multi-timeframe ensemble with HMM probabilistic weighting.
 
@@ -247,12 +248,15 @@ def hmm_probabilistic_ensemble(
     Args:
         prices: Close prices (daily frequency).
         n_states: Number of HMM states (2 or 3, default 2).
+        random_state: Random seed for HMM EM algorithm (default 42).
 
     Returns:
         Series of signals (1 = LONG, 0 = FLAT), same index as prices.
     """
     # Train HMM
-    model, features_df, hidden_states, state_probs = train_hmm_regime_model(prices, n_states=n_states)
+    model, features_df, hidden_states, state_probs = train_hmm_regime_model(
+        prices, n_states=n_states, random_state=random_state
+    )
 
     # Generate signals for multiple strategies
     from sparky.models.simple_baselines import donchian_channel_strategy
