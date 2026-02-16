@@ -210,15 +210,15 @@ phases:
       train_on_hourly:
         status: in_progress
         depends_on: [prepare_hourly_features]
-        notes: "sweep_58_features.py running (PID 2597624) — 54 configs, CatBoost + LightGBM"
+        notes: "sweep_58_features.py running (PID 2604055, config 1/54) — 54 configs, CatBoost + LightGBM"
       fetch_cross_asset:
-        status: pending
+        status: complete
         depends_on: [data_expansion_plan]
-        notes: "scripts/fetch_cross_asset_hourly.py — 7 assets × 70K = 490K samples"
+        notes: "8 assets fetched, 312K total hourly samples (BTC/ETH/SOL/ADA/DOT/LINK/MATIC/AVAX)"
       prepare_cross_asset_features:
-        status: pending
+        status: in_progress
         depends_on: [fetch_cross_asset]
-        notes: "scripts/prepare_cross_asset_features.py — pooled features with asset_id"
+        notes: "scripts/prepare_cross_asset_features.py running (PID 2605444) — 58 features per asset"
       train_cross_asset:
         status: pending
         depends_on: [prepare_cross_asset_features]
