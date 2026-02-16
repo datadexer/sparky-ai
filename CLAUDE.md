@@ -128,6 +128,13 @@ sparky-ai/
   - XGBoost: `tree_method="hist", device="cuda"` (gpu_hist is deprecated in v3+)
   - CatBoost: `task_type="GPU"`
   - LightGBM: `device="gpu"`
+- **Mandatory two-stage sweep protocol** for hyperparameter searches:
+  1. **Feature selection FIRST**: Run single default XGBoost, keep top 15-20 features by importance. Never sweep 50+ features raw.
+  2. **Stage 1 — Screening**: Single 80/20 temporal split, ALL configs. ~2 min each. Rank by test Sharpe.
+  3. **Stage 2 — Validation**: Top 5 configs from Stage 1 get full walk-forward validation.
+  4. **Incremental logging**: After EACH config, append one line to `results/sweep_progress.csv`.
+  5. **Cache data**: Load features, targets, and prices ONCE at the start. NEVER re-read parquet inside a loop.
+  6. Use `scripts/sweep_two_stage.py` as the reference implementation.
 
 ## Time Tracking (mandatory)
 Every task must be bracketed with `TaskTimer.start()` and `TaskTimer.end()`:
