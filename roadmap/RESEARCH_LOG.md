@@ -260,3 +260,41 @@ Needs multi-seed validation for [VALIDATED] status.
 - Remaining validation: multi-seed stability (Phase 4), holdout (Phase 5)
 - Next gate: PR after Phase 5 completion
 
+
+---
+## VALIDATION 1: Holdout Test — 2026-02-16 01:50:12 UTC
+
+**Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
+
+**Data Split**:
+- Training: 2019-01-01 to 2025-09-30 (2451 samples)
+- Holdout: 2025-10-01 to 2025-12-31 (92 samples, NEVER SEEN)
+
+**Results**:
+- Holdout Sharpe: -1.4768
+- Max Drawdown: 26.20%
+- Total Return: -12.84%
+- Trades: 24
+
+**Comparison**:
+- Phase 2-3 Sharpe (train+test): 0.9990
+- Holdout Sharpe (never seen): -1.4768
+- Delta: -2.4758
+
+**Verdict**: [FAIL]
+❌ Holdout FAILS to replicate Phase 2-3. Result is OVERFITTING.
+
+---
+## VALIDATION 2: Leakage Re-Audit — 2026-02-16 01:51:55 UTC
+
+**Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, n_trials=20
+
+**Results**:
+- shuffled_label: PASS - Mean shuffled accuracy: 0.518 (threshold: 0.55). PASS
+- temporal_boundary: PASS - Train max: 2021-12-31, Test min: 2022-01-01, Gap: 1 days. PASS
+- index_overlap_audit: PASS - No timestamp overlap between train and test. PASS
+
+**Overall**: ✅ ALL CHECKS PASSED
+
+**Verdict**: [OVERFITTING]
+Holdout failure is due to OVERFITTING, not leakage. Model learned noise in train/test split.

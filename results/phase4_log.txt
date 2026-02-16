@@ -1,0 +1,2106 @@
+2026-02-15 20:38:50,509 [INFO] Loading data...
+2026-02-15 20:38:50,522 [INFO] [DATA] Loaded 2604 rows from data/raw/btc/ohlcv.parquet
+2026-02-15 20:38:50,522 [INFO] Features: ['rsi_14', 'momentum_30d', 'ema_ratio_20d']
+2026-02-15 20:38:50,522 [INFO] Shape: (2543, 3)
+2026-02-15 20:38:50,522 [INFO] Target: 30d horizon, 2543 samples
+2026-02-15 20:38:50,522 [INFO] 
+================================================================================
+2026-02-15 20:38:50,522 [INFO] Seed 0
+2026-02-15 20:38:50,522 [INFO] ================================================================================
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:50] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:50,915 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:38:50,915 [INFO] ✓ Model trained
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:50] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,038 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,184 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,466 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:38:51,470 [INFO] ✓ Leakage check passed
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,543 [INFO] XGBoost trained on 252 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,677 [INFO] XGBoost trained on 282 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,792 [INFO] XGBoost trained on 312 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,877 [INFO] XGBoost trained on 342 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:51,953 [INFO] XGBoost trained on 372 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:51] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,006 [INFO] XGBoost trained on 402 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,089 [INFO] XGBoost trained on 432 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,210 [INFO] XGBoost trained on 462 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,282 [INFO] XGBoost trained on 492 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,386 [INFO] XGBoost trained on 522 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,486 [INFO] XGBoost trained on 552 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,780 [INFO] XGBoost trained on 582 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,906 [INFO] XGBoost trained on 612 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:52,972 [INFO] XGBoost trained on 642 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:52] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,035 [INFO] XGBoost trained on 672 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,383 [INFO] XGBoost trained on 702 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,489 [INFO] XGBoost trained on 732 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,560 [INFO] XGBoost trained on 762 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,652 [INFO] XGBoost trained on 792 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,812 [INFO] XGBoost trained on 822 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:53,884 [INFO] XGBoost trained on 852 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:53] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,038 [INFO] XGBoost trained on 882 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,423 [INFO] XGBoost trained on 912 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,567 [INFO] XGBoost trained on 942 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,684 [INFO] XGBoost trained on 972 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,763 [INFO] XGBoost trained on 1002 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,832 [INFO] XGBoost trained on 1032 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,896 [INFO] XGBoost trained on 1062 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:54,953 [INFO] XGBoost trained on 1092 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:54] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,024 [INFO] XGBoost trained on 1122 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,103 [INFO] XGBoost trained on 1152 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,175 [INFO] XGBoost trained on 1182 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,238 [INFO] XGBoost trained on 1212 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,385 [INFO] XGBoost trained on 1242 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,530 [INFO] XGBoost trained on 1272 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,664 [INFO] XGBoost trained on 1302 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,737 [INFO] XGBoost trained on 1332 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,868 [INFO] XGBoost trained on 1362 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:55,952 [INFO] XGBoost trained on 1392 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:55] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,085 [INFO] XGBoost trained on 1422 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,287 [INFO] XGBoost trained on 1452 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,376 [INFO] XGBoost trained on 1482 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,475 [INFO] XGBoost trained on 1512 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,560 [INFO] XGBoost trained on 1542 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,656 [INFO] XGBoost trained on 1572 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,764 [INFO] XGBoost trained on 1602 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:56,863 [INFO] XGBoost trained on 1632 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:56] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,019 [INFO] XGBoost trained on 1662 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,151 [INFO] XGBoost trained on 1692 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,246 [INFO] XGBoost trained on 1722 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,478 [INFO] XGBoost trained on 1752 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,574 [INFO] XGBoost trained on 1782 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,658 [INFO] XGBoost trained on 1812 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,731 [INFO] XGBoost trained on 1842 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,818 [INFO] XGBoost trained on 1872 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:57,939 [INFO] XGBoost trained on 1902 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:57] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,022 [INFO] XGBoost trained on 1932 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,104 [INFO] XGBoost trained on 1962 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,236 [INFO] XGBoost trained on 1992 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,298 [INFO] XGBoost trained on 2022 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,558 [INFO] XGBoost trained on 2052 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:58,666 [INFO] XGBoost trained on 2082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:58] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,020 [INFO] XGBoost trained on 2112 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,101 [INFO] XGBoost trained on 2142 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,396 [INFO] XGBoost trained on 2172 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,593 [INFO] XGBoost trained on 2202 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,684 [INFO] XGBoost trained on 2232 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,803 [INFO] XGBoost trained on 2262 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:38:59,869 [INFO] XGBoost trained on 2292 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:38:59] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,029 [INFO] XGBoost trained on 2322 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,102 [INFO] XGBoost trained on 2352 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,228 [INFO] XGBoost trained on 2382 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,315 [INFO] XGBoost trained on 2412 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,523 [INFO] XGBoost trained on 2442 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,601 [INFO] XGBoost trained on 2472 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,784 [INFO] XGBoost trained on 2502 samples with 3 features
+2026-02-15 20:39:00,810 [INFO] ✓ Backtest complete: 76 folds
+2026-02-15 20:39:00,844 [INFO] Seed 0 results:
+2026-02-15 20:39:00,844 [INFO]   Sharpe: 1.0184
+2026-02-15 20:39:00,844 [INFO]   95% CI: (0.3527, 1.7151)
+2026-02-15 20:39:00,844 [INFO]   Max DD: 52.88%
+2026-02-15 20:39:00,844 [INFO]   Total Return: 226203.08%
+2026-02-15 20:39:00,844 [INFO] 
+================================================================================
+2026-02-15 20:39:00,844 [INFO] Seed 1
+2026-02-15 20:39:00,844 [INFO] ================================================================================
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,903 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:00,903 [INFO] ✓ Model trained
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:00,968 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:00] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,113 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,291 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:01,295 [INFO] ✓ Leakage check passed
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,397 [INFO] XGBoost trained on 252 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,492 [INFO] XGBoost trained on 282 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,558 [INFO] XGBoost trained on 312 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,759 [INFO] XGBoost trained on 342 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,824 [INFO] XGBoost trained on 372 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:01,974 [INFO] XGBoost trained on 402 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:01] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,062 [INFO] XGBoost trained on 432 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,254 [INFO] XGBoost trained on 462 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,445 [INFO] XGBoost trained on 492 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,603 [INFO] XGBoost trained on 522 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,715 [INFO] XGBoost trained on 552 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,807 [INFO] XGBoost trained on 582 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,868 [INFO] XGBoost trained on 612 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:02,955 [INFO] XGBoost trained on 642 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:02] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,043 [INFO] XGBoost trained on 672 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,163 [INFO] XGBoost trained on 702 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,245 [INFO] XGBoost trained on 732 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,432 [INFO] XGBoost trained on 762 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,498 [INFO] XGBoost trained on 792 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,633 [INFO] XGBoost trained on 822 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,717 [INFO] XGBoost trained on 852 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:03,811 [INFO] XGBoost trained on 882 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:03] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,032 [INFO] XGBoost trained on 912 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,127 [INFO] XGBoost trained on 942 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,279 [INFO] XGBoost trained on 972 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,354 [INFO] XGBoost trained on 1002 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,450 [INFO] XGBoost trained on 1032 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,585 [INFO] XGBoost trained on 1062 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,679 [INFO] XGBoost trained on 1092 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,880 [INFO] XGBoost trained on 1122 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:04,966 [INFO] XGBoost trained on 1152 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:04] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,170 [INFO] XGBoost trained on 1182 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,245 [INFO] XGBoost trained on 1212 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,320 [INFO] XGBoost trained on 1242 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,384 [INFO] XGBoost trained on 1272 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,475 [INFO] XGBoost trained on 1302 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,705 [INFO] XGBoost trained on 1332 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,778 [INFO] XGBoost trained on 1362 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:05,914 [INFO] XGBoost trained on 1392 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:05] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,028 [INFO] XGBoost trained on 1422 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,108 [INFO] XGBoost trained on 1452 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,265 [INFO] XGBoost trained on 1482 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,547 [INFO] XGBoost trained on 1512 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,688 [INFO] XGBoost trained on 1542 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,831 [INFO] XGBoost trained on 1572 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,907 [INFO] XGBoost trained on 1602 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:06] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:06,997 [INFO] XGBoost trained on 1632 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,095 [INFO] XGBoost trained on 1662 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,224 [INFO] XGBoost trained on 1692 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,329 [INFO] XGBoost trained on 1722 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,444 [INFO] XGBoost trained on 1752 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,534 [INFO] XGBoost trained on 1782 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:07,834 [INFO] XGBoost trained on 1812 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:07] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,017 [INFO] XGBoost trained on 1842 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,070 [INFO] XGBoost trained on 1872 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,164 [INFO] XGBoost trained on 1902 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,254 [INFO] XGBoost trained on 1932 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,459 [INFO] XGBoost trained on 1962 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,526 [INFO] XGBoost trained on 1992 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,590 [INFO] XGBoost trained on 2022 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,695 [INFO] XGBoost trained on 2052 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,763 [INFO] XGBoost trained on 2082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,828 [INFO] XGBoost trained on 2112 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:08,888 [INFO] XGBoost trained on 2142 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:08] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,150 [INFO] XGBoost trained on 2172 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,323 [INFO] XGBoost trained on 2202 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,454 [INFO] XGBoost trained on 2232 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,520 [INFO] XGBoost trained on 2262 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,627 [INFO] XGBoost trained on 2292 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,808 [INFO] XGBoost trained on 2322 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:09,900 [INFO] XGBoost trained on 2352 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:09] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,018 [INFO] XGBoost trained on 2382 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,108 [INFO] XGBoost trained on 2412 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,236 [INFO] XGBoost trained on 2442 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,509 [INFO] XGBoost trained on 2472 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,612 [INFO] XGBoost trained on 2502 samples with 3 features
+2026-02-15 20:39:10,634 [INFO] ✓ Backtest complete: 76 folds
+2026-02-15 20:39:10,669 [INFO] Seed 1 results:
+2026-02-15 20:39:10,669 [INFO]   Sharpe: 0.9851
+2026-02-15 20:39:10,669 [INFO]   95% CI: (0.3340, 1.6259)
+2026-02-15 20:39:10,669 [INFO]   Max DD: 51.86%
+2026-02-15 20:39:10,669 [INFO]   Total Return: 198895.41%
+2026-02-15 20:39:10,669 [INFO] 
+================================================================================
+2026-02-15 20:39:10,669 [INFO] Seed 2
+2026-02-15 20:39:10,669 [INFO] ================================================================================
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,747 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:10,747 [INFO] ✓ Model trained
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:10,844 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:10] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,139 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,315 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:11,318 [INFO] ✓ Leakage check passed
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,521 [INFO] XGBoost trained on 252 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,745 [INFO] XGBoost trained on 282 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,873 [INFO] XGBoost trained on 312 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:11,976 [INFO] XGBoost trained on 342 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:11] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,113 [INFO] XGBoost trained on 372 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,400 [INFO] XGBoost trained on 402 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,479 [INFO] XGBoost trained on 432 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,594 [INFO] XGBoost trained on 462 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,705 [INFO] XGBoost trained on 492 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,830 [INFO] XGBoost trained on 522 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:12,946 [INFO] XGBoost trained on 552 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:12] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:13,098 [INFO] XGBoost trained on 582 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:13] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:13,264 [INFO] XGBoost trained on 612 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:13] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:13,511 [INFO] XGBoost trained on 642 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:13] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:13,728 [INFO] XGBoost trained on 672 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:13] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:13,835 [INFO] XGBoost trained on 702 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:13] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,106 [INFO] XGBoost trained on 732 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,210 [INFO] XGBoost trained on 762 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,479 [INFO] XGBoost trained on 792 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,600 [INFO] XGBoost trained on 822 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,818 [INFO] XGBoost trained on 852 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:14,911 [INFO] XGBoost trained on 882 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:14] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,090 [INFO] XGBoost trained on 912 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,171 [INFO] XGBoost trained on 942 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,245 [INFO] XGBoost trained on 972 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,319 [INFO] XGBoost trained on 1002 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,502 [INFO] XGBoost trained on 1032 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,677 [INFO] XGBoost trained on 1062 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,779 [INFO] XGBoost trained on 1092 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,885 [INFO] XGBoost trained on 1122 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:15,977 [INFO] XGBoost trained on 1152 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:15] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,066 [INFO] XGBoost trained on 1182 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,166 [INFO] XGBoost trained on 1212 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,411 [INFO] XGBoost trained on 1242 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,539 [INFO] XGBoost trained on 1272 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,646 [INFO] XGBoost trained on 1302 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,867 [INFO] XGBoost trained on 1332 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:16,978 [INFO] XGBoost trained on 1362 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:16] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,037 [INFO] XGBoost trained on 1392 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,105 [INFO] XGBoost trained on 1422 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,234 [INFO] XGBoost trained on 1452 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,315 [INFO] XGBoost trained on 1482 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,546 [INFO] XGBoost trained on 1512 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,632 [INFO] XGBoost trained on 1542 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,768 [INFO] XGBoost trained on 1572 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,841 [INFO] XGBoost trained on 1602 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:17,960 [INFO] XGBoost trained on 1632 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:17] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,064 [INFO] XGBoost trained on 1662 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,311 [INFO] XGBoost trained on 1692 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,395 [INFO] XGBoost trained on 1722 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,492 [INFO] XGBoost trained on 1752 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,600 [INFO] XGBoost trained on 1782 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,690 [INFO] XGBoost trained on 1812 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:18,778 [INFO] XGBoost trained on 1842 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:18] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,021 [INFO] XGBoost trained on 1872 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,148 [INFO] XGBoost trained on 1902 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,287 [INFO] XGBoost trained on 1932 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,345 [INFO] XGBoost trained on 1962 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,412 [INFO] XGBoost trained on 1992 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,486 [INFO] XGBoost trained on 2022 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,566 [INFO] XGBoost trained on 2052 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,622 [INFO] XGBoost trained on 2082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,705 [INFO] XGBoost trained on 2112 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,909 [INFO] XGBoost trained on 2142 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:19] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:19,993 [INFO] XGBoost trained on 2172 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,085 [INFO] XGBoost trained on 2202 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,213 [INFO] XGBoost trained on 2232 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,359 [INFO] XGBoost trained on 2262 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,535 [INFO] XGBoost trained on 2292 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,638 [INFO] XGBoost trained on 2322 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,700 [INFO] XGBoost trained on 2352 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:20,781 [INFO] XGBoost trained on 2382 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:20] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,085 [INFO] XGBoost trained on 2412 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,214 [INFO] XGBoost trained on 2442 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,360 [INFO] XGBoost trained on 2472 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,494 [INFO] XGBoost trained on 2502 samples with 3 features
+2026-02-15 20:39:21,515 [INFO] ✓ Backtest complete: 76 folds
+2026-02-15 20:39:21,550 [INFO] Seed 2 results:
+2026-02-15 20:39:21,550 [INFO]   Sharpe: 1.0110
+2026-02-15 20:39:21,550 [INFO]   95% CI: (0.3855, 1.6517)
+2026-02-15 20:39:21,550 [INFO]   Max DD: 52.75%
+2026-02-15 20:39:21,550 [INFO]   Total Return: 220328.57%
+2026-02-15 20:39:21,550 [INFO] 
+================================================================================
+2026-02-15 20:39:21,550 [INFO] Seed 3
+2026-02-15 20:39:21,550 [INFO] ================================================================================
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,672 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:21,672 [INFO] ✓ Model trained
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,741 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,814 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:21,970 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:21,974 [INFO] ✓ Leakage check passed
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:21] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,059 [INFO] XGBoost trained on 252 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,150 [INFO] XGBoost trained on 282 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,250 [INFO] XGBoost trained on 312 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,312 [INFO] XGBoost trained on 342 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,382 [INFO] XGBoost trained on 372 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,455 [INFO] XGBoost trained on 402 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,548 [INFO] XGBoost trained on 432 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,676 [INFO] XGBoost trained on 462 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,802 [INFO] XGBoost trained on 492 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,879 [INFO] XGBoost trained on 522 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:22,977 [INFO] XGBoost trained on 552 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:22] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,102 [INFO] XGBoost trained on 582 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,160 [INFO] XGBoost trained on 612 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,272 [INFO] XGBoost trained on 642 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,333 [INFO] XGBoost trained on 672 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,399 [INFO] XGBoost trained on 702 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,562 [INFO] XGBoost trained on 732 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,749 [INFO] XGBoost trained on 762 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,839 [INFO] XGBoost trained on 792 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:23,976 [INFO] XGBoost trained on 822 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:23] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,212 [INFO] XGBoost trained on 852 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,267 [INFO] XGBoost trained on 882 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,569 [INFO] XGBoost trained on 912 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,635 [INFO] XGBoost trained on 942 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,765 [INFO] XGBoost trained on 972 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,864 [INFO] XGBoost trained on 1002 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:24,956 [INFO] XGBoost trained on 1032 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:24] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,092 [INFO] XGBoost trained on 1062 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,254 [INFO] XGBoost trained on 1092 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,308 [INFO] XGBoost trained on 1122 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,408 [INFO] XGBoost trained on 1152 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,490 [INFO] XGBoost trained on 1182 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,626 [INFO] XGBoost trained on 1212 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,698 [INFO] XGBoost trained on 1242 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,815 [INFO] XGBoost trained on 1272 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:25,940 [INFO] XGBoost trained on 1302 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:25] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,033 [INFO] XGBoost trained on 1332 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,117 [INFO] XGBoost trained on 1362 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,219 [INFO] XGBoost trained on 1392 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,313 [INFO] XGBoost trained on 1422 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,431 [INFO] XGBoost trained on 1452 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,509 [INFO] XGBoost trained on 1482 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,719 [INFO] XGBoost trained on 1512 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:26,919 [INFO] XGBoost trained on 1542 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:26] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,019 [INFO] XGBoost trained on 1572 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,120 [INFO] XGBoost trained on 1602 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,219 [INFO] XGBoost trained on 1632 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,313 [INFO] XGBoost trained on 1662 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,404 [INFO] XGBoost trained on 1692 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,495 [INFO] XGBoost trained on 1722 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,612 [INFO] XGBoost trained on 1752 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,688 [INFO] XGBoost trained on 1782 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,782 [INFO] XGBoost trained on 1812 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,849 [INFO] XGBoost trained on 1842 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,912 [INFO] XGBoost trained on 1872 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:27,985 [INFO] XGBoost trained on 1902 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:27] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,060 [INFO] XGBoost trained on 1932 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,162 [INFO] XGBoost trained on 1962 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,248 [INFO] XGBoost trained on 1992 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,396 [INFO] XGBoost trained on 2022 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,476 [INFO] XGBoost trained on 2052 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,561 [INFO] XGBoost trained on 2082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,708 [INFO] XGBoost trained on 2112 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,776 [INFO] XGBoost trained on 2142 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,853 [INFO] XGBoost trained on 2172 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:28,946 [INFO] XGBoost trained on 2202 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:28] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,030 [INFO] XGBoost trained on 2232 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,123 [INFO] XGBoost trained on 2262 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,236 [INFO] XGBoost trained on 2292 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,316 [INFO] XGBoost trained on 2322 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,494 [INFO] XGBoost trained on 2352 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,598 [INFO] XGBoost trained on 2382 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,778 [INFO] XGBoost trained on 2412 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:29,839 [INFO] XGBoost trained on 2442 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:29] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,027 [INFO] XGBoost trained on 2472 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,111 [INFO] XGBoost trained on 2502 samples with 3 features
+2026-02-15 20:39:30,135 [INFO] ✓ Backtest complete: 76 folds
+2026-02-15 20:39:30,169 [INFO] Seed 3 results:
+2026-02-15 20:39:30,169 [INFO]   Sharpe: 1.0137
+2026-02-15 20:39:30,169 [INFO]   95% CI: (0.3978, 1.6944)
+2026-02-15 20:39:30,169 [INFO]   Max DD: 55.48%
+2026-02-15 20:39:30,169 [INFO]   Total Return: 220191.49%
+2026-02-15 20:39:30,169 [INFO] 
+================================================================================
+2026-02-15 20:39:30,169 [INFO] Seed 4
+2026-02-15 20:39:30,169 [INFO] ================================================================================
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,238 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:30,238 [INFO] ✓ Model trained
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,350 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,412 [INFO] XGBoost trained on 1082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,498 [INFO] XGBoost trained on 1082 samples with 3 features
+2026-02-15 20:39:30,505 [INFO] ✓ Leakage check passed
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,600 [INFO] XGBoost trained on 252 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,692 [INFO] XGBoost trained on 282 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,813 [INFO] XGBoost trained on 312 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:30,882 [INFO] XGBoost trained on 342 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:30] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,003 [INFO] XGBoost trained on 372 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,128 [INFO] XGBoost trained on 402 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,538 [INFO] XGBoost trained on 432 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,738 [INFO] XGBoost trained on 462 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,796 [INFO] XGBoost trained on 492 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,858 [INFO] XGBoost trained on 522 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,913 [INFO] XGBoost trained on 552 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:31,986 [INFO] XGBoost trained on 582 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:31] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,062 [INFO] XGBoost trained on 612 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,117 [INFO] XGBoost trained on 642 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,257 [INFO] XGBoost trained on 672 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,326 [INFO] XGBoost trained on 702 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,391 [INFO] XGBoost trained on 732 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,465 [INFO] XGBoost trained on 762 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,532 [INFO] XGBoost trained on 792 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,658 [INFO] XGBoost trained on 822 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,761 [INFO] XGBoost trained on 852 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,865 [INFO] XGBoost trained on 882 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:32,940 [INFO] XGBoost trained on 912 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:32] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,005 [INFO] XGBoost trained on 942 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,066 [INFO] XGBoost trained on 972 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,122 [INFO] XGBoost trained on 1002 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,174 [INFO] XGBoost trained on 1032 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,242 [INFO] XGBoost trained on 1062 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,313 [INFO] XGBoost trained on 1092 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,392 [INFO] XGBoost trained on 1122 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,511 [INFO] XGBoost trained on 1152 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,573 [INFO] XGBoost trained on 1182 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,635 [INFO] XGBoost trained on 1212 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,750 [INFO] XGBoost trained on 1242 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:33,824 [INFO] XGBoost trained on 1272 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:33] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,001 [INFO] XGBoost trained on 1302 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,258 [INFO] XGBoost trained on 1332 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,330 [INFO] XGBoost trained on 1362 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,412 [INFO] XGBoost trained on 1392 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,502 [INFO] XGBoost trained on 1422 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,622 [INFO] XGBoost trained on 1452 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,702 [INFO] XGBoost trained on 1482 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,863 [INFO] XGBoost trained on 1512 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:34,941 [INFO] XGBoost trained on 1542 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:34] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,107 [INFO] XGBoost trained on 1572 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,242 [INFO] XGBoost trained on 1602 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,512 [INFO] XGBoost trained on 1632 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,711 [INFO] XGBoost trained on 1662 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,783 [INFO] XGBoost trained on 1692 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,857 [INFO] XGBoost trained on 1722 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:35,935 [INFO] XGBoost trained on 1752 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:35] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,038 [INFO] XGBoost trained on 1782 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,264 [INFO] XGBoost trained on 1812 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,340 [INFO] XGBoost trained on 1842 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,428 [INFO] XGBoost trained on 1872 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,558 [INFO] XGBoost trained on 1902 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,629 [INFO] XGBoost trained on 1932 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,765 [INFO] XGBoost trained on 1962 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,834 [INFO] XGBoost trained on 1992 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:36,894 [INFO] XGBoost trained on 2022 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:36] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,014 [INFO] XGBoost trained on 2052 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,099 [INFO] XGBoost trained on 2082 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,235 [INFO] XGBoost trained on 2112 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,333 [INFO] XGBoost trained on 2142 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,403 [INFO] XGBoost trained on 2172 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,512 [INFO] XGBoost trained on 2202 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,708 [INFO] XGBoost trained on 2232 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,773 [INFO] XGBoost trained on 2262 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,838 [INFO] XGBoost trained on 2292 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:37,947 [INFO] XGBoost trained on 2322 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:37] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,022 [INFO] XGBoost trained on 2352 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:38] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,080 [INFO] XGBoost trained on 2382 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:38] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,137 [INFO] XGBoost trained on 2412 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:38] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,232 [INFO] XGBoost trained on 2442 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:38] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,326 [INFO] XGBoost trained on 2472 samples with 3 features
+/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/xgboost/training.py:200: UserWarning: [20:39:38] WARNING: /__w/xgboost/xgboost/src/learner.cc:782: 
+Parameters: { "use_label_encoder" } are not used.
+
+  bst.update(dtrain, iteration=i, fobj=obj)
+2026-02-15 20:39:38,442 [INFO] XGBoost trained on 2502 samples with 3 features
+2026-02-15 20:39:38,467 [INFO] ✓ Backtest complete: 76 folds
+2026-02-15 20:39:38,501 [INFO] Seed 4 results:
+2026-02-15 20:39:38,501 [INFO]   Sharpe: 0.9348
+2026-02-15 20:39:38,501 [INFO]   95% CI: (0.3015, 1.6430)
+2026-02-15 20:39:38,501 [INFO]   Max DD: 58.12%
+2026-02-15 20:39:38,501 [INFO]   Total Return: 160133.41%
+2026-02-15 20:39:38,503 [INFO] 
+✓ Results saved to results/experiments/phase4_multiseed_results.json
+================================================================================
+PHASE 4: Multi-Seed Stability Validation
+================================================================================
+Configuration: technical-only, 30d horizon
+Seeds: [0, 1, 2, 3, 4]
+Success criteria: std < 0.3, min > 0.7
+================================================================================
+
+================================================================================
+RESULTS
+================================================================================
+
+ seed   sharpe  sharpe_ci_low  sharpe_ci_high   max_dd  total_return  fold_count
+    0 1.018425       0.352667        1.715122 0.528766   2262.030802          76
+    1 0.985129       0.333990        1.625899 0.518566   1988.954107          76
+    2 1.011014       0.385466        1.651740 0.527538   2203.285747          76
+    3 1.013691       0.397808        1.694371 0.554778   2201.914896          76
+    4 0.934829       0.301456        1.643040 0.581174   1601.334112          76
+
+================================================================================
+STABILITY ANALYSIS
+================================================================================
+Mean Sharpe: 0.9926
+Std Sharpe: 0.0348
+Min Sharpe: 0.9348
+Max Sharpe: 1.0184
+Range: 0.0836
+Coefficient of Variation: 3.51%
+
+================================================================================
+DECISION
+================================================================================
+✅ Std check: 0.0348 < 0.3 (PASS)
+✅ Min Sharpe check: 0.9348 > 0.7 (PASS)
+✅ Mean Sharpe check: 0.9926 ≈ 0.9990 (deviation: 0.0064)
+
+================================================================================
+✅ PHASE 4 PASSED: Model is stable across seeds
+   Recommendation: CONTINUE TO PHASE 5 (Holdout validation)

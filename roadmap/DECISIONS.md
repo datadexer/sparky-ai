@@ -50,3 +50,90 @@ Ready for Phase 1 (data layer). Proceeding without waiting (informational gate).
 - Using `uv` for package management — faster, lockfile for reproducibility, consistent across agents
 - Minimum version pins (`>=`) instead of exact pins — exact pins from plan target x86/3.11
 - No conda available — `uv venv` provides isolation
+
+---
+
+## CRITICAL: Phase 3 Validation Failed — NO-GO Decision Required
+
+**[AGENT -> HUMAN] 2026-02-15 20:52 UTC**
+
+**Status**: ❌ **BLOCKING** — Holdout validation FAILED catastrophically
+
+### Summary
+
+Phase 2-3 results (Sharpe 0.999) are **NOT real alpha**. The model severely overfit to the train/test split.
+
+**Validation Results**:
+1. ✅ Multi-seed stability: PASSED (mean Sharpe 0.9926, std 0.0348) — but MISLEADING
+2. ❌ Holdout test: **FAILED** (Sharpe -1.48 on never-seen data vs 0.999 on train/test)
+3. ✅ Leakage re-audit: PASSED (shuffled accuracy 51.8%, no data leakage)
+
+**Conclusion**: Model learned noise specific to 2019-2025 period that doesn't generalize to Oct-Dec 2025. Multi-seed stability gave false confidence (all seeds overfit to same patterns).
+
+### Evidence
+
+| Metric | Phase 2-3 (Train+Test) | Holdout (Oct-Dec 2025) | Delta |
+|--------|------------------------|------------------------|-------|
+| Sharpe | **0.999** | **-1.477** | **-2.476** |
+| Total Return | +2054% | **-12.84%** | -2067% |
+| Max Drawdown | 60.1% | 26.2% | - |
+
+**Baseline (BuyAndHold Sharpe 0.79) beats the model on holdout.**
+
+### Strategic Goals: All FAILED
+
+- ❌ **validate_onchain_alpha**: On-chain features hurt performance, but result now invalid
+- ❌ **optimal_horizon**: 30d appeared best, but was overfitting
+- ❌ **model_robustness**: Multi-seed passed but was insufficient (stable overfitting)
+
+### Recommended Options
+
+**OPTION 1: Quick Retry (30 min)**
+- Expand holdout to 6 months (2025-07-01 to 2025-12-31)
+- Test if 3-month holdout was too short/unlucky
+- If still fails → confirms overfitting
+
+**OPTION 2: Debug Overfitting (10-15 hours)**
+- Reduce XGBoost complexity (max_depth 5→3, increase regularization)
+- Try simpler models (logistic regression, moving average crossover)
+- Test shorter horizons (1d, 3d, 7d instead of 30d)
+- Success criteria: Holdout Sharpe >= 0.4
+
+**OPTION 3: Strategic Pivot (8-12 hours)**
+- Try ETH instead of BTC (different market dynamics)
+- Try portfolio-level prediction (BTC+ETH combined)
+- Try weekly/monthly rebalancing (instead of daily signals)
+
+**OPTION 4: TERMINATE (Recommended)**
+- 40+ hours invested, no demonstrable alpha
+- On-chain hypothesis FAILED (technical-only was "best" but still failed holdout)
+- Baseline beats all ML models
+- Document as "negative result" and end project
+
+### My Recommendation
+
+Try **OPTION 1** first (30 min). If that still fails → **OPTION 4 (TERMINATE)**.
+
+**Reasoning**:
+- Foundational hypothesis (on-chain adds value) already FAILED
+- No configuration has positive holdout Sharpe
+- Baseline (passive buy-and-hold) outperforms
+- Diminishing returns on further debugging
+
+**If you choose to continue** (Option 2 or 3):
+- Set hard deadline: 20 hours max
+- If still no holdout Sharpe >= 0.5 → STOP
+
+### Detailed Analysis
+
+See `roadmap/PHASE_3_VALIDATION_SUMMARY.md` for full diagnostic report.
+
+**Awaiting your decision before proceeding.**
+
+Possible responses:
+- `[OPTION 1]` Try 6-month holdout
+- `[OPTION 2]` Debug overfitting (10-15h)
+- `[OPTION 3]` Strategic pivot (8-12h)
+- `[OPTION 4]` Terminate project
+- `[OTHER]` (specify alternative direction)
+
