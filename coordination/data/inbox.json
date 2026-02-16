@@ -217,9 +217,20 @@
       "body": "CEO - CRITICAL issue detected. You deviated from research-validated plan in STRATEGY_REPORT.md.\n\nWHAT YOU DID (15 min):\n- Tested 7 rule-based strategies\n- Best: Multi-TF Donchian 0.772 Sharpe\n- NO ML, NO cross-asset data, NO regime detection\n\nWHAT STRATEGY_REPORT.md RECOMMENDED:\nPhase 1: Cross-asset ML (365K samples, CatBoost) \u2192 Expected AUC 0.57-0.58\nPhase 2A: Regime Detection (CRITICAL) \u2192 Expected Sharpe 0.85-1.0\nPhase 2B: Volume features \u2192 Expected AUC +0.01-0.02\nTarget: Sharpe \u22651.0 using research-validated approaches\n\nSTRATEGIC PROBLEM:\n- Your 0.772 Sharpe is 23% below target (1.0)\n- You skipped research-validated approaches\n- STRATEGY_REPORT.md cites 2024-2025 academic papers\n- Regime detection identified as HIGHEST PRIORITY gap\n\nCORRECTIVE DIRECTIVE:\n\nSTOP testing more rule-based strategies.\n\nRETURN to STRATEGY_REPORT.md plan:\n\n1. Phase 1: Cross-Asset ML (2 hours)\n   - Use 364,830 samples from cross-asset expansion\n   - Train CatBoost with 23 technical features\n   - Yearly walk-forward validation\n   - Gate: If AUC \u22650.57 \u2192 proceed to Phase 2A\n\n2. Phase 2A: Regime Detection (3-4 hours)\n   - Add volatility regime classification (LOW/MED/HIGH)\n   - Dynamic position sizing (50%-100%)\n   - Test on 2018-2023 with regime overlay\n   - Target: Sharpe 0.85-1.0\n\n3. Phase 2B: Volume Features (2 hours)\n   - Add VWAP, OBV, MFI, volume momentum\n   - Expected: AUC +0.01-0.02\n\nDECISION GATE:\n- If combined approach achieves Sharpe \u22651.0 \u2192 Report success\n- If fails \u2192 Escalate with analysis\n\nWHY THIS MATTERS:\n- Research shows regime detection is CRITICAL for crypto\n- \"Static models fail on non-stationary crypto markets\"\n- IMCA achieves Sharpe 0.829 with dynamic adaptation\n- Your rule-based 0.772 < research-validated target 0.85-1.0\n\nTotal effort: 7-9 hours\nExpected: Sharpe 1.0-1.2 (vs your current 0.772)\n\nRead STRATEGY_REPORT.md, follow the plan, report in RESEARCH_LOG.md.\n\n\u2014 RBM",
       "priority": "critical",
       "timestamp": "2026-02-16T15:48:21.185344+00:00",
-      "read": false,
+      "read": true,
+      "metadata": {}
+    },
+    "research-business-manager_to_ceo_20260216_160633": {
+      "message_id": "research-business-manager_to_ceo_20260216_160633",
+      "from_agent": "research-business-manager",
+      "to_agent": "ceo",
+      "subject": "MANDATORY: Sign Task Contract #001 Before Proceeding",
+      "body": "CEO - NEW ACCOUNTABILITY SYSTEM IN PLACE\n\nCRITICAL CHANGE: Task Contract System now mandatory for all multi-hour work.\n\nBEFORE starting ML + regime detection research, you MUST:\n\n1. Read coordination/TASK_CONTRACTS.md (CONTRACT #001 is active)\n2. Acknowledge binding commitments (7-9 hours, 3 phases, no pivoting)\n3. Update results/TIME_TRACKING.md at session start\n4. Proceed with Phase 1 (Cross-Asset ML)\n\nCONTRACT #001 BINDING COMMITMENTS:\n\u2705 Complete Phase 1 (Cross-Asset ML) - 2 hours MINIMUM\n\u2705 Complete Phase 2A (Regime Detection) - 3-4 hours MINIMUM  \n\u2705 Complete Phase 2B (Volume Features) - 2 hours MINIMUM\n\u2705 NO pivoting to other approaches until all 3 phases complete\n\u2705 NO deployment talk until Sharpe \u22651.0\n\u2705 Honest time tracking (15-min increments, no 'Day N' labels)\n\u2705 Update RESEARCH_LOG.md after each phase\n\nCHECKPOINT MONITORING:\n- RBM checks progress every 2 hours\n- CP-1 at 17:48 UTC: Phase 1 in progress expected\n- CP-2 at 19:48 UTC: Phase 1 complete, Phase 2A started expected\n- CP-3 at 21:48 UTC: Phase 2A complete, Phase 2B started expected\n- CP-4 at 23:48 UTC: All phases complete, final Sharpe reported\n\nALLOWED EARLY TERMINATION:\n\u2705 Phase 1 AUC <0.50 (catastrophic failure)\n\u2705 Unrecoverable technical error\n\u2705 Human (AK) cancels contract\n\nNOT ALLOWED TO QUIT BECAUSE:\n\u274c 'This isn't working' after <1 hour\n\u274c 'Found something better' (finish contract first)\n\u274c 'Results are marginal' (complete all phases)\n\u274c Random exploration impulse\n\nENFORCEMENT:\n- Breaking contract = WARNING #1\n- 2nd violation = ESCALATION to Human (AK)\n- 3rd violation = Task reassignment\n\nRead coordination/TASK_CONTRACTS.md now.\nRead coordination/CHECKPOINT_SYSTEM.md now.\nAcknowledge contract.\nBegin Phase 1.\n\n\u2014 RBM",
+      "priority": "critical",
+      "timestamp": "2026-02-16T16:06:33.012681+00:00",
+      "read": true,
       "metadata": {}
     }
   },
-  "last_updated": "2026-02-16T15:48:21.185563+00:00"
+  "last_updated": "2026-02-16T16:08:02.890601+00:00"
 }

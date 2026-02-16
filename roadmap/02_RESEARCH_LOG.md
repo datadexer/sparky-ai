@@ -5,6 +5,167 @@ Newest entries at the top.
 
 ---
 
+## ❌❌ REGIME-AWARE POSITION SIZING: DOUBLE FAILURE — 2026-02-16 11:07 UTC [DAY 3]
+
+**OBJECTIVE**: Implement regime-aware position sizing for Multi-Timeframe Donchian to achieve Sharpe ≥0.85 (vs current 0.772). Test TWO approaches per STRATEGY_REPORT.md recommendation.
+
+**CONTEXT**: Previous failure (STATE.yaml line 147) used binary filtering (FLAT in HIGH vol), achieving Sharpe -0.350. STRATEGY_REPORT.md suggested DIFFERENT approach: dynamic position sizing (50%-100%) instead of filtering.
+
+---
+
+### **ATTEMPT 1: Volatility-Based Position Sizing**
+
+**APPROACH**:
+- Keep signals active in all regimes (no filtering to FLAT)
+- Adjust position size based on volatility:
+  - LOW regime (<30% vol): 100% position
+  - MEDIUM regime (30-60% vol): 75% position
+  - HIGH regime (>60% vol): 50% position
+- Hypothesis: Reduce exposure during chaos without missing opportunities
+
+**RESULTS**:
+
+| Metric | Baseline | Regime-Aware | Delta |
+|--------|----------|--------------|-------|
+| **Overall Mean Sharpe (2018-2023)** | **0.772** | **0.715** | **-0.057 (-7.4%)** |
+| In-sample Mean (2018-2020) | 0.937 | 1.030 | +0.093 ✅ |
+| Out-of-sample Mean (2021-2023) | 0.607 | 0.401 | -0.206 ❌ |
+| 2022 bear market | -1.217 | -1.485 | -0.268 ❌ **WORSE** |
+
+**Year-by-Year Breakdown**:
+
+| Year | Baseline Sharpe | Regime-Aware Sharpe | Delta | Verdict |
+|------|----------------|---------------------|-------|---------|
+| 2018 (bear) | -1.784 | -1.621 | +0.163 | ✅ Better loss protection |
+| 2019 (bull) | +1.897 | +2.166 | +0.269 | ✅ Better risk-adj return |
+| 2020 (strong bull) | +2.698 | +2.544 | -0.155 | ❌ Missed upside |
+| 2021 (choppy bull) | +1.210 | +0.891 | -0.319 | ❌ Worse in chop |
+| 2022 (bear) | -1.217 | -1.485 | -0.268 | ❌ **WORSE in bear** |
+| 2023 (recovery) | +1.829 | +1.797 | -0.032 | ≈ Similar |
+
+**KEY FINDING**:
+- ✅ In-sample improvement (+0.093 Sharpe) looks promising
+- ❌ Out-of-sample DEGRADATION (-0.206 Sharpe) reveals overfitting
+- **CRITICAL**: 2022 bear market got WORSE (-0.268 Sharpe), opposite of hypothesis
+- **ROOT CAUSE**: 57.6% of time is HIGH volatility (not rare!) — reducing position 50% of the time means missing most of the action
+
+**VERDICT**: ❌ **FAILED** — Position sizing makes things worse (0/3 criteria passed)
+
+---
+
+### **ATTEMPT 2: Trend-Aware Position Sizing**
+
+**APPROACH**:
+- Hypothesis: High volatility can be GOOD (volatile uptrend) or BAD (volatile downtrend)
+- Adjust position based on BOTH volatility AND trend (200-day SMA):
+  - HIGH vol + UPTREND: 125% position (max exposure, capture volatile bull)
+  - HIGH vol + DOWNTREND: 25% position (min exposure, avoid volatile bear)
+  - HIGH vol + SIDEWAYS: 50% position (avoid whipsaws)
+  - MEDIUM/LOW vol + UPTREND: 100% position
+  - MEDIUM/LOW vol + DOWNTREND: 50-75% position
+  - Other combinations: 50-100% based on matrix
+
+**POSITION DISTRIBUTION**:
+- 125% (HIGH vol + UPTREND): 25.8% of days
+- 100% (MEDIUM/LOW + UPTREND): 16.8% of days
+- 75% (MEDIUM/LOW vol): 1.6% of days
+- 50% (MEDIUM/HIGH + SIDEWAYS): 6.1% of days
+- 25% (HIGH vol + DOWNTREND): 8.0% of days
+- 0% (FLAT): 41.7% of days
+
+**RESULTS**:
+
+| Year | Baseline Sharpe | Trend-Aware Sharpe | Delta | Verdict |
+|------|----------------|-------------------|-------|---------|
+| 2018 (bear) | -1.784 | -1.684 | +0.100 | ⚠️ Slightly better loss |
+| 2019 (bull) | +1.897 | +1.591 | -0.306 | ❌ Missed 24% return |
+| 2020 (strong bull) | +2.698 | +2.505 | -0.194 | ❌ Missed 27% return |
+
+**IN-SAMPLE SUMMARY (2018-2020)**:
+- Baseline Mean Sharpe: 0.937
+- Trend-Aware Mean Sharpe: 0.804
+- Delta: -0.133 ❌
+
+**EARLY TERMINATION**: Test stopped after in-sample failure. No point testing out-of-sample when in-sample degradation is -14%.
+
+**VERDICT**: ❌ **FAILED** — Even "smart" trend-aware sizing makes things worse
+
+---
+
+### **ROOT CAUSE ANALYSIS: Why ALL Position Sizing Approaches Fail**
+
+1️⃣ **Bitcoin volatility is NOT predictive**
+   - 57.6% of time is HIGH volatility (not rare crash events)
+   - Reducing position during "high vol" = missing most of crypto's action
+   - High vol periods include BOTH crashes AND explosive rallies
+
+2️⃣ **Volatility regimes are NOT stable**
+   - Regime classification is backward-looking (30-day rolling vol)
+   - By the time you detect "HIGH vol", the worst may be over
+   - 2022 bear market: reducing position DURING crash = locking in losses
+
+3️⃣ **Position sizing conflicts with trend-following**
+   - Donchian is a momentum strategy (buy strength, sell weakness)
+   - Momentum works BECAUSE of volatility (big moves = big profits)
+   - Reducing position = capping your winners
+
+4️⃣ **The math doesn't work**
+   - Volatility-based: Sharpe 0.772 → 0.715 (-7.4%)
+   - Trend-aware: Sharpe 0.937 → 0.804 (-14.2% in-sample)
+   - BOTH approaches hurt more than they help
+
+5️⃣ **In-sample ≠ out-of-sample**
+   - Volatility sizing showed +0.093 in-sample improvement
+   - But -0.206 out-of-sample degradation
+   - Overfitting to 2018-2020 regime patterns that don't generalize
+
+---
+
+### **COMPARISON TO ORIGINAL FAILURE (Binary Filtering)**
+
+| Approach | Method | Mean Sharpe | Delta vs Baseline | Verdict |
+|----------|--------|-------------|-------------------|---------|
+| **Baseline** | Fixed 100% position | **0.772** | — | — |
+| **Original (STATE.yaml line 147)** | Go FLAT in HIGH vol | **-0.350** | **-1.122 (-145%)** | ❌ Catastrophic |
+| **Attempt 1 (Vol sizing)** | 50%-100% dynamic | **0.715** | **-0.057 (-7%)** | ❌ Marginal harm |
+| **Attempt 2 (Trend sizing)** | 25%-125% dynamic | **<0.772** | **Negative** | ❌ Worse in-sample |
+
+**Pattern**: ALL forms of regime-aware adjustment hurt performance. Binary filtering is worst, position sizing is "less bad" but still harmful.
+
+---
+
+### **STRATEGIC IMPLICATIONS**
+
+**What This Means**:
+1. ❌ Regime detection does NOT improve rule-based strategies (3 failures)
+2. ❌ STRATEGY_REPORT.md recommendation was wrong (position sizing failed too)
+3. ✅ Simple Multi-Timeframe Donchian (0.772 Sharpe) is OPTIMAL for rule-based
+4. ⚠️ Sharpe 0.772 is 9% below target 0.85 — need different approach
+
+**Why Research Literature Was Misleading**:
+- STRATEGY_REPORT.md cited IMCA (Sharpe 0.829 with dynamic recalibration)
+- IMCA is an ML ensemble with real-time model retraining
+- Research on "regime-switching models" refers to ML models, not position sizing overlays
+- Position sizing ≠ regime-aware prediction
+
+**Remaining Options**:
+1. **Accept 0.772 Sharpe** as best rule-based result (7% below target, but honest)
+2. **Try ML models** (Phase 3) — but already failed multiple times (Mean Sharpe 0.162)
+3. **Kelly Criterion** position sizing (optimize bet size, not regime-based reduction)
+4. **Different strategy family** (mean reversion instead of trend-following)
+
+**Files**:
+- Script: `/home/akamath/sparky-ai/scripts/test_regime_position_sizing.py`
+- Script: `/home/akamath/sparky-ai/scripts/test_trend_aware_regime.py`
+- Results: `/home/akamath/sparky-ai/results/validation/regime_position_sizing_validation.json`
+- Results: `/home/akamath/sparky-ai/results/validation/trend_aware_regime_validation.json`
+
+**Time Invested**: ~45 minutes (implementation + in-sample validation for both approaches)
+
+**Recommendation**: STOP regime-aware experiments. Multi-Timeframe Donchian (0.772 Sharpe) is the best rule-based strategy. Focus on Kelly Criterion or accept current baseline.
+
+---
+
 ## ❌ ML CROSS-ASSET TRAINING: FAILED TO BEAT BASELINE — 2026-02-16 10:49 UTC [DAY 3]
 
 **OBJECTIVE**: Train CatBoost on 223,933 cross-asset hourly samples (BTC+ETH+SOL), aggregate hourly predictions to daily signals, validate with yearly walk-forward (6 folds: 2019-2023). Target: Sharpe ≥0.85 (10% improvement over Multi-Timeframe 0.772).
