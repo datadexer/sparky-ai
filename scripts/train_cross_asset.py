@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 def load_cross_asset_data():
     """Load cross-asset pooled feature matrix."""
+    import numpy as np
+
     features_path = Path("data/processed/feature_matrix_cross_asset_hourly.parquet")
     targets_path = Path("data/processed/targets_cross_asset_hourly_1d.parquet")
 
@@ -51,6 +53,19 @@ def load_cross_asset_data():
     y = pd.read_parquet(targets_path)["target"]
 
     logger.info(f"Loaded {len(X):,} pooled samples with {X.shape[1]} features")
+
+    # Clean inf/nan values
+    logger.info("Cleaning inf/nan values...")
+    inf_mask = np.isinf(X.select_dtypes(include=[np.number])).any(axis=1)
+    if inf_mask.sum() > 0:
+        logger.warning(f"Removing {inf_mask.sum()} rows with inf values")
+        X = X[~inf_mask]
+        y = y[~inf_mask]
+
+    # Replace remaining inf with NaN (XGBoost handles NaN)
+    X = X.replace([np.inf, -np.inf], np.nan)
+
+    logger.info(f"After cleaning: {len(X):,} samples")
     logger.info(f"Assets: {X['asset_name'].unique()}")
     logger.info(f"Samples per asset:\n{X['asset_name'].value_counts()}")
 
@@ -114,19 +129,6 @@ def train_cross_asset_model(X_train, y_train):
 
     # Prepare features: one-hot encode asset_id
     X_train_encoded = X_train.copy()
-
-    # Clean inf/nan values
-    logger.info(f"Cleaning features: {X_train_encoded.shape}")
-    inf_mask = np.isinf(X_train_encoded.select_dtypes(include=[np.number])).any(axis=1)
-    if inf_mask.sum() > 0:
-        logger.warning(f"Removing {inf_mask.sum()} rows with inf values")
-        X_train_encoded = X_train_encoded[~inf_mask]
-        y_train = y_train[~inf_mask]
-
-    # Replace remaining inf with NaN (XGBoost handles NaN)
-    X_train_encoded = X_train_encoded.replace([np.inf, -np.inf], np.nan)
-
-    logger.info(f"After cleaning: {X_train_encoded.shape}")
 
     # One-hot encode asset_id (categorical feature)
     asset_dummies = pd.get_dummies(X_train_encoded["asset_id"], prefix="asset")
