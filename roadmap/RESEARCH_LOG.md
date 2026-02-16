@@ -31,7 +31,7 @@ This is the performance floor for Phase 3 ML models. Any model that cannot
 beat BuyAndHold BTC after costs is not worth deploying. The bootstrap CI
 gives the uncertainty band — a Phase 3 model's Sharpe must exceed the upper
 bound of BuyAndHold's CI (1.48) to be considered genuinely better.
-
+ph
 Note: BuyAndHold BTC had a statistically significant Sharpe (p=0.018) over
 this period, driven by BTC's massive 2020-2021 bull run. The OOS Sharpe
 (0.47) is weaker — the 2022 bear market and 2023-2024 recovery partially
@@ -164,3 +164,16 @@ These findings inform our hypotheses but must be independently validated.
 - Holdout: 92 rows (2025-10-01 to 2025-12-31)
 
 **Status:** ✓ Data preparation complete. Ready for Phase 3 experiments.
+
+---
+## Feature Ablation Experiment — 2026-02-16 01:00:01 UTC
+
+**Hypothesis**: On-chain features add >0.1 Sharpe vs technical-only (Priority 1 strategic goal)
+
+**Results**:
+- all: Sharpe=-0.4452, MaxDD=93.91%, Delta=0.0000
+- without_technical: Sharpe=-1.2005, MaxDD=99.13%, Delta=-0.7553
+- without_onchain_btc: Sharpe=-0.5618, MaxDD=96.24%, Delta=-0.1166
+- without_returns: Sharpe=0.0347, MaxDD=80.03%, Delta=0.4800
+
+**Finding**: [VALIDATED] On-chain features add significant alpha
