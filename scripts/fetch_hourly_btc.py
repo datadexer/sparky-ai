@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def fetch_hourly_ohlcv(
     symbol: str = "BTC/USDT",
-    start_date: str = "2017-01-01",
+    start_date: str = "2019-01-01",  # Most exchanges have reliable data from 2019
     end_date: str = "2025-12-31",
 ) -> pd.DataFrame:
     """Fetch hourly OHLCV data via CCXT.
@@ -55,8 +55,31 @@ def fetch_hourly_ohlcv(
     logger.info(f"Timeframe: 1 hour (1h)")
     logger.info("=" * 80)
 
-    # Create CCXT fetcher
-    fetcher = CCXTPriceFetcher(exchange_id="binance")
+    # Create CCXT fetcher - try multiple exchanges (Binance may be geo-blocked)
+    exchanges_to_try = ["bybit", "okx", "kraken", "coinbase"]
+
+    fetcher = None
+    successful_exchange = None
+
+    for exchange_id in exchanges_to_try:
+        try:
+            logger.info(f"Trying exchange: {exchange_id}...")
+            fetcher = CCXTPriceFetcher(exchange_id=exchange_id)
+
+            # Test with a small fetch to verify it works
+            test_candles = fetcher.exchange.fetch_ohlcv(symbol, "1h", limit=1)
+            if test_candles:
+                logger.info(f"✓ {exchange_id} works! Using this exchange.")
+                successful_exchange = exchange_id
+                break
+        except Exception as e:
+            logger.warning(f"✗ {exchange_id} failed: {e}")
+            continue
+
+    if fetcher is None or successful_exchange is None:
+        raise RuntimeError("All exchanges failed! Cannot fetch data.")
+
+    logger.info(f"Using exchange: {successful_exchange}")
 
     # CCXT fetch_ohlcv method needs modification for hourly data
     # The existing fetch_daily_ohlcv uses "1d" timeframe hardcoded
@@ -172,7 +195,7 @@ def main():
     # Fetch hourly data
     df_hourly = fetch_hourly_ohlcv(
         symbol="BTC/USDT",
-        start_date="2017-01-01",
+        start_date="2019-01-01",  # Most exchanges have reliable data from 2019
         end_date="2025-12-31"
     )
 
