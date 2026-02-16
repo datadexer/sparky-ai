@@ -5,6 +5,28 @@ Newest entries at the top.
 
 ---
 
+## Feature Expansion + Sweep BEATS BASELINE — 2026-02-16 23:40 UTC [COMPLETE]
+
+**STATUS**: TIER 2 — ML beats Donchian baseline (1.19 vs 1.06), ready for paper trading after validation
+
+**APPROACH**: Expand features 58→88 (order book proxies, longer horizons 72h-720h, cross-interactions, mean reversion, volatility breakout) → select top 25 → sweep 12 CatBoost configs → validate top-5 walk-forward
+
+**RESULTS**:
+- **Best**: CatBoost d=5 lr=0.01 l2=3.0 → Sharpe 1.194 ± 1.79, Acc 53.5%
+- **Runner-up**: CatBoost d=4 lr=0.01 l2=1.0 → Sharpe 1.190 ± 1.74, Acc 53.9%
+- **Baseline**: Multi-TF Donchian Sharpe 1.06
+- **Improvement**: +13% over baseline
+
+**INSIGHT**: Feature engineering (not just hyperparams) unlocks alpha. New features: rsi_divergence_14h_168h, rsi_volume_interaction, momentum_720h, vol_ratio_24h_168h. Longer horizons (30-day momentum) + cross-interactions (RSI*volume) capture regime shifts missed by 58-feature set. High std (±1.79) but consistently >1.0 across configs.
+
+**FILES**: `scripts/expand_features_v2.py`, `scripts/sweep_two_stage_expanded.py`, `results/sweep_expanded_progress.csv`
+
+**COMMIT**: fdcb7a2
+
+**NEXT**: Full validation suite (leakage check, bootstrap CI, year-by-year breakdown) before TIER 2 paper trading
+
+---
+
 ## Two-Stage Hyperparameter Sweep — 2026-02-16 22:35 UTC [COMPLETE]
 
 **STATUS**: CatBoost best, does NOT beat Donchian baseline (0.98 vs 1.06)
