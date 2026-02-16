@@ -1,5 +1,7 @@
 """
 Tests for on-chain metrics data loading and validation.
+
+These tests require local data files and are skipped in CI.
 """
 
 from pathlib import Path
@@ -7,11 +9,19 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+_onchain_dir = Path(__file__).parent.parent / "data" / "raw" / "onchain"
+_has_onchain_data = (_onchain_dir / "coinmetrics_btc_daily.parquet").exists()
+
+pytestmark = pytest.mark.skipif(
+    not _has_onchain_data,
+    reason="On-chain data files not available (requires local data files)"
+)
+
 
 @pytest.fixture
 def onchain_dir():
     """Path to on-chain data directory."""
-    return Path(__file__).parent.parent / "data" / "raw" / "onchain"
+    return _onchain_dir
 
 
 def test_coinmetrics_file_exists(onchain_dir):
