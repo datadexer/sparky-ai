@@ -5,9 +5,32 @@ Newest entries at the top.
 
 ---
 
-## Cross-Asset Feature Preparation — 2026-02-16 21:47 UTC [RUNNING]
+## Cross-Asset Training (XGBoost) — 2026-02-16 21:52 UTC [COMPLETE]
 
-**STATUS**: In progress (PID 2605447, ~60 min estimated)
+**STATUS**: Complete — result BELOW BASELINE
+
+**OBJECTIVE**: Train XGBoost on pooled 7-asset dataset (11,931 samples)
+
+**RESULTS**:
+- **Train accuracy**: 73.4% (massive overfitting)
+- **Validation accuracy**: 52.7%
+- **BTC holdout accuracy**: 53.4% (barely above random)
+- **Baseline to beat**: Multi-TF Donchian Sharpe 1.062
+
+**CONCLUSION**: Cross-asset pooling with 11,931 daily samples does NOT beat baseline. XGBoost overfit severely (73.4% → 53.4%). Need either:
+1. More data (currently only ~1,700 samples/asset)
+2. Simpler models (fewer parameters)
+3. Better regularization
+
+**Files**: `scripts/train_cross_asset.py`, `logs/train_cross_asset_v2_20260216_165225.log`
+
+**Commits**: 390bac6 "fix: clean inf/nan at load time"
+
+---
+
+## Cross-Asset Feature Preparation — 2026-02-16 21:47 UTC [COMPLETE]
+
+**STATUS**: Complete (11,931 samples, 58 features + asset_id)
 
 **OBJECTIVE**: Prepare pooled 58-feature dataset across 8 assets for cross-asset training
 
