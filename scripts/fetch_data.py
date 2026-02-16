@@ -84,20 +84,31 @@ def fetch_price_data(store: DataStore, incremental: bool = False) -> dict:
 def fetch_bgeometrics_data(
     store: DataStore, incremental: bool = False, token: str | None = None
 ) -> dict:
-    """Fetch BTC computed on-chain from BGeometrics."""
+    """Fetch BTC computed on-chain from BGeometrics.
+
+    ALWAYS uses incremental mode when existing data is present.
+    BGeometrics free tier: 8 req/hour, 15 req/day — every request is precious.
+    On first run: full historical fetch (uses ~9 requests for 9 metrics).
+    On subsequent runs: incremental fetch only (delta since last timestamp).
+    """
     path = DATA_RAW / "btc" / "onchain_bgeometrics.parquet"
     effective_start = BTC_START
 
-    if incremental:
-        last_ts = store.get_last_timestamp(path)
-        if last_ts:
-            effective_start = last_ts.strftime("%Y-%m-%d")
+    # Always check for existing data — never re-fetch what we have
+    last_ts = store.get_last_timestamp(path)
+    if last_ts:
+        effective_start = last_ts.strftime("%Y-%m-%d")
+        logger.info(
+            f"BGeometrics: existing data through {effective_start}, "
+            "fetching delta only (rate limit conservation)"
+        )
 
     try:
         fetcher = BGeometricsFetcher(token=token)
         df = fetcher.fetch_all_metrics(effective_start)
+        api_calls = fetcher.request_count
         if not df.empty:
-            if incremental and path.exists():
+            if path.exists():
                 store.append(df, path, metadata={"source": "bgeometrics", "asset": "btc"})
             else:
                 store.save(df, path, metadata={"source": "bgeometrics", "asset": "btc"})
@@ -105,8 +116,9 @@ def fetch_bgeometrics_data(
                 "rows": len(df),
                 "metrics": list(df.columns),
                 "date_range": f"{df.index.min().date()} to {df.index.max().date()}",
+                "api_calls_used": api_calls,
             }
-        return {"rows": 0, "error": "empty response"}
+        return {"rows": 0, "api_calls_used": api_calls, "error": "empty response"}
     except Exception as e:
         logger.error(f"Failed to fetch BGeometrics: {e}")
         return {"rows": 0, "error": str(e)}

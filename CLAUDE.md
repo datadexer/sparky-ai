@@ -114,6 +114,46 @@ sparky-ai/
 - **Data versioning via hash manifest.** After each fetch, update `data/data_manifest.json`.
 - **Structured agent activity logging is mandatory.** Every agent session MUST initialize `AgentActivityLogger`.
 
+## Integration Testing (mandatory)
+
+### Rule: No mocks for internal modules
+When testing how module A uses module B, use the REAL module B. Mocks are
+only for external APIs (exchanges, MLflow server, HTTP requests).
+
+### Rule: Protocol compliance tests
+Every Protocol/ABC must have a test that passes a concrete implementation
+through the code that consumes it. If WalkForwardBacktester expects a
+CostModelProtocol, there must be a test that runs the backtester with
+TransactionCostModel.for_btc() — not a mock.
+
+### Rule: Phase integration test file
+Each phase must include tests/test_integration_phase{N}.py that wires
+the real components from that phase end-to-end. Examples:
+
+- Phase 2: feature registry -> feature matrix -> feature selection -> backtester
+  with real baselines, real cost model, real leakage detector, real MLflow tracker
+- Phase 3: real model -> real backtester -> real leakage detector -> real MLflow log
+- Phase 4: real signal pipeline -> real paper trading engine
+
+These tests use synthetic data (no API calls) but real module instances.
+No mocks for anything in src/sparky/.
+
+### Rule: Cross-module state verification
+When module A passes an object to module B and gets it back, verify the
+object is unchanged. Example: if the leakage detector receives a model,
+the model's predictions on a reference input must be identical before and
+after the call.
+
+### Pre-PR self-review checklist (include results in PR description)
+Before opening any PR, verify and report:
+1. For every Protocol/ABC: name the concrete class that implements it,
+   and the integration test that proves it
+2. For every function signature in SONNET_HANDOFF.md or docstring examples:
+   confirm it matches the actual code
+3. For every module that accepts a pluggable dependency: confirm a test
+   exercises it with the real dependency
+4. Run the full test suite including integration tests
+
 ## Architecture Patterns
 
 ### Pydantic Types for Runtime Validation

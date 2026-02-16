@@ -5,6 +5,45 @@ Newest entries at the top.
 
 ---
 
+## BGeometrics API — Rate Limits & Caching Strategy (Phase 1)
+
+**Date**: 2026-02-15
+**Confirmed by**: AK (human decision)
+
+### Rate Limits (Free Tier)
+- **8 requests per hour**
+- **15 requests per day**
+- Token auth via URL parameter (`?token=...`)
+- Base URL: `https://bitcoin-data.com`
+- Swagger: `https://bitcoin-data.com/api/swagger-ui/index.html`
+
+### Derivatives Endpoints — SKIP ENTIRELY
+Funding rate, open interest, and basis endpoints require **Advanced plan only**.
+Do not attempt these. Revisit only if Phase 3 experiments show derivatives data
+would add alpha. CoinMetrics Community is the fallback for any metric BGeometrics
+can't serve on free tier.
+
+### Caching & Fetch Strategy (ENFORCED IN CODE)
+1. **One full historical fetch per metric** — save to Parquet, never re-fetch existing data
+2. **Always incremental**: `get_last_timestamp()` → fetch only delta since last data point
+3. **On 429 rate limit**: log warning and **STOP** — do not retry, do not burn more quota
+4. **Budget tracking**: fetcher warns when approaching 8 req/hour budget
+5. **Graceful degradation**: if rate limited mid-batch, return whatever metrics were fetched
+
+### Capacity Planning
+- 9 metrics × 1 request each = 9 requests for full historical fetch (fits in hourly budget)
+- Incremental daily update: 9 requests (one per metric, only fetching delta)
+- With pagination: large page size (5000) keeps most metrics to 1 request each
+- **Free tier is sufficient through Phase 4** (confirmed by AK)
+
+### Fallback
+CoinMetrics Community API (free, no auth, 1.6 req/sec) covers:
+- `HashRate` and `AdrActCnt` overlap with BGeometrics
+- All ETH on-chain metrics (BGeometrics is BTC-only)
+- Does NOT provide computed indicators (MVRV, SOPR, NUPL, etc.) — those are BGeometrics-exclusive
+
+---
+
 ## Academic Literature Review (Pre-bootstrap)
 
 ### Multi-Agent LLM Trading Frameworks

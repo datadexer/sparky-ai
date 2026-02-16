@@ -10,6 +10,15 @@ API details (discovered during Phase 1):
 - Response: Paginated Spring Data REST JSON, values as strings
 - Swagger: https://bitcoin-data.com/api/swagger-ui/index.html
 - Endpoints: /v1/{metric} with ?startday=&endday=&page=&size= params
+- Derivatives (funding rate, OI, basis): Advanced-only — NOT available on free tier
+
+RATE LIMIT STRATEGY (free tier):
+- 8 requests per hour, 15 per day — every request is precious
+- Cache aggressively: one full historical fetch per metric → Parquet, never re-fetch
+- Always use incremental fetches (get_last_timestamp → fetch only delta)
+- On 429: log warning and STOP — do not retry and burn more quota
+- CoinMetrics Community is fallback for any metric BGeometrics can't serve
+- Free tier is sufficient through Phase 4
 """
 
 import json
@@ -28,6 +37,8 @@ BASE_URL = "https://bitcoin-data.com"
 RATE_LIMIT_STATE_PATH = Path("data/.bgeometrics_rate_limit.json")
 
 # Map our metric names to BGeometrics API endpoints and response field names
+# NOTE: Only computed indicators available on free tier.
+# Derivatives (funding rate, open interest, basis) require Advanced plan — skip entirely.
 METRIC_ENDPOINTS = {
     "mvrv_zscore": {"endpoint": "/v1/mvrv", "field": "mvrv"},
     "sopr": {"endpoint": "/v1/sopr", "field": "sopr"},
@@ -43,6 +54,7 @@ METRIC_ENDPOINTS = {
 # Polite rate limiting: 1 request/second + respect 8 req/hour limit
 REQUEST_INTERVAL = 1.0
 MAX_PAGE_SIZE = 5000  # Request large pages to minimize API calls
+HOURLY_REQUEST_BUDGET = 8  # Free tier: 8 req/hour
 
 
 class BGeometricsFetcher:
@@ -60,6 +72,7 @@ class BGeometricsFetcher:
         self._rate_limit_path = rate_limit_path or RATE_LIMIT_STATE_PATH
         self._last_request_time = 0.0
         self._request_count = 0
+        self._rate_limited = False  # Set to True if we hit 429
         self._load_rate_limit_state()
 
     def _load_rate_limit_state(self) -> None:
@@ -98,8 +111,28 @@ class BGeometricsFetcher:
         if elapsed < REQUEST_INTERVAL:
             time.sleep(REQUEST_INTERVAL - elapsed)
 
+    def _check_budget(self) -> None:
+        """Warn if approaching hourly request budget."""
+        if self._request_count >= HOURLY_REQUEST_BUDGET:
+            logger.warning(
+                f"[DATA] BGeometrics: {self._request_count} requests used "
+                f"(hourly budget: {HOURLY_REQUEST_BUDGET}). "
+                "Consider stopping to avoid rate limits."
+            )
+
     def _get(self, endpoint: str, params: dict) -> dict:
-        """Make a rate-limited GET request."""
+        """Make a rate-limited GET request.
+
+        On 429 (rate limited): logs warning and raises immediately.
+        Do NOT retry — every request burns quota on the free tier.
+        """
+        if self._rate_limited:
+            raise RuntimeError(
+                "BGeometrics rate limit hit this session. "
+                "Wait for the next hour window before retrying."
+            )
+
+        self._check_budget()
         self._rate_limit()
 
         url = f"{BASE_URL}{endpoint}"
@@ -111,6 +144,18 @@ class BGeometricsFetcher:
             self._last_request_time = time.time()
             self._request_count += 1
             self._save_rate_limit_state()
+
+            if resp.status_code == 429:
+                self._rate_limited = True
+                logger.warning(
+                    f"[DATA] BGeometrics 429 rate limited after "
+                    f"{self._request_count} requests. STOPPING — do not retry. "
+                    f"Wait for next hour window."
+                )
+                raise requests.HTTPError(
+                    f"429 Rate Limited after {self._request_count} requests",
+                    response=resp,
+                )
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
@@ -218,6 +263,10 @@ class BGeometricsFetcher:
                 df = self.fetch_metric(metric, start_date, end_date)
                 if not df.empty:
                     dfs.append(df)
+            except RuntimeError as e:
+                # Rate limit hit — stop fetching entirely, return what we have
+                logger.warning(f"[DATA] Rate limit hit, stopping. Got {len(dfs)} metrics so far.")
+                break
             except Exception as e:
                 logger.warning(f"[DATA] Failed to fetch {metric}: {e}")
                 continue
@@ -235,6 +284,11 @@ class BGeometricsFetcher:
             f"{self._request_count} API calls used"
         )
         return result
+
+    @property
+    def request_count(self) -> int:
+        """Number of API requests made by this instance."""
+        return self._request_count
 
     @property
     def available_metrics(self) -> list[str]:
