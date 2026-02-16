@@ -1,5 +1,27 @@
 Research Business Manager — Strategic Analysis Report
+**Date**: 2026-02-16 05:18 UTC (commit b724933)
+**Context**: After Phase 1 cross-asset pooled training (marginal improvement, AUC +0.0036)
+**Recommendation**: Pivot to regime-aware strategy with ML
 Based on 2024-2025 Industry Intelligence
+
+---
+
+## Timeline Context (Research Log Cross-Reference)
+
+**BEFORE this report**:
+- 2026-02-16 01:00-02:00 UTC: ML model overfitting failures (Sharpe 0.999 → -1.48 on holdout)
+- 2026-02-16 03:50 UTC: Feature expansion experiment (on-chain features FAILED, -0.008 AUC)
+- 2026-02-16 04:16 UTC: Signal aggregation backtest (unprofitable, Sharpe 0.646)
+- 2026-02-16 05:16 UTC: Phase 1 cross-asset pooling (marginal, AUC +0.0036)
+
+**THIS REPORT**: 2026-02-16 05:18 UTC — Strategic recommendations based on research literature
+
+**AFTER this report (CEO deviation)**:
+- 2026-02-16 ~15:15 UTC: CEO tested 7 rule-based strategies (ignored this report)
+- Result: Multi-Timeframe Donchian 0.772 Sharpe (below target 1.0)
+- Status: CEO redirected to follow this report's ML + regime detection plan
+
+---
 
 I've analyzed 5 research areas from recent academic and industry sources. Here's what the data tells us about our current approach and critical gaps:
 

@@ -5,6 +5,133 @@ Newest entries at the top.
 
 ---
 
+## ❌ ML CROSS-ASSET TRAINING: FAILED TO BEAT BASELINE — 2026-02-16 10:49 UTC [DAY 3]
+
+**OBJECTIVE**: Train CatBoost on 223,933 cross-asset hourly samples (BTC+ETH+SOL), aggregate hourly predictions to daily signals, validate with yearly walk-forward (6 folds: 2019-2023). Target: Sharpe ≥0.85 (10% improvement over Multi-Timeframe 0.772).
+
+**APPROACH**:
+- **Data**: 223,933 hourly samples across 3 assets (BTC: 114K, ETH: 80K, SOL: 30K)
+- **Features**: 23 base technical features (RSI, MACD, Bollinger, momentum, volatility, volume, temporal)
+- **Model**: CatBoost with GPU acceleration (depth=4, iterations=1000, learning_rate=0.05)
+- **Target**: 1-hour ahead price direction (binary classification)
+- **Signal aggregation**: LONG if ≥60% of daily hours predict UP, else FLAT
+- **Validation**: 6 yearly folds (expanding window, 2019-2023)
+- **Transaction costs**: 0.26% round-trip (realistic Binance fees)
+
+**RESULTS - YEARLY WALK-FORWARD VALIDATION**:
+
+| Year | Sharpe | Return | Max DD | Trades | AUC (Val) | Notes |
+|------|--------|--------|--------|--------|-----------|-------|
+| 2019 | **0.560** | +16.4% | 53.2% | 155 | 0.630 | Decent predictive power |
+| 2020 | **0.815** | +30.9% | 23.8% | 146 | 0.615 | **Best year** (captured bull run) |
+| 2021 | **0.201** | -3.0% | 41.8% | 152 | 0.609 | Choppy market, poor performance |
+| 2022 | **-0.883** | -39.4% | 48.3% | 151 | 0.599 | **Catastrophic failure** in bear market |
+| 2023 | **0.279** | +4.0% | 32.6% | 136 | 0.599 | Marginal positive |
+
+**Summary**:
+- **Mean Sharpe**: 0.162 (vs baseline 0.772) → **-79% WORSE**
+- **Std Sharpe**: 0.535 (high volatility)
+- **Median Sharpe**: 0.240
+- **Positive years**: 4/5 (2019, 2020, 2021, 2023 positive; 2022 catastrophic)
+- **Min Sharpe**: -0.883 (2022 bear market)
+- **Max Sharpe**: 0.815 (2020 bull market)
+
+**COMPARISON TO BASELINE (Multi-Timeframe Ensemble)**:
+
+| Metric | ML Cross-Asset | Multi-TF Baseline | Delta |
+|--------|----------------|-------------------|-------|
+| Mean Sharpe | **0.162** | **0.772** | **-0.610** (-79%) |
+| Median Sharpe | 0.240 | 1.519 | -1.279 (-84%) |
+| Std Sharpe | 0.535 | 1.832 | +1.297 (more stable, but low) |
+| Positive years | 4/5 | 4/6 | Similar win rate |
+| 2022 (bear) | -0.883 | -1.217 | +0.334 (ML slightly better in bear) |
+
+**CRITICAL FINDINGS**:
+
+1️⃣ **ML fails to capture crypto alpha**
+   - Mean Sharpe 0.162 << baseline 0.772 (79% worse)
+   - Median Sharpe 0.240 << baseline 1.519 (84% worse)
+   - NO improvement despite 223K training samples and 23 features
+
+2️⃣ **Poor AUC degradation over time**
+   - 2019 Val AUC: 0.630 → Sharpe 0.560 (decent)
+   - 2023 Val AUC: 0.599 → Sharpe 0.279 (poor)
+   - AUC degrades from 0.630 to 0.599 as market evolves
+
+3️⃣ **Signal aggregation method insufficient**
+   - "≥60% hourly positive → LONG" rule too simplistic
+   - Hourly noise gets amplified, not filtered
+   - Daily signals have 136-155 trades/year (high turnover)
+
+4️⃣ **Cross-asset pooling did NOT help**
+   - 223K pooled samples (BTC+ETH+SOL) showed no advantage
+   - Model learns generic crypto patterns, but loses asset-specific nuance
+   - ETH and SOL may inject noise for BTC predictions
+
+5️⃣ **Model overfitting to short-term patterns**
+   - Train AUC 0.608-0.665
+   - Val AUC 0.599-0.669
+   - Small overfitting (0.007-0.011), but predictions still weak
+   - Short-term hourly patterns don't translate to profitable daily strategies
+
+6️⃣ **2022 bear market catastrophe**
+   - Sharpe -0.883, Return -39.4%, Max DD 48.3%
+   - ML model failed to recognize regime change
+   - Actually worse than doing nothing (0 Sharpe)
+
+**HYPOTHESIS: WHY ML FAILED**:
+
+1. **Hourly frequency mismatch**: Hourly features optimized for 1h-ahead prediction, not daily strategy
+2. **Signal aggregation loss**: Converting hourly predictions to daily loses information
+3. **Cross-asset noise**: ETH and SOL patterns may not generalize to BTC
+4. **Insufficient features**: 23 technical features lack regime awareness (macro, sentiment, on-chain)
+5. **Transaction costs**: 136-155 trades/year × 0.26% = 35-40% drag on returns
+6. **Non-stationary patterns**: Crypto markets evolve fast, 2019 patterns don't work in 2023
+
+**COMPARISON TO PREVIOUS ML ATTEMPTS**:
+
+| Approach | Training Samples | Features | Horizon | Best Sharpe | Status |
+|----------|------------------|----------|---------|-------------|--------|
+| **Phase 3 hourly (BTC only)** | 70K hourly | 23 base | 1h | AUC 0.561 | ❌ FAILED (marginal) |
+| **Phase 3 cross-asset pooled** | 364K hourly | 23 base | 1h | AUC 0.557 | ❌ FAILED (no improvement) |
+| **Phase 3 with macro/on-chain** | 70K hourly | 50 expanded | 1h | AUC 0.557 | ❌ FAILED (features added noise) |
+| **This attempt (daily signals)** | 223K hourly | 23 base | 1h→daily agg | Sharpe 0.162 | ❌ **CATASTROPHIC FAILURE** |
+
+**VERDICT**: ❌ **FAILED — ML does NOT beat baseline (79% worse)**
+
+**REASONS FOR FAILURE**:
+1. Mean Sharpe 0.162 << target 0.85 (-81% gap)
+2. Mean Sharpe 0.162 << baseline 0.772 (-79% worse than simple rules!)
+3. 2022 catastrophic failure (Sharpe -0.883)
+4. High turnover (136-155 trades/year) eats into returns
+5. No improvement despite 223K training samples
+
+**LESSONS LEARNED**:
+
+1. **More data ≠ better models**: 223K samples didn't help (vs 70K BTC-only)
+2. **Cross-asset pooling adds noise**: ETH/SOL patterns may not transfer to BTC
+3. **Hourly → daily aggregation loses signal**: Direct daily modeling may be better
+4. **Simple rules beat ML (again)**: Multi-Timeframe 0.772 >> ML 0.162
+5. **Transaction costs matter**: 136-155 trades/year is too high (35-40% drag)
+6. **AUC ≠ Sharpe**: Model with AUC 0.630 only achieves Sharpe 0.560
+7. **Regime awareness critical**: 2022 bear market exposes model weakness
+
+**RECOMMENDATION**: ❌ **STOP ML APPROACH — FOCUS ON SIMPLE RULES**
+
+**Rationale**:
+- Multi-Timeframe Ensemble (0.772 Sharpe) is **4.8x better** than ML (0.162)
+- Simple rules are more robust, lower turnover, easier to understand
+- ML models overfit to short-term noise, fail in regime changes
+- 3 attempts (hourly BTC, cross-asset, daily signals) all failed
+
+**NEXT STEPS**: Deploy Multi-Timeframe Ensemble to paper trading (as previously decided)
+
+**FILES**:
+- Script: `scripts/ml_cross_asset_alpha.py`
+- Results: `results/validation/ml_cross_asset_validation.json`
+
+---
+
 ## ❌ Kelly Criterion Position Sizing: NO IMPROVEMENT — 2026-02-16 10:44 UTC [DAY 3]
 
 **OBJECTIVE**: Apply Kelly Criterion to Multi-Timeframe Donchian Ensemble to optimize position sizing. Target: Sharpe ≥0.85 (vs baseline 0.772).

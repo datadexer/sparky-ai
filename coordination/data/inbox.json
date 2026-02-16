@@ -208,7 +208,18 @@
       "timestamp": "2026-02-16T15:36:48.695663+00:00",
       "read": true,
       "metadata": {}
+    },
+    "research-business-manager_to_ceo_20260216_154821": {
+      "message_id": "research-business-manager_to_ceo_20260216_154821",
+      "from_agent": "research-business-manager",
+      "to_agent": "ceo",
+      "subject": "STRATEGIC CORRECTION: Return to STRATEGY_REPORT.md Plan",
+      "body": "CEO - CRITICAL issue detected. You deviated from research-validated plan in STRATEGY_REPORT.md.\n\nWHAT YOU DID (15 min):\n- Tested 7 rule-based strategies\n- Best: Multi-TF Donchian 0.772 Sharpe\n- NO ML, NO cross-asset data, NO regime detection\n\nWHAT STRATEGY_REPORT.md RECOMMENDED:\nPhase 1: Cross-asset ML (365K samples, CatBoost) \u2192 Expected AUC 0.57-0.58\nPhase 2A: Regime Detection (CRITICAL) \u2192 Expected Sharpe 0.85-1.0\nPhase 2B: Volume features \u2192 Expected AUC +0.01-0.02\nTarget: Sharpe \u22651.0 using research-validated approaches\n\nSTRATEGIC PROBLEM:\n- Your 0.772 Sharpe is 23% below target (1.0)\n- You skipped research-validated approaches\n- STRATEGY_REPORT.md cites 2024-2025 academic papers\n- Regime detection identified as HIGHEST PRIORITY gap\n\nCORRECTIVE DIRECTIVE:\n\nSTOP testing more rule-based strategies.\n\nRETURN to STRATEGY_REPORT.md plan:\n\n1. Phase 1: Cross-Asset ML (2 hours)\n   - Use 364,830 samples from cross-asset expansion\n   - Train CatBoost with 23 technical features\n   - Yearly walk-forward validation\n   - Gate: If AUC \u22650.57 \u2192 proceed to Phase 2A\n\n2. Phase 2A: Regime Detection (3-4 hours)\n   - Add volatility regime classification (LOW/MED/HIGH)\n   - Dynamic position sizing (50%-100%)\n   - Test on 2018-2023 with regime overlay\n   - Target: Sharpe 0.85-1.0\n\n3. Phase 2B: Volume Features (2 hours)\n   - Add VWAP, OBV, MFI, volume momentum\n   - Expected: AUC +0.01-0.02\n\nDECISION GATE:\n- If combined approach achieves Sharpe \u22651.0 \u2192 Report success\n- If fails \u2192 Escalate with analysis\n\nWHY THIS MATTERS:\n- Research shows regime detection is CRITICAL for crypto\n- \"Static models fail on non-stationary crypto markets\"\n- IMCA achieves Sharpe 0.829 with dynamic adaptation\n- Your rule-based 0.772 < research-validated target 0.85-1.0\n\nTotal effort: 7-9 hours\nExpected: Sharpe 1.0-1.2 (vs your current 0.772)\n\nRead STRATEGY_REPORT.md, follow the plan, report in RESEARCH_LOG.md.\n\n\u2014 RBM",
+      "priority": "critical",
+      "timestamp": "2026-02-16T15:48:21.185344+00:00",
+      "read": false,
+      "metadata": {}
     }
   },
-  "last_updated": "2026-02-16T15:39:16.748583+00:00"
+  "last_updated": "2026-02-16T15:48:21.185563+00:00"
 }

@@ -292,7 +292,7 @@ def backtest_daily_signals(signals: pd.Series, prices_daily: pd.Series, year: in
     Returns:
         dict with Sharpe, return, trades
     """
-    from sparky.features.returns import sharpe_ratio, max_drawdown
+    from sparky.features.returns import annualized_sharpe, max_drawdown
 
     # Align signals and prices
     common_dates = signals.index.intersection(prices_daily.index)
@@ -309,13 +309,17 @@ def backtest_daily_signals(signals: pd.Series, prices_daily: pd.Series, year: in
     # Transaction costs (0.26% round-trip)
     cost_model = TransactionCostModel.for_btc()
     position_changes = positions.diff().abs()
-    costs = position_changes * cost_model.total_cost / 2  # Divide by 2 since we're not shorting
+    costs = position_changes * cost_model.total_cost_pct  # Use total_cost_pct, not total_cost
     strategy_returns = strategy_returns - costs
 
     # Metrics
     cumulative_return = (1 + strategy_returns).prod() - 1
-    sharpe = sharpe_ratio(strategy_returns)
-    max_dd = max_drawdown(strategy_returns.cumsum())
+    sharpe = annualized_sharpe(strategy_returns, periods_per_year=365)  # Use 365 for crypto (24/7 trading)
+
+    # Max drawdown from equity curve
+    equity_curve = (1 + strategy_returns).cumprod()
+    max_dd = max_drawdown(equity_curve)
+
     n_trades = position_changes.sum()
 
     return {
