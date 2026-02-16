@@ -75,6 +75,61 @@ Two potential issues identified:
 
 ---
 
+## ⚠️ WALK-FORWARD VALIDATION: CRITICAL FAILURE — 2026-02-16 06:14 UTC [DAY 1]
+
+**VALIDATION METHOD**: Expanding window walk-forward (18 folds: 6 yearly + 12 quarterly)
+
+**RESULTS**:
+
+| Metric | Full Period (2017-2023) | Walk-Forward Mean | Difference |
+|--------|------------------------|-------------------|------------|
+| **Sharpe** | **1.624** | **0.365** | **-1.259** ⚠️ |
+| **Std Sharpe** | N/A | **2.006** | Extremely unstable |
+| **Min Sharpe** | N/A | **-3.534** | Catastrophic (2022Q2) |
+| **Positive Folds** | 1/1 (100%) | 10/18 (56%) | 44% failure rate |
+
+**CRITICAL FINDINGS**:
+
+**1. Extreme Performance Variability:**
+- Best fold: 2020 (Sharpe 3.196) - Amazing bull run
+- Worst fold: 2022Q2 (Sharpe -3.534) - Catastrophic whipsaw
+- Variance too high for real trading
+
+**2. Period Dependency:**
+- Full-period Sharpe 1.624 driven by 2-3 excellent years (2019, 2020, 2023)
+- Strategy FAILS in choppy/bear markets (2022Q1-Q3 all negative)
+- Cannot cherry-pick good periods in real trading
+
+**3. Why Full-Period Metrics Mislead:**
+- Long compounding periods mask quarterly volatility
+- 2020 bull run (+326% return) overwhelms bear losses
+- Real trading experiences SEQUENCE of returns, not just aggregate
+
+**GATE 1 DECISION [AUTONOMOUS]**:
+
+❌ **FAIL - Multi-Timeframe Ensemble NOT ROBUST**
+
+**Criteria Status**:
+- ❌ Mean walk-forward Sharpe: 0.365 << 1.2 threshold (70% below)
+- ❌ Min Sharpe: -3.534 << 0.8 threshold (catastrophic)
+- ❌ Std Sharpe: 2.006 >> 0.5 threshold (4x too volatile)
+
+**Passed**: 0/3 criteria
+
+**Honest Assessment**:
+- Full-period Sharpe 1.624 is **NOT representative** of real performance
+- Strategy works ONLY in sustained bull markets (2019-2020, 2023Q4)
+- Fails catastrophically in chops and bears (2022)
+- **NOT suitable for paper trading without modifications**
+
+**Next Steps**: Immediately test alternative strategies (DAY 2) to find robust approach
+
+**Files**:
+- Script: `scripts/validate_walkforward_ensemble.py`
+- Results: `results/validation/walkforward_validation.json`
+
+---
+
 ## 🎯 DEPLOYMENT DECISION: MULTI-TIMEFRAME ENSEMBLE → PAPER TRADING — 2026-02-16 01:34 UTC
 
 **Status**: ✅ **DEPLOYED TO PAPER TRADING** (RBM SCENARIO A criteria met)
