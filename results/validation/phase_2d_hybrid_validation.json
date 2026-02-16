@@ -1,0 +1,179 @@
+{
+  "validation_timestamp": "2026-02-16T01:08:33.889371",
+  "periods": {
+    "2017_2023": {
+      "period": "Full 2017-2023",
+      "start": "2017-01-01",
+      "end": "2023-12-31",
+      "hybrid": {
+        "total_return_pct": 1022.3946911020568,
+        "sharpe_ratio": 1.3900458841784016,
+        "max_drawdown_pct": 43.3413189929409,
+        "win_rate": 0.22818003913894325,
+        "n_trades": 106,
+        "n_days": 2555
+      },
+      "donchian": {
+        "total_return_pct": 3139.841744759037,
+        "sharpe_ratio": 1.3003137514920675,
+        "max_drawdown_pct": 57.63469158913538,
+        "win_rate": 0.22818003913894325,
+        "n_trades": 108,
+        "n_days": 2555
+      },
+      "buyhold": {
+        "total_return_pct": 4135.329491355565,
+        "sharpe_ratio": 1.091809247440465,
+        "max_drawdown_pct": 83.4293493046095,
+        "win_rate": 0.5205479452054794,
+        "n_trades": 2,
+        "n_days": 2555
+      },
+      "hybrid_vs_donchian": 0.08973213268633407,
+      "hybrid_vs_buyhold": 0.29823663673793654
+    },
+    "2018_bear": {
+      "period": "2018 Bear",
+      "start": "2018-01-01",
+      "end": "2018-12-31",
+      "hybrid": {
+        "total_return_pct": -17.179621275955093,
+        "sharpe_ratio": -1.021525281220773,
+        "max_drawdown_pct": 19.252457811047048,
+        "win_rate": 0.08241758241758242,
+        "n_trades": 14,
+        "n_days": 364
+      },
+      "donchian": {
+        "total_return_pct": -33.97619239676287,
+        "sharpe_ratio": -1.2350876944798763,
+        "max_drawdown_pct": 35.26411771035629,
+        "win_rate": 0.08241758241758242,
+        "n_trades": 14,
+        "n_days": 364
+      },
+      "buyhold": {
+        "total_return_pct": -72.52705972666165,
+        "sharpe_ratio": -1.12116956803555,
+        "max_drawdown_pct": 81.46005141789901,
+        "win_rate": 0.49175824175824173,
+        "n_trades": 0,
+        "n_days": 364
+      },
+      "hybrid_vs_donchian": 0.2135624132591034,
+      "hybrid_vs_buyhold": 0.0996442868147771
+    },
+    "2022_bear": {
+      "period": "2022 Bear",
+      "start": "2022-01-01",
+      "end": "2022-12-31",
+      "hybrid": {
+        "total_return_pct": -30.4652439940729,
+        "sharpe_ratio": -1.7030633170544172,
+        "max_drawdown_pct": 32.228690377846,
+        "win_rate": 0.14560439560439561,
+        "n_trades": 16,
+        "n_days": 364
+      },
+      "donchian": {
+        "total_return_pct": -42.78889286491333,
+        "sharpe_ratio": -1.5621685333646271,
+        "max_drawdown_pct": 45.459514820610885,
+        "win_rate": 0.14560439560439561,
+        "n_trades": 18,
+        "n_days": 364
+      },
+      "buyhold": {
+        "total_return_pct": -65.40625257705422,
+        "sharpe_ratio": -1.3399620561778973,
+        "max_drawdown_pct": 66.77976772808042,
+        "win_rate": 0.45879120879120877,
+        "n_trades": 2,
+        "n_days": 364
+      },
+      "hybrid_vs_donchian": -0.14089478368979003,
+      "hybrid_vs_buyhold": -0.36310126087651984
+    },
+    "2023_sideways": {
+      "period": "2023 Sideways",
+      "start": "2023-01-01",
+      "end": "2023-12-31",
+      "hybrid": {
+        "total_return_pct": 20.831617800326473,
+        "sharpe_ratio": 0.9739827145319048,
+        "max_drawdown_pct": 16.38565308304248,
+        "win_rate": 0.22802197802197802,
+        "n_trades": 16,
+        "n_days": 364
+      },
+      "donchian": {
+        "total_return_pct": 36.77218710599954,
+        "sharpe_ratio": 1.1676601619141005,
+        "max_drawdown_pct": 20.169252834812887,
+        "win_rate": 0.22802197802197802,
+        "n_trades": 16,
+        "n_days": 364
+      },
+      "buyhold": {
+        "total_return_pct": 154.33644297321734,
+        "sharpe_ratio": 2.3414532884272763,
+        "max_drawdown_pct": 20.06927012169932,
+        "win_rate": 0.4945054945054945,
+        "n_trades": 0,
+        "n_days": 364
+      },
+      "hybrid_vs_donchian": -0.19367744738219572,
+      "hybrid_vs_buyhold": -1.3674705738953716
+    },
+    "2024_2025_bull": {
+      "period": "2024-2025 Bull",
+      "start": "2024-01-01",
+      "end": "2025-12-31",
+      "hybrid": {
+        "total_return_pct": 63.12077876365023,
+        "sharpe_ratio": 1.2799598901329052,
+        "max_drawdown_pct": 17.38514687759429,
+        "win_rate": 0.1917808219178082,
+        "n_trades": 28,
+        "n_days": 730
+      },
+      "donchian": {
+        "total_return_pct": 79.14660605829806,
+        "sharpe_ratio": 1.1791582240502072,
+        "max_drawdown_pct": 30.74480774666813,
+        "win_rate": 0.19315068493150686,
+        "n_trades": 28,
+        "n_days": 730
+      },
+      "buyhold": {
+        "total_return_pct": 98.01299024600038,
+        "sharpe_ratio": 0.9498035346134167,
+        "max_drawdown_pct": 32.10906933487264,
+        "win_rate": 0.5123287671232877,
+        "n_trades": 0,
+        "n_days": 730
+      },
+      "hybrid_vs_donchian": 0.10080166608269803,
+      "hybrid_vs_buyhold": 0.3301563555194885
+    }
+  },
+  "bootstrap_ci": {
+    "mean": 1.391994612227314,
+    "lower": 0.6552640681309503,
+    "upper": 2.1132355573564947
+  },
+  "monte_carlo": {
+    "win_rate": 0.704,
+    "wins": 704,
+    "n_simulations": 1000
+  },
+  "success_criteria": {
+    "1_out_of_sample_sharpe": false,
+    "2_bear_2018_protection": true,
+    "3_bear_2022_protection": false,
+    "4_sideways_2023_sharpe": false,
+    "5_monte_carlo_win_rate": false,
+    "6_bootstrap_ci_lower": false
+  },
+  "final_verdict": "PARTIAL (1/6)"
+}

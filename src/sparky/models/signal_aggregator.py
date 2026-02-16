@@ -170,3 +170,126 @@ class HourlyToDailyAggregator:
             f"low_vol_threshold={self.threshold - 0.01}"
         )
         return daily
+
+
+class RegimeAwareAggregator:
+    """Research-validated regime-aware signal aggregator.
+
+    Implements regime-aware position sizing and dynamic thresholds based on
+    volatility regimes (LOW/MEDIUM/HIGH). Research shows this approach achieves
+    Sharpe 0.829 (IMCA 2025) vs static models.
+
+    Regime rules:
+    - HIGH (>60% vol): 50% position, threshold 0.55
+    - MEDIUM (30-60%): 75% position, threshold 0.52
+    - LOW (<30%): 100% position, threshold 0.50
+
+    Args:
+        regime_window: Window for volatility regime computation (default 30 days * 24 hours).
+        frequency: Data frequency ("1h" or "1d") for annualization.
+    """
+
+    REGIME_RULES = {
+        "high": {"position_size": 0.50, "threshold": 0.55},
+        "medium": {"position_size": 0.75, "threshold": 0.52},
+        "low": {"position_size": 1.00, "threshold": 0.50},
+    }
+
+    def __init__(
+        self,
+        regime_window: int = 30 * 24,
+        frequency: str = "1h",
+    ):
+        self.regime_window = regime_window
+        self.frequency = frequency
+
+    def aggregate_to_daily(
+        self,
+        hourly_probas: pd.Series,
+        prices: pd.Series,
+    ) -> pd.DataFrame:
+        """Aggregate hourly predictions to daily signals with regime awareness.
+
+        Args:
+            hourly_probas: Series of P(up) indexed by hourly timestamps.
+            prices: Hourly close prices for regime computation.
+
+        Returns:
+            DataFrame with columns:
+            - date: trading date
+            - daily_proba: mean probability for the day
+            - regime: volatility regime (low/medium/high)
+            - threshold: regime-specific probability threshold
+            - signal: 1 (LONG) or 0 (FLAT)
+            - position_size: regime-specific position size (0.5/0.75/1.0)
+            - n_hours: number of hourly predictions that day
+        """
+        from sparky.features.regime_indicators import compute_volatility_regime
+
+        # Compute volatility regime
+        regimes = compute_volatility_regime(
+            prices, window=self.regime_window, frequency=self.frequency
+        )
+
+        # Aggregate hourly probabilities to daily
+        daily_proba = hourly_probas.resample("D").mean()
+        daily_std = hourly_probas.resample("D").std()
+        daily_n_hours = hourly_probas.resample("D").count()
+
+        # Get daily regime (most common regime that day)
+        daily_regime = regimes.resample("D").agg(lambda x: x.mode()[0] if len(x) > 0 else "medium")
+
+        # Remove timezone for consistency (apply to all series)
+        if daily_proba.index.tz is not None:
+            daily_proba.index = daily_proba.index.tz_localize(None)
+            daily_std.index = daily_std.index.tz_localize(None)
+            daily_n_hours.index = daily_n_hours.index.tz_localize(None)
+        if daily_regime.index.tz is not None:
+            daily_regime.index = daily_regime.index.tz_localize(None)
+
+        # Generate regime-aware signals
+        results = []
+        for date in daily_proba.index:
+            if daily_n_hours[date] < 20:
+                # Skip days with insufficient data
+                continue
+
+            prob = daily_proba[date]
+            regime = daily_regime[date]
+            rules = self.REGIME_RULES[regime]
+
+            threshold = rules["threshold"]
+            signal = 1 if prob > threshold else 0
+            position_size = rules["position_size"] if signal == 1 else 0.0
+
+            results.append({
+                "date": date,
+                "daily_proba": prob,
+                "std": daily_std[date],
+                "regime": regime,
+                "threshold": threshold,
+                "signal": signal,
+                "position_size": position_size,
+                "n_hours": daily_n_hours[date],
+            })
+
+        df = pd.DataFrame(results).set_index("date")
+
+        n_long = (df["signal"] == 1).sum()
+        regime_counts = df["regime"].value_counts()
+
+        logger.info(
+            f"Aggregated {len(hourly_probas):,} hourly predictions to {len(df)} daily signals "
+            f"(regime-aware)"
+        )
+        logger.info(
+            f"  Signals: {n_long} LONG ({n_long/len(df)*100:.1f}%), "
+            f"{len(df) - n_long} FLAT ({(len(df) - n_long)/len(df)*100:.1f}%)"
+        )
+        logger.info(
+            f"  Regimes: low={regime_counts.get('low', 0)}, "
+            f"medium={regime_counts.get('medium', 0)}, "
+            f"high={regime_counts.get('high', 0)}"
+        )
+
+        return df

@@ -1,0 +1,119 @@
+{
+  "validation_timestamp": "2026-02-16T01:23:46.638271",
+  "periods": {
+    "2017_2023": {
+      "period": "Full 2017-2023",
+      "ensemble": {
+        "sharpe": 1.6239073060232976,
+        "sharpe_rf45": 1.5277160205124536,
+        "return_pct": 9456.618354968814,
+        "max_dd_pct": 46.22340842527631,
+        "win_rate": 0.22622309197651663,
+        "n_trades": 49
+      },
+      "buyhold": {
+        "sharpe": 1.091809247440465,
+        "sharpe_rf45": 1.0319081755045842,
+        "return_pct": 4135.329491355565,
+        "max_dd_pct": 83.4293493046095,
+        "win_rate": 0.5205479452054794,
+        "n_trades": 2
+      }
+    },
+    "2018_bear": {
+      "period": "2018 Bear",
+      "ensemble": {
+        "sharpe": -0.42908295942953134,
+        "sharpe_rf45": -0.6481355338957863,
+        "return_pct": -10.308536000694424,
+        "max_dd_pct": 18.112430369203278,
+        "win_rate": 0.03296703296703297,
+        "n_trades": 4
+      },
+      "buyhold": {
+        "sharpe": -1.12116956803555,
+        "sharpe_rf45": -1.1749013365216272,
+        "return_pct": -72.52705972666165,
+        "max_dd_pct": 81.46005141789901,
+        "win_rate": 0.49175824175824173,
+        "n_trades": 0
+      }
+    },
+    "2022_bear": {
+      "period": "2022 Bear",
+      "ensemble": {
+        "sharpe": -1.9021423663185253,
+        "sharpe_rf45": -2.105053645563486,
+        "return_pct": -36.0029309870442,
+        "max_dd_pct": 36.0029309870442,
+        "win_rate": 0.06043956043956044,
+        "n_trades": 8
+      },
+      "buyhold": {
+        "sharpe": -1.3399620561778973,
+        "sharpe_rf45": -1.410359244016507,
+        "return_pct": -65.40625257705422,
+        "max_dd_pct": 66.77976772808042,
+        "win_rate": 0.45879120879120877,
+        "n_trades": 2
+      }
+    },
+    "2023_sideways": {
+      "period": "2023 Sideways",
+      "ensemble": {
+        "sharpe": 1.8450263543801648,
+        "sharpe_rf45": 1.7119175118806058,
+        "return_pct": 76.06110363160337,
+        "max_dd_pct": 16.89061023996834,
+        "win_rate": 0.2664835164835165,
+        "n_trades": 11
+      },
+      "buyhold": {
+        "sharpe": 2.3414532884272763,
+        "sharpe_rf45": 2.2394451441598724,
+        "return_pct": 154.33644297321734,
+        "max_dd_pct": 20.06927012169932,
+        "win_rate": 0.4945054945054945,
+        "n_trades": 0
+      }
+    },
+    "2024_2025_bull": {
+      "period": "2024-2025 Bull",
+      "ensemble": {
+        "sharpe": 0.7182760779313215,
+        "sharpe_rf45": 0.5697465076122573,
+        "return_pct": 41.10401181098919,
+        "max_dd_pct": 28.220572152146445,
+        "win_rate": 0.18082191780821918,
+        "n_trades": 19
+      },
+      "buyhold": {
+        "sharpe": 0.9498035346134167,
+        "sharpe_rf45": 0.8561022958718101,
+        "return_pct": 98.01299024600038,
+        "max_dd_pct": 32.10906933487264,
+        "win_rate": 0.5123287671232877,
+        "n_trades": 0
+      }
+    }
+  },
+  "bootstrap_ci": {
+    "mean": 1.62563256102648,
+    "lower": 0.9260689464548499,
+    "upper": 2.3016494153416605
+  },
+  "monte_carlo": {
+    "win_rate": 0.83,
+    "wins": 830,
+    "ties": 0,
+    "losses": 170
+  },
+  "criteria": {
+    "out_of_sample_sharpe": true,
+    "bear_2018_protection": true,
+    "bear_2022_protection": false,
+    "monte_carlo_win_rate": true,
+    "bootstrap_ci_lower": true
+  },
+  "verdict": "PARTIAL_4_of_5"
+}
