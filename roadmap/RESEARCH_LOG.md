@@ -138,3 +138,29 @@ Critical bugs found in v1 (do NOT repeat):
 - Momentum strategy Sharpe of 0.76 was never independently reproduced
 
 These findings inform our hypotheses but must be independently validated.
+
+---
+## Phase 3 Data Preparation — 2026-02-16 00:53:43 UTC
+
+**Data Coverage:**
+- BTC OHLCV: 2019-01-01 to 2025-12-31 (2557 rows)
+- BTC on-chain: 2021-02-17 to 2026-02-15 (175092 rows)
+
+**Feature Matrix:**
+- Shape: (2556, 7)
+- Date range: 2019-01-02 to 2025-12-31
+- Features: 7 (rsi_14, momentum_30d, ema_ratio_20d, returns_1d, hash_ribbon_btc, address_momentum_btc, volume_momentum_btc)
+
+**Target Distribution:**
+- 1d horizon: 1364 longs / 2556 total (53.4%)
+- 3d horizon: 1365 longs / 2556 total (53.4%)
+- 7d horizon: 1387 longs / 2556 total (54.3%)
+- 14d horizon: 1412 longs / 2556 total (55.2%)
+- 30d horizon: 1442 longs / 2556 total (56.4%)
+
+**Data Splits (matching baseline for fair comparison):**
+- In-sample: 1096 rows (2019-01-01 to 2022-01-01)
+- Out-of-sample: 1369 rows (2022-01-01 to 2025-09-30)
+- Holdout: 92 rows (2025-10-01 to 2025-12-31)
+
+**Status:** ✓ Data preparation complete. Ready for Phase 3 experiments.
