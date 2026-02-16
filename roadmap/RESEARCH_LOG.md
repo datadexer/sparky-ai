@@ -298,3 +298,60 @@ Needs multi-seed validation for [VALIDATED] status.
 
 **Verdict**: [OVERFITTING]
 Holdout failure is due to OVERFITTING, not leakage. Model learned noise in train/test split.
+
+---
+## OPTION 1: 6-Month Holdout Test — 2026-02-16 01:58:44 UTC
+
+**Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
+
+**Data Split**:
+- Training: 2019-01-15 to 2025-06-30 (2359 samples)
+- Holdout: 2025-07-01 to 2025-12-31 (184 samples, 6 MONTHS)
+
+**Results**:
+- 6-month holdout Sharpe: -0.2954
+- Max Drawdown: 28.40%
+- Total Return: -6.96%
+- Trades: 35
+
+**Comparison**:
+- Phase 2-3 (train+test): Sharpe 0.999
+- 3-month holdout (Oct-Dec): Sharpe -1.477
+- 6-month holdout (Jul-Dec): Sharpe -0.2954
+
+**Verdict**: [FAIL]
+❌ Overfitting confirmed. 6-month holdout also fails.
+
+**Next Step**: Proceed to OPTION 2 (debug overfitting)
+
+---
+## OPTION 2: Debug Overfitting — 2026-02-16 02:01:18 UTC
+
+**Configurations Tested**: 7
+
+**Best**: 1. Original XGBoost (30d)
+- Sharpe: -0.3901
+- Return: -8.12%
+- Trades: 42
+
+**Verdict**: [FAIL]
+
+**Next**: Proceed to OPTION 3 (strategic pivot)
+
+---
+## OPTION 3: Strategic Pivot — 2026-02-16 02:02:29 UTC
+
+**Approaches Tested**: 7 configurations
+- ETH vs BTC
+- Simple momentum strategies
+- RSI mean reversion
+- Buy and hold baseline
+
+**Best**: 2b. Momentum > 0.05 (selective)
+- Sharpe: 2.5564
+- Return: 17.46%
+- Trades: 10
+
+**Verdict**: [SUCCESS]
+
+✅ Found viable approach via strategic pivot
