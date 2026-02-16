@@ -5,6 +5,26 @@ Newest entries at the top.
 
 ---
 
+## Ridge Regression — 2026-02-16 22:28 UTC [COMPLETE]
+
+**STATUS**: Complete — Ridge matches stacking (both 52.1%)
+
+**APPROACH**: Ridge regression on continuous targets (-1, +1), threshold at 0 for binary prediction.
+
+**RESULTS**:
+- **Ridge accuracy**: 52.1%
+- **CatBoost**: 53.0%
+- **Stacking**: 52.1%
+- **Conclusion**: Linear model performs identically to tree ensemble
+
+**INSIGHT**: Model complexity does NOT matter. Ridge (linear), stacking (meta-ensemble), CatBoost (tree) all converge to ~52% accuracy. The bottleneck is feature informativeness, not model capacity.
+
+**Files**: `scripts/train_ridge_signals.py`, `results/validation/ridge_signals.json`
+
+**Commit**: 6e1eae3
+
+---
+
 ## Stacking Meta-Learner — 2026-02-16 22:27 UTC [COMPLETE]
 
 **STATUS**: Complete — stacking underperforms single CatBoost
