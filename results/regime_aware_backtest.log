@@ -1,0 +1,83 @@
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] PHASE 2A: REGIME-AWARE TRADING BACKTEST
+2026-02-16 00:46:23 [INFO] ================================================================================
+/home/akamath/sparky-ai/scripts/backtest_regime_aware.py:489: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  logger.info(f"Start time: {datetime.utcnow().isoformat()}")
+2026-02-16 00:46:23 [INFO] Start time: 2026-02-16T05:46:23.351301
+2026-02-16 00:46:23 [INFO] 
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] LOADING DATA
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] Loading features: data/processed/features_hourly_full.parquet
+2026-02-16 00:46:23 [INFO] Loading targets: data/processed/targets_hourly_1h.parquet
+2026-02-16 00:46:23 [INFO] Raw data: (114767, 23) features, (114767, 1) targets
+2026-02-16 00:46:23 [INFO] Dropping 119 rows with NaN values
+2026-02-16 00:46:23 [INFO] Clean data: (114648, 23) features, (114648, 1) targets
+2026-02-16 00:46:23 [INFO] Date range: 2013-01-09 08:00:00+00:00 to 2026-02-16 02:00:00+00:00
+2026-02-16 00:46:23 [INFO] 
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] CREATING SPLITS
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] Train: (35060, 23) (2017-01-01 00:00:00+00:00 to 2020-12-31 23:00:00+00:00)
+2026-02-16 00:46:23 [INFO] Val: (17518, 23) (2021-01-01 00:00:00+00:00 to 2022-12-31 23:00:00+00:00)
+2026-02-16 00:46:23 [INFO] Test: (8759, 23) (2023-01-01 00:00:00+00:00 to 2023-12-31 23:00:00+00:00)
+2026-02-16 00:46:23 [INFO] Holdout: (17541, 23) (2024-01-01 00:00:00+00:00 to 2025-12-31 23:00:00+00:00)
+2026-02-16 00:46:23 [INFO] 
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] TRAINING MODEL
+2026-02-16 00:46:23 [INFO] ================================================================================
+2026-02-16 00:46:23 [INFO] Training on 35,060 samples with 23 features
+2026-02-16 00:46:24 [INFO] Training complete
+2026-02-16 00:46:24 [INFO] 
+2026-02-16 00:46:24 [INFO] Generating predictions on Validation (17,518 samples)
+2026-02-16 00:46:24 [INFO] Validation AUC: 0.5574
+2026-02-16 00:46:24 [INFO] Generating predictions on Test (8,759 samples)
+2026-02-16 00:46:24 [INFO] Test AUC: 0.5588
+2026-02-16 00:46:24 [INFO] 
+2026-02-16 00:46:24 [INFO] ================================================================================
+2026-02-16 00:46:24 [INFO] HOLDOUT EVALUATION (2024-2025)
+2026-02-16 00:46:24 [INFO] ================================================================================
+2026-02-16 00:46:24 [INFO] Generating predictions on Holdout (17,541 samples)
+2026-02-16 00:46:24 [INFO] Holdout AUC: 0.5359
+2026-02-16 00:46:24 [INFO] 
+2026-02-16 00:46:24 [INFO] Loading price data: data/raw/btc/ohlcv_hourly.parquet
+0:	learn: 0.6926919	total: 50.7ms	remaining: 10.1s
+50:	learn: 0.6841371	total: 229ms	remaining: 669ms
+100:	learn: 0.6801863	total: 398ms	remaining: 390ms
+150:	learn: 0.6768782	total: 571ms	remaining: 185ms
+199:	learn: 0.6738043	total: 745ms	remaining: 0us
+Traceback (most recent call last):
+  File "/home/akamath/sparky-ai/scripts/backtest_regime_aware.py", line 623, in <module>
+    main()
+  File "/home/akamath/sparky-ai/scripts/backtest_regime_aware.py", line 519, in main
+    prices = load_price_data(holdout_start, holdout_end)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/scripts/backtest_regime_aware.py", line 202, in load_price_data
+    prices_hourly = prices_hourly.loc[start_date:end_date]
+                    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexing.py", line 1192, in __getitem__
+    return self._getitem_axis(maybe_callable, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexing.py", line 1412, in _getitem_axis
+    return self._get_slice_axis(key, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexing.py", line 1444, in _get_slice_axis
+    indexer = labels.slice_indexer(slice_obj.start, slice_obj.stop, slice_obj.step)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexes/datetimes.py", line 682, in slice_indexer
+    return Index.slice_indexer(self, start, end, step)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py", line 6708, in slice_indexer
+    start_slice, end_slice = self.slice_locs(start, end, step=step)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py", line 6934, in slice_locs
+    start_slice = self.get_slice_bound(start, "left")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py", line 6849, in get_slice_bound
+    label = self._maybe_cast_slice_bound(label, side)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/indexes/datetimes.py", line 643, in _maybe_cast_slice_bound
+    self._data._assert_tzawareness_compat(label)
+  File "/home/akamath/sparky-ai/.venv/lib/python3.12/site-packages/pandas/core/arrays/datetimes.py", line 784, in _assert_tzawareness_compat
+    raise TypeError(
+TypeError: Cannot compare tz-naive and tz-aware datetime-like objects.

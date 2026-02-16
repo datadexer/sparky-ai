@@ -1,0 +1,38 @@
+{
+  "tc_10bp": {
+    "label": "0.10% (Optimistic - Maker Only)",
+    "tc_pct": 0.1,
+    "metrics": {
+      "sharpe_rf0": 1.6472952371549872,
+      "sharpe_rf45": 1.551136233040739,
+      "return_pct": 10229.669164267036,
+      "max_dd_pct": 45.44051974937645,
+      "win_rate": 0.22622309197651663,
+      "n_trades": 49
+    }
+  },
+  "tc_26bp": {
+    "label": "0.26% (Baseline - Binance Spot)",
+    "tc_pct": 0.26,
+    "metrics": {
+      "sharpe_rf0": 1.6239073060232976,
+      "sharpe_rf45": 1.5277160205124536,
+      "return_pct": 9456.618354968814,
+      "max_dd_pct": 46.22340842527631,
+      "win_rate": 0.22622309197651663,
+      "n_trades": 49
+    }
+  },
+  "tc_50bp": {
+    "label": "0.50% (Conservative - Taker + Slippage)",
+    "tc_pct": 0.5,
+    "metrics": {
+      "sharpe_rf0": 1.5885567608390618,
+      "sharpe_rf45": 1.4923315012976779,
+      "return_pct": 8402.177119461292,
+      "max_dd_pct": 47.37902376045823,
+      "win_rate": 0.22583170254403132,
+      "n_trades": 49
+    }
+  }
+}

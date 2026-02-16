@@ -1,0 +1,188 @@
+{
+  "last_updated": "2026-02-16T15:37:00Z",
+  "summary": {
+    "total_experiments": 57,
+    "validated": 13,
+    "proven": 0,
+    "invalidated": 3,
+    "preliminary": 41,
+    "note": "Recent work: 7 rule-based strategies tested (15 min), best is Multi-TF Donchian at 0.772 Sharpe - marginal result, NOT deployment-ready"
+  },
+  "strategic_goal_coverage": {
+    "validate_onchain_alpha": {
+      "priority": 1,
+      "experiments": 16,
+      "validated": 3,
+      "best_result": null,
+      "status": "FAILED",
+      "conclusion": "On-chain features do NOT add value at hourly frequency (AUC delta -0.008)",
+      "evidence": [
+        "Finding #1 (+0.15 Sharpe, XGBoost 30d) INVALIDATED by holdout failure (Sharpe -1.48)",
+        "Finding #2 (Expanded features) CONFIRMED: -0.008 AUC degradation",
+        "Macro features contribute 2-3% importance but add noise"
+      ],
+      "last_experiment": "2026-02-16T03:50:00Z",
+      "completion_pct": 100,
+      "recommendation": "ABANDON on-chain/macro features for hourly models. Stick with 23 base technical features."
+    },
+    "model_robustness": {
+      "priority": 1,
+      "experiments": 8,
+      "validated": 5,
+      "best_result": {
+        "metric": "auc",
+        "value": 0.562,
+        "config": "CatBoost 1h walk-forward",
+        "std": 0.009,
+        "date": "2026-02-15T22:51:25Z"
+      },
+      "status": "validated",
+      "last_experiment": "2026-02-16T02:08:48Z",
+      "completion_pct": 95
+    },
+    "paper_trading_confirmation": {
+      "priority": 1,
+      "experiments": 7,
+      "validated": 0,
+      "best_result": {
+        "strategy": "Multi-Timeframe Donchian",
+        "sharpe": 0.772,
+        "assessment": "Marginal (+7.4% vs Buy&Hold 0.719), NOT deployment-ready"
+      },
+      "status": "BLOCKED",
+      "blocker": "NO genuinely good results yet. Best strategy: 0.772 Sharpe (marginal). Need Sharpe ≥1.0 or ≥30% improvement over baseline.",
+      "last_experiment": "2026-02-16T15:30:00Z",
+      "completion_pct": 0,
+      "note": "DO NOT discuss deployment until genuinely good results found"
+    },
+    "eth_specific_features": {
+      "priority": 2,
+      "experiments": 2,
+      "validated": 0,
+      "best_result": null,
+      "status": "in_progress",
+      "note": "ETH hourly data fetched but not analyzed",
+      "last_experiment": "2026-02-15T22:40:00Z",
+      "completion_pct": 20
+    },
+    "optimal_horizon": {
+      "priority": 2,
+      "experiments": 12,
+      "validated": 5,
+      "best_result": {
+        "metric": "auc",
+        "value": 0.555,
+        "config": "1h horizon XGBoost",
+        "date": "2026-02-15T20:45:00Z"
+      },
+      "status": "validated",
+      "conclusion": "1h wins over 4h/24h/exec24h",
+      "last_experiment": "2026-02-15T21:30:00Z",
+      "completion_pct": 90
+    },
+    "autonomous_discovery": {
+      "priority": 3,
+      "experiments": 0,
+      "validated": 0,
+      "best_result": null,
+      "status": "deferred",
+      "note": "Phase 5 work, gates behind paper trading",
+      "last_experiment": null,
+      "completion_pct": 0
+    }
+  },
+  "concentration_risk": {
+    "btc_1h_variants": {
+      "count": 33,
+      "total_experiments": 47,
+      "pct": 70.2,
+      "threshold": 60,
+      "status": "HIGH",
+      "experiments": [
+        "XGBoost 1h multi-horizon",
+        "LightGBM 1h comparison",
+        "CatBoost 1h comparison",
+        "Multi-seed 1h stability (5 seeds)",
+        "Walk-forward 1h (9 folds)",
+        "Holdout 1h 2025",
+        "Expanded features 1h (macro + onchain)",
+        "Feature selection 1h"
+      ],
+      "improvement_last_10": 2.1,
+      "diminishing_returns": true
+    }
+  },
+  "drift_alerts": [
+    {
+      "type": "concentration_risk",
+      "threshold": 60,
+      "actual": 70.2,
+      "description": "70% of experiments on BTC 1h variants - concentration too high",
+      "severity": "high",
+      "recommendation": "Pivot to ETH features or cross-asset validation"
+    },
+    {
+      "type": "diminishing_returns",
+      "hypothesis": "BTC 1h variants",
+      "experiments_count": 10,
+      "improvement_pct": 2.1,
+      "threshold": 5,
+      "description": "Last 10 BTC 1h experiments yielded only 2.1% improvement (threshold 5%)",
+      "severity": "medium",
+      "recommendation": "STOP BTC 1h gold-plating, move to new hypothesis"
+    },
+    {
+      "type": "validation_failure_cascade",
+      "goal": "validate_onchain_alpha",
+      "description": "3 consecutive experiments failed validation - on-chain hypothesis FAILED",
+      "evidence": [
+        "Daily XGBoost +0.15 Sharpe → INVALIDATED (holdout -1.48)",
+        "Expanded features CatBoost → CONFIRMED negative (-0.008 AUC)",
+        "Signal aggregation → Sharpe 0.646 underperforms Buy & Hold 0.950"
+      ],
+      "severity": "high",
+      "status": "RESOLVED",
+      "resolution": "On-chain features do NOT add value. Hypothesis FAILED.",
+      "recommendation": "CLOSED - Abandon on-chain/macro for hourly models"
+    },
+    {
+      "type": "missing_priority_1_goal",
+      "goal": "paper_trading_confirmation",
+      "priority": 1,
+      "completion_pct": 0,
+      "description": "P1 goal has 0% progress - CRITICAL blocker for Phase 4",
+      "severity": "critical",
+      "recommendation": "Build paper trading infrastructure immediately"
+    }
+  ],
+  "invalidated_experiments": [
+    {
+      "name": "Daily XGBoost 30d technical-only",
+      "sharpe_train": 0.999,
+      "sharpe_holdout": -1.48,
+      "reason": "Catastrophic overfitting to train/test split",
+      "date_invalidated": "2026-02-16T00:30:00Z"
+    },
+    {
+      "name": "Daily momentum > 0.05 rule",
+      "sharpe": 2.56,
+      "reason": "Data snooping - tested 31 configurations on same holdout",
+      "date_invalidated": "2026-02-16T01:15:00Z"
+    },
+    {
+      "name": "Daily momentum > 0.05 rule (look-ahead bias)",
+      "sharpe_claimed": 2.556,
+      "sharpe_actual": -0.27,
+      "reason": "Look-ahead bias - signals at T used returns ending at T instead of starting at T",
+      "date_invalidated": "2026-02-15T21:45:00Z",
+      "note": "Bug found by human (AK), confirmed in 43_BUG_REPORT_LOOKAHEAD_BIAS.md"
+    }
+  ],
+  "resource_utilization": {
+    "gpu_hours_per_validated_finding": 4.2,
+    "target_gpu_hours": 5.0,
+    "api_quota_utilization_pct": 87,
+    "mlflow_storage_gb": 2.1,
+    "mlflow_cleanup_needed": false
+  }
+}

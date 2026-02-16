@@ -2,9 +2,9 @@
 # Updated by: CEO agent after each task completion
 # Read by: CEO agent at session start
 
-project_status: phase_2_complete
-current_phase: 2
-last_updated: "2026-02-15"
+project_status: phase_2_complete_strategy_deployed
+current_phase: 4  # Phase 3 SKIPPED - pivoted to simple baselines
+last_updated: "2026-02-16"
 last_updated_by: ceo
 
 phases:
@@ -136,11 +136,109 @@ phases:
         depends_on: [baseline_results_report]
         notes: "SONNET_HANDOFF.md written with architecture, pitfalls, templates, and quirks"
 
+  phase_2_strategy_research:
+    status: complete
+    started_at: "2026-02-15"
+    completed_at: "2026-02-16"
+    human_gate_required: false
+    notes: "CRITICAL PIVOT: Simple baselines beat ML. Tested 6+ strategies, deployed Multi-Timeframe Ensemble"
+    tasks:
+      phase_2a_regime_aware:
+        status: complete_failed
+        depends_on: []
+        notes: "Volatility-based position sizing FAILED (Sharpe 0.158). Wrong approach for crypto."
+      phase_2a_trend_aware:
+        status: complete
+        depends_on: [phase_2a_regime_aware]
+        notes: "Combined volatility + trend direction. Led to simple baseline discovery."
+      simple_baselines_discovery:
+        status: complete
+        depends_on: [phase_2a_trend_aware]
+        notes: "BREAKTHROUGH: Donchian(20/10) achieved Sharpe 1.307, beating all ML models"
+      rbm_rigorous_validation:
+        status: complete
+        depends_on: [simple_baselines_discovery]
+        notes: "RBM-mandated validation: out-of-sample, bootstrap CI, Monte Carlo, bear markets, transaction costs"
+      donchian_validation:
+        status: complete
+        depends_on: [rbm_rigorous_validation]
+        notes: "Donchian(20/10) passed 4/5 criteria (Sharpe 1.307, Monte Carlo 64.9%, failed 75% threshold)"
+      phase_2d_hybrid:
+        status: complete_failed
+        depends_on: [donchian_validation]
+        notes: "Hybrid (Donchian + regime sizing) passed 1/6 criteria. Too conservative, worsened 2022 bear."
+      phase_2e_explorations:
+        status: complete
+        depends_on: [phase_2d_hybrid]
+        notes: "Tested 3 alternatives: Multi-Timeframe Ensemble, Conservative, Volatility-filtered"
+      ensemble_discovery:
+        status: complete
+        depends_on: [phase_2e_explorations]
+        notes: "Multi-Timeframe Ensemble achieved Sharpe 1.624 (highest found!)"
+      monte_carlo_bugfix:
+        status: complete
+        depends_on: [ensemble_discovery]
+        notes: "Fixed Sharpe calculation bug (positional args). Monte Carlo: 83.0% win rate!"
+      transaction_cost_sensitivity:
+        status: complete
+        depends_on: [monte_carlo_bugfix]
+        notes: "Tested 0.1%, 0.26%, 0.5% costs. Sharpe remains 1.589 at conservative 0.5%."
+      deployment_decision:
+        status: complete
+        depends_on: [transaction_cost_sensitivity]
+        notes: "AUTONOMOUS DECISION: Deploy Multi-Timeframe Ensemble. Meets all RBM SCENARIO A criteria."
+
+  phase_3_data_expansion:
+    status: in_progress
+    started_at: "2026-02-15"
+    completed_at: null
+    human_gate_required: false
+    notes: "CRITICAL MISSION: Expand to 10,000+ observations (52K-490K hourly samples)"
+    tasks:
+      data_expansion_plan:
+        status: complete
+        depends_on: []
+        notes: "DATA_EXPANSION_PLAN.md — 3 approaches: hourly data, cross-asset, extended history"
+      fetch_hourly_btc:
+        status: pending
+        depends_on: [data_expansion_plan]
+        notes: "scripts/fetch_hourly_btc.py — 70K hourly BTC candles 2017-2025"
+      prepare_hourly_features:
+        status: pending
+        depends_on: [fetch_hourly_btc]
+        notes: "scripts/prepare_hourly_features.py — hourly features resampled to daily"
+      train_on_hourly:
+        status: pending
+        depends_on: [prepare_hourly_features]
+        notes: "scripts/train_on_hourly.py — XGBoost on 52K hourly samples"
+      fetch_cross_asset:
+        status: pending
+        depends_on: [data_expansion_plan]
+        notes: "scripts/fetch_cross_asset_hourly.py — 7 assets × 70K = 490K samples"
+      prepare_cross_asset_features:
+        status: pending
+        depends_on: [fetch_cross_asset]
+        notes: "scripts/prepare_cross_asset_features.py — pooled features with asset_id"
+      train_cross_asset:
+        status: pending
+        depends_on: [prepare_cross_asset_features]
+        notes: "scripts/train_cross_asset.py — XGBoost on 490K pooled samples, test on BTC"
+      alternative_data_integration:
+        status: pending
+        depends_on: [train_on_hourly, train_cross_asset]
+        notes: "ALTERNATIVE_DATA_PLAN.md — macro, derivatives, cross-asset signals (30-50 features)"
+      final_validation:
+        status: pending
+        depends_on: [alternative_data_integration]
+        notes: "Final holdout test on 2024-2025 (ONE test only, no data snooping)"
+
   phase_3_models:
-    status: not_started
+    status: blocked
     started_at: null
     completed_at: null
     human_gate_required: true
+    blocked_by: [phase_3_data_expansion]
+    notes: "BLOCKED: Need more data (10K+ samples) before advanced models viable"
     tasks:
       xgboost_model:
         status: not_started

@@ -1,0 +1,136 @@
+# RESOURCE LIMITS — Sparky AI
+# Prevent system overload and crashes
+# Last modified: 2026-02-15
+
+# =============================================================
+# AGENT/TASK CONCURRENCY LIMITS
+# =============================================================
+concurrency:
+  # Maximum number of Task tool agents running simultaneously
+  max_concurrent_agents: 3
+
+  # Maximum agents to spawn in a single message (parallel spawn limit)
+  max_parallel_spawn: 2
+
+  # Maximum tasks in coordination queue per agent
+  max_tasks_per_agent: 10
+
+  # Wait time (seconds) before checking if agent completed
+  agent_poll_interval: 5
+
+  # Maximum time (seconds) to wait for agent completion before warning
+  agent_timeout_warning: 600  # 10 minutes
+
+  # Maximum time (seconds) before force-killing stuck agent
+  agent_timeout_kill: 1800  # 30 minutes
+
+# =============================================================
+# COMPUTE RESOURCE LIMITS
+# =============================================================
+compute:
+  # CPU limits (percentage of total system CPU)
+  max_cpu_percent: 80  # Leave 20% for system/other processes
+
+  # Memory limits (percentage of total system RAM)
+  max_memory_percent: 75  # Leave 25% headroom
+
+  # Maximum memory per individual agent (GB)
+  max_memory_per_agent_gb: 16
+
+  # Disk I/O throttling (for data-intensive operations)
+  max_disk_io_mbps: 500  # MB/s write limit
+
+  # Disk space limits
+  min_free_disk_gb: 50  # Halt operations if free space below this
+
+# =============================================================
+# MODEL TRAINING LIMITS
+# =============================================================
+model_training:
+  # Only 1 model training at a time (memory-intensive)
+  max_concurrent_training: 1
+
+  # Maximum training time before warning (seconds)
+  training_timeout_warning: 3600  # 1 hour
+
+  # Maximum training time before auto-kill (seconds)
+  training_timeout_kill: 7200  # 2 hours
+
+  # Maximum dataset size for single training run (rows)
+  max_training_rows: 10000000  # 10M rows
+
+  # Maximum number of hyperparameter combinations per experiment
+  max_hyperparameter_combos: 50
+
+# =============================================================
+# DATA FETCHING LIMITS
+# =============================================================
+data_fetching:
+  # Maximum concurrent data fetch agents
+  max_concurrent_fetches: 2
+
+  # Rate limiting (requests per second, global)
+  max_requests_per_second: 5
+
+  # Maximum retries per API endpoint
+  max_retries: 3
+
+  # Backoff multiplier for retries
+  retry_backoff_multiplier: 2
+
+  # Maximum data fetch size (MB) per request
+  max_fetch_size_mb: 100
+
+# =============================================================
+# SYSTEM MONITORING
+# =============================================================
+monitoring:
+  # Enable resource monitoring
+  enabled: true
+
+  # Check system resources every N seconds
+  check_interval_seconds: 10
+
+  # Alert thresholds (will log warnings)
+  alert_thresholds:
+    cpu_percent: 70
+    memory_percent: 65
+    disk_free_gb: 100
+
+  # Emergency halt thresholds (will refuse new tasks)
+  halt_thresholds:
+    cpu_percent: 85
+    memory_percent: 80
+    disk_free_gb: 50
+
+# =============================================================
+# GRACEFUL DEGRADATION
+# =============================================================
+degradation:
+  # If system under pressure, reduce concurrency automatically
+  auto_reduce_concurrency: true
+
+  # Pressure detection: if CPU > this, reduce max_concurrent_agents by 1
+  pressure_cpu_threshold: 75
+
+  # Pressure detection: if memory > this, reduce max_concurrent_agents by 1
+  pressure_memory_threshold: 70
+
+  # Minimum concurrency floor (never go below this)
+  min_concurrent_agents: 1
+
+# =============================================================
+# CIRCUIT BREAKER
+# =============================================================
+circuit_breaker:
+  # Enable circuit breaker pattern
+  enabled: true
+
+  # If this many consecutive resource errors, halt all new tasks
+  max_consecutive_errors: 3
+
+  # Wait time (seconds) before attempting to resume after circuit break
+  cooldown_seconds: 300  # 5 minutes
+
+  # Auto-recovery: try to resume after cooldown
+  auto_recovery: true

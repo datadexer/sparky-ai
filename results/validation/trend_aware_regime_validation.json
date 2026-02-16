@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-02-16T11:07:02.910349",
+  "strategy": "Multi-Timeframe Donchian with Trend-Aware Position Sizing",
+  "approach": "Dynamic position sizing (25%-125%) based on volatility regime AND trend",
+  "insample": {
+    "2018": {
+      "baseline": {
+        "sharpe": -1.7839480159040473,
+        "return_pct": -57.7302337063646,
+        "max_dd_pct": 66.7861760199807,
+        "n_days": 365,
+        "n_trades": 16
+      },
+      "trend_aware": {
+        "sharpe": -1.6841033960357663,
+        "return_pct": -54.23638833988247,
+        "max_dd_pct": 66.03866276051818,
+        "n_days": 365,
+        "n_trades": 20
+      },
+      "delta_sharpe": 0.09984461986828097,
+      "delta_return": 3.493845366482134
+    },
+    "2019": {
+      "baseline": {
+        "sharpe": 1.8968197766151662,
+        "return_pct": 160.4219495839943,
+        "max_dd_pct": 27.148478314373886,
+        "n_days": 365,
+        "n_trades": 4
+      },
+      "trend_aware": {
+        "sharpe": 1.5905830726162749,
+        "return_pct": 135.9462035766823,
+        "max_dd_pct": 37.3530510565316,
+        "n_days": 365,
+        "n_trades": 14
+      },
+      "delta_sharpe": -0.30623670399889136,
+      "delta_return": -24.475746007311983
+    },
+    "2020": {
+      "baseline": {
+        "sharpe": 2.698403400758578,
+        "return_pct": 259.47737158372206,
+        "max_dd_pct": 18.212245655322956,
+        "n_days": 366,
+        "n_trades": 9
+      },
+      "trend_aware": {
+        "sharpe": 2.504830311809037,
+        "return_pct": 232.8900705867801,
+        "max_dd_pct": 17.645600493584407,
+        "n_days": 366,
+        "n_trades": 21
+      },
+      "delta_sharpe": -0.19357308894954128,
+      "delta_return": -26.587300996941963
+    }
+  },
+  "out_of_sample": {},
+  "summary": {
+    "baseline_mean_sharpe": 0.9370917204898991,
+    "trend_aware_mean_sharpe": 0.8037699961298485,
+    "delta_sharpe": -0.13332172436005063
+  },
+  "verdict": "\u274c FAILED \u2014 No in-sample improvement"
+}

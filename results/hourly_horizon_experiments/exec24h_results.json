@@ -1,0 +1,241 @@
+{
+  "horizon": "exec24h",
+  "stride": 24,
+  "train": {
+    "standard": {
+      "accuracy": 0.7379078256901666,
+      "precision": 0.7171283651970347,
+      "recall": 0.8612485031498933,
+      "f1": 0.782608695652174,
+      "roc_auc": 0.8272229242954812,
+      "n_samples": 35064,
+      "class_balance": 0.5477697923796486,
+      "confusion_matrix": [
+        [
+          9332,
+          6525
+        ],
+        [
+          2665,
+          16542
+        ]
+      ]
+    },
+    "nonoverlap": {
+      "accuracy": 0.7378507871321013,
+      "precision": 0.7177664974619289,
+      "recall": 0.8706896551724138,
+      "f1": 0.7868670005564831,
+      "roc_auc": 0.83045534243664,
+      "n_samples": 1461,
+      "class_balance": 0.5557837097878165,
+      "confusion_matrix": [
+        [
+          371,
+          278
+        ],
+        [
+          105,
+          707
+        ]
+      ]
+    }
+  },
+  "val": {
+    "standard": {
+      "accuracy": 0.48955479452054795,
+      "precision": 0.4870273620827061,
+      "recall": 0.6358381502890174,
+      "f1": 0.5515719801434087,
+      "roc_auc": 0.4937637617219829,
+      "n_samples": 17520,
+      "class_balance": 0.4937214611872146,
+      "confusion_matrix": [
+        [
+          3077,
+          5793
+        ],
+        [
+          3150,
+          5500
+        ]
+      ]
+    },
+    "nonoverlap": {
+      "accuracy": 0.4945205479452055,
+      "precision": 0.48535564853556484,
+      "recall": 0.6535211267605634,
+      "f1": 0.5570228091236494,
+      "roc_auc": 0.4889276995305164,
+      "n_samples": 730,
+      "class_balance": 0.4863013698630137,
+      "confusion_matrix": [
+        [
+          129,
+          246
+        ],
+        [
+          123,
+          232
+        ]
+      ]
+    }
+  },
+  "test": {
+    "standard": {
+      "accuracy": 0.5240867579908676,
+      "precision": 0.532739420935412,
+      "recall": 0.7783080260303687,
+      "f1": 0.6325253415601586,
+      "roc_auc": 0.5353817787418655,
+      "n_samples": 8760,
+      "class_balance": 0.526255707762557,
+      "confusion_matrix": [
+        [
+          1003,
+          3147
+        ],
+        [
+          1022,
+          3588
+        ]
+      ]
+    },
+    "nonoverlap": {
+      "accuracy": 0.5342465753424658,
+      "precision": 0.5326460481099656,
+      "recall": 0.8201058201058201,
+      "f1": 0.6458333333333334,
+      "roc_auc": 0.5301226551226551,
+      "n_samples": 365,
+      "class_balance": 0.5178082191780822,
+      "confusion_matrix": [
+        [
+          40,
+          136
+        ],
+        [
+          34,
+          155
+        ]
+      ]
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "day_of_week",
+      "importance": 0.06340326368808746
+    },
+    {
+      "feature": "vwap_deviation_24h",
+      "importance": 0.061490971595048904
+    },
+    {
+      "feature": "momentum_168h",
+      "importance": 0.059634845703840256
+    },
+    {
+      "feature": "realized_vol_24h",
+      "importance": 0.05729682371020317
+    },
+    {
+      "feature": "atr_14h",
+      "importance": 0.05575403571128845
+    },
+    {
+      "feature": "vol_clustering_24h",
+      "importance": 0.05502834916114807
+    },
+    {
+      "feature": "distance_from_sma_200h",
+      "importance": 0.054955776780843735
+    },
+    {
+      "feature": "macd_line",
+      "importance": 0.05142458528280258
+    },
+    {
+      "feature": "momentum_24h",
+      "importance": 0.04682260751724243
+    },
+    {
+      "feature": "momentum_quality_30h",
+      "importance": 0.045074574649333954
+    },
+    {
+      "feature": "ema_ratio_20h",
+      "importance": 0.04454077407717705
+    },
+    {
+      "feature": "bb_bandwidth_20h",
+      "importance": 0.04436516389250755
+    },
+    {
+      "feature": "macd_histogram",
+      "importance": 0.039412084966897964
+    },
+    {
+      "feature": "rsi_14h",
+      "importance": 0.037689633667469025
+    },
+    {
+      "feature": "rsi_6h",
+      "importance": 0.03604109585285187
+    },
+    {
+      "feature": "bb_position_20h",
+      "importance": 0.033023182302713394
+    },
+    {
+      "feature": "price_acceleration_10h",
+      "importance": 0.032916393131017685
+    },
+    {
+      "feature": "higher_highs_lower_lows_5h",
+      "importance": 0.031541965901851654
+    },
+    {
+      "feature": "volume_momentum_30h",
+      "importance": 0.031335022300481796
+    },
+    {
+      "feature": "hour_of_day",
+      "importance": 0.031128719449043274
+    },
+    {
+      "feature": "volume_ma_ratio_20h",
+      "importance": 0.031034400686621666
+    },
+    {
+      "feature": "momentum_4h",
+      "importance": 0.0284675695002079
+    },
+    {
+      "feature": "intraday_range",
+      "importance": 0.027618154883384705
+    }
+  ],
+  "leakage_passed": true,
+  "leakage_checks": [
+    {
+      "name": "shuffled_label",
+      "passed": true,
+      "detail": "Mean shuffled accuracy: 0.492 (threshold: 0.55). PASS",
+      "metric_value": 0.4924600456621004
+    },
+    {
+      "name": "temporal_boundary",
+      "passed": true,
+      "detail": "Train max: 2020-12-31, Test min: 2021-01-01, Gap: 0 days. PASS",
+      "metric_value": 0.0
+    },
+    {
+      "name": "index_overlap_audit",
+      "passed": true,
+      "detail": "No timestamp overlap between train and test. PASS",
+      "metric_value": 0.0
+    }
+  ],
+  "val_test_auc_gap": 0.041194955592138705,
+  "val_test_consistent": true
+}

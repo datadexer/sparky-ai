@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-02-16T01:58:44.565551+00:00",
+  "configuration": {
+    "features": [
+      "rsi_14",
+      "momentum_30d",
+      "ema_ratio_20d"
+    ],
+    "horizon": 30,
+    "seed": 0,
+    "holdout_months": 6
+  },
+  "data_split": {
+    "train_samples": 2359,
+    "train_period": "2019-01-15 00:00:00+00:00 to 2025-06-30 00:00:00+00:00",
+    "holdout_samples": 184,
+    "holdout_period": "2025-07-01 00:00:00+00:00 to 2025-12-31 00:00:00+00:00"
+  },
+  "results": {
+    "holdout_sharpe_6m": -0.29541398695463644,
+    "holdout_sharpe_3m": -1.477,
+    "phase23_sharpe": 0.999,
+    "holdout_max_dd": 0.28397194076116294,
+    "holdout_total_return_pct": -6.957920427684328,
+    "num_trades": 35,
+    "delta_vs_3m": 1.1815860130453637,
+    "delta_vs_phase23": -1.2944139869546365,
+    "verdict": "FAIL"
+  }
+}
