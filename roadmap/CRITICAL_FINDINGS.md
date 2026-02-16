@@ -1,5 +1,15 @@
 # CRITICAL FINDINGS — Phase 3
 
+**STATUS UPDATE — 2026-02-15 20:20 UTC**: ✅ **RESOLVED**
+Leakage issue identified and fixed. See [LEAKAGE_RESOLUTION.md](LEAKAGE_RESOLUTION.md) for complete analysis.
+**Root cause**: `returns_1d` feature caused data leakage
+**Fix**: Feature removed, all leakage tests now PASS
+**Next**: Re-run all experiments with clean data (6 features instead of 7)
+
+---
+
+# ORIGINAL FINDINGS (Before Resolution)
+
 ## 1. Severe Underperformance vs Baseline (BLOCKING ISSUE)
 
 **Baseline (BuyAndHold BTC)**: Sharpe = 0.79, MaxDD = 76.6%
