@@ -6,7 +6,7 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 ## Active Contracts
 
 ### CONTRACT #001: ML + Regime Detection Research
-**Status**: ACTIVE
+**Status**: COMPLETED (superseded by CONTRACT #002)
 **Signed**: 2026-02-16 15:48 UTC
 **Assigned to**: CEO
 **Estimated effort**: 7-9 hours
@@ -49,6 +49,47 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 - Combined approach achieves Sharpe ≥1.0 → Contract fulfilled, SUCCESS
 - Combined approach achieves Sharpe 0.85-1.0 → Contract fulfilled, MARGINAL
 - Combined approach achieves Sharpe <0.85 → Contract fulfilled, escalate to RBM
+
+---
+
+### CONTRACT #002: Comprehensive ML Research Sprint
+**Status**: ACTIVE
+**Signed**: 2026-02-16 17:36 UTC
+**Assigned to**: CEO
+**Estimated effort**: 12-16 hours
+**Hard deadline**: 48 hours from contract start
+
+**Context**: Previous research tested only Donchian breakout family (2 configs) and declared failure prematurely. System has been reformed to require deeper exploration. Available data: 115K BTC hourly rows, 80K ETH hourly rows, on-chain metrics, macro features. ALL training/validation must use data BEFORE 2024-06-01 (embargo boundary). Data after 2024-07-01 is strictly OOS.
+
+**Binding Commitments**:
+1. ✅ Phase A: Tree ensemble sweep (CatBoost/XGBoost/LightGBM) with ≥10 hyperparameter configs on IN-SAMPLE data only
+2. ✅ Phase B: Feature ablation — test with/without on-chain, with/without macro, with/without cross-asset features (≥6 feature set variants)
+3. ✅ Phase C: Regime-aware models — ≥3 regime detection methods (volatility threshold, HMM, trend-based) × ≥2 base models = ≥6 configs
+4. ✅ Phase D: If any TIER 2+ result, request OOS approval from RBM, then run single OOS evaluation
+5. ✅ I will NOT touch data after 2024-07-01 until OOS is explicitly approved
+6. ✅ I will use TaskTimer for all work sessions
+7. ✅ I will NOT present option menus — I will keep working until contract complete
+8. ✅ I will run system_health_check.sh before spawning any sub-agent
+9. ✅ I will NEVER have more than 2 sub-agents running simultaneously
+
+**Allowed Early Termination**:
+- TIER 1 result found and OOS-validated (SUCCESS)
+- All phases complete with only TIER 4-5 results after 22+ configs (HONEST NEGATIVE)
+- Human intervention (AK cancels)
+- System health CRITICAL and cleanup doesn't resolve
+
+**NOT Allowed Termination Reasons**:
+- ❌ "This approach isn't working" after <5 configs tested
+- ❌ "I found something better" (finish contract first, then propose)
+- ❌ "Results are marginal" (complete all configs before judging aggregate)
+- ❌ "I want to try [different approach]" (contract specifies scope)
+- ❌ Presenting OPTION A/B/C/D menus (continue working, don't ask what to do)
+
+**Success Criteria**:
+- TIER 1 (Sharpe ≥1.0 in-sample, validated): Request OOS → deploy decision
+- TIER 2 (Sharpe ≥0.7 in-sample, validated): Request OOS → paper trade if confirms
+- TIER 3 (Sharpe ≥0.4, shows edge): Continue with Phase C regime overlay
+- TIER 4-5 after all phases: Honest report, propose next research direction
 
 ---
 
