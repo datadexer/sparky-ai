@@ -53,7 +53,7 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 ---
 
 ### CONTRACT #002: Comprehensive ML Research Sprint
-**Status**: ACTIVE
+**Status**: COMPLETED (22 configs tested, no validated ML alpha, escalated to RBM)
 **Signed**: 2026-02-16 17:36 UTC
 **Assigned to**: CEO
 **Estimated effort**: 12-16 hours
@@ -90,6 +90,60 @@ CEO agent must sign contracts BEFORE starting work. Prevents premature pivoting.
 - TIER 2 (Sharpe ≥0.7 in-sample, validated): Request OOS → paper trade if confirms
 - TIER 3 (Sharpe ≥0.4, shows edge): Continue with Phase C regime overlay
 - TIER 4-5 after all phases: Honest report, propose next research direction
+
+---
+
+### CONTRACT #003: Regime Ensemble Validation Sprint
+**Status**: ACTIVE
+**Signed**: 2026-02-16 18:20 UTC
+**Assigned to**: CEO
+**Estimated effort**: 4-8 hours
+**Hard deadline**: 24 hours from contract start
+
+**Context**: CONTRACT #002 produced a claimed Sharpe 2.656 from a "Regime-Weighted Ensemble" strategy. RBM review flagged this as 70%+ likely overfitting (7th attempt, 244% improvement, missing 2018, no validation protocol, contradicts earlier position sizing failure). Additionally, ALL approaches tested in `scripts/validate_regime_approaches.py` show 0 trades in 2018 — a systemic issue. This contract requires rigorous validation before any result can be trusted.
+
+**Key files**:
+- `scripts/validate_regime_approaches.py` — the script that produced the results
+- `results/validation/regime_approaches_comparison.json` — raw results
+- `src/sparky/models/regime_weighted_ensemble.py` — the model
+- `src/sparky/models/regime_hmm.py` — HMM approach (also high Sharpe)
+- `src/sparky/features/regime_indicators.py` — regime detection features
+- `scripts/backtest_regime_aware.py` — the CatBoost + regime backtest
+
+**Binding Commitments**:
+1. ✅ **Step 1: 2018 Investigation** — Explain why ALL approaches have 0 trades in 2018. Is this a bug in the backtest framework? Data issue? If 2018 is legitimately excluded, the mean Sharpe is computed over 5 years not 6 — re-derive correct statistics.
+2. ✅ **Step 2: Multi-Seed Stability** — Re-run the top 3 approaches (Regime-Weighted Ensemble, HMM 2-state, HMM 3-state) with seeds [42, 123, 456, 789, 1337]. Report mean and std of Sharpe across seeds. If std > 0.3 * mean, result is UNSTABLE.
+3. ✅ **Step 3: Bootstrap 95% CI** — For each top approach, compute bootstrap 95% CI on the Sharpe ratio (1000 resamples of yearly results). Report lower bound. If CI_lower < 0.5, result is NOT statistically significant.
+4. ✅ **Step 4: Leakage Audit** — Verify no look-ahead bias: (a) features used for regime detection don't use future returns, (b) position sizing doesn't use future volatility, (c) signal generation at time T uses only data from T-1 and earlier.
+5. ✅ **Step 5: Anti-Flip-Flop Resolution** — Position sizing with the SAME regime concept failed (Sharpe 0.715). Regime-weighted ensemble with the SAME concept claims 2.656. Explain the specific mechanism difference OR if no valid explanation, downgrade the result.
+6. ✅ **Step 6: Corrected Statistics** — After steps 1-5, compute the CORRECTED Sharpe ratio including: (a) proper inclusion/exclusion of 2018 with justification, (b) multi-seed median (not best seed), (c) bootstrap CI, (d) multiple testing correction (Bonferroni: divide alpha by number of approaches tested).
+7. ✅ I will NOT present option menus — I will execute all 6 steps sequentially
+8. ✅ I will NOT touch data after 2024-07-01 (OOS boundary)
+9. ✅ I will save all results to `results/validation/contract_003/` directory
+
+**Allowed Early Termination**:
+- Step 1 reveals catastrophic framework bug that invalidates ALL prior results
+- Human intervention (AK cancels)
+
+**NOT Allowed Termination Reasons**:
+- ❌ "Validation is taking too long" (complete all 6 steps)
+- ❌ "Results look bad, no need to continue" (complete all 6 steps for the record)
+- ❌ Presenting option menus
+- ❌ Skipping steps because earlier steps showed problems
+
+**Deliverables**:
+- [ ] Step 1: `results/validation/contract_003/2018_investigation.json`
+- [ ] Step 2: `results/validation/contract_003/multi_seed_stability.json`
+- [ ] Step 3: `results/validation/contract_003/bootstrap_ci.json`
+- [ ] Step 4: `results/validation/contract_003/leakage_audit.json`
+- [ ] Step 5: `results/validation/contract_003/anti_flip_flop.json`
+- [ ] Step 6: `results/validation/contract_003/corrected_statistics.json`
+- [ ] Summary: `results/validation/contract_003/VALIDATION_VERDICT.md`
+
+**Success Criteria**:
+- Corrected Sharpe ≥ 1.0 with CI_lower ≥ 0.5 and multi-seed stable: VALIDATED — request OOS approval
+- Corrected Sharpe 0.5-1.0 with CI_lower ≥ 0.3: MARGINAL — document honestly, propose improvements
+- Corrected Sharpe < 0.5 or CI_lower < 0.0 or unstable: DEBUNKED — accept honest negative, move on
 
 ---
 
