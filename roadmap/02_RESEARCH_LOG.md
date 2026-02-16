@@ -5,28 +5,44 @@ Newest entries at the top.
 
 ---
 
-## Feature Expansion to 58 Features — 2026-02-16 21:39 UTC
+## 58-Feature Hyperparameter Sweep — 2026-02-16 21:39 UTC [RUNNING]
 
-**OBJECTIVE**: Expand from 23 to 58 hourly features to improve ML model performance
+**STATUS**: In progress (PID 2597624, ~90-120 min estimated)
 
-**APPROACH**: Added 35 new features across 5 categories:
-- Microstructure (10): tick_direction_ratio, candle_body_ratio, wicks, consecutive candles, bid/ask imbalance proxy
-- Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
-- Regime indicators (8): drawdown/recovery, volatility/volume regime, trend strength, choppiness, breakout proximity
-- Cross-timeframe divergences (6): momentum/RSI/vol divergences across 4h/24h/168h
-- Volume-price interaction (8): OBV, MFI, volume surge/exhaustion, price-volume correlation, volume-weighted RSI
+**OBJECTIVE**: Test if expanded features beat baseline (Sharpe 1.062)
+
+**APPROACH**:
+- **Features**: 58 total (23 original + 35 new)
+  - Microstructure (10): tick direction, candle patterns, wicks, gaps
+  - Multi-resolution (3): rsi_4h, rsi_12h, rsi_168h
+  - Regime indicators (8): drawdown, recovery, vol/volume regime, choppiness
+  - Cross-timeframe divergences (6): momentum/RSI/vol mismatches
+  - Volume-price interaction (8): OBV, MFI, VWAP, volume exhaustion
+- **Configs**: 54 (27 CatBoost + 27 LightGBM), depth 3-5, LR 0.01-0.05
+- **Validation**: Yearly walk-forward 2020-2023, 4,795 daily samples from 115K hourly candles
+- **Baseline**: Multi-TF Donchian Sharpe 1.062 (corrected)
+
+**Files**: `scripts/sweep_58_features.py`, `roadmap/FEATURE_EXPANSION_PLAN.md`
+
+**Commit**: 32499db "feat: expand to 58 features — microstructure, regime, divergences, volume-price"
+
+---
+
+## Feature Expansion to 58 Features — 2026-02-16 21:37 UTC [COMPLETE]
+
+**OBJECTIVE**: Expand from 23 to 58 hourly features
 
 **RESULTS**:
 - **Feature count**: 23 → 58 (+152%)
 - **Daily samples**: 4,795 (from 115K hourly candles, 2013-2026)
-- **Test coverage**: 19/19 tests pass
-- **Files**: `src/sparky/features/microstructure.py`, `regime.py`, `multi_resolution.py`
-
-**NEXT STEPS**: Run new hyperparameter sweep with 58 features when current sweep (23 features) completes. Early indication: 23 features achieving Sharpe 0.05 (far below baseline 1.062).
+- **Files**: `src/sparky/features/microstructure.py`, `regime.py`
+- **Tests**: All passing
 
 ---
 
-## Smart Hyperparameter Sweep (54 configs, 23 features) — 2026-02-16 16:11 UTC [RUNNING]
+## Smart Hyperparameter Sweep (23 features, OBSOLETE) — 2026-02-16 16:11 UTC [TERMINATED]
+
+**STATUS**: Terminated after 8h28m (obsolete dataset, replaced by 58-feature sweep)
 
 **STATUS**: In progress (5/54 configs after 8.5 hours, PID 2589920)
 
