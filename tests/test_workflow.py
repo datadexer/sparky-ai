@@ -271,6 +271,57 @@ class TestWorkflow:
         # Should alert CRITICAL
         assert any("Budget exhausted" in str(c) for c in mock_alert.call_args_list)
 
+    @patch("time.sleep")
+    @patch.object(Workflow, "_launch_claude")
+    @patch.object(Workflow, "_alert")
+    def test_rate_limit_does_not_count_as_attempt(self, mock_alert, mock_launch, mock_sleep, tmp_path):
+        """Rate-limited sessions should not count against max_retries."""
+        rate_limited_telemetry = self._mock_telemetry()
+        rate_limited_telemetry.exit_reason = "rate_limit"
+        rate_limited_telemetry.duration_minutes = 1.0
+
+        normal_telemetry = self._mock_telemetry()
+        normal_telemetry.exit_reason = "completed"
+
+        # First call: rate limited. Second call (after backoff): succeeds but not done.
+        mock_launch.side_effect = [rate_limited_telemetry, normal_telemetry]
+
+        step = Step(name="s1", prompt="p", max_retries=3)
+        wf = self._make_workflow([step], tmp_path, max_hours=10.0)
+        result = wf.run()
+
+        # Should have called launch twice (rate limit + retry)
+        assert mock_launch.call_count == 2
+        # sleep should have been called for backoff
+        mock_sleep.assert_called()
+        # Attempt count should be 1 (rate limited one doesn't count)
+        state = WorkflowState.load("test-wf", tmp_path)
+        assert state.steps["s1"].attempts == 1
+
+    @patch("time.sleep")
+    @patch.object(Workflow, "_launch_claude")
+    @patch.object(Workflow, "_alert")
+    def test_rate_limit_retries_until_clear(self, mock_alert, mock_launch, mock_sleep, tmp_path):
+        """Rate limit retries should continue until rate limit clears."""
+        rl = self._mock_telemetry()
+        rl.exit_reason = "rate_limit"
+        rl.duration_minutes = 0.5
+
+        ok = self._mock_telemetry()
+        ok.exit_reason = "completed"
+
+        # Rate limited 3 times, then succeeds
+        mock_launch.side_effect = [rl, rl, rl, ok]
+
+        step = Step(name="s1", prompt="p", max_retries=3)
+        wf = self._make_workflow([step], tmp_path, max_hours=10.0)
+        result = wf.run()
+
+        assert mock_launch.call_count == 4
+        state = WorkflowState.load("test-wf", tmp_path)
+        # Only the successful attempt should count
+        assert state.steps["s1"].attempts == 1
+
 
 # ── StreamParser tests ──────────────────────────────────────────────────
 
@@ -358,6 +409,33 @@ class TestStreamParser:
         parser.feed(line)
         telemetry = parser.finalize()
         assert "idle_session" not in telemetry.behavioral_flags
+
+    def test_rate_limit_detection_in_result(self):
+        parser = StreamParser(session_id="test", step="s1", attempt=1)
+        line = json.dumps({
+            "type": "result",
+            "result": "Error: rate limit exceeded. Too many requests.",
+        })
+        parser.feed(line)
+        assert parser.telemetry.exit_reason == "rate_limit"
+
+    def test_rate_limit_detection_in_error(self):
+        parser = StreamParser(session_id="test", step="s1", attempt=1)
+        line = json.dumps({
+            "type": "error",
+            "error": "Too many requests - you have exceeded your rate limit",
+        })
+        parser.feed(line)
+        assert parser.telemetry.exit_reason == "rate_limit"
+
+    def test_out_of_extra_usage_detection(self):
+        parser = StreamParser(session_id="test", step="s1", attempt=1)
+        line = json.dumps({
+            "type": "result",
+            "result": "out of extra usage credits",
+        })
+        parser.feed(line)
+        assert parser.telemetry.exit_reason == "rate_limit"
 
     def test_json_decode_error_passthrough(self, tmp_path):
         parser = StreamParser(session_id="test", step="s1", attempt=1)

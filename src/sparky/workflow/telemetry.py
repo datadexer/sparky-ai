@@ -146,11 +146,26 @@ class StreamParser:
                 log_file.write(result_text + "\n")
                 log_file.flush()
 
+            # Check for rate limit in result text
+            if result_text:
+                result_lower = result_text.lower()
+                if any(s in result_lower for s in ("rate limit", "too many requests", "out of extra usage")):
+                    self.telemetry.exit_reason = "rate_limit"
+
             # Extract usage if present
             usage = msg.get("usage", {})
             if usage:
                 self.telemetry.tokens_input = usage.get("input_tokens", 0)
                 self.telemetry.tokens_output = usage.get("output_tokens", 0)
+
+        elif msg_type == "error":
+            error_text = str(msg.get("error", ""))
+            error_lower = error_text.lower()
+            if any(s in error_lower for s in ("rate limit", "too many requests", "out of extra usage")):
+                self.telemetry.exit_reason = "rate_limit"
+            if log_file:
+                log_file.write(f"[ERROR] {error_text}\n")
+                log_file.flush()
 
     def _check_behavioral_flags(self, text: str) -> None:
         """Scan text for behavioral patterns."""

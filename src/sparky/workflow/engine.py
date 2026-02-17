@@ -281,12 +281,24 @@ class Workflow:
 
                 proc.wait(timeout=30)
 
+                # Check stderr for rate limit signals
+                stderr_output = ""
+                if proc.stderr:
+                    try:
+                        stderr_output = proc.stderr.read()
+                    except Exception:
+                        pass
+
                 if proc.returncode != 0 and parser.telemetry.exit_reason == "completed":
-                    stderr_output = proc.stderr.read() if proc.stderr else ""
-                    if "rate limit" in stderr_output.lower():
+                    stderr_lower = stderr_output.lower()
+                    if any(s in stderr_lower for s in ("rate limit", "too many requests", "out of extra usage")):
                         parser.telemetry.exit_reason = "rate_limit"
                     else:
                         parser.telemetry.exit_reason = "error"
+
+                # Parser may have detected rate limit from stream-json
+                if parser.telemetry.exit_reason == "rate_limit":
+                    pass  # Already set by parser
 
             except subprocess.TimeoutExpired:
                 proc.kill()
@@ -380,7 +392,7 @@ class Workflow:
                 except Exception as e:
                     logger.warning(f"Failed to read inject file: {e}")
 
-            # Build prompt and launch
+            # Build prompt and launch (with rate limit retry loop)
             prompt = self._build_prompt(step, i, inject_text)
             step_state.status = "running"
             step_state.attempts += 1
@@ -393,6 +405,58 @@ class Workflow:
                 step=step,
                 attempt=step_state.attempts,
             )
+
+            # Rate limit handling: retry with backoff, don't count against max_retries
+            if telemetry.exit_reason == "rate_limit":
+                step_state.attempts -= 1  # Don't count rate-limited session
+                logger.info("Rate limited. Waiting for reset.")
+                self._alert("INFO", f"Rate limited on step '{step.name}'. Waiting 5m.")
+
+                # Update budget for wall time spent
+                state.budget.hours_used += telemetry.duration_minutes / 60.0
+                state.budget.estimated_cost_usd += telemetry.estimated_cost_usd
+                state.save(self.state_dir)
+
+                # Backoff: 5m first, then 10m intervals
+                wait_minutes = [5, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+                for wait_idx, wait_m in enumerate(wait_minutes):
+                    # Check budget before waiting
+                    wait_hours = wait_m / 60.0
+                    if state.budget.hours_used + wait_hours >= state.budget.max_hours:
+                        self._alert("CRITICAL", f"Budget would be exhausted during rate limit wait.")
+                        return 0
+
+                    logger.info(f"Rate limit backoff: waiting {wait_m} minutes (attempt {wait_idx + 1})")
+                    time.sleep(wait_m * 60)
+                    state.budget.hours_used += wait_hours
+                    state.save(self.state_dir)
+
+                    # Retry
+                    step_state.attempts += 1
+                    step_state.last_attempt_at = datetime.now(timezone.utc).isoformat()
+                    state.save(self.state_dir)
+
+                    telemetry = self._launch_claude(
+                        prompt=prompt,
+                        max_duration_minutes=step.max_duration_minutes,
+                        step=step,
+                        attempt=step_state.attempts,
+                    )
+
+                    if telemetry.exit_reason != "rate_limit":
+                        break  # Rate limit cleared
+                    else:
+                        step_state.attempts -= 1  # Don't count this one either
+                        state.budget.hours_used += telemetry.duration_minutes / 60.0
+                        state.budget.estimated_cost_usd += telemetry.estimated_cost_usd
+                        state.save(self.state_dir)
+                        logger.info("Still rate limited.")
+                else:
+                    # Exhausted all rate limit retries
+                    self._alert("ERROR", f"Rate limit persisted through all backoff attempts on '{step.name}'")
+                    step_state.status = "pending"
+                    state.save(self.state_dir)
+                    return 1
 
             # Update budget
             state.budget.hours_used += telemetry.duration_minutes / 60.0
