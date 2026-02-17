@@ -26,13 +26,18 @@ NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout bo
 ```python
 from sparky.tracking.experiment import ExperimentTracker, config_hash
 tracker = ExperimentTracker(experiment_name="my_sweep")  # project=datadex_ai/sparky-ai
-h = config_hash({"model": "catboost", "lr": 0.01, "features": feature_list})
-if tracker.is_duplicate(h):
-    print("SKIP — already ran this config")
-else:
-    # ... run experiment ...
-    tracker.log_experiment("catboost_v1", config={...}, metrics={"sharpe": result})
+
+# For sweeps: collect all results, log ONCE as a single run with a table
+results = []
+for cfg in configs:
+    metrics = run_single_config(cfg)
+    results.append({"config": cfg, "metrics": metrics})
+tracker.log_sweep("stage1_screening_27configs", results, summary_metrics={"best_auc": 0.53})
+
+# For individual significant results (validated strategies, walk-forward):
+tracker.log_experiment("donchian_wf_validated", config={...}, metrics={"sharpe": 1.06})
 ```
+**IMPORTANT:** Do NOT create one W&B run per config. Use `log_sweep()` for sweeps (one run = one table of results). Use `log_experiment()` only for significant, validated results.
 
 ## GPU Training (DGX Spark)
 - XGBoost: `tree_method="hist", device="cuda"`

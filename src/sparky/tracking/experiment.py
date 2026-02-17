@@ -232,6 +232,68 @@ class ExperimentTracker:
         logger.info(f"[TRACKER] Logged run {name} ({cfg_hash}) to W&B: {run_id}")
         return run_id
 
+    def log_sweep(
+        self,
+        name: str,
+        results: list[dict[str, Any]],
+        summary_metrics: Optional[dict[str, float]] = None,
+    ) -> str:
+        """Log a complete sweep as a single W&B run with a results table.
+
+        Use this instead of calling log_experiment() per config. Creates one
+        run with a wandb.Table containing all configs and their metrics.
+
+        Args:
+            name: Sweep name (e.g. "stage1_screening_27configs").
+            results: List of dicts, each with 'config' and 'metrics' keys.
+            summary_metrics: Optional top-level metrics (e.g. best_auc, best_model).
+
+        Returns:
+            W&B run ID.
+        """
+        git_hash = self._get_git_hash()
+        manifest_hash = self._get_data_manifest_hash()
+
+        run = wandb.init(
+            project=self.project,
+            entity=self.entity,
+            name=name,
+            group=self.experiment_name,
+            config={
+                "sweep_type": "two_stage",
+                "total_configs": len(results),
+                "git_hash": git_hash,
+                "data_manifest_hash": manifest_hash,
+            },
+            reinit=True,
+        )
+
+        # Build results table
+        columns = ["model", "config_hash", "auc", "accuracy", "sharpe", "elapsed_s"]
+        table = wandb.Table(columns=columns)
+        for r in results:
+            cfg = r.get("config", {})
+            metrics = r.get("metrics", {})
+            table.add_data(
+                cfg.get("model_type", cfg.get("model", "unknown")),
+                config_hash(cfg),
+                metrics.get("auc", None),
+                metrics.get("accuracy", None),
+                metrics.get("sharpe", None),
+                metrics.get("elapsed_seconds", None),
+            )
+
+        wandb.log({"sweep_results": table})
+
+        # Log summary metrics
+        if summary_metrics:
+            wandb.log(summary_metrics)
+
+        run_id = run.id
+        wandb.finish()
+        logger.info(f"[TRACKER] Logged sweep {name} ({len(results)} configs) to W&B: {run_id}")
+        return run_id
+
     def get_best_run(
         self,
         metric_name: str,
