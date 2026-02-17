@@ -17,6 +17,13 @@ TAG_REMINDER = (
     "(shown below). The workflow cannot verify your work without these tags."
 )
 
+NAMING_REMINDER = (
+    "\n\nRUN NAMING: When calling log_experiment(), pass `name=None` to auto-generate a "
+    "descriptive name (e.g. 'xgb_lr0.05_d6_n200_S0.83'), or use that format yourself. "
+    "Do NOT use generic names like 'config1' or 'xgboost_config7'. "
+    "Also pass `job_type='<step_tag>'` (e.g. job_type='sweep') to group runs by step."
+)
+
 
 def _get_tracker():
     """Lazy import to avoid wandb init at module load."""
@@ -65,7 +72,7 @@ def build_workflow() -> Workflow:
                 "5. Use `@with_timeout(seconds=900)` for any training calls\n"
                 "6. Log results to wandb with tags=['contract_004', 'feature_analysis']\n\n"
                 "Output: `results/feature_importance.json` with ranked features and scores."
-                + TAG_REMINDER + " Step tag: 'feature_analysis'."
+                + TAG_REMINDER + NAMING_REMINDER + " Step tag: 'feature_analysis'."
             ),
             done_when=_feature_analysis_done,
             max_duration_minutes=120,
@@ -105,7 +112,7 @@ def build_workflow() -> Workflow:
                 "Log each batch with `log_sweep()`, tags=['contract_004', 'sweep'].\n"
                 "Log walk-forward validated results with `log_experiment()`, tags=['contract_004', 'sweep'].\n"
                 "Target: at least 20 wandb runs tagged ['contract_004', 'sweep']."
-                + TAG_REMINDER + " Step tag: 'sweep'."
+                + TAG_REMINDER + NAMING_REMINDER + " Step tag: 'sweep'."
             ),
             done_when=_sweep_done,
             max_duration_minutes=180,
@@ -153,7 +160,7 @@ def build_workflow() -> Workflow:
                 "Use `@with_timeout(seconds=900)` per config.\n"
                 "Log to wandb with tags=['contract_004', 'regime'].\n"
                 "Target: at least 8 wandb runs tagged ['contract_004', 'regime']."
-                + TAG_REMINDER + " Step tag: 'regime'."
+                + TAG_REMINDER + NAMING_REMINDER + " Step tag: 'regime'."
             ),
             done_when=_regime_done,
             max_duration_minutes=180,
@@ -192,7 +199,7 @@ def build_workflow() -> Workflow:
                 "Use `@with_timeout(seconds=900)` per config. GPU for all training.\n"
                 "Log to wandb with tags=['contract_004', 'ensemble'].\n"
                 "Target: at least 3 wandb runs tagged ['contract_004', 'ensemble']."
-                + TAG_REMINDER + " Step tag: 'ensemble'."
+                + TAG_REMINDER + NAMING_REMINDER + " Step tag: 'ensemble'."
             ),
             done_when=_ensemble_done,
             skip_if=_skip_ensemble,
@@ -242,7 +249,7 @@ def build_workflow() -> Workflow:
                 "Use `@with_timeout(seconds=900)` per config. GPU for all training.\n"
                 "Log to wandb with tags=['contract_004', 'novel'].\n"
                 "Target: at least 4 wandb runs tagged ['contract_004', 'novel']."
-                + TAG_REMINDER + " Step tag: 'novel'."
+                + TAG_REMINDER + NAMING_REMINDER + " Step tag: 'novel'."
             ),
             done_when=_novel_done,
             max_duration_minutes=240,
