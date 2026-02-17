@@ -224,6 +224,7 @@ class ExperimentTracker:
         date_range: Optional[tuple[str, str]] = None,
         tags: Optional[list[str]] = None,
         job_type: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> str:
         """Log an experiment run to W&B.
 
@@ -240,6 +241,8 @@ class ExperimentTracker:
             tags: Optional list of tags for the run.
             job_type: Optional W&B job type for step-level grouping
                 (e.g. 'sweep', 'regime', 'ensemble', 'novel').
+            group: Optional W&B group for collapsible parent/child runs
+                (e.g. 'regime_vol', 'regime_adx'). Defaults to experiment_name.
 
         Returns:
             W&B run ID.
@@ -267,7 +270,7 @@ class ExperimentTracker:
             "project": self.project,
             "entity": self.entity,
             "name": name,
-            "group": self.experiment_name,
+            "group": group or self.experiment_name,
             "config": run_config,
             "tags": tags or [],
             "reinit": True,
@@ -299,6 +302,7 @@ class ExperimentTracker:
         summary_metrics: Optional[dict[str, float]] = None,
         tags: Optional[list[str]] = None,
         job_type: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> str:
         """Log a complete sweep as a single W&B run with a results table.
 
@@ -312,6 +316,8 @@ class ExperimentTracker:
             tags: Optional list of tags for the run.
             job_type: Optional W&B job type for step-level grouping
                 (e.g. 'sweep', 'regime', 'ensemble', 'novel').
+            group: Optional W&B group for collapsible parent/child runs.
+                Defaults to experiment_name.
 
         Returns:
             W&B run ID.
@@ -323,7 +329,7 @@ class ExperimentTracker:
             "project": self.project,
             "entity": self.entity,
             "name": name,
-            "group": self.experiment_name,
+            "group": group or self.experiment_name,
             "config": {
                 "sweep_type": "two_stage",
                 "total_configs": len(results),

@@ -18,10 +18,12 @@ TAG_REMINDER = (
 )
 
 NAMING_REMINDER = (
-    "\n\nRUN NAMING: When calling log_experiment(), pass `name=None` to auto-generate a "
-    "descriptive name (e.g. 'xgb_lr0.05_d6_n200_S0.83'), or use that format yourself. "
-    "Do NOT use generic names like 'config1' or 'xgboost_config7'. "
-    "Also pass `job_type='<step_tag>'` (e.g. job_type='sweep') to group runs by step."
+    "\n\nRUN NAMING & GROUPING: When calling log_experiment(), pass `name=None` to auto-generate "
+    "a descriptive name, or use format like 'xgb_lr0.05_d6_S0.83'. Do NOT use generic names "
+    "like 'config1'. Pass `job_type='<step_tag>'` and `group='<approach>'` to organize runs. "
+    "The group creates collapsible parent/child rows in wandb (e.g. group='sweep_xgboost' "
+    "for all XGBoost configs, group='regime_vol' for volatility regime runs, "
+    "group='regime_adx' for ADX runs). Runs sharing a group collapse into one row."
 )
 
 
