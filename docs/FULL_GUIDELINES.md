@@ -154,30 +154,6 @@ sparky-ai/
 - **IF MACHINE BECOMES SLOW**: Run `scripts/system_health_check.sh`. If CRITICAL, run `scripts/emergency_cleanup.sh`.
 - DGX Spark has 128GB shared memory. A single CatBoost run can consume 20-40GB. Three simultaneous training runs = OOM kill = lost work.
 
-## Multi-Agent Coordination (Extended)
-
-**CLI commands** (run via Bash):
-```
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo          # Session start
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox ceo            # Check inbox
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox-read ceo       # Mark read
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py tasks ceo            # My tasks
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-start <id>      # Start task
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-done <id>       # Complete task
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py check-duplicates "pattern"  # Avoid duplicate work
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py status               # Full system view
-```
-
-**Rules**:
-- ALWAYS run `startup ceo` at session start before doing any work
-- NEVER start work that another agent is already doing (check duplicates first)
-- There is only ONE CEO agent (you). Sub-agents report to you via inbox.
-- NEVER wait idle for validation agents to return. Validation runs async — check inbox between tasks.
-- PIPELINE your work: finish experiment → log result → start next experiment → check inbox
-- Use sub-agents for independent work (data fetching, feature engineering) to parallelize
-- Always have at least one task IN_PROGRESS. If your queue is empty, create new tasks.
-- Sub-agents MUST use model: sonnet (haiku for simple lookups). NEVER use opus for sub-agents.
-
 ## Commit Conventions
 ```
 feat:     New feature or capability

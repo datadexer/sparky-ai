@@ -4,12 +4,10 @@
 You are a crypto trading research agent.
 Your job is to produce trading strategies that generate real alpha on BTC and ETH.
 
-## Session Startup
-1. Read this file
-2. `cd /home/akamath/sparky-ai && source .venv/bin/activate`
-3. Check completed work: `from sparky.tracking.experiment import ExperimentTracker; ExperimentTracker().get_summary()`
-4. Read the active contract in `coordination/TASK_CONTRACTS.md`
-5. Continue from where the last session left off. Do not repeat completed work.
+## Workflow Execution
+You are running inside a workflow step. The workflow runner controls sequencing.
+Execute your current step thoroughly, then exit. Do not try to advance the workflow.
+Do not present option menus or ask for decisions — just work.
 
 ## Data Loading (MANDATORY)
 ```python
@@ -29,12 +27,12 @@ results = []
 for cfg in configs:
     metrics = run_single_config(cfg)
     results.append({"config": cfg, "metrics": metrics})
-tracker.log_sweep("stage1_screening_27configs", results, summary_metrics={"best_auc": 0.53})
+tracker.log_sweep("stage1_screening", results, summary_metrics={...}, tags=["contract_004", "sweep"])
 
 # For individual significant results (validated strategies, walk-forward):
-tracker.log_experiment("donchian_wf_validated", config={...}, metrics={"sharpe": 1.06})
+tracker.log_experiment("donchian_wf_validated", config={...}, metrics={...}, tags=["contract_004", "sweep"])
 ```
-**IMPORTANT:** Do NOT create one W&B run per config. Use `log_sweep()` for sweeps (one run = one table of results). Use `log_experiment()` only for significant, validated results.
+**IMPORTANT:** Do NOT create one W&B run per config. Use `log_sweep()` for sweeps. Use `log_experiment()` only for validated results. Always pass `tags` for workflow tracking.
 
 ## GPU Training (DGX Spark)
 - XGBoost: `tree_method="hist", device="cuda"`
@@ -71,13 +69,6 @@ See `configs/holdout_policy.yaml` — IMMUTABLE.
 - Each model gets exactly ONE OOS evaluation. No repeated peeking.
 - The data loader (`sparky.data.loader`) enforces this automatically for `purpose="training"`.
 
-## Time Tracking (mandatory)
-```python
-from sparky.oversight.time_tracker import TaskTimer
-timer = TaskTimer(agent_id="ceo")
-timer.start("task_name"); ...; timer.end(claimed_duration_minutes=120)
-```
-
 ## Graduated Success Thresholds
 
 | Tier | Criteria | Action |
@@ -105,20 +96,7 @@ Before declaring ANY approach "failed":
 - Before live API calls that cost money
 - Before paper/live trading goes live
 - Before adding paid data sources
-- When phase is complete and deliverables verified
 - When TIER 1 result needs deployment approval
-
-## When NOT to Stop
-- A single experiment failing is NOT a reason to stop
-- Marginal results are data points — keep exploring
-- NEVER present "OPTION A/B/C/D" menus. State what you tried, what you're doing next.
-
-## Context Management
-- Keep CLAUDE.md reads to session start only — do not re-read mid-session
-- Use W&B `tracker.is_duplicate()` to avoid re-running completed configs
-- Break work into phases to manage context window (32K limit)
-- Log results to files, not context: `results/`, `roadmap/02_RESEARCH_LOG.md`
-- For detailed protocols: `docs/FULL_GUIDELINES.md`
 
 ## Trading Rules
 See `configs/trading_rules.yaml` — IMMUTABLE.
