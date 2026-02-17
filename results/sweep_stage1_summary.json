@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-02-17T01:29:00.960309+00:00",
+  "total_configs": 27,
+  "stage1_completed": 27,
+  "top_5": [
+    {
+      "model": "catboost",
+      "params": {
+        "depth": 5,
+        "learning_rate": 0.1,
+        "iterations": 200,
+        "task_type": "GPU",
+        "devices": "0",
+        "verbose": 0,
+        "random_seed": 42
+      },
+      "auc": 0.5746165801589397,
+      "accuracy": 0.562953995157385
+    },
+    {
+      "model": "catboost",
+      "params": {
+        "depth": 5,
+        "learning_rate": 0.05,
+        "iterations": 200,
+        "task_type": "GPU",
+        "devices": "0",
+        "verbose": 0,
+        "random_seed": 42
+      },
+      "auc": 0.5668866015659364,
+      "accuracy": 0.5556900726392252
+    },
+    {
+      "model": "catboost",
+      "params": {
+        "depth": 4,
+        "learning_rate": 0.01,
+        "iterations": 200,
+        "task_type": "GPU",
+        "devices": "0",
+        "verbose": 0,
+        "random_seed": 42
+      },
+      "auc": 0.5657663998123222,
+      "accuracy": 0.5387409200968523
+    },
+    {
+      "model": "catboost",
+      "params": {
+        "depth": 6,
+        "learning_rate": 0.01,
+        "iterations": 200,
+        "task_type": "GPU",
+        "devices": "0",
+        "verbose": 0,
+        "random_seed": 42
+      },
+      "auc": 0.5636198351954489,
+      "accuracy": 0.5484261501210653
+    },
+    {
+      "model": "lightgbm",
+      "params": {
+        "max_depth": 3,
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "device": "gpu",
+        "verbose": -1,
+        "random_state": 42
+      },
+      "auc": 0.5589806750535176,
+      "accuracy": 0.5460048426150121
+    }
+  ]
+}

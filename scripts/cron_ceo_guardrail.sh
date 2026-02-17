@@ -62,19 +62,10 @@ fi
 echo "$DISK_USED_KB" > "$DISK_SNAPSHOT"
 
 # === 3. CEO session alive check ===
-CEO_ALIVE=false
-if tmux has-session -t ceo 2>/dev/null; then
-    CEO_ALIVE=true
-fi
-# Also check for claude process on pts/7 or similar
-CEO_PID=$(pgrep -f "claude.*-p.*CEO" 2>/dev/null | head -1 || true)
-if [ -z "$CEO_PID" ]; then
-    # Check for any non-interactive claude in the ceo tmux
-    CEO_PID=$(pgrep -f "scripts/ceo_watchdog" 2>/dev/null | head -1 || true)
-fi
-
-if [ "$CEO_ALIVE" = false ] && [ -z "$CEO_PID" ]; then
-    alert "INFO" "CEO watchdog is not running. Start with: tmux new-session -d -s ceo '$PROJECT_ROOT/scripts/ceo_watchdog.sh'"
+# Check if CEO systemd service is running
+CEO_ACTIVE=$(systemctl --user is-active sparky-ceo 2>/dev/null || echo "inactive")
+if [ "$CEO_ACTIVE" != "active" ]; then
+    alert "INFO" "CEO service is not running. Start with: systemctl --user start sparky-ceo"
 fi
 
 # === 4. Holdout violation detection ===

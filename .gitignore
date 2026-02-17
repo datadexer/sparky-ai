@@ -1,6 +1,8 @@
 /data/
 !/data/data_manifest.json
 mlruns/
+wandb/
+catboost_info/
 logs/
 configs/secrets.yaml
 .venv/
