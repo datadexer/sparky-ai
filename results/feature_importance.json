@@ -1,0 +1,464 @@
+{
+  "dataset": "feature_matrix_btc_hourly_expanded",
+  "n_features": 87,
+  "n_samples": 4129,
+  "ranked_features": [
+    {
+      "rank": 1,
+      "name": "volume_dry_up",
+      "importance": 0.018844032660126686
+    },
+    {
+      "rank": 2,
+      "name": "rsi_6h",
+      "importance": 0.016326434910297394
+    },
+    {
+      "rank": 3,
+      "name": "rsi_168h",
+      "importance": 0.016178801655769348
+    },
+    {
+      "rank": 4,
+      "name": "price_range_expansion",
+      "importance": 0.015348267741501331
+    },
+    {
+      "rank": 5,
+      "name": "momentum_720h",
+      "importance": 0.015268727205693722
+    },
+    {
+      "rank": 6,
+      "name": "rsi_4h",
+      "importance": 0.01512405090034008
+    },
+    {
+      "rank": 7,
+      "name": "momentum_divergence_72h_336h",
+      "importance": 0.014337933622300625
+    },
+    {
+      "rank": 8,
+      "name": "vwap_cross",
+      "importance": 0.014305299147963524
+    },
+    {
+      "rank": 9,
+      "name": "mfi_14h",
+      "importance": 0.014304051175713539
+    },
+    {
+      "rank": 10,
+      "name": "price_acceleration_10h",
+      "importance": 0.014251510612666607
+    },
+    {
+      "rank": 11,
+      "name": "bb_position_20h",
+      "importance": 0.01410204079002142
+    },
+    {
+      "rank": 12,
+      "name": "momentum_divergence_4h_24h",
+      "importance": 0.014066832140088081
+    },
+    {
+      "rank": 13,
+      "name": "momentum_4h",
+      "importance": 0.01403149776160717
+    },
+    {
+      "rank": 14,
+      "name": "atr_14h",
+      "importance": 0.013965368270874023
+    },
+    {
+      "rank": 15,
+      "name": "rsi_divergence_14h_168h",
+      "importance": 0.01376643218100071
+    },
+    {
+      "rank": 16,
+      "name": "breakout_proximity_upper",
+      "importance": 0.013693257234990597
+    },
+    {
+      "rank": 17,
+      "name": "rsi_14h",
+      "importance": 0.01363446842879057
+    },
+    {
+      "rank": 18,
+      "name": "momentum_336h",
+      "importance": 0.01361596304923296
+    },
+    {
+      "rank": 19,
+      "name": "rsi_volume_interaction",
+      "importance": 0.01357586681842804
+    },
+    {
+      "rank": 20,
+      "name": "close_above_open_ratio_20h",
+      "importance": 0.013519871979951859
+    },
+    {
+      "rank": 21,
+      "name": "distance_from_sma_200h",
+      "importance": 0.013502494432032108
+    },
+    {
+      "rank": 22,
+      "name": "high_vol_low_momentum",
+      "importance": 0.013419556431472301
+    },
+    {
+      "rank": 23,
+      "name": "momentum_168h",
+      "importance": 0.01336660422384739
+    },
+    {
+      "rank": 24,
+      "name": "vol_acceleration",
+      "importance": 0.013356084004044533
+    },
+    {
+      "rank": 25,
+      "name": "vwap_deviation_24h",
+      "importance": 0.013215954415500164
+    },
+    {
+      "rank": 26,
+      "name": "realized_vol_24h",
+      "importance": 0.013159772381186485
+    },
+    {
+      "rank": 27,
+      "name": "obv",
+      "importance": 0.013129894621670246
+    },
+    {
+      "rank": 28,
+      "name": "recovery_from_20h_low",
+      "importance": 0.013089406304061413
+    },
+    {
+      "rank": 29,
+      "name": "momentum_72h",
+      "importance": 0.013068830594420433
+    },
+    {
+      "rank": 30,
+      "name": "price_volume_correlation_24h",
+      "importance": 0.013008782640099525
+    },
+    {
+      "rank": 31,
+      "name": "rsi_12h",
+      "importance": 0.013006430119276047
+    },
+    {
+      "rank": 32,
+      "name": "obv_rate_of_change_24h",
+      "importance": 0.012930548749864101
+    },
+    {
+      "rank": 33,
+      "name": "drawdown_from_20h_high",
+      "importance": 0.012922023423016071
+    },
+    {
+      "rank": 34,
+      "name": "macd_histogram",
+      "importance": 0.012898489832878113
+    },
+    {
+      "rank": 35,
+      "name": "rsi_divergence_4h_24h",
+      "importance": 0.012787016108632088
+    },
+    {
+      "rank": 36,
+      "name": "volume_trend_24h",
+      "importance": 0.012734309770166874
+    },
+    {
+      "rank": 37,
+      "name": "overnight_gap",
+      "importance": 0.012703748419880867
+    },
+    {
+      "rank": 38,
+      "name": "bb_bandwidth_20h",
+      "importance": 0.012651155702769756
+    },
+    {
+      "rank": 39,
+      "name": "vol_clustering_24h",
+      "importance": 0.012553293257951736
+    },
+    {
+      "rank": 40,
+      "name": "intraday_range",
+      "importance": 0.012525496073067188
+    },
+    {
+      "rank": 41,
+      "name": "lower_wick_ratio",
+      "importance": 0.012525331228971481
+    },
+    {
+      "rank": 42,
+      "name": "ema_ratio_20h",
+      "importance": 0.012483775615692139
+    },
+    {
+      "rank": 43,
+      "name": "volume_momentum_30h",
+      "importance": 0.012472611851990223
+    },
+    {
+      "rank": 44,
+      "name": "deviation_from_sma50_pct",
+      "importance": 0.012461365200579166
+    },
+    {
+      "rank": 45,
+      "name": "zscore_vs_sma50",
+      "importance": 0.01241910271346569
+    },
+    {
+      "rank": 46,
+      "name": "volume_weighted_rsi",
+      "importance": 0.012319430708885193
+    },
+    {
+      "rank": 47,
+      "name": "choppiness_index",
+      "importance": 0.012294063344597816
+    },
+    {
+      "rank": 48,
+      "name": "hl_spread_pct",
+      "importance": 0.012283449992537498
+    },
+    {
+      "rank": 49,
+      "name": "bid_ask_imbalance_proxy",
+      "importance": 0.012224561534821987
+    },
+    {
+      "rank": 50,
+      "name": "volatility_momentum_interaction",
+      "importance": 0.012217200361192226
+    },
+    {
+      "rank": 51,
+      "name": "zscore_vs_sma200",
+      "importance": 0.01218230277299881
+    },
+    {
+      "rank": 52,
+      "name": "volume_regime",
+      "importance": 0.012153021059930325
+    },
+    {
+      "rank": 53,
+      "name": "upper_wick_ratio",
+      "importance": 0.012137842364609241
+    },
+    {
+      "rank": 54,
+      "name": "vol_divergence_4h_24h",
+      "importance": 0.012125065550208092
+    },
+    {
+      "rank": 55,
+      "name": "higher_close_streak",
+      "importance": 0.012085514143109322
+    },
+    {
+      "rank": 56,
+      "name": "volatility_regime",
+      "importance": 0.012052769772708416
+    },
+    {
+      "rank": 57,
+      "name": "momentum_quality_30h",
+      "importance": 0.01204285304993391
+    },
+    {
+      "rank": 58,
+      "name": "momentum_24h",
+      "importance": 0.01203218288719654
+    },
+    {
+      "rank": 59,
+      "name": "volume_spike_count_20h",
+      "importance": 0.012027053162455559
+    },
+    {
+      "rank": 60,
+      "name": "trend_strength_adx_proxy",
+      "importance": 0.012024426832795143
+    },
+    {
+      "rank": 61,
+      "name": "momentum_divergence_24h_168h",
+      "importance": 0.011950322426855564
+    },
+    {
+      "rank": 62,
+      "name": "high_low_ratio_20h",
+      "importance": 0.011897475458681583
+    },
+    {
+      "rank": 63,
+      "name": "intraday_momentum_reversal",
+      "importance": 0.011805018410086632
+    },
+    {
+      "rank": 64,
+      "name": "macd_line",
+      "importance": 0.011717057786881924
+    },
+    {
+      "rank": 65,
+      "name": "lower_close_streak",
+      "importance": 0.0115479975938797
+    },
+    {
+      "rank": 66,
+      "name": "vol_ratio_24h_168h",
+      "importance": 0.011545158922672272
+    },
+    {
+      "rank": 67,
+      "name": "breakout_proximity_lower",
+      "importance": 0.011377992108464241
+    },
+    {
+      "rank": 68,
+      "name": "mid_vs_close",
+      "importance": 0.011367869563400745
+    },
+    {
+      "rank": 69,
+      "name": "candle_body_ratio",
+      "importance": 0.011282232590019703
+    },
+    {
+      "rank": 70,
+      "name": "hl_spread_ma_ratio",
+      "importance": 0.011183064430952072
+    },
+    {
+      "rank": 71,
+      "name": "volume_ma_ratio_20h",
+      "importance": 0.011010334827005863
+    },
+    {
+      "rank": 72,
+      "name": "volume_at_high",
+      "importance": 0.010821779258549213
+    },
+    {
+      "rank": 73,
+      "name": "day_of_week",
+      "importance": 0.010794460773468018
+    },
+    {
+      "rank": 74,
+      "name": "consecutive_green_candles",
+      "importance": 0.010237306356430054
+    },
+    {
+      "rank": 75,
+      "name": "price_momentum_divergence",
+      "importance": 0.009838839061558247
+    },
+    {
+      "rank": 76,
+      "name": "higher_highs_lower_lows_5h",
+      "importance": 0.00972059927880764
+    },
+    {
+      "rank": 77,
+      "name": "vol_breakout_vs_24h",
+      "importance": 0.00963042862713337
+    },
+    {
+      "rank": 78,
+      "name": "consecutive_red_candles",
+      "importance": 0.008326747454702854
+    },
+    {
+      "rank": 79,
+      "name": "low_vol_high_momentum",
+      "importance": 0.007090649101883173
+    },
+    {
+      "rank": 80,
+      "name": "hour_of_day",
+      "importance": 0.0
+    },
+    {
+      "rank": 81,
+      "name": "volume_surge_4h",
+      "importance": 0.0
+    },
+    {
+      "rank": 82,
+      "name": "volume_exhaustion",
+      "importance": 0.0
+    },
+    {
+      "rank": 83,
+      "name": "rsi_divergence_volume_surge",
+      "importance": 0.0
+    },
+    {
+      "rank": 84,
+      "name": "rsi_extreme_high_volume",
+      "importance": 0.0
+    },
+    {
+      "rank": 85,
+      "name": "sma_crossover_50_200",
+      "importance": 0.0
+    },
+    {
+      "rank": 86,
+      "name": "sma_crossunder_50_200",
+      "importance": 0.0
+    },
+    {
+      "rank": 87,
+      "name": "vol_contraction_vs_168h",
+      "importance": 0.0
+    }
+  ],
+  "top_20": [
+    "volume_dry_up",
+    "rsi_6h",
+    "rsi_168h",
+    "price_range_expansion",
+    "momentum_720h",
+    "rsi_4h",
+    "momentum_divergence_72h_336h",
+    "vwap_cross",
+    "mfi_14h",
+    "price_acceleration_10h",
+    "bb_position_20h",
+    "momentum_divergence_4h_24h",
+    "momentum_4h",
+    "atr_14h",
+    "rsi_divergence_14h_168h",
+    "breakout_proximity_upper",
+    "rsi_14h",
+    "momentum_336h",
+    "rsi_volume_interaction",
+    "close_above_open_ratio_20h"
+  ]
+}
