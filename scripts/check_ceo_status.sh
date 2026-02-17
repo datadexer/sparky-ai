@@ -34,6 +34,10 @@ echo "Recent commits (last 5):"
 git -C "$PROJECT_ROOT" log --oneline -5 --all
 echo ""
 
-# Coordination status
-echo "Coordination inbox:"
-cd "$PROJECT_ROOT" && PYTHONPATH="$PROJECT_ROOT" python3 coordination/cli.py inbox ceo 2>/dev/null || echo "(coordination system not available)"
+# Workflow status
+echo "Workflow state:"
+if [ -f "$PROJECT_ROOT/workflows/state/contract-004.json" ]; then
+    python3 -c "import json; d=json.load(open('$PROJECT_ROOT/workflows/state/contract-004.json')); print(f'Step {d[\"current_step_index\"]+1}/{len(d[\"steps\"])}  Budget: {d[\"budget\"][\"hours_used\"]:.1f}/{d[\"budget\"][\"max_hours\"]}h')" 2>/dev/null || echo "(workflow state unavailable)"
+else
+    echo "(no workflow state)"
+fi

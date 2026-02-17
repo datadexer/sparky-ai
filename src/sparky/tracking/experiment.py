@@ -176,6 +176,7 @@ class ExperimentTracker:
         artifacts: Optional[dict[str, str]] = None,
         features_used: Optional[list[str]] = None,
         date_range: Optional[tuple[str, str]] = None,
+        tags: Optional[list[str]] = None,
     ) -> str:
         """Log an experiment run to W&B.
 
@@ -214,6 +215,7 @@ class ExperimentTracker:
             name=name,
             group=self.experiment_name,
             config=run_config,
+            tags=tags or [],
             reinit=True,
         )
 
@@ -237,6 +239,7 @@ class ExperimentTracker:
         name: str,
         results: list[dict[str, Any]],
         summary_metrics: Optional[dict[str, float]] = None,
+        tags: Optional[list[str]] = None,
     ) -> str:
         """Log a complete sweep as a single W&B run with a results table.
 
@@ -265,6 +268,7 @@ class ExperimentTracker:
                 "git_hash": git_hash,
                 "data_manifest_hash": manifest_hash,
             },
+            tags=tags or [],
             reinit=True,
         )
 
@@ -293,6 +297,58 @@ class ExperimentTracker:
         wandb.finish()
         logger.info(f"[TRACKER] Logged sweep {name} ({len(results)} configs) to W&B: {run_id}")
         return run_id
+
+    def count_runs(self, tags: Optional[list[str]] = None) -> int:
+        """Count runs, optionally filtered by tags.
+
+        Args:
+            tags: If provided, only count runs that have ALL of these tags.
+
+        Returns:
+            Number of matching runs.
+        """
+        try:
+            filters = {}
+            if tags:
+                filters["tags"] = {"$all": tags}
+            runs = self._fetch_runs(filters=filters)
+            return len(runs)
+        except Exception as e:
+            logger.warning(f"[TRACKER] count_runs failed: {e}")
+            return 0
+
+    def best_metric(
+        self,
+        metric: str,
+        tags: Optional[list[str]] = None,
+        maximize: bool = True,
+    ) -> Optional[float]:
+        """Get the best value for a metric, optionally filtered by tags.
+
+        Args:
+            metric: Metric name (e.g. "sharpe").
+            tags: If provided, only consider runs with ALL of these tags.
+            maximize: If True, return max; otherwise return min.
+
+        Returns:
+            Best metric value, or None if no runs found.
+        """
+        try:
+            filters = {}
+            if tags:
+                filters["tags"] = {"$all": tags}
+            runs = self._fetch_runs(filters=filters)
+            values = []
+            for r in runs:
+                v = r.summary.get(metric)
+                if v is not None:
+                    values.append(float(v))
+            if not values:
+                return None
+            return max(values) if maximize else min(values)
+        except Exception as e:
+            logger.warning(f"[TRACKER] best_metric failed: {e}")
+            return None
 
     def get_best_run(
         self,
