@@ -261,6 +261,7 @@ class Workflow:
                         "--model", "sonnet",
                         "--verbose",
                         "--output-format", "stream-json",
+                        "--dangerously-skip-permissions",
                     ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
