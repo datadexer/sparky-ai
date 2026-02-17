@@ -45,7 +45,7 @@ fi
 # stdbuf ensures line-buffered output for real-time streaming
 # Exit code 0 on success, non-zero on rate limit/error → systemd will restart
 stdbuf -oL claude -p \
-  "Read CLAUDE.md. Check coordination inbox. Read roadmap/00_STATE.yaml and roadmap/02_RESEARCH_LOG.md. Then continue research — if CONTRACT #004 is active, execute it. If not, pick up the next unblocked task. Do NOT ask permission or present option menus. Commit frequently to a branch." \
+  "Read CLAUDE.md. You are continuing CONTRACT #004. Steps 1-2 are done (27 configs, TIER 4-5, no ML alpha from direct prediction). Steps 3-4 are NOT conditional on Step 2 success — they test a DIFFERENT HYPOTHESIS. Step 2 tested: Can ML predict price direction? Answer: No (AUC 0.5746). Step 3 tests: Can ML classify market REGIME (bull/bear/chop) so Donchian only trades in trending regimes? These are fundamentally different. Step 3 — do now: (1) Use scripts/train_regime_aware.py as scaffold, (2) Implement at least 2 regime detection methods (volatility threshold, ML classifier), (3) Donchian in trending/bull, flat in chop/bear, (4) Walk-forward validate combined system, (5) Log to wandb using log_sweep() for sweeps, use GPU, data loader, timeout per CLAUDE.md. Step 4: Only if Step 3 produces TIER 2+. Start immediately." \
   --model sonnet \
   --verbose \
   --output-format stream-json 2>>"${LOG_DIR}/ceo_systemd.err" | \

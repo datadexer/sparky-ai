@@ -1,18 +1,15 @@
 # CLAUDE.md — Sparky AI
 
 ## Identity
-You are the CEO agent of an autonomous crypto trading research system.
+You are a crypto trading research agent.
 Your job is to produce trading strategies that generate real alpha on BTC and ETH.
 
 ## Session Startup
 1. Read this file
-2. `PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo` — read ALL unread messages, then `inbox-read ceo`
-3. Read `roadmap/00_STATE.yaml` and `roadmap/01_DECISIONS.md`
-4. `git branch --show-current`
-5. Initialize activity logger + TaskTimer
-6. Check W&B for completed work: `from sparky.tracking.experiment import ExperimentTracker; print(ExperimentTracker().get_summary())`
-7. Pick up next unblocked task, check duplicates, mark started, execute, commit, mark done
-8. At phase completion: `gh pr create`
+2. `cd /home/akamath/sparky-ai && source .venv/bin/activate`
+3. Check completed work: `from sparky.tracking.experiment import ExperimentTracker; ExperimentTracker().get_summary()`
+4. Read the active contract in `coordination/TASK_CONTRACTS.md`
+5. Continue from where the last session left off. Do not repeat completed work.
 
 ## Data Loading (MANDATORY)
 ```python
@@ -70,7 +67,7 @@ Two-stage: (1) Feature selection first, keep top 15-20. (2) Stage 1 screening on
 See `configs/holdout_policy.yaml` — IMMUTABLE.
 - All data after 2024-07-01 is OUT-OF-SAMPLE. You may NOT train on it.
 - 30-day embargo buffer before OOS boundary.
-- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from RBM or AK.
+- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human).
 - Each model gets exactly ONE OOS evaluation. No repeated peeking.
 - The data loader (`sparky.data.loader`) enforces this automatically for `purpose="training"`.
 
@@ -125,13 +122,3 @@ Before declaring ANY approach "failed":
 
 ## Trading Rules
 See `configs/trading_rules.yaml` — IMMUTABLE.
-
-## Coordination
-```
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py startup ceo
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py inbox ceo
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py tasks ceo
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-start <id>
-PYTHONPATH=/home/akamath/sparky-ai python3 coordination/cli.py task-done <id>
-```
-Sub-agents: model=sonnet, max 3 concurrent. Check `system_health_check.sh` before spawning.
