@@ -192,10 +192,7 @@ class ExperimentTracker:
         """
         api = self._get_api()
         path = f"{self.entity}/{self.project}"
-        base_filters = {"group": self.experiment_name}
-        if filters:
-            base_filters.update(filters)
-        return list(api.runs(path, filters=base_filters))
+        return list(api.runs(path, filters=filters or {}))
 
     def is_duplicate(self, cfg_hash: str) -> bool:
         """Check if an experiment config has already been run.
