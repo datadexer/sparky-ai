@@ -71,6 +71,55 @@ def config_hash(config: dict[str, Any]) -> str:
     return hashlib.sha256(serialized.encode()).hexdigest()[:16]
 
 
+def _build_run_name(config: dict[str, Any], metrics: dict[str, float]) -> str:
+    """Build a descriptive run name from config and metrics.
+
+    Generates names like: xgb_lr0.05_d6_n200_S0.83
+
+    Args:
+        config: Model configuration dict.
+        metrics: Metrics dict (uses 'sharpe' if present).
+
+    Returns:
+        Descriptive run name string.
+    """
+    # Model type prefix
+    model = config.get("model_type", config.get("model", "unknown"))
+    prefix_map = {
+        "xgboost": "xgb",
+        "lightgbm": "lgbm",
+        "catboost": "cat",
+    }
+    prefix = prefix_map.get(model.lower(), model[:4].lower())
+
+    # Key hyperparameters (abbreviated)
+    param_abbrevs = [
+        (["learning_rate", "lr", "eta"], "lr"),
+        (["max_depth", "depth"], "d"),
+        (["n_estimators", "num_boost_round", "iterations"], "n"),
+        (["num_leaves"], "nl"),
+        (["reg_alpha", "l1_regularization"], "L1"),
+        (["reg_lambda", "l2_regularization", "l2_leaf_reg"], "L2"),
+    ]
+    parts = [prefix]
+    for keys, abbrev in param_abbrevs:
+        for key in keys:
+            if key in config:
+                val = config[key]
+                if isinstance(val, float):
+                    parts.append(f"{abbrev}{val:g}")
+                else:
+                    parts.append(f"{abbrev}{val}")
+                break
+
+    # Sharpe from metrics
+    sharpe = metrics.get("sharpe")
+    if sharpe is not None:
+        parts.append(f"S{sharpe:.2f}")
+
+    return "_".join(parts)
+
+
 class ExperimentTracker:
     """Track experiments using Weights & Biases with config-hash dedup.
 
@@ -170,29 +219,37 @@ class ExperimentTracker:
 
     def log_experiment(
         self,
-        name: str,
+        name: Optional[str],
         config: dict[str, Any],
         metrics: dict[str, float],
         artifacts: Optional[dict[str, str]] = None,
         features_used: Optional[list[str]] = None,
         date_range: Optional[tuple[str, str]] = None,
         tags: Optional[list[str]] = None,
+        job_type: Optional[str] = None,
     ) -> str:
         """Log an experiment run to W&B.
 
         Automatically computes and stores a config_hash for dedup.
 
         Args:
-            name: Run name.
+            name: Run name. If None, auto-generates a descriptive name from
+                config and metrics (e.g. 'xgb_lr0.05_d6_S0.83').
             config: Configuration parameters.
             metrics: Metrics to log.
             artifacts: Optional dict of {artifact_name: file_path} to log.
             features_used: Optional list of feature names used.
             date_range: Optional tuple of (start_date, end_date).
+            tags: Optional list of tags for the run.
+            job_type: Optional W&B job type for step-level grouping
+                (e.g. 'sweep', 'regime', 'ensemble', 'novel').
 
         Returns:
             W&B run ID.
         """
+        if name is None:
+            name = _build_run_name(config, metrics)
+
         cfg_hash = config_hash(config)
         git_hash = self._get_git_hash()
         manifest_hash = self._get_data_manifest_hash()
@@ -209,15 +266,19 @@ class ExperimentTracker:
             run_config["date_range_start"] = date_range[0]
             run_config["date_range_end"] = date_range[1]
 
-        run = wandb.init(
-            project=self.project,
-            entity=self.entity,
-            name=name,
-            group=self.experiment_name,
-            config=run_config,
-            tags=tags or [],
-            reinit=True,
-        )
+        init_kwargs: dict[str, Any] = {
+            "project": self.project,
+            "entity": self.entity,
+            "name": name,
+            "group": self.experiment_name,
+            "config": run_config,
+            "tags": tags or [],
+            "reinit": True,
+        }
+        if job_type:
+            init_kwargs["job_type"] = job_type
+
+        run = wandb.init(**init_kwargs)
 
         wandb.log(metrics)
 
@@ -240,6 +301,7 @@ class ExperimentTracker:
         results: list[dict[str, Any]],
         summary_metrics: Optional[dict[str, float]] = None,
         tags: Optional[list[str]] = None,
+        job_type: Optional[str] = None,
     ) -> str:
         """Log a complete sweep as a single W&B run with a results table.
 
@@ -250,6 +312,9 @@ class ExperimentTracker:
             name: Sweep name (e.g. "stage1_screening_27configs").
             results: List of dicts, each with 'config' and 'metrics' keys.
             summary_metrics: Optional top-level metrics (e.g. best_auc, best_model).
+            tags: Optional list of tags for the run.
+            job_type: Optional W&B job type for step-level grouping
+                (e.g. 'sweep', 'regime', 'ensemble', 'novel').
 
         Returns:
             W&B run ID.
@@ -257,20 +322,24 @@ class ExperimentTracker:
         git_hash = self._get_git_hash()
         manifest_hash = self._get_data_manifest_hash()
 
-        run = wandb.init(
-            project=self.project,
-            entity=self.entity,
-            name=name,
-            group=self.experiment_name,
-            config={
+        init_kwargs: dict[str, Any] = {
+            "project": self.project,
+            "entity": self.entity,
+            "name": name,
+            "group": self.experiment_name,
+            "config": {
                 "sweep_type": "two_stage",
                 "total_configs": len(results),
                 "git_hash": git_hash,
                 "data_manifest_hash": manifest_hash,
             },
-            tags=tags or [],
-            reinit=True,
-        )
+            "tags": tags or [],
+            "reinit": True,
+        }
+        if job_type:
+            init_kwargs["job_type"] = job_type
+
+        run = wandb.init(**init_kwargs)
 
         # Build results table
         columns = ["model", "config_hash", "auc", "accuracy", "sharpe", "elapsed_s"]
