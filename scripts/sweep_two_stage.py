@@ -50,8 +50,8 @@ def load_and_cache():
     else:
         target = target_df
 
-    # Load prices (analysis purpose — we only use for return calculation, not training)
-    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="analysis")
+    # Prices used for Sharpe calculation during walk-forward validation
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="training")
     prices_daily = prices_hourly.resample("D").last()
     del prices_hourly  # free memory
 

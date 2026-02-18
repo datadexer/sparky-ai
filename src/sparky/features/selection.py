@@ -216,8 +216,10 @@ class FeatureSelector:
     ) -> tuple[dict[str, float], list[dict]]:
         """Test feature importance stability across expanding-window splits.
 
-        Uses TimeSeriesSplit (expanding window) instead of k-fold to avoid
-        training on future data. Each fold trains only on past data.
+        Uses TimeSeriesSplit (expanding window) with a gap (embargo) to avoid
+        training on future data and prevent information leakage at fold
+        boundaries. Each fold trains only on past data with a gap before
+        the test set.
 
         Returns variance of importance per feature. Flags features with
         variance > threshold (unstable — importance depends heavily on data split).
@@ -229,7 +231,10 @@ class FeatureSelector:
 
         importance_matrix = []
 
-        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds)
+        # gap=24 creates a 24-sample embargo between train and test folds,
+        # preventing leakage from features that look ahead (e.g. hourly data
+        # predicting 1-day returns needs at least 24h embargo).
+        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=24)
         for train_idx, _test_idx in tscv.split(X):
             X_train = X.iloc[train_idx]  # only past data
             y_train = y.iloc[train_idx]
