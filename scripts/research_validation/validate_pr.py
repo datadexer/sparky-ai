@@ -191,7 +191,10 @@ def run_validation(changes):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
 
     try:
-        result = json.loads(text)
+        # Use raw_decode to stop at end of first JSON object — model may
+        # append prose explanation after the closing brace.
+        decoder = json.JSONDecoder()
+        result, _ = decoder.raw_decode(text)
     except json.JSONDecodeError as exc:
         # Non-JSON response is inconclusive — do NOT treat as pass
         raise ValueError(f"Validation agent returned non-JSON response (len={len(text)}): {text[:300]}") from exc
