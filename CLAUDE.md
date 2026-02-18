@@ -36,15 +36,16 @@ df = load("btc_1h_features", purpose="analysis")    # full data, warning logged
 ```
 NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout boundaries.
 
-## Transaction Costs (MANDATORY — 50 bps per side)
-ALL backtests use **50 bps (0.50%) per side, 100 bps (1.0%) round trip**. Not negotiable.
+## Transaction Costs (MANDATORY)
+Two-tier cost model. Guardrail blocks anything below 30 bps.
+- **Standard: 30 bps per side** (60 bps round trip) — Coinbase Advanced Trade with limit orders at modest volume, or DEX on L2 (Base/Arbitrum). Realistic without assuming discounts.
+- **Stress test: 50 bps per side** (100 bps round trip) — Coinbase market orders at lowest tier. Worst case.
 ```python
-config = {"transaction_costs_bps": 50, ...}  # guardrail enforces >= 50
+costs_standard = TransactionCostModel.standard()    # 30 bps
+costs_stress = TransactionCostModel.stress_test()    # 50 bps
+config = {"transaction_costs_bps": 30, ...}          # guardrail enforces >= 30
 ```
-Rationale: We execute via **Coinbase market orders** (taker fee ~50-60 bps at basic tier)
-or **Uniswap DEX** (30 bps pool fee + gas + slippage ≈ 50-100 bps). No volume discounts,
-no limit order optimization, no advanced tiers. 50 bps per side is conservative but realistic.
-The guardrail `check_costs_specified` will BLOCK any run with costs below 50 bps.
+Research agents run winners at BOTH 30 bps and 50 bps and report both.
 
 ## Annualization Convention
 - Default `periods_per_year=365` (daily crypto, 24/7 markets)

@@ -471,12 +471,15 @@ class TestLockfile:
 
 
 class TestSessionPrompt:
-    def test_stuck_protocol_present(self):
+    def test_exit_protocol_and_duration_present(self):
         directive = _make_directive()
         orch = ResearchOrchestrator(directive)
         prompt = orch._build_session_prompt(1, "")
         assert "GATE_REQUEST.md" in prompt
-        assert "Stuck Protocol" in prompt
+        assert "When to Exit" in prompt
+        assert "Session Duration" in prompt
+        assert "Do NOT exit after running one sweep" in prompt
+        assert "RESEARCH_AGENT.md" in prompt
 
     def test_session_tag_injected(self):
         directive = _make_directive(wandb_tags=["my_tag"])
@@ -761,3 +764,67 @@ class TestResearchOrchestrator:
 
         result = orch.run()
         assert result == 1  # should fail to acquire lock
+
+
+class TestReconstructFromWandb:
+    """Tests for OrchestratorState.reconstruct_from_wandb."""
+
+    def _make_mock_run(self, session_num: int, sharpe: float, dsr: float):
+        """Create a minimal mock wandb run."""
+        from unittest.mock import MagicMock
+
+        run = MagicMock()
+        run.id = f"run_{session_num:03d}"
+        run.tags = [f"session_{session_num:03d}", "test_directive"]
+        run.config = {"transaction_costs_bps": 50, "model": "xgb"}
+        run.summary = {"sharpe": sharpe, "dsr": dsr}
+        run.created_at = f"2024-0{session_num}-01T00:00:00Z"
+        return run
+
+    def test_returns_none_when_no_runs(self):
+        """Reconstruction returns None when no matching runs exist."""
+        with patch("sparky.tracking.experiment.ExperimentTracker._fetch_runs", return_value=[]):
+            state = OrchestratorState.reconstruct_from_wandb("test_directive", ["test_directive"])
+        assert state is None
+
+    def test_returns_none_on_wandb_error(self):
+        """Reconstruction returns None gracefully when wandb is unreachable."""
+        with patch(
+            "sparky.tracking.experiment.ExperimentTracker._fetch_runs",
+            side_effect=Exception("wandb connection refused"),
+        ):
+            state = OrchestratorState.reconstruct_from_wandb("test_directive", ["test_directive"])
+        assert state is None
+
+    def test_reconstructs_sessions_from_runs(self):
+        """State is reconstructed with correct session count and best metrics."""
+        runs = [
+            self._make_mock_run(1, sharpe=0.8, dsr=0.72),
+            self._make_mock_run(2, sharpe=1.2, dsr=0.91),
+            self._make_mock_run(3, sharpe=1.1, dsr=0.88),
+        ]
+        with patch("sparky.tracking.experiment.ExperimentTracker._fetch_runs", return_value=runs):
+            state = OrchestratorState.reconstruct_from_wandb("test_directive", ["test_directive"])
+
+        assert state is not None
+        assert state.session_count == 3
+        assert len(state.sessions) == 3
+        assert state.best_result["sharpe"] == pytest.approx(1.2)
+        assert state.best_result["dsr"] == pytest.approx(0.91)
+
+    def test_falls_back_to_best_sharpe_key(self):
+        """Reconstruction also reads best_sharpe/best_dsr wandb keys."""
+        from unittest.mock import MagicMock
+
+        run = MagicMock()
+        run.id = "run_001"
+        run.tags = ["session_001", "test_directive"]
+        run.config = {}
+        run.summary = {"best_sharpe": 1.5, "best_dsr": 0.96}  # no "sharpe"/"dsr"
+        run.created_at = "2024-01-01T00:00:00Z"
+
+        with patch("sparky.tracking.experiment.ExperimentTracker._fetch_runs", return_value=[run]):
+            state = OrchestratorState.reconstruct_from_wandb("test_directive", ["test_directive"])
+
+        assert state is not None
+        assert state.best_result["sharpe"] == pytest.approx(1.5)

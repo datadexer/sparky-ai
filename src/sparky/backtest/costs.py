@@ -25,25 +25,38 @@ class TransactionCostModel:
 
     @classmethod
     def standard(cls) -> "TransactionCostModel":
-        """Return the standard cost model: 50 bps (0.50%) per trade.
+        """Return the standard cost model: 30 bps (0.30%) per side.
 
-        This is the canonical cost assumption for all Sparky research.
-        Covers exchange fees, slippage, spread, and market impact.
-        A round trip (enter + exit) costs 100 bps (1.0%).
+        Reflects Coinbase Advanced Trade with limit orders at modest volume,
+        or DEX on L2 (Base/Arbitrum). Realistic without assuming discounts.
+        A round trip (enter + exit) costs 60 bps (0.60%).
 
         Returns:
-            TransactionCostModel with 50 bps per trade.
+            TransactionCostModel with 30 bps per side.
+        """
+        return cls(fee_pct=0.0015, slippage_pct=0.001, spread_pct=0.0005)
+
+    @classmethod
+    def stress_test(cls) -> "TransactionCostModel":
+        """Return the stress-test cost model: 50 bps (0.50%) per side.
+
+        Worst case: Coinbase market orders at lowest tier.
+        A round trip (enter + exit) costs 100 bps (1.0%).
+        Research agents should run winners at both standard and stress-test.
+
+        Returns:
+            TransactionCostModel with 50 bps per side.
         """
         return cls(fee_pct=0.001, slippage_pct=0.003, spread_pct=0.001)
 
     @classmethod
     def for_btc(cls) -> "TransactionCostModel":
-        """Return the standard cost model for Bitcoin (50 bps per trade)."""
+        """Return the standard cost model for Bitcoin (30 bps per side)."""
         return cls.standard()
 
     @classmethod
     def for_eth(cls) -> "TransactionCostModel":
-        """Return the standard cost model for Ethereum (50 bps per trade)."""
+        """Return the standard cost model for Ethereum (30 bps per side)."""
         return cls.standard()
 
     def compute_cost(self, position_change: int, asset: str) -> float:

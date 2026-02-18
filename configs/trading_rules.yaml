@@ -91,13 +91,15 @@ research_standards:
     fdr_threshold: 0.05
 
   costs:
-    # Standard: 50 bps (0.50%) per trade, 100 bps round-trip.
-    # This is conservative and covers fees + slippage + spread + market impact.
-    # All research MUST use this. The guardrail enforces minimum 50 bps.
-    standard_cost_bps: 50
-    exchange_fee_pct: 0.10
-    slippage_pct: 0.30
-    spread_estimate_pct: 0.10
+    # Two-tier cost model:
+    # Standard: 30 bps per side — Coinbase limit orders / DEX on L2 (Base/Arbitrum)
+    # Stress test: 50 bps per side — Coinbase market orders at lowest tier
+    # Guardrail enforces minimum 30 bps. Winners reported at both levels.
+    standard_cost_bps: 30
+    stress_test_cost_bps: 50
+    exchange_fee_pct: 0.15
+    slippage_pct: 0.10
+    spread_estimate_pct: 0.05
 
   overfitting:
     max_features_per_model: 20

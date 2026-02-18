@@ -12,8 +12,8 @@ objective: |
        full-period single Sharpe. Walk-forward is more conservative and correct.
 
   Tasks:
-    1. Cost model is now standardized at 50 bps per trade (decided by AK).
-    2. Compute the canonical baseline using: sqrt(365), 50 bps per trade,
+    1. Cost model: standard 30 bps per side, stress test 50 bps per side.
+    2. Compute the canonical baseline at BOTH cost levels using: sqrt(365),
        walk-forward (yearly) mean Sharpe, with bootstrap CI and DSR.
     3. Update the regime_donchian directive's baseline reference number.
     4. Log the canonical baseline to wandb as a reference run.
@@ -34,7 +34,7 @@ strategy_space:
     parameter_ranges:
       entry_period: [40]
       exit_period: [20]
-      cost_bps: [50]
+      cost_bps: [30, 50]
       evaluation: [walk_forward_yearly, full_period]
 stopping_criteria:
   success:
@@ -63,5 +63,5 @@ exclusions:
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() for data — never pd.read_parquet()"
   - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
-  - "Use TransactionCostModel.for_btc() from sparky.backtest.costs to understand the full cost model"
-  - "Use standardized 50 bps per trade costs — this is mandatory for all research"
+  - "Use TransactionCostModel.standard() (30 bps) and TransactionCostModel.stress_test() (50 bps)"
+  - "Report results at both 30 bps and 50 bps cost levels"

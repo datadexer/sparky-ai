@@ -466,17 +466,50 @@ def cmd_history(_args):
 
 
 def _load_orch_state() -> dict | None:
-    """Load the most recent orchestrator state file."""
-    if not STATE_DIR.exists():
+    """Load the most recent orchestrator state file. Falls back to wandb reconstruction."""
+    if STATE_DIR.exists():
+        state_files = sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for sf in state_files:
+            try:
+                with open(sf) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                continue
+
+    # No state file — try to reconstruct from wandb
+    return _reconstruct_orch_state_from_wandb()
+
+
+def _reconstruct_orch_state_from_wandb() -> dict | None:
+    """Reconstruct orchestrator state from wandb runs (read-only, does not save)."""
+    try:
+        # Find the active directive to get tags
+        directives_dir = PROJECT_ROOT / "directives"
+        active_link = directives_dir / "active.yaml"
+        if not active_link.exists():
+            return None
+
+        import yaml
+
+        with open(active_link) as f:
+            directive_data = yaml.safe_load(f)
+
+        name = directive_data.get("name", "")
+        tags = directive_data.get("wandb_tags", [])
+        if not name:
+            return None
+
+        from sparky.workflow.orchestrator import OrchestratorState
+
+        state = OrchestratorState.reconstruct_from_wandb(name, tags)
+        if state is None:
+            return None
+
+        # Read-only: return dict for display without saving to disk.
+        # Budget/cost data is not available in wandb, so this is a partial view.
+        return state.to_dict()
+    except Exception:
         return None
-    state_files = sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-    for sf in state_files:
-        try:
-            with open(sf) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError):
-            continue
-    return None
 
 
 def cmd_orch_status(_args):

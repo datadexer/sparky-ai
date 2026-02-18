@@ -282,6 +282,106 @@ class OrchestratorState:
         with open(filepath) as f:
             return cls.from_dict(json.load(f))
 
+    @classmethod
+    def reconstruct_from_wandb(cls, name: str, directive_tags: list[str]) -> Optional["OrchestratorState"]:
+        """Reconstruct state from wandb runs when the state file is missing.
+
+        Queries wandb for all runs matching the directive's tags, groups them
+        by session_NNN tag, and rebuilds session records with best metrics.
+
+        Returns None if no matching runs are found or wandb is unreachable.
+        """
+        try:
+            from sparky.tracking.experiment import ExperimentTracker
+
+            tracker = ExperimentTracker(experiment_name=name)
+            runs = tracker._fetch_runs(filters={"tags": {"$all": directive_tags}} if directive_tags else {})
+            if not runs:
+                return None
+
+            # Group runs by session tag
+            sessions_map: dict[int, dict] = {}
+            for run in runs:
+                session_num = None
+                for tag in run.tags:
+                    if tag.startswith("session_") and tag[8:].isdigit():
+                        session_num = int(tag[8:])
+                        break
+                if session_num is None:
+                    continue
+
+                if session_num not in sessions_map:
+                    sessions_map[session_num] = {
+                        "run_ids": [],
+                        "configs": [],
+                        "best_sharpe": None,
+                        "best_dsr": None,
+                        "created_at": None,
+                    }
+
+                entry = sessions_map[session_num]
+                entry["run_ids"].append(run.id)
+                entry["configs"].append(dict(run.config))
+
+                s = run.summary.get("sharpe") or run.summary.get("best_sharpe")
+                d = run.summary.get("dsr") or run.summary.get("best_dsr")
+                if s is not None and (entry["best_sharpe"] is None or s > entry["best_sharpe"]):
+                    entry["best_sharpe"] = s
+                if d is not None and (entry["best_dsr"] is None or d > entry["best_dsr"]):
+                    entry["best_dsr"] = d
+
+                # Track earliest run creation time for session ordering
+                created = getattr(run, "created_at", None)
+                if created and (entry["created_at"] is None or created < entry["created_at"]):
+                    entry["created_at"] = created
+
+            if not sessions_map:
+                return None
+
+            # Build session records in order
+            session_records = []
+            for num in sorted(sessions_map):
+                entry = sessions_map[num]
+                record = SessionRecord(
+                    session_id=f"reconstructed_{num:03d}",
+                    session_number=num,
+                    start_ts=entry["created_at"] or "",
+                    end_ts="",
+                    best_sharpe=entry["best_sharpe"],
+                    best_dsr=entry["best_dsr"],
+                    wandb_run_ids=entry["run_ids"],
+                    wandb_run_configs=entry["configs"],
+                )
+                session_records.append(record)
+
+            # Find overall best
+            best_result: dict = {}
+            for rec in session_records:
+                s = rec.best_sharpe or 0
+                curr = best_result.get("sharpe", 0) or 0
+                if s > curr:
+                    best_result = {
+                        "sharpe": rec.best_sharpe,
+                        "dsr": rec.best_dsr,
+                        "session_number": rec.session_number,
+                    }
+
+            state = cls(
+                name=name,
+                status="done",
+                session_count=max(sessions_map),
+                best_result=best_result,
+                sessions=session_records,
+            )
+            logger.info(
+                f"Reconstructed state from wandb: {len(session_records)} sessions, "
+                f"best Sharpe={best_result.get('sharpe', 'N/A')}"
+            )
+            return state
+        except Exception as e:
+            logger.warning(f"Failed to reconstruct state from wandb: {e}")
+            return None
+
 
 # ── Jaccard Diversity ─────────────────────────────────────────────────────
 
@@ -403,16 +503,16 @@ class ContextBuilder:
             )
             results = []
             for run in runs:
-                sharpe = run.summary.get("sharpe")
+                sharpe = run.summary.get("sharpe") or run.summary.get("best_sharpe")
                 if sharpe is None:
                     continue
                 cost_bps = run.config.get("transaction_costs_bps", run.config.get("costs_bps"))
-                low_cost = cost_bps is None or float(cost_bps) < 50
+                low_cost = cost_bps is None or float(cost_bps) < 30
                 results.append(
                     {
                         "family": run.config.get("strategy_family", run.config.get("model_type", "?")),
                         "sharpe": sharpe,
-                        "dsr": run.summary.get("dsr"),
+                        "dsr": run.summary.get("dsr") or run.summary.get("best_dsr"),
                         "params_summary": self._summarize_params(dict(run.config)),
                         "low_cost_warning": low_cost,
                     }
@@ -502,11 +602,19 @@ class ResearchOrchestrator:
         self._lockfile.unlink(missing_ok=True)
 
     def _load_or_create_state(self) -> OrchestratorState:
-        """Load existing state or create fresh."""
+        """Load existing state, reconstruct from wandb, or create fresh."""
         state = OrchestratorState.load(self.directive.name, self.state_dir)
-        if state is None:
-            state = OrchestratorState(name=self.directive.name)
-        return state
+        if state is not None:
+            return state
+
+        # State file missing — try to reconstruct from wandb
+        state = OrchestratorState.reconstruct_from_wandb(self.directive.name, self.directive.wandb_tags)
+        if state is not None:
+            logger.info("State file missing — reconstructed from wandb runs")
+            state.save(self.state_dir)
+            return state
+
+        return OrchestratorState(name=self.directive.name)
 
     def _check_gate_request(self, state: OrchestratorState) -> bool:
         """Check if the agent wrote GATE_REQUEST.md. Returns True if gate triggered."""
@@ -607,8 +715,8 @@ class ResearchOrchestrator:
             for run in runs:
                 run_ids.append(run.id)
                 configs.append(dict(run.config))
-                s = run.summary.get("sharpe")
-                d = run.summary.get("dsr")
+                s = run.summary.get("sharpe") or run.summary.get("best_sharpe")
+                d = run.summary.get("dsr") or run.summary.get("best_dsr")
                 if s is not None and (best_sharpe is None or s > best_sharpe):
                     best_sharpe = s
                 if d is not None and (best_dsr is None or d > best_dsr):
@@ -629,8 +737,25 @@ class ResearchOrchestrator:
         d = self.directive
         session_tag = f"session_{session_number:03d}"
 
+        sl = self.directive.session_limits
         parts = [
-            f"Read CLAUDE.md. You are session {session_number} of research directive '{d.name}'.",
+            f"You are session {session_number} of research directive '{d.name}'.",
+            "",
+            "Read RESEARCH_AGENT.md for all API usage, rules, and examples. "
+            "Do NOT read CLAUDE.md or explore source files — everything you need "
+            "is in RESEARCH_AGENT.md and this prompt.",
+            "",
+            f"## Session Duration — you have up to {sl.max_session_minutes} minutes",
+            "Do NOT exit after running one sweep. Treat this session like a workday:",
+            "1. Design your first experiment batch, run it, analyze results.",
+            "2. Based on what you learned, design the NEXT batch. Run that too.",
+            "3. Keep iterating: run → analyze → design next → run → analyze → ...",
+            "4. Only stop when you have genuinely exhausted productive ideas OR you've "
+            "found a result that meets the success criteria.",
+            "",
+            "A good session runs 3-5 experiment rounds, each informed by the last. "
+            "A bad session runs 1 sweep and exits. Log results to wandb after EACH round "
+            "so progress is captured even if the session is interrupted.",
             "",
             f"## Objective\n{d.objective}",
             "",
@@ -667,37 +792,26 @@ class ResearchOrchestrator:
 
         # Wandb tag instructions
         all_tags = d.wandb_tags + [session_tag]
-        parts.append(f"## Tagging\nTag all wandb runs in this session with: {all_tags}")
-        parts.append("")
-
-        # Cost standard
         parts.append(
-            "## Transaction Costs — 50 bps per side\n"
-            "ALL backtests MUST use `transaction_costs_bps: 50` (50 bps per side, "
-            "100 bps round trip). This reflects Coinbase taker fees / Uniswap DEX costs. "
-            "No discounts, no limit orders. The guardrail will BLOCK runs below 50 bps.\n"
-            "Any prior results using lower costs are NOT directly comparable."
+            f"## Tagging\nTag all wandb runs in this session with: {all_tags}\n\n"
+            "**IMPORTANT:** When logging to wandb, include `sharpe` and `dsr` as top-level "
+            "summary keys (not `best_sharpe`/`best_dsr`). Example:\n"
+            "```python\nwandb.log({'sharpe': best_sharpe, 'dsr': best_dsr, ...})\n```"
         )
         parts.append("")
 
-        # Git prohibition
-        parts.append(
-            "## CRITICAL: Do NOT Use Git\n"
-            "You are a research agent. You must NOT create branches, commit, push, "
-            "or run any git commands. Your outputs go to wandb and results/ only.\n"
-            "If you need a platform change (new feature, bug fix, data issue), "
-            "write `GATE_REQUEST.md` to the project root explaining what you need, "
-            "then exit. The orchestrator will pause for oversight."
-        )
-        parts.append("")
+        # Reminder: costs and git rules are in RESEARCH_AGENT.md
 
         # Stuck protocol
         parts.append(
-            "## Stuck Protocol\n"
-            "If you are stuck (no meaningful new configs to test, blocked by data, "
-            "or need strategic input), write `GATE_REQUEST.md` to the project root "
-            "with a brief explanation and exit. Do NOT re-run configs already in the "
-            "top results table above."
+            "## When to Exit\n"
+            "Do NOT exit just because one sweep finished. Exit ONLY when:\n"
+            "- You have genuinely exhausted all productive ideas (tried 3+ distinct approaches)\n"
+            "- A result meets the success criteria and you've validated it\n"
+            "- You hit a platform blocker (write `GATE_REQUEST.md` and exit)\n\n"
+            "If your first sweep fails, that's INFORMATION — use it to design a better "
+            "second sweep. Try different parameter ranges, different strategy families, "
+            "or different feature combinations. Negative results narrow the search space."
         )
 
         return "\n".join(parts)
