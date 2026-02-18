@@ -19,13 +19,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install uv
-        run: pip install uv
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install dependencies
-        run: |
-          uv pip install -e ".[dev]" --system
-          uv pip install bandit --system
+        run: uv pip install -e ".[dev]" bandit --system
 
       - name: Ruff lint
         run: ruff check src/ scripts/ tests/
@@ -53,7 +54,7 @@ jobs:
           # 1. Holdout violation must be caught
           bad_data = pd.DataFrame({'close': [1,2,3]},
               index=pd.to_datetime(['2025-01-01', '2025-06-01', '2025-12-01'], utc=True))
-          config = {'transaction_costs_bps': 10, 'features': ['f1'], 'target': 'target_1h'}
+          config = {'transaction_costs_bps': 50, 'features': ['f1'], 'target': 'target_1h'}
           result = run_pre_checks(bad_data, config)
           holdout_check = [r for r in result if r.check_name == 'holdout_boundary']
           assert holdout_check and not holdout_check[0].passed, 'Holdout guardrail failed to catch violation!'
