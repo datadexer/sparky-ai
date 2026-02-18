@@ -8,6 +8,7 @@ checks, retries, budget tracking, PAUSE/inject, and alerting.
 import json
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -21,6 +22,16 @@ from sparky.workflow.telemetry import SessionTelemetry, StreamParser, save_telem
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+
+# Idle-loop detection: kill agent if it outputs many consecutive text blocks
+# with no tool calls and repeated "done" phrases.
+IDLE_LOOP_CONSECUTIVE_THRESHOLD = 5
+IDLE_LOOP_PHRASES = re.compile(
+    r"session is done|no further action|all complete|nothing more to do|"
+    r"work is complete|task is complete|i.ve completed|have completed all|"
+    r"no additional work|nothing left to do|finished all",
+    re.IGNORECASE,
+)
 
 
 def _upload_session_to_wandb(telemetry, log_path, step) -> None:
@@ -112,10 +123,16 @@ def launch_claude_session(
     step_name: str = "session",
     attempt: int = 1,
     log_dir: Path = LOG_DIR,
+    disallowed_tools: list[str] | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> SessionTelemetry:
     """Launch a Claude session and collect telemetry.
 
     Module-level function used by both Workflow and ResearchOrchestrator.
+
+    Args:
+        disallowed_tools: Tool patterns to block (e.g. ["Bash(git:*)", "Bash(gh:*)"]).
+        extra_env: Additional environment variables to set for the subprocess.
     """
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     session_id = timestamp
@@ -134,6 +151,8 @@ def launch_claude_session(
 
     parser = StreamParser(session_id=session_id, step=step_name, attempt=attempt)
     env = clean_env()
+    if extra_env:
+        env.update(extra_env)
     timeout_seconds = max_duration_minutes * 60
 
     from sparky.tracking.experiment import clear_current_session, set_current_session
@@ -148,18 +167,21 @@ def launch_claude_session(
         log_file.flush()
 
         try:
+            cmd = [
+                "claude",
+                "-p",
+                prompt,
+                "--model",
+                "sonnet",
+                "--verbose",
+                "--output-format",
+                "stream-json",
+                "--dangerously-skip-permissions",
+            ]
+            if disallowed_tools:
+                cmd.extend(["--disallowedTools", ",".join(disallowed_tools)])
             proc = subprocess.Popen(
-                [
-                    "claude",
-                    "-p",
-                    prompt,
-                    "--model",
-                    "sonnet",
-                    "--verbose",
-                    "--output-format",
-                    "stream-json",
-                    "--dangerously-skip-permissions",
-                ],
+                cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=env,
@@ -169,8 +191,54 @@ def launch_claude_session(
             )
 
             start_time = time.monotonic()
+            idle_consecutive_text = 0  # consecutive text-only messages
+            idle_phrase_hits = 0  # how many of those had idle phrases
             for line in proc.stdout:
                 parser.feed(line, log_file)
+
+                # Idle-loop detection: track consecutive text-only
+                # assistant messages with "done" phrases and no tool use
+                stripped = line.strip()
+                if stripped:
+                    try:
+                        msg = json.loads(stripped)
+                        if msg.get("type") == "assistant":
+                            content = msg.get("message", {}).get("content", [])
+                            has_tool = False
+                            has_idle_phrase = False
+                            if isinstance(content, list):
+                                for block in content:
+                                    if isinstance(block, dict):
+                                        if block.get("type") == "tool_use":
+                                            has_tool = True
+                                        elif block.get("type") == "text":
+                                            text = block.get("text", "")
+                                            if IDLE_LOOP_PHRASES.search(text):
+                                                has_idle_phrase = True
+                            elif isinstance(content, str):
+                                if IDLE_LOOP_PHRASES.search(content):
+                                    has_idle_phrase = True
+
+                            if has_tool:
+                                idle_consecutive_text = 0
+                                idle_phrase_hits = 0
+                            else:
+                                idle_consecutive_text += 1
+                                if has_idle_phrase:
+                                    idle_phrase_hits += 1
+
+                            if idle_consecutive_text >= IDLE_LOOP_CONSECUTIVE_THRESHOLD and idle_phrase_hits >= 3:
+                                proc.kill()
+                                parser.telemetry.exit_reason = "idle_loop_detected"
+                                logger.warning(
+                                    f"Idle loop detected: {idle_consecutive_text} "
+                                    f"consecutive text blocks, {idle_phrase_hits} "
+                                    f"idle phrases. Killing session."
+                                )
+                                break
+                    except json.JSONDecodeError:
+                        pass  # non-JSON line, ignore for idle detection
+
                 if time.monotonic() - start_time > timeout_seconds:
                     proc.kill()
                     parser.telemetry.exit_reason = "timeout"
