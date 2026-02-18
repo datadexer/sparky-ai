@@ -1,4 +1,8 @@
-"""Strategy evaluation metrics beyond Sharpe ratio."""
+"""Strategy evaluation metrics beyond Sharpe ratio.
+
+All Sharpe-derived metrics in this module are per-period (not annualized).
+Callers that need annualized values should multiply by sqrt(periods_per_year).
+"""
 
 import numpy as np
 from scipy.stats import norm
