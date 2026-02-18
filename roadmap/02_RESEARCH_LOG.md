@@ -65,6 +65,89 @@ Tight barriers hurt (-0.086), wide barriers help (+0.105). Only 13/117 configs (
 
 ---
 
+## meta_labeling_donchian_20260218 — Session 2 — 2026-02-18
+
+**DIRECTIVE**: meta_labeling_donchian_20260218
+**STATUS**: SUCCESS — Sharpe 1.981, DSR 0.999 at N=359 (cumulative)
+**DATA**: ohlcv_hourly_max_coverage (95,689 hourly bars, 2013-2023), resampled to 4h (23,923 bars)
+**COSTS**: 30 bps standard, 50 bps stress test
+**ARTIFACTS**: results/meta_labeling_donchian_20260218/
+**BUDGET**: $5.68 total (2 sessions), 32 min wall clock
+
+### Round progression (236 configs, R1-R5A)
+
+| Round | N | Best Sharpe | Finding |
+|-------|---|-------------|---------|
+| R1 | 30 | 1.787 | Shorter Donchian params produce more signals but lower quality |
+| R2A-2E | 100 | 1.800 | 4d features, thr=0.5, C=0.1 optimal; XGBoost/calibration hurt |
+| R3A-3C | 67 | 1.891 | **Donchian(30,25) breakthrough** — wider exit retains higher-quality signals |
+| R4A-4C | 66 | 1.931 | 4j=[trend_r2, regime, adx, dist_sma_60] further improvement |
+| R5A | 36 | **1.981** | 4k=[trend_r2, regime, dist_sma_60, vol_accel] = **session best** |
+
+### Best config
+
+- Donchian(30, 25) on 4h BTC, tp=2.0×ATR, sl=1.5×ATR, vert=20 bars
+- LogReg (C=0.1, balanced): trend_r2, regime_proba_3s, dist_sma_60, vol_accel
+- Threshold 0.5, Accuracy 56.1% OOF purged CV, 156 trades / 248 signals (37% filtered)
+- Sharpe@30bps: **1.981**, DSR: **0.999** at N=359
+- Sharpe@50bps: **1.857**, DSR: 0.998 (cost-robust)
+- MaxDD: **-0.490** (improved from S1's -0.580, still fails <-0.25 deployment criterion)
+
+### Attribution (S1→S2 gain decomposition)
+
+| Factor | Delta Sharpe | % of total |
+|--------|-------------|------------|
+| Primary signal (30,20)→(30,25), same barriers | -0.044 | -23% |
+| Barrier change tp=3.0→2.0, sl=1.5→1.5, vb=30→20 | **+0.149** | **76%** |
+| Feature change 3c→4k (add dist_sma_60, vol_accel) | **+0.090** | **46%** |
+| **Total S1→S2** | **+0.195** | **100%** |
+
+Tighter barriers (+0.149) are the largest contributor — shorter holding period reduces drawdown
+exposure. New features contribute meaningfully (+0.090): dist_sma_60 captures mean-reversion
+risk, vol_accel confirms breakout quality.
+
+### Comparisons
+
+| Config | Sharpe@30 | DSR@359 | MaxDD |
+|--------|-----------|---------|-------|
+| Buy-and-hold BTC (4h, 2013-2023) | 1.288 | — | -0.852 |
+| Raw Donchian(30,20) 4h, no meta | 1.682 | 0.997 | -0.590 |
+| Raw Donchian(30,25) 4h, no meta | 1.691 | — | -0.643 |
+| S1 best: meta (30,20) 3c tp=3.0 vb=30 | 1.787 | 0.998 | -0.580 |
+| **S2 best: meta (30,25) 4k tp=2.0 vb=20** | **1.981** | **0.999** | **-0.490** |
+
+### Sub-period validation
+
+| Period | Sharpe@30 | Sharpe@50 | MaxDD | Ann Return | Trades | Win Rate | B&H Sharpe |
+|--------|-----------|-----------|-------|------------|--------|----------|------------|
+| Full 2013-2023 | 1.981 | 1.857 | -0.490 | 133.4% | 156 | 0.527 | 1.288 |
+| 2017-2023 | 1.609 | 1.479 | -0.436 | 78.1% | 86 | 0.524 | 1.085 |
+| 2020-2023 | 1.444 | 1.297 | -0.436 | 57.7% | 49 | 0.520 | 0.978 |
+
+Strategy beats B&H in all sub-periods. Sharpe declines in shorter windows (expected: fewer
+bars = noisier estimate, and 2013-2016 was strongly favorable). 2020-2023 includes full
+bull+bear cycle and still holds 1.444 @30bps — no flag.
+
+### Caveats (carried forward from S1)
+
+- 2013-2023 is overwhelmingly favorable for long BTC — any long-biased strategy looks good
+- B&H Sharpe 1.288 on same data confirms the tailwind
+- DSR at N=359 (0.999) is the primary validity measure, not raw Sharpe
+- MaxDD -0.490 fails deployment criterion (<-0.25) — needs Layer 4 sizing
+
+### Next step
+
+**Layer 4: position sizing** — fractional Kelly + inverse vol sizing to get MaxDD < -0.25
+while preserving Sharpe > 1.5. See `directives/layer4_sizing_donchian_20260218.yaml`.
+
+### Program totals
+
+- 2 sessions, 359 configs tested, $5.68 total cost, 32 min wall clock
+- Best: Sharpe 1.981 / DSR 0.999 / MaxDD -0.490 @ 30 bps
+- Stress: Sharpe 1.857 / DSR 0.998 @ 50 bps
+
+---
+
 ## regime_donchian_v3 — NEGATIVE RESULT — 2026-02-18
 
 **DIRECTIVE**: regime_donchian_v3

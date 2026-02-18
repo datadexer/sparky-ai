@@ -1,0 +1,141 @@
+name: layer4_sizing_donchian_20260218
+objective: |
+  Apply position sizing to the best meta-labeled 4h Donchian config to get
+  MaxDD below -0.25 (deployment criterion) while preserving Sharpe > 1.5.
+
+  Base strategy (FROZEN — do not modify):
+  - Donchian(30, 25) on 4h BTC, no binary regime filter
+  - LogReg meta-label (C=0.1, balanced): trend_r2, regime_proba_3s,
+    dist_sma_60, vol_accel. Threshold 0.5.
+  - Triple barriers: tp=2.0×ATR, sl=1.5×ATR, vert=20 bars
+  - Source: meta_labeling_donchian_20260218, session 2, R5A
+  - Unsized performance: Sharpe 1.981, DSR 0.999, MaxDD -0.490 @30bps
+
+  The meta-model outputs calibrated probabilities. Fractional Kelly sizing
+  uses these directly: position = kelly_fraction × (2p - 1) where p is the
+  meta-model's predicted probability of profit.
+
+  IMPORTANT: Calibrate probabilities BEFORE Kelly. The JFDS finding says
+  Platt scaling improves fixed position sizing but not empirical CDF sizing.
+  Kelly is fixed-threshold sizing — calibration matters here. Use
+  CalibratedClassifierCV(method='sigmoid', cv=3) on the base LogReg.
+
+  Inverse volatility sizing scales position inversely with realized vol:
+  position = target_vol / realized_vol, clipped to [0.1, 1.5]. This already
+  produced +0.197 Sharpe improvement on daily Donchian. Test whether
+  it stacks with meta-labeling on 4h.
+
+  CRITICAL: Backtest actual position-sized return series. Do NOT estimate
+  MaxDD by dividing raw MaxDD by a scaling factor. Drawdown is path-dependent
+  and compounds — linear estimates are optimistic.
+
+  DSR at cumulative n_trials: Layer 3 tested 359 configs. Layer 4 adds to
+  that total. If Layer 4 tests 200 more, report DSR at n_trials=559.
+
+  Existing code:
+  - inv_vol_sizing(prices, vw, tv): scripts/infra/sweep_utils.py:102
+  - Kelly implementation: scripts/meta_labeling_session1_r2.py:330-346
+  - CalibratedClassifierCV: sklearn.calibration
+  - net_ret(prices, positions, cf): scripts/infra/sweep_utils.py:45
+  - Full meta-labeling pipeline: scripts/meta_labeling_session1_r4.py
+  - compute_all_metrics(returns, n_trials, periods_per_year=2190)
+
+  Three baselines to compare against:
+  1. Raw 4h Donchian(30,25) no meta: Sharpe 1.691
+  2. Meta-labeled unsized: Sharpe 1.981, MaxDD -0.490
+  3. Buy-and-hold BTC: Sharpe 1.288, MaxDD -0.852
+
+  The sub-period validation from Layer 3 showed MaxDD -0.436 on 2020-2023,
+  concentrated in the 2022 bear. Your sizing solution should specifically
+  reduce drawdown during high-volatility regimes. Report sub-period metrics
+  (2017-2023 and 2020-2023) for every config that beats baseline — not just
+  full-period numbers.
+
+  Success = MaxDD > -0.25 AND Sharpe > 1.5 AND DSR > 0.95.
+
+constraints:
+  asset: btc
+  timeframe: 4h
+  dataset: ohlcv_hourly_max_coverage
+  gpu_required: true
+  transaction_costs_bps: 30
+  annualization: 2190
+
+strategy_space:
+  - family: fractional_kelly
+    description: >
+      Calibrated probability → fractional Kelly sizing. Platt-calibrate the
+      LogReg meta-model first (CalibratedClassifierCV sigmoid cv=3), then
+      size each trade as kelly_fraction × (2p - 1). Run FIRST.
+    priority: 1
+    parameter_ranges:
+      kelly_fraction: [0.15, 0.25, 0.35, 0.50]
+      use_calibration: [true]
+      calibration_method: [sigmoid]
+      calibration_cv: [3]
+
+  - family: inverse_vol_sizing
+    description: >
+      Scale position by target_vol / realized_vol. Already worked on daily
+      Donchian (+0.197 Sharpe). Test on 4h meta-labeled returns. Apply AFTER
+      meta-label filter (size the trades the meta-model keeps).
+    priority: 2
+    parameter_ranges:
+      vol_window: [20, 30, 45, 60]
+      target_vol: [0.15, 0.20, 0.30, 0.40]
+
+  - family: combined_kelly_invvol
+    description: >
+      Best Kelly fraction × inverse vol sizing. Meta-model confidence scales
+      base position, vol sizing scales for regime. Only if families 1 and 2
+      each show independent improvement.
+    priority: 3
+    parameter_ranges:
+      kelly_fraction: [0.15, 0.25, 0.35]
+      vol_window: [20, 30, 45]
+      target_vol: [0.15, 0.20, 0.30]
+
+stopping_criteria:
+  success:
+    min_sharpe: 1.30
+    min_dsr: 0.95
+  budget:
+    max_sessions: 5
+    max_hours: 6
+    max_cost_usd: 30
+    digest_every: 2
+  stall:
+    sessions_without_improvement: 3
+    improvement_threshold: 0.03
+    diversity_threshold: 0.80
+
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [layer4_sizing, donchian, 20260218]
+
+gates:
+  - trigger: success_criteria_met
+    action: pause_and_alert
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
+  - "Always include transaction costs (30 bps standard, 50 bps stress) — report both"
+  - "n_trials starts at 360 (cumulative from Layer 3 meta-labeling directive)"
+  - "Do NOT modify the base meta-labeling strategy — only add position sizing on top"
+  - "Backtest actual position-sized returns — do NOT estimate MaxDD by linear scaling"
+  - "Compare against three baselines: raw primary (1.691), meta unsized (1.981), B&H (1.288)"
+  - "Every config that beats baseline must report full-period AND sub-period metrics (2017-2023 and 2020-2023 at minimum). Report buy-and-hold Sharpe for each sub-period as comparison."
+  - "Do NOT report success or trigger success gate unless MaxDD > -0.25. A config with Sharpe > 1.5 but MaxDD < -0.25 is NOT a success — keep searching."
+  - "If success gate triggers on family 1, still run at least one session exploring family 2 before final stop. The goal is to find the best deployment profile, not the first one that passes."
+  - "Triple-barrier labels must use only data available BEFORE signal time"
+  - "Purged CV mandatory with embargo = max_vertical_barrier duration"
+  - "Use uniqueness weighting for sample weights"
