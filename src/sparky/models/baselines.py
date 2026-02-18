@@ -81,9 +81,7 @@ class EqualWeight:
         return np.ones(len(X), dtype=int)
 
 
-def compute_equal_weight_equity(
-    btc_equity: pd.Series, eth_equity: pd.Series
-) -> pd.Series:
+def compute_equal_weight_equity(btc_equity: pd.Series, eth_equity: pd.Series) -> pd.Series:
     """Combine per-asset equity curves into 50/50 portfolio.
 
     Args:
@@ -94,10 +92,12 @@ def compute_equal_weight_equity(
         Combined portfolio equity curve (50% each, starting at 1.0).
     """
     # Align dates
-    combined = pd.DataFrame({
-        "btc": btc_equity,
-        "eth": eth_equity,
-    }).dropna()
+    combined = pd.DataFrame(
+        {
+            "btc": btc_equity,
+            "eth": eth_equity,
+        }
+    ).dropna()
 
     # 50/50 allocation
     combined["portfolio"] = 0.5 * combined["btc"] + 0.5 * combined["eth"]

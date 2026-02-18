@@ -5,12 +5,11 @@ Tests for BuyAndHold, SimpleMomentum, EqualWeight, and compute_equal_weight_equi
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from sparky.models.baselines import (
     BuyAndHold,
-    SimpleMomentum,
     EqualWeight,
+    SimpleMomentum,
     compute_equal_weight_equity,
 )
 
@@ -24,10 +23,13 @@ class TestBuyAndHold:
 
         # Create test DataFrame with DatetimeIndex
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
-        X = pd.DataFrame({
-            "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
-            "volume": [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+                "volume": [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -68,10 +70,13 @@ class TestSimpleMomentum:
         model = SimpleMomentum(period=30, momentum_col="momentum")
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
-        X = pd.DataFrame({
-            "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
-            "momentum": [0.05, -0.02, 0.03, -0.01, 0.04, 0.02, -0.03, 0.01, -0.02, 0.03],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+                "momentum": [0.05, -0.02, 0.03, -0.01, 0.04, 0.02, -0.03, 0.01, -0.02, 0.03],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -84,9 +89,12 @@ class TestSimpleMomentum:
         model = SimpleMomentum()
 
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
-        X = pd.DataFrame({
-            "momentum": [0.05, 0.10, 0.02, 0.001, 0.15],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "momentum": [0.05, 0.10, 0.02, 0.001, 0.15],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -97,9 +105,12 @@ class TestSimpleMomentum:
         model = SimpleMomentum()
 
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
-        X = pd.DataFrame({
-            "momentum": [-0.05, -0.10, -0.02, -0.001, -0.15],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "momentum": [-0.05, -0.10, -0.02, -0.001, -0.15],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -110,9 +121,12 @@ class TestSimpleMomentum:
         model = SimpleMomentum()
 
         dates = pd.date_range("2024-01-01", periods=3, freq="D")
-        X = pd.DataFrame({
-            "momentum": [0.0, 0.0, 0.0],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "momentum": [0.0, 0.0, 0.0],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -124,9 +138,12 @@ class TestSimpleMomentum:
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
         # Create close prices with clear trends
-        X = pd.DataFrame({
-            "close": [100, 103, 106, 109, 112, 115, 118, 115, 112, 109],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "close": [100, 103, 106, 109, 112, 115, 118, 115, 112, 109],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -148,9 +165,12 @@ class TestSimpleMomentum:
         model = SimpleMomentum()
 
         dates = pd.date_range("2024-01-01", periods=8, freq="D")
-        X = pd.DataFrame({
-            "momentum": [np.nan, 0.05, -0.02, np.nan, 0.03, np.nan, -0.01, 0.04],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "momentum": [np.nan, 0.05, -0.02, np.nan, 0.03, np.nan, -0.01, 0.04],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -163,9 +183,12 @@ class TestSimpleMomentum:
         model = SimpleMomentum()
 
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
-        X = pd.DataFrame({
-            "momentum": [0.05, -0.02, 0.03, -0.01, 0.04],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "momentum": [0.05, -0.02, 0.03, -0.01, 0.04],
+            },
+            index=dates,
+        )
         y = pd.Series([1, 0, 1, 0, 1], index=dates)
 
         # Should not raise any errors
@@ -181,10 +204,13 @@ class TestSimpleMomentum:
         model = SimpleMomentum(momentum_col="custom_mom")
 
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
-        X = pd.DataFrame({
-            "custom_mom": [0.05, -0.02, 0.03, -0.01, 0.04],
-            "momentum": [0.10, 0.10, 0.10, 0.10, 0.10],  # Should be ignored
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "custom_mom": [0.05, -0.02, 0.03, -0.01, 0.04],
+                "momentum": [0.10, 0.10, 0.10, 0.10, 0.10],  # Should be ignored
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -201,10 +227,13 @@ class TestEqualWeight:
         model = EqualWeight()
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
-        X = pd.DataFrame({
-            "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
-            "volume": [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+                "volume": [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
+            },
+            index=dates,
+        )
 
         predictions = model.predict(X)
 
@@ -250,13 +279,17 @@ class TestComputeEqualWeightEquity:
         portfolio = compute_equal_weight_equity(btc_equity, eth_equity)
 
         # Expected: 50% * btc + 50% * eth
-        expected = pd.Series([
-            0.5 * 1.0 + 0.5 * 1.0,  # 1.0
-            0.5 * 1.1 + 0.5 * 1.2,  # 1.15
-            0.5 * 1.2 + 0.5 * 1.4,  # 1.3
-            0.5 * 1.3 + 0.5 * 1.6,  # 1.45
-            0.5 * 1.4 + 0.5 * 1.8,  # 1.6
-        ], index=dates, name="portfolio")
+        expected = pd.Series(
+            [
+                0.5 * 1.0 + 0.5 * 1.0,  # 1.0
+                0.5 * 1.1 + 0.5 * 1.2,  # 1.15
+                0.5 * 1.2 + 0.5 * 1.4,  # 1.3
+                0.5 * 1.3 + 0.5 * 1.6,  # 1.45
+                0.5 * 1.4 + 0.5 * 1.8,  # 1.6
+            ],
+            index=dates,
+            name="portfolio",
+        )
 
         pd.testing.assert_series_equal(portfolio, expected)
 

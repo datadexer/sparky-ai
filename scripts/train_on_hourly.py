@@ -21,11 +21,10 @@ Success criteria:
 """
 
 import logging
-from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
 import mlflow
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,15 +41,11 @@ def load_data():
 
     if not features_path.exists():
         raise FileNotFoundError(
-            f"Feature matrix not found: {features_path}\n"
-            "Run scripts/prepare_hourly_features.py first"
+            f"Feature matrix not found: {features_path}\nRun scripts/prepare_hourly_features.py first"
         )
 
     if not targets_path.exists():
-        raise FileNotFoundError(
-            f"Targets not found: {targets_path}\n"
-            "Run scripts/prepare_hourly_features.py first"
-        )
+        raise FileNotFoundError(f"Targets not found: {targets_path}\nRun scripts/prepare_hourly_features.py first")
 
     logger.info(f"Loading features from {features_path}")
     X = pd.read_parquet(features_path)
@@ -85,25 +80,33 @@ def create_splits(X: pd.DataFrame, y: pd.Series):
     train_mask = (X.index >= "2017-01-01") & (X.index < "2021-01-01")
     splits["X_train"] = X[train_mask]
     splits["y_train"] = y[train_mask]
-    logger.info(f"Train: {splits['X_train'].index.min().date()} to {splits['X_train'].index.max().date()} ({len(splits['X_train']):,} samples)")
+    logger.info(
+        f"Train: {splits['X_train'].index.min().date()} to {splits['X_train'].index.max().date()} ({len(splits['X_train']):,} samples)"
+    )
 
     # Validation: 2021-2022
     val_mask = (X.index >= "2021-01-01") & (X.index < "2023-01-01")
     splits["X_val"] = X[val_mask]
     splits["y_val"] = y[val_mask]
-    logger.info(f"Validation: {splits['X_val'].index.min().date()} to {splits['X_val'].index.max().date()} ({len(splits['X_val']):,} samples)")
+    logger.info(
+        f"Validation: {splits['X_val'].index.min().date()} to {splits['X_val'].index.max().date()} ({len(splits['X_val']):,} samples)"
+    )
 
     # Test: 2023
     test_mask = (X.index >= "2023-01-01") & (X.index < "2024-01-01")
     splits["X_test"] = X[test_mask]
     splits["y_test"] = y[test_mask]
-    logger.info(f"Test: {splits['X_test'].index.min().date()} to {splits['X_test'].index.max().date()} ({len(splits['X_test']):,} samples)")
+    logger.info(
+        f"Test: {splits['X_test'].index.min().date()} to {splits['X_test'].index.max().date()} ({len(splits['X_test']):,} samples)"
+    )
 
     # Holdout: 2024-2025 (NEVER touch until final validation)
     holdout_mask = (X.index >= "2024-01-01") & (X.index < "2026-01-01")
     splits["X_holdout"] = X[holdout_mask]
     splits["y_holdout"] = y[holdout_mask]
-    logger.info(f"Holdout: {splits['X_holdout'].index.min().date()} to {splits['X_holdout'].index.max().date()} ({len(splits['X_holdout']):,} samples)")
+    logger.info(
+        f"Holdout: {splits['X_holdout'].index.min().date()} to {splits['X_holdout'].index.max().date()} ({len(splits['X_holdout']):,} samples)"
+    )
 
     return splits
 
@@ -131,7 +134,7 @@ def train_model(X_train, y_train):
         colsample_bytree=0.8,
         reg_alpha=0.5,  # L1 regularization
         reg_lambda=2.0,  # L2 regularization
-        random_state=42
+        random_state=42,
     )
 
     model.fit(X_train, y_train)
@@ -167,7 +170,9 @@ def evaluate_model(model, X, y, split_name: str):
         f"{split_name}_target_balance": target_balance,
     }
 
-    logger.info(f"{split_name} - Accuracy: {accuracy:.3f}, Positive rate: {positive_rate:.1%}, Target balance: {target_balance:.1%}")
+    logger.info(
+        f"{split_name} - Accuracy: {accuracy:.3f}, Positive rate: {positive_rate:.1%}, Target balance: {target_balance:.1%}"
+    )
 
     return metrics, predictions
 
@@ -241,9 +246,7 @@ def main():
     test_metrics, _ = evaluate_model(model, X_test_clean, y_test_clean, "test")
 
     # Leakage detection (use train vs test)
-    leakage_passed = run_leakage_detection(
-        model, X_train_clean, y_train_clean, X_test_clean, y_test_clean
-    )
+    leakage_passed = run_leakage_detection(model, X_train_clean, y_train_clean, X_test_clean, y_test_clean)
 
     # Log to MLflow
     mlflow.set_experiment("phase3_hourly_data")
@@ -264,7 +267,7 @@ def main():
         # Log feature importance
         importance_df = model.get_feature_importances()
         for _, row in importance_df.iterrows():
-            mlflow.log_metric(f"importance_{row['feature']}", float(row['importance']))
+            mlflow.log_metric(f"importance_{row['feature']}", float(row["importance"]))
 
         logger.info(f"Logged to MLflow run: {mlflow.active_run().info.run_id}")
 

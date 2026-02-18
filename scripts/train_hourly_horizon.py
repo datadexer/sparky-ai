@@ -58,14 +58,10 @@ def load_data(horizon: str) -> tuple[pd.DataFrame, pd.Series]:
 
     if not features_path.exists():
         raise FileNotFoundError(
-            f"Features not found: {features_path}\n"
-            "Run scripts/prepare_hourly_training_data.py first"
+            f"Features not found: {features_path}\nRun scripts/prepare_hourly_training_data.py first"
         )
     if not target_path.exists():
-        raise FileNotFoundError(
-            f"Target not found: {target_path}\n"
-            "Run scripts/prepare_hourly_training_data.py first"
-        )
+        raise FileNotFoundError(f"Target not found: {target_path}\nRun scripts/prepare_hourly_training_data.py first")
 
     X = pd.read_parquet(features_path)
     y = pd.read_parquet(target_path)["target"]
@@ -85,9 +81,7 @@ def load_data(horizon: str) -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-def create_splits(
-    X: pd.DataFrame, y: pd.Series
-) -> dict[str, tuple[pd.DataFrame, pd.Series]]:
+def create_splits(X: pd.DataFrame, y: pd.Series) -> dict[str, tuple[pd.DataFrame, pd.Series]]:
     """Create temporal train/val/test/holdout splits."""
     splits = {}
     for name, (start, end) in SPLIT_BOUNDS.items():
@@ -105,9 +99,7 @@ def create_splits(
     return splits
 
 
-def compute_metrics(
-    y_true: pd.Series, y_pred: np.ndarray, y_proba: np.ndarray
-) -> dict:
+def compute_metrics(y_true: pd.Series, y_pred: np.ndarray, y_proba: np.ndarray) -> dict:
     """Compute classification metrics."""
     metrics = {
         "accuracy": accuracy_score(y_true, y_pred),
@@ -123,9 +115,7 @@ def compute_metrics(
     return metrics
 
 
-def evaluate_standard_and_nonoverlap(
-    model, X: pd.DataFrame, y: pd.Series, stride: int, split_name: str
-) -> dict:
+def evaluate_standard_and_nonoverlap(model, X: pd.DataFrame, y: pd.Series, stride: int, split_name: str) -> dict:
     """Evaluate model in both standard and non-overlapping modes.
 
     Args:
@@ -241,12 +231,14 @@ def main():
     results["leakage_passed"] = report.passed
     results["leakage_checks"] = []
     for check in report.checks:
-        results["leakage_checks"].append({
-            "name": check.check_name,
-            "passed": check.passed,
-            "detail": check.detail,
-            "metric_value": check.metric_value,
-        })
+        results["leakage_checks"].append(
+            {
+                "name": check.check_name,
+                "passed": check.passed,
+                "detail": check.detail,
+                "metric_value": check.metric_value,
+            }
+        )
     logger.info(f"Leakage detection: {'PASSED' if report.passed else 'FAILED'}")
     if not report.passed:
         for check in report.failed_checks:
@@ -312,9 +304,7 @@ def main():
 
                 # Log feature importance
                 for item in results["feature_importance"][:10]:
-                    mlflow.log_metric(
-                        f"importance_{item['feature']}", float(item["importance"])
-                    )
+                    mlflow.log_metric(f"importance_{item['feature']}", float(item["importance"]))
 
                 mlflow.log_artifact(str(results_path))
                 logger.info(f"Logged to MLflow: {mlflow.active_run().info.run_id}")

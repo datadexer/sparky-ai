@@ -82,22 +82,15 @@ class FeatureSelector:
         # Step 2: Importance threshold (requires model)
         importance_scores = None
         if model is not None and len(remaining) > 0:
-            remaining, imp_dropped, importance_scores = self._importance_filter(
-                X[remaining], y, model
-            )
+            remaining, imp_dropped, importance_scores = self._importance_filter(X[remaining], y, model)
             dropped.extend(imp_dropped)
 
         # Step 3: Stability test (requires model)
         stability_scores = None
         if model is not None and len(remaining) > 0:
-            stability_scores, stability_flagged = self._stability_test(
-                X[remaining], y, model
-            )
+            stability_scores, stability_flagged = self._stability_test(X[remaining], y, model)
             for feat_info in stability_flagged:
-                logger.warning(
-                    f"Unstable feature '{feat_info['name']}': "
-                    f"importance variance = {feat_info['detail']}"
-                )
+                logger.warning(f"Unstable feature '{feat_info['name']}': importance variance = {feat_info['detail']}")
             # Don't drop unstable features, just flag them
             flagged.extend(stability_flagged)
 
@@ -110,21 +103,20 @@ class FeatureSelector:
                     key=lambda f: importance_scores.get(f, 0),
                     reverse=True,
                 )
-                capped = sorted_by_imp[self.max_features:]
-                remaining = sorted_by_imp[:self.max_features]
+                capped = sorted_by_imp[self.max_features :]
+                remaining = sorted_by_imp[: self.max_features]
                 for f in capped:
-                    dropped.append({
-                        "name": f,
-                        "reason": "max_features_cap",
-                        "detail": f"Exceeded {self.max_features} feature limit",
-                    })
+                    dropped.append(
+                        {
+                            "name": f,
+                            "reason": "max_features_cap",
+                            "detail": f"Exceeded {self.max_features} feature limit",
+                        }
+                    )
             else:
-                remaining = remaining[:self.max_features]
+                remaining = remaining[: self.max_features]
 
-        logger.info(
-            f"Feature selection: {len(remaining)} selected, "
-            f"{len(dropped)} dropped, {len(flagged)} flagged"
-        )
+        logger.info(f"Feature selection: {len(remaining)} selected, {len(dropped)} dropped, {len(flagged)} flagged")
 
         return SelectionResult(
             selected_features=remaining,
@@ -167,18 +159,22 @@ class FeatureSelector:
                     fi, fj = features[i], features[j]
                     if target_corr.get(fi, 0) >= target_corr.get(fj, 0):
                         to_drop.add(fj)
-                        dropped.append({
-                            "name": fj,
-                            "reason": "correlation",
-                            "detail": f"corr={corr_matrix.iloc[i, j]:.3f} with {fi}",
-                        })
+                        dropped.append(
+                            {
+                                "name": fj,
+                                "reason": "correlation",
+                                "detail": f"corr={corr_matrix.iloc[i, j]:.3f} with {fi}",
+                            }
+                        )
                     else:
                         to_drop.add(fi)
-                        dropped.append({
-                            "name": fi,
-                            "reason": "correlation",
-                            "detail": f"corr={corr_matrix.iloc[i, j]:.3f} with {fj}",
-                        })
+                        dropped.append(
+                            {
+                                "name": fi,
+                                "reason": "correlation",
+                                "detail": f"corr={corr_matrix.iloc[i, j]:.3f} with {fj}",
+                            }
+                        )
 
         remaining = [f for f in features if f not in to_drop]
         return remaining, dropped, corr_matrix
@@ -200,11 +196,13 @@ class FeatureSelector:
 
         for feat, imp in scores.items():
             if imp < self.importance_threshold:
-                dropped.append({
-                    "name": feat,
-                    "reason": "low_importance",
-                    "detail": f"importance={imp:.4f} < {self.importance_threshold}",
-                })
+                dropped.append(
+                    {
+                        "name": feat,
+                        "reason": "low_importance",
+                        "detail": f"importance={imp:.4f} < {self.importance_threshold}",
+                    }
+                )
             else:
                 remaining.append(feat)
 
@@ -247,10 +245,12 @@ class FeatureSelector:
         flagged = []
         for feat, var in variances.items():
             if var > self.stability_variance_threshold:
-                flagged.append({
-                    "name": feat,
-                    "reason": "unstable_importance",
-                    "detail": f"variance={var:.4f} > {self.stability_variance_threshold}",
-                })
+                flagged.append(
+                    {
+                        "name": feat,
+                        "reason": "unstable_importance",
+                        "detail": f"variance={var:.4f} > {self.stability_variance_threshold}",
+                    }
+                )
 
         return variances, flagged

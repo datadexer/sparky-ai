@@ -19,8 +19,8 @@ from typing import Optional
 from sparky.types.config_types import PaperTradingConfig
 from sparky.types.portfolio_types import (
     OrderSide,
-    Position,
     PortfolioState,
+    Position,
     TradeOrder,
 )
 
@@ -34,9 +34,7 @@ class HaltCondition(Exception):
         self.reason = reason
         self.metric_value = metric_value
         self.threshold = threshold
-        super().__init__(
-            f"HALT: {reason} (value={metric_value:.2f}, threshold={threshold:.2f})"
-        )
+        super().__init__(f"HALT: {reason} (value={metric_value:.2f}, threshold={threshold:.2f})")
 
 
 class PaperTradingEngine:
@@ -95,7 +93,7 @@ class PaperTradingEngine:
 
         logger.info(
             f"PaperTradingEngine initialized: ${start_capital:,.0f} capital, "
-            f"fee={fee_pct*100:.2f}%, slippage={slippage_pct*100:.3f}%"
+            f"fee={fee_pct * 100:.2f}%, slippage={slippage_pct * 100:.3f}%"
         )
 
     def get_portfolio_value(self, current_prices: dict[str, float]) -> float:
@@ -107,11 +105,7 @@ class PaperTradingEngine:
         Returns:
             Total portfolio value in USD.
         """
-        position_value = sum(
-            qty * current_prices.get(asset, 0.0)
-            for asset, qty in self.positions.items()
-            if qty > 0
-        )
+        position_value = sum(qty * current_prices.get(asset, 0.0) for asset, qty in self.positions.items() if qty > 0)
         return self.cash + position_value
 
     def get_state(self, current_prices: dict[str, float]) -> PortfolioState:
@@ -241,7 +235,7 @@ class PaperTradingEngine:
 
         # Check daily trade limit
         if self.trades_today >= self.config.max_daily_trades:
-            logger.warning(f"Daily trade limit reached, skipping signal")
+            logger.warning("Daily trade limit reached, skipping signal")
             return None
 
         # Execute trade
@@ -259,9 +253,7 @@ class PaperTradingEngine:
 
         return order
 
-    def _execute_buy(
-        self, timestamp: datetime, asset: str, value: float, price: float
-    ) -> Optional[TradeOrder]:
+    def _execute_buy(self, timestamp: datetime, asset: str, value: float, price: float) -> Optional[TradeOrder]:
         """Execute a buy order.
 
         Args:
@@ -314,22 +306,22 @@ class PaperTradingEngine:
             f"(cost: ${total_cost:,.2f}, fees: ${quantity * price * total_cost_rate:,.2f})"
         )
 
-        self.trade_history.append({
-            "timestamp": str(timestamp),
-            "asset": asset,
-            "side": "buy",
-            "quantity": quantity,
-            "price": price,
-            "value": quantity * price,
-            "fees": quantity * price * total_cost_rate,
-            "cash_after": self.cash,
-        })
+        self.trade_history.append(
+            {
+                "timestamp": str(timestamp),
+                "asset": asset,
+                "side": "buy",
+                "quantity": quantity,
+                "price": price,
+                "value": quantity * price,
+                "fees": quantity * price * total_cost_rate,
+                "cash_after": self.cash,
+            }
+        )
 
         return order
 
-    def _execute_sell(
-        self, timestamp: datetime, asset: str, value: float, price: float
-    ) -> Optional[TradeOrder]:
+    def _execute_sell(self, timestamp: datetime, asset: str, value: float, price: float) -> Optional[TradeOrder]:
         """Execute a sell order.
 
         Args:
@@ -379,36 +371,36 @@ class PaperTradingEngine:
             f"(proceeds: ${proceeds:,.2f}, fees: ${quantity * price * total_cost_rate:,.2f})"
         )
 
-        self.trade_history.append({
-            "timestamp": str(timestamp),
-            "asset": asset,
-            "side": "sell",
-            "quantity": quantity,
-            "price": price,
-            "value": quantity * price,
-            "fees": quantity * price * total_cost_rate,
-            "cash_after": self.cash,
-        })
+        self.trade_history.append(
+            {
+                "timestamp": str(timestamp),
+                "asset": asset,
+                "side": "sell",
+                "quantity": quantity,
+                "price": price,
+                "value": quantity * price,
+                "fees": quantity * price * total_cost_rate,
+                "cash_after": self.cash,
+            }
+        )
 
         return order
 
-    def _update_equity(
-        self, timestamp: datetime, current_prices: dict[str, float]
-    ) -> None:
+    def _update_equity(self, timestamp: datetime, current_prices: dict[str, float]) -> None:
         """Update equity tracking after a trade."""
         total_value = self.get_portfolio_value(current_prices)
         self.peak_equity = max(self.peak_equity, total_value)
 
-        self.equity_history.append({
-            "timestamp": str(timestamp),
-            "total_value": total_value,
-            "cash": self.cash,
-            "drawdown_pct": self.get_drawdown(current_prices),
-        })
+        self.equity_history.append(
+            {
+                "timestamp": str(timestamp),
+                "total_value": total_value,
+                "cash": self.cash,
+                "drawdown_pct": self.get_drawdown(current_prices),
+            }
+        )
 
-    def record_daily_snapshot(
-        self, timestamp: datetime, current_prices: dict[str, float]
-    ) -> dict:
+    def record_daily_snapshot(self, timestamp: datetime, current_prices: dict[str, float]) -> dict:
         """Record end-of-day portfolio snapshot.
 
         Args:
@@ -421,11 +413,7 @@ class PaperTradingEngine:
         total_value = self.get_portfolio_value(current_prices)
         self.peak_equity = max(self.peak_equity, total_value)
 
-        prev_value = (
-            self.equity_history[-1]["total_value"]
-            if self.equity_history
-            else self.start_capital
-        )
+        prev_value = self.equity_history[-1]["total_value"] if self.equity_history else self.start_capital
         daily_return = (total_value - prev_value) / prev_value if prev_value > 0 else 0
         total_return = (total_value - self.start_capital) / self.start_capital
 
@@ -491,9 +479,7 @@ class PaperTradingEngine:
             "current_value": total_value,
             "total_return_pct": total_return * 100,
             "peak_equity": self.peak_equity,
-            "max_drawdown_pct": max(
-                (s.get("drawdown_pct", 0) for s in self.daily_pnl), default=0
-            ),
+            "max_drawdown_pct": max((s.get("drawdown_pct", 0) for s in self.daily_pnl), default=0),
             "n_trades": n_trades,
             "n_buys": n_buys,
             "n_sells": n_sells,

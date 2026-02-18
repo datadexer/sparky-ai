@@ -20,10 +20,11 @@ Target:
 """
 
 import logging
+
 import pandas as pd
 
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.regime_indicators import compute_volatility_regime
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def regime_filtered_donchian(
 
     if filter_high_vol:
         # Force FLAT in HIGH volatility periods
-        high_vol_mask = (regime == "high")
+        high_vol_mask = regime == "high"
         filtered_signals[high_vol_mask] = 0
 
         n_filtered = high_vol_mask.sum()
@@ -104,7 +105,7 @@ def regime_filtered_ensemble(
     filtered_ensemble = base_ensemble.copy()
 
     if filter_high_vol:
-        high_vol_mask = (regime == "high")
+        high_vol_mask = regime == "high"
         filtered_ensemble[high_vol_mask] = 0
 
         n_filtered = high_vol_mask.sum()

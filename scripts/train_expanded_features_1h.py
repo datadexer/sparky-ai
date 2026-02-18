@@ -9,19 +9,21 @@ Compares:
 
 Key question: Do macro/on-chain features improve beyond the base 23 features?
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
-import pandas as pd
-import numpy as np
 import json
 from pathlib import Path
-from datetime import datetime
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score, log_loss
-from catboost import CatBoostClassifier
 
-from sparky.models.xgboost_model import XGBoostModel
+import numpy as np
+import pandas as pd
+from catboost import CatBoostClassifier
+from sklearn.metrics import accuracy_score, f1_score, log_loss, precision_score, recall_score, roc_auc_score
+
 from sparky.backtest.leakage_detector import LeakageDetector
+from sparky.models.xgboost_model import XGBoostModel
 
 
 def load_and_join_features():
@@ -44,7 +46,7 @@ def load_and_join_features():
 
     # Join all features (inner join to handle NaN alignment)
     print("Joining feature sets...")
-    features_all = features_base.join(features_macro, how='inner').join(features_onchain, how='inner')
+    features_all = features_base.join(features_macro, how="inner").join(features_onchain, how="inner")
     print(f"Combined features (after inner join): {features_all.shape}")
 
     # Drop any remaining NaN rows
@@ -64,7 +66,7 @@ def load_and_join_features():
     targets = targets.loc[common_idx]
 
     # Clean inf values (replace with NaN, then drop)
-    print(f"Checking for inf values...")
+    print("Checking for inf values...")
     inf_mask = np.isinf(features_all).any(axis=1)
     print(f"Rows with inf: {inf_mask.sum()}")
     features_all = features_all[~inf_mask]
@@ -172,15 +174,14 @@ def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test, model_
         importance = model.model.feature_importances_
         feature_names = X_train.columns.tolist()
 
-    importance_df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': importance
-    }).sort_values('importance', ascending=False)
+    importance_df = pd.DataFrame({"feature": feature_names, "importance": importance}).sort_values(
+        "importance", ascending=False
+    )
 
-    results['feature_importance_top15'] = importance_df.head(15).to_dict('records')
+    results["feature_importance_top15"] = importance_df.head(15).to_dict("records")
 
     # Print results
-    print(f"\nValidation Results:")
+    print("\nValidation Results:")
     print(f"  Accuracy: {results['val_accuracy']:.4f}")
     print(f"  AUC: {results['val_auc']:.4f}")
     print(f"  Precision: {results['val_precision']:.4f}")
@@ -188,7 +189,7 @@ def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test, model_
     print(f"  F1: {results['val_f1']:.4f}")
     print(f"  Log Loss: {results['val_logloss']:.4f}")
 
-    print(f"\nTest Results:")
+    print("\nTest Results:")
     print(f"  Accuracy: {results['test_accuracy']:.4f}")
     print(f"  AUC: {results['test_auc']:.4f}")
     print(f"  Precision: {results['test_precision']:.4f}")
@@ -196,7 +197,7 @@ def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test, model_
     print(f"  F1: {results['test_f1']:.4f}")
     print(f"  Log Loss: {results['test_logloss']:.4f}")
 
-    print(f"\nTop 15 Features:")
+    print("\nTop 15 Features:")
     for i, row in enumerate(importance_df.head(15).itertuples(), 1):
         print(f"  {i:2d}. {row.feature:30s} {row.importance:10.4f}")
     print()
@@ -303,8 +304,7 @@ def main():
     )
 
     results_base, model_base = evaluate_model(
-        catboost_base, X_train_base, y_train, X_val_base, y_val, X_test_base, y_test,
-        "CatBoost (base features)"
+        catboost_base, X_train_base, y_train, X_val_base, y_val, X_test_base, y_test, "CatBoost (base features)"
     )
     all_results.append(results_base)
 
@@ -329,8 +329,7 @@ def main():
     )
 
     results_catboost, model_catboost = evaluate_model(
-        catboost_expanded, X_train_all, y_train, X_val_all, y_val, X_test_all, y_test,
-        "CatBoost (expanded features)"
+        catboost_expanded, X_train_all, y_train, X_val_all, y_val, X_test_all, y_test, "CatBoost (expanded features)"
     )
     all_results.append(results_catboost)
 
@@ -350,12 +349,11 @@ def main():
         min_child_weight=5,
         reg_alpha=0.5,
         reg_lambda=2.0,
-        random_state=42
+        random_state=42,
     )
 
     results_xgboost, model_xgboost = evaluate_model(
-        xgboost_expanded, X_train_all, y_train, X_val_all, y_val, X_test_all, y_test,
-        "XGBoost (expanded features)"
+        xgboost_expanded, X_train_all, y_train, X_val_all, y_val, X_test_all, y_test, "XGBoost (expanded features)"
     )
     all_results.append(results_xgboost)
 
@@ -376,15 +374,15 @@ def main():
     print("=" * 80)
 
     print("\nCatBoost (base features) - Top 10:")
-    for i, feat in enumerate(results_base['feature_importance_top15'][:10], 1):
+    for i, feat in enumerate(results_base["feature_importance_top15"][:10], 1):
         print(f"  {i:2d}. {feat['feature']:30s} {feat['importance']:10.4f}")
 
     print("\nCatBoost (expanded features) - Top 10:")
-    for i, feat in enumerate(results_catboost['feature_importance_top15'][:10], 1):
+    for i, feat in enumerate(results_catboost["feature_importance_top15"][:10], 1):
         print(f"  {i:2d}. {feat['feature']:30s} {feat['importance']:10.4f}")
 
     print("\nXGBoost (expanded features) - Top 10:")
-    for i, feat in enumerate(results_xgboost['feature_importance_top15'][:10], 1):
+    for i, feat in enumerate(results_xgboost["feature_importance_top15"][:10], 1):
         print(f"  {i:2d}. {feat['feature']:30s} {feat['importance']:10.4f}")
 
     # Count macro/onchain features in top 15
@@ -393,21 +391,35 @@ def main():
     print("=" * 80)
 
     macro_features = [
-        'dxy_return_1d', 'dxy_return_5d', 'dxy_sma_ratio_20d',
-        'gold_return_1d', 'gold_return_5d', 'gold_sma_ratio_20d',
-        'spx_return_1d', 'spx_return_5d', 'spx_vol_5d',
-        'vix_level', 'vix_change_1d', 'vix_sma_ratio_10d', 'btc_gold_corr_30d'
+        "dxy_return_1d",
+        "dxy_return_5d",
+        "dxy_sma_ratio_20d",
+        "gold_return_1d",
+        "gold_return_5d",
+        "gold_sma_ratio_20d",
+        "spx_return_1d",
+        "spx_return_5d",
+        "spx_vol_5d",
+        "vix_level",
+        "vix_change_1d",
+        "vix_sma_ratio_10d",
+        "btc_gold_corr_30d",
     ]
 
     onchain_features = [
-        'mvrv_ratio', 'mvrv_zscore', 'active_addresses_change_7d',
-        'hash_rate_change_30d', 'exchange_net_flow_7d',
-        'fee_ratio_change_7d', 'tx_count_change_7d', 'nvt_ratio'
+        "mvrv_ratio",
+        "mvrv_zscore",
+        "active_addresses_change_7d",
+        "hash_rate_change_30d",
+        "exchange_net_flow_7d",
+        "fee_ratio_change_7d",
+        "tx_count_change_7d",
+        "nvt_ratio",
     ]
 
     for results in [results_catboost, results_xgboost]:
-        model_name = results['model']
-        top15_features = [f['feature'] for f in results['feature_importance_top15']]
+        model_name = results["model"]
+        top15_features = [f["feature"] for f in results["feature_importance_top15"]]
 
         macro_count = sum(1 for f in top15_features if f in macro_features)
         onchain_count = sum(1 for f in top15_features if f in onchain_features)
@@ -417,48 +429,49 @@ def main():
         print(f"  Onchain features in top 15: {onchain_count}/8")
 
         if macro_count > 0:
-            print(f"  Top macro features:")
+            print("  Top macro features:")
             for f in top15_features:
                 if f in macro_features:
-                    importance = next(item['importance'] for item in results['feature_importance_top15'] if item['feature'] == f)
+                    importance = next(
+                        item["importance"] for item in results["feature_importance_top15"] if item["feature"] == f
+                    )
                     print(f"    - {f:30s} {importance:10.4f}")
 
         if onchain_count > 0:
-            print(f"  Top onchain features:")
+            print("  Top onchain features:")
             for f in top15_features:
                 if f in onchain_features:
-                    importance = next(item['importance'] for item in results['feature_importance_top15'] if item['feature'] == f)
+                    importance = next(
+                        item["importance"] for item in results["feature_importance_top15"] if item["feature"] == f
+                    )
                     print(f"    - {f:30s} {importance:10.4f}")
 
     # ========================================
     # Leakage detection on best model
     # ========================================
     # Determine best model by test AUC
-    best_result = max(all_results, key=lambda x: x['test_auc'])
+    best_result = max(all_results, key=lambda x: x["test_auc"])
     print("\n" + "=" * 80)
     print(f"BEST MODEL: {best_result['model']} (Test AUC: {best_result['test_auc']:.4f})")
     print("=" * 80)
 
     # Run leakage detection on the best model
-    if "CatBoost (expanded" in best_result['model']:
+    if "CatBoost (expanded" in best_result["model"]:
         best_model = model_catboost
-    elif "XGBoost" in best_result['model']:
+    elif "XGBoost" in best_result["model"]:
         best_model = model_xgboost
     else:
         best_model = model_base
 
-    leakage_results = run_leakage_detection(
-        best_model, X_train_all, y_train, X_val_all, y_val,
-        best_result['model']
-    )
+    leakage_results = run_leakage_detection(best_model, X_train_all, y_train, X_val_all, y_val, best_result["model"])
 
     # Add leakage results to best model's results file
-    best_result['leakage_detection'] = leakage_results
+    best_result["leakage_detection"] = leakage_results
 
     # Determine which file to update
-    if "CatBoost (expanded" in best_result['model']:
+    if "CatBoost (expanded" in best_result["model"]:
         output_file = results_dir / "catboost_expanded_results.json"
-    elif "XGBoost" in best_result['model']:
+    elif "XGBoost" in best_result["model"]:
         output_file = results_dir / "xgboost_expanded_results.json"
     else:
         output_file = results_dir / "catboost_base_results.json"
@@ -473,9 +486,9 @@ def main():
     print("SUMMARY")
     print("=" * 80)
 
-    baseline_auc = results_base['test_auc']
-    catboost_delta = results_catboost['test_auc'] - baseline_auc
-    xgboost_delta = results_xgboost['test_auc'] - baseline_auc
+    baseline_auc = results_base["test_auc"]
+    catboost_delta = results_catboost["test_auc"] - baseline_auc
+    xgboost_delta = results_xgboost["test_auc"] - baseline_auc
 
     print(f"\nBaseline (CatBoost, base features): {baseline_auc:.4f} Test AUC")
     print(f"CatBoost with expanded features: {results_catboost['test_auc']:.4f} Test AUC ({catboost_delta:+.4f})")
@@ -493,14 +506,14 @@ def main():
     print("=" * 80)
 
     if catboost_delta > 0.01:
-        print(f"YES - CatBoost improved by {catboost_delta:.4f} AUC ({catboost_delta/baseline_auc*100:.1f}%)")
+        print(f"YES - CatBoost improved by {catboost_delta:.4f} AUC ({catboost_delta / baseline_auc * 100:.1f}%)")
     elif catboost_delta > 0:
         print(f"MARGINAL - CatBoost improved by {catboost_delta:.4f} AUC (small gain)")
     else:
         print(f"NO - CatBoost declined by {catboost_delta:.4f} AUC (no improvement)")
 
     if xgboost_delta > 0.01:
-        print(f"YES - XGBoost improved by {xgboost_delta:.4f} AUC ({xgboost_delta/baseline_auc*100:.1f}%)")
+        print(f"YES - XGBoost improved by {xgboost_delta:.4f} AUC ({xgboost_delta / baseline_auc * 100:.1f}%)")
     elif xgboost_delta > 0:
         print(f"MARGINAL - XGBoost improved by {xgboost_delta:.4f} AUC (small gain)")
     else:

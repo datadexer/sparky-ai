@@ -3,11 +3,11 @@
 from .activity_logger import AgentActivityLogger
 from .holdout_guard import HoldoutGuard, HoldoutViolation
 from .resource_manager import (
-    ResourceManager,
-    get_resource_manager,
-    ResourceManagerError,
     CircuitBreakerOpen,
+    ResourceManager,
+    ResourceManagerError,
     SystemStatus,
+    get_resource_manager,
 )
 from .time_tracker import TaskTimer
 

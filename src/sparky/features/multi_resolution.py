@@ -32,9 +32,7 @@ def rsi_multi_resolution(close: pd.Series, windows: list[int] = None) -> dict[st
     return result
 
 
-def momentum_multi_resolution(
-    close: pd.Series, windows: list[int] = None
-) -> dict[str, pd.Series]:
+def momentum_multi_resolution(close: pd.Series, windows: list[int] = None) -> dict[str, pd.Series]:
     """Compute momentum at multiple timeframes.
 
     Default windows: [4, 12, 24, 72, 168] hours
@@ -142,9 +140,7 @@ def bb_squeeze_multi_resolution(
     return result
 
 
-def volatility_regime_multi_resolution(
-    returns: pd.Series, resolutions: list[int] = None
-) -> dict[str, pd.Series]:
+def volatility_regime_multi_resolution(returns: pd.Series, resolutions: list[int] = None) -> dict[str, pd.Series]:
     """Compute volatility regime at multiple timeframes.
 
     Formula: realized_vol_{N}h / realized_vol_{7d}

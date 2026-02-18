@@ -39,8 +39,14 @@ SEED = 42
 
 # Feature groups
 FEATURE_GROUPS = {
-    "all": ["rsi_14", "momentum_30d", "ema_ratio_20d", "hash_ribbon_btc",
-            "address_momentum_btc", "volume_momentum_btc"],
+    "all": [
+        "rsi_14",
+        "momentum_30d",
+        "ema_ratio_20d",
+        "hash_ribbon_btc",
+        "address_momentum_btc",
+        "volume_momentum_btc",
+    ],
     "technical": ["rsi_14", "momentum_30d", "ema_ratio_20d"],
     "onchain": ["hash_ribbon_btc", "address_momentum_btc", "volume_momentum_btc"],
 }
@@ -136,9 +142,7 @@ def run_single_experiment(
         max_dd = max_drawdown(result.equity_curve)
         total_return = (result.equity_curve.iloc[-1] - 1.0) * 100
 
-        sharpe_ci = BacktestStatistics.sharpe_confidence_interval(
-            returns_from_equity, n_bootstrap=1000
-        )
+        sharpe_ci = BacktestStatistics.sharpe_confidence_interval(returns_from_equity, n_bootstrap=1000)
 
         logger.info(f"Sharpe: {sharpe:.4f}, CI: ({sharpe_ci[0]:.4f}, {sharpe_ci[1]:.4f})")
         logger.info(f"Max DD: {max_dd:.2%}, Total Return: {total_return:.2%}")
@@ -177,6 +181,7 @@ def main():
 
     # Load returns for backtesting
     from sparky.data.storage import DataStore
+
     store = DataStore()
     btc_ohlcv, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
     returns = btc_ohlcv["close"].pct_change().reindex(X_all.index)
@@ -209,12 +214,14 @@ def main():
                 results.append(result)
                 logger.info(f"✓ Experiment complete: {result.get('status')}")
             else:
-                logger.error(f"✗ Experiment failed")
-                results.append({
-                    "feature_set": feature_set_name,
-                    "horizon": horizon,
-                    "status": "FAILED",
-                })
+                logger.error("✗ Experiment failed")
+                results.append(
+                    {
+                        "feature_set": feature_set_name,
+                        "horizon": horizon,
+                        "status": "FAILED",
+                    }
+                )
 
     # Save results
     output_dir = Path("results/experiments")
@@ -224,11 +231,15 @@ def main():
     output_file = output_dir / f"phase2_3_results_{timestamp}.json"
 
     with open(output_file, "w") as f:
-        json.dump({
-            "timestamp": timestamp,
-            "baseline_sharpe": BASELINE_SHARPE,
-            "experiments": results,
-        }, f, indent=2)
+        json.dump(
+            {
+                "timestamp": timestamp,
+                "baseline_sharpe": BASELINE_SHARPE,
+                "experiments": results,
+            },
+            f,
+            indent=2,
+        )
 
     logger.info(f"\n✓ Results saved to {output_file}")
 
@@ -254,10 +265,11 @@ def main():
         df = pd.DataFrame(successful)
         df_sorted = df.sort_values("sharpe", ascending=False).head(5)
 
-        print(df_sorted[[
-            "feature_set", "horizon", "sharpe", "sharpe_ci_low", "sharpe_ci_high",
-            "max_dd", "delta_vs_baseline"
-        ]].to_string(index=False))
+        print(
+            df_sorted[
+                ["feature_set", "horizon", "sharpe", "sharpe_ci_low", "sharpe_ci_high", "max_dd", "delta_vs_baseline"]
+            ].to_string(index=False)
+        )
 
         # Check if any beat baseline
         best_sharpe = df["sharpe"].max()
@@ -291,7 +303,7 @@ def main():
             print(f"   Best Sharpe: {best_sharpe:.4f} in [0.50, 0.70] range")
             print("   Recommendation: Pivot to ETH or different target variable")
 
-    print(f"\n✓ Phase 2-3 complete")
+    print("\n✓ Phase 2-3 complete")
     print(f"Results: {output_file}")
 
 

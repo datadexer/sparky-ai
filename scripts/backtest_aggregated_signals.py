@@ -16,11 +16,11 @@ Performance Metrics:
 - Comparison to Buy & Hold baseline
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -28,8 +28,8 @@ from catboost import CatBoostClassifier
 from sklearn.metrics import roc_auc_score
 
 sys.path.insert(0, "src")
+from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.signal_aggregator import HourlyToDailyAggregator
-from sparky.features.returns import simple_returns, annualized_sharpe, max_drawdown
 
 logging.basicConfig(
     level=logging.INFO,
@@ -204,7 +204,9 @@ def aggregate_to_daily(hourly_probas, method="mean", threshold=0.5):
 
     logger.info(f"Aggregated {len(hourly_probas):,} hourly predictions to {len(daily_signals)} daily signals")
     logger.info(f"Method: {method}, Threshold: {threshold}")
-    logger.info(f"LONG signals: {daily_signals['signal'].sum()} / {len(daily_signals)} ({daily_signals['signal'].sum() / len(daily_signals) * 100:.1f}%)")
+    logger.info(
+        f"LONG signals: {daily_signals['signal'].sum()} / {len(daily_signals)} ({daily_signals['signal'].sum() / len(daily_signals) * 100:.1f}%)"
+    )
     logger.info("")
 
     return daily_signals
@@ -229,7 +231,7 @@ def load_price_data(start_date, end_date):
     prices = pd.read_parquet(price_path)
 
     # Resample to daily (take last close of each day)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
 
     # Remove timezone for consistency
     if prices_daily.index.tz is not None:
@@ -278,7 +280,7 @@ def compute_strategy_returns(daily_signals, prices):
 
     # Strategy returns: position * market return
     # Lag signal by 1 day (today's signal determines tomorrow's position)
-    positions = daily_signals['signal'].shift(1).fillna(0)
+    positions = daily_signals["signal"].shift(1).fillna(0)
     strategy_returns = positions * daily_returns
 
     # Remove NaN (first day has no prior signal)
@@ -376,7 +378,7 @@ def save_results(results, output_path):
     """Save results to JSON file."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"Results saved to: {output_path}")
@@ -448,9 +450,7 @@ def main():
     logger.info("HOLDOUT EVALUATION (2024-2025)")
     logger.info("=" * 80)
 
-    holdout_probas, holdout_auc = generate_predictions(
-        model, splits["X_holdout"], splits["y_holdout"], "Holdout"
-    )
+    holdout_probas, holdout_auc = generate_predictions(model, splits["X_holdout"], splits["y_holdout"], "Holdout")
     logger.info("")
 
     # Aggregate to daily signals
@@ -493,10 +493,10 @@ def main():
         },
         "signal_stats": {
             "total_signals": len(daily_signals),
-            "long_signals": int(daily_signals['signal'].sum()),
-            "long_pct": float(daily_signals['signal'].sum() / len(daily_signals) * 100),
-            "avg_daily_proba": float(daily_signals['daily_proba'].mean()),
-            "std_daily_proba": float(daily_signals['daily_proba'].std()),
+            "long_signals": int(daily_signals["signal"].sum()),
+            "long_pct": float(daily_signals["signal"].sum() / len(daily_signals) * 100),
+            "avg_daily_proba": float(daily_signals["daily_proba"].mean()),
+            "std_daily_proba": float(daily_signals["daily_proba"].std()),
         },
         "strategy_metrics": strategy_metrics,
         "baseline_metrics": baseline_metrics,
@@ -510,22 +510,22 @@ def main():
     print("=" * 80)
     print("SUMMARY")
     print("=" * 80)
-    print(f"\nModel: CatBoost 1h-ahead (23 base features)")
-    print(f"Aggregation: Mean of 24 hourly predictions, threshold=0.5")
+    print("\nModel: CatBoost 1h-ahead (23 base features)")
+    print("Aggregation: Mean of 24 hourly predictions, threshold=0.5")
     print(f"Holdout Period: {holdout_start} to {holdout_end} ({len(daily_signals)} days)")
-    print(f"\nModel Quality:")
+    print("\nModel Quality:")
     print(f"  Val AUC (2021-2022): {val_auc:.4f}")
     print(f"  Test AUC (2023): {test_auc:.4f}")
     print(f"  Holdout AUC (2024-2025): {holdout_auc:.4f}")
-    print(f"\nStrategy Performance:")
+    print("\nStrategy Performance:")
     print(f"  Sharpe Ratio: {strategy_metrics['sharpe_ratio']:.3f}")
     print(f"  Total Return: {strategy_metrics['total_return_pct']:.2f}%")
     print(f"  Max Drawdown: {strategy_metrics['max_drawdown_pct']:.2f}%")
-    print(f"\nBaseline (Buy & Hold):")
+    print("\nBaseline (Buy & Hold):")
     print(f"  Sharpe Ratio: {baseline_metrics['sharpe_ratio']:.3f}")
     print(f"  Total Return: {baseline_metrics['total_return_pct']:.2f}%")
     print(f"  Max Drawdown: {baseline_metrics['max_drawdown_pct']:.2f}%")
-    print(f"\nDelta:")
+    print("\nDelta:")
     print(f"  Sharpe: {strategy_metrics['sharpe_ratio'] - baseline_metrics['sharpe_ratio']:+.3f}")
     print(f"  Return: {strategy_metrics['total_return_pct'] - baseline_metrics['total_return_pct']:+.2f}%")
     print(f"\nResults saved to: {output_path}")

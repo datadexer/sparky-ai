@@ -16,20 +16,19 @@ Success criteria:
 - Beats Buy & Hold in 80%+ of Monte Carlo simulations
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.regime_indicators import compute_volatility_regime
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +45,7 @@ def load_price_data(start_date, end_date):
         raise FileNotFoundError(f"Price data not found: {price_path}")
 
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
 
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
@@ -118,8 +117,8 @@ def bootstrap_confidence_interval(returns, n_resamples=1000, confidence_level=0.
 
     # Compute percentiles for confidence interval
     alpha = 1 - confidence_level
-    lower = np.percentile(sharpe_samples, alpha/2 * 100)
-    upper = np.percentile(sharpe_samples, (1 - alpha/2) * 100)
+    lower = np.percentile(sharpe_samples, alpha / 2 * 100)
+    upper = np.percentile(sharpe_samples, (1 - alpha / 2) * 100)
     mean = np.mean(sharpe_samples)
 
     logger.info(f"Bootstrap Sharpe: mean={mean:.3f}, 95% CI=[{lower:.3f}, {upper:.3f}]")
@@ -154,7 +153,7 @@ def monte_carlo_vs_buyhold(strategy_returns, market_returns, n_simulations=1000)
 
     win_rate = wins / n_simulations
 
-    logger.info(f"Monte Carlo: Strategy beats Buy & Hold in {wins}/{n_simulations} trials ({win_rate*100:.1f}%)")
+    logger.info(f"Monte Carlo: Strategy beats Buy & Hold in {wins}/{n_simulations} trials ({win_rate * 100:.1f}%)")
 
     return {
         "win_rate": float(win_rate),
@@ -187,7 +186,9 @@ def regime_breakdown_analysis(signals, prices, returns):
         metrics = compute_metrics(regime_returns, name=f"Regime {regime}")
         regime_results[regime] = metrics
 
-        logger.info(f"  {regime.upper()}: Sharpe={metrics['sharpe_ratio']:.3f}, Return={metrics['total_return_pct']:.2f}%, Days={metrics['n_days']}")
+        logger.info(
+            f"  {regime.upper()}: Sharpe={metrics['sharpe_ratio']:.3f}, Return={metrics['total_return_pct']:.2f}%, Days={metrics['n_days']}"
+        )
 
     return regime_results
 
@@ -226,7 +227,7 @@ def validate_period(prices, period_name, start_date, end_date, transaction_cost=
         "end": end_date,
         "strategy": strategy_metrics,
         "buyhold": market_metrics,
-        "delta_sharpe": float(strategy_metrics['sharpe_ratio'] - market_metrics['sharpe_ratio']),
+        "delta_sharpe": float(strategy_metrics["sharpe_ratio"] - market_metrics["sharpe_ratio"]),
     }
 
 
@@ -284,8 +285,8 @@ def main():
     for cost_pct in [0.001, 0.0026, 0.005]:
         returns_cost = compute_strategy_returns(signals_2017_2023, prices_2017_2023, transaction_cost=cost_pct)
         metrics_cost = compute_metrics(returns_cost)
-        cost_sensitivity[f"{cost_pct*100:.2f}%"] = metrics_cost
-        logger.info(f"Cost {cost_pct*100:.2f}%: Sharpe={metrics_cost['sharpe_ratio']:.3f}")
+        cost_sensitivity[f"{cost_pct * 100:.2f}%"] = metrics_cost
+        logger.info(f"Cost {cost_pct * 100:.2f}%: Sharpe={metrics_cost['sharpe_ratio']:.3f}")
 
     # ========================================================================
     # VALIDATION 4: Regime Breakdown
@@ -327,11 +328,19 @@ def main():
     print("\n" + "=" * 80)
     print("VALIDATION CRITERIA")
     print("=" * 80)
-    print(f"1. Out-of-sample Sharpe ≥ 0.8:      {'✅ PASS' if criteria['out_of_sample_sharpe'] else '❌ FAIL'} ({result_2017_2023['strategy']['sharpe_ratio']:.3f})")
-    print(f"2. Bootstrap CI lower > 0.5:        {'✅ PASS' if criteria['bootstrap_ci_lower'] else '❌ FAIL'} ({bootstrap_ci['lower']:.3f})")
-    print(f"3. Sharpe @ 0.5% costs ≥ 0.95:      {'✅ PASS' if criteria['high_cost_sharpe'] else '❌ FAIL'} ({cost_sensitivity['0.50%']['sharpe_ratio']:.3f})")
+    print(
+        f"1. Out-of-sample Sharpe ≥ 0.8:      {'✅ PASS' if criteria['out_of_sample_sharpe'] else '❌ FAIL'} ({result_2017_2023['strategy']['sharpe_ratio']:.3f})"
+    )
+    print(
+        f"2. Bootstrap CI lower > 0.5:        {'✅ PASS' if criteria['bootstrap_ci_lower'] else '❌ FAIL'} ({bootstrap_ci['lower']:.3f})"
+    )
+    print(
+        f"3. Sharpe @ 0.5% costs ≥ 0.95:      {'✅ PASS' if criteria['high_cost_sharpe'] else '❌ FAIL'} ({cost_sensitivity['0.50%']['sharpe_ratio']:.3f})"
+    )
     print(f"4. All regimes Sharpe > 0:          {'✅ PASS' if criteria['regime_robust'] else '❌ FAIL'}")
-    print(f"5. Monte Carlo win rate ≥ 80%:      {'✅ PASS' if criteria['monte_carlo_win_rate'] else '❌ FAIL'} ({monte_carlo_results['win_rate']*100:.1f}%)")
+    print(
+        f"5. Monte Carlo win rate ≥ 80%:      {'✅ PASS' if criteria['monte_carlo_win_rate'] else '❌ FAIL'} ({monte_carlo_results['win_rate'] * 100:.1f}%)"
+    )
     print("=" * 80)
 
     if all_pass:
@@ -361,7 +370,7 @@ def main():
 
     output_path = Path("results/validation/donchian_rigorous_validation.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"\nResults saved to: {output_path}")

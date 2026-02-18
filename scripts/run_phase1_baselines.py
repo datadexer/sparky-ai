@@ -163,7 +163,7 @@ def main():
     X_test = X[~in_sample_mask]
     y_test = y[~in_sample_mask]
 
-    logger.info(f"\nData split:")
+    logger.info("\nData split:")
     logger.info(f"  Train: {len(X_train)} samples (up to {IS_END})")
     logger.info(f"  Test: {len(X_test)} samples (after {IS_END})")
 
@@ -174,9 +174,7 @@ def main():
 
     # 1. XGBoost
     xgb_model = XGBoostModel(random_state=SEED)
-    xgb_result = run_model_with_validation(
-        xgb_model, "XGBoost", X_train, y_train, X_test, y_test, returns
-    )
+    xgb_result = run_model_with_validation(xgb_model, "XGBoost", X_train, y_train, X_test, y_test, returns)
     if xgb_result:
         results["XGBoost"] = xgb_result
     else:
@@ -189,9 +187,7 @@ def main():
         patience=10,
         random_state=SEED,
     )
-    lstm_result = run_model_with_validation(
-        lstm_model, "LSTM", X_train, y_train, X_test, y_test, returns
-    )
+    lstm_result = run_model_with_validation(lstm_model, "LSTM", X_train, y_train, X_test, y_test, returns)
     if lstm_result:
         results["LSTM"] = lstm_result
     else:

@@ -35,6 +35,7 @@ def main():
 
     # Check current data range
     from sparky.data.storage import DataStore
+
     store = DataStore()
 
     try:
@@ -63,13 +64,8 @@ def main():
         start_2017 = datetime(2017, 1, 1, tzinfo=timezone.utc)
         end_2018 = datetime(2018, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
-        logger.info(f"Fetching 2017-2018 from Binance...")
-        btc_2017_2018 = fetcher.fetch_ohlcv(
-            symbol="BTC/USDT",
-            start_date=start_2017,
-            end_date=end_2018,
-            timeframe="1d"
-        )
+        logger.info("Fetching 2017-2018 from Binance...")
+        btc_2017_2018 = fetcher.fetch_ohlcv(symbol="BTC/USDT", start_date=start_2017, end_date=end_2018, timeframe="1d")
 
         logger.info(f"Fetched {len(btc_2017_2018)} rows for 2017-2018")
 
@@ -88,12 +84,9 @@ def main():
         start_2013 = datetime(2013, 1, 1, tzinfo=timezone.utc)
         end_2018 = datetime(2018, 12, 31, tzinfo=timezone.utc)
 
-        logger.info(f"Fetching 2013-2018 from CoinGecko...")
+        logger.info("Fetching 2013-2018 from CoinGecko...")
         btc_2013_2018 = fetcher.fetch_historical_chart(
-            coin_id="bitcoin",
-            vs_currency="usd",
-            start_date=start_2013,
-            end_date=end_2018
+            coin_id="bitcoin", vs_currency="usd", start_date=start_2013, end_date=end_2018
         )
 
         logger.info(f"Fetched {len(btc_2013_2018)} rows for 2013-2018")
@@ -103,13 +96,16 @@ def main():
 
         if btc_2013_2018 is not None and len(btc_2013_2018) > 0:
             # Convert to OHLCV (approximate: use price as close, estimate open/high/low)
-            ohlcv_data = pd.DataFrame({
-                'open': btc_2013_2018['price'],  # Approximate
-                'high': btc_2013_2018['price'] * 1.01,  # Estimate: +1% from close
-                'low': btc_2013_2018['price'] * 0.99,  # Estimate: -1% from close
-                'close': btc_2013_2018['price'],
-                'volume': btc_2013_2018.get('total_volume', 0)
-            }, index=btc_2013_2018.index)
+            ohlcv_data = pd.DataFrame(
+                {
+                    "open": btc_2013_2018["price"],  # Approximate
+                    "high": btc_2013_2018["price"] * 1.01,  # Estimate: +1% from close
+                    "low": btc_2013_2018["price"] * 0.99,  # Estimate: -1% from close
+                    "close": btc_2013_2018["price"],
+                    "volume": btc_2013_2018.get("total_volume", 0),
+                },
+                index=btc_2013_2018.index,
+            )
 
             logger.info(f"Converted to OHLCV format: {len(ohlcv_data)} rows")
 
@@ -117,7 +113,7 @@ def main():
             if current_data is not None:
                 # Combine old and new data
                 combined = pd.concat([ohlcv_data, current_data])
-                combined = combined[~combined.index.duplicated(keep='last')]
+                combined = combined[~combined.index.duplicated(keep="last")]
                 combined = combined.sort_index()
 
                 logger.info(f"Combined data: {len(combined)} rows ({combined.index[0]} to {combined.index[-1]})")

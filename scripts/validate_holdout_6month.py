@@ -53,6 +53,7 @@ def main():
 
     # Load prices for returns
     from sparky.data.storage import DataStore
+
     store = DataStore()
     prices_df, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
     prices = prices_df["close"].loc[common_index]
@@ -122,8 +123,8 @@ def main():
 
     # Compare to 3-month and Phase 2-3
     logger.info("\nCOMPARISON:")
-    logger.info(f"Phase 2-3 Sharpe (train+test): 0.999")
-    logger.info(f"3-month holdout (Oct-Dec): -1.477")
+    logger.info("Phase 2-3 Sharpe (train+test): 0.999")
+    logger.info("3-month holdout (Oct-Dec): -1.477")
     logger.info(f"6-month holdout (Jul-Dec): {holdout_sharpe:.4f}")
 
     delta_3m = holdout_sharpe - (-1.477)
@@ -181,6 +182,7 @@ def main():
     }
 
     import json
+
     output_path = "results/experiments/holdout_6month_results.json"
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
@@ -189,7 +191,7 @@ def main():
     # Append to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## OPTION 1: 6-Month Holdout Test — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## OPTION 1: 6-Month Holdout Test — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
 
@@ -209,9 +211,9 @@ def main():
 - 6-month holdout (Jul-Dec): Sharpe {holdout_sharpe:.4f}
 
 **Verdict**: [{verdict}]
-{'✅ 6-month holdout improved significantly. Oct-Dec may have been unlucky.' if verdict == 'PASS' else '⚠️ Some improvement but still weak (Sharpe 0.4-0.7). Proceed with caution.' if verdict == 'BORDERLINE' else '❌ Overfitting confirmed. 6-month holdout also fails.'}
+{"✅ 6-month holdout improved significantly. Oct-Dec may have been unlucky." if verdict == "PASS" else "⚠️ Some improvement but still weak (Sharpe 0.4-0.7). Proceed with caution." if verdict == "BORDERLINE" else "❌ Overfitting confirmed. 6-month holdout also fails."}
 
-**Next Step**: {'Proceed to multi-seed validation on 6-month holdout' if verdict == 'PASS' else 'Proceed to OPTION 2 (debug overfitting)' if verdict in ['BORDERLINE', 'FAIL'] else 'Unknown'}
+**Next Step**: {"Proceed to multi-seed validation on 6-month holdout" if verdict == "PASS" else "Proceed to OPTION 2 (debug overfitting)" if verdict in ["BORDERLINE", "FAIL"] else "Unknown"}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:

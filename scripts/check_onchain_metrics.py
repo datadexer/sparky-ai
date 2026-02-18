@@ -5,6 +5,7 @@ Check for presence of critical indicators like MVRV, NVT, SOPR, NUPL, etc.
 """
 
 from pathlib import Path
+
 import pandas as pd
 
 
@@ -81,8 +82,8 @@ def main():
     print("  MVRV RATIO ANALYSIS (Critical for Market Timing)")
     print("=" * 80)
 
-    mvrv = df_cm['CapMVRVCur']
-    print(f"\nMVRV Statistics:")
+    mvrv = df_cm["CapMVRVCur"]
+    print("\nMVRV Statistics:")
     print(f"  Current (latest): {mvrv.iloc[-1]:.2f}")
     print(f"  Mean: {mvrv.mean():.2f}")
     print(f"  Median: {mvrv.median():.2f}")
@@ -90,10 +91,16 @@ def main():
     print(f"  Max (bubble): {mvrv.max():.2f}")
     print(f"  Std Dev: {mvrv.std():.2f}")
 
-    print(f"\nMVRV Interpretation:")
-    print(f"  < 1.0: Undervalued (accumulation zone) - {(mvrv < 1.0).sum()} days ({100 * (mvrv < 1.0).sum() / len(mvrv):.1f}%)")
-    print(f"  1.0-2.0: Fair value - {((mvrv >= 1.0) & (mvrv < 2.0)).sum()} days ({100 * ((mvrv >= 1.0) & (mvrv < 2.0)).sum() / len(mvrv):.1f}%)")
-    print(f"  2.0-3.0: Overvalued - {((mvrv >= 2.0) & (mvrv < 3.0)).sum()} days ({100 * ((mvrv >= 2.0) & (mvrv < 3.0)).sum() / len(mvrv):.1f}%)")
+    print("\nMVRV Interpretation:")
+    print(
+        f"  < 1.0: Undervalued (accumulation zone) - {(mvrv < 1.0).sum()} days ({100 * (mvrv < 1.0).sum() / len(mvrv):.1f}%)"
+    )
+    print(
+        f"  1.0-2.0: Fair value - {((mvrv >= 1.0) & (mvrv < 2.0)).sum()} days ({100 * ((mvrv >= 1.0) & (mvrv < 2.0)).sum() / len(mvrv):.1f}%)"
+    )
+    print(
+        f"  2.0-3.0: Overvalued - {((mvrv >= 2.0) & (mvrv < 3.0)).sum()} days ({100 * ((mvrv >= 2.0) & (mvrv < 3.0)).sum() / len(mvrv):.1f}%)"
+    )
     print(f"  > 3.0: Bubble territory - {(mvrv >= 3.0).sum()} days ({100 * (mvrv >= 3.0).sum() / len(mvrv):.1f}%)")
 
     # Check blockchain.com for comparison
@@ -103,10 +110,10 @@ def main():
 
     df_bc = pd.read_parquet(onchain_dir / "blockchain_com_btc_daily.parquet")
     print(f"\nAvailable metrics: {list(df_bc.columns)}")
-    print(f"\nCan cross-validate:")
-    print(f"  - Hash rate: CoinMetrics.HashRate vs Blockchain.com.hash_rate")
-    print(f"  - Active addresses: CoinMetrics.AdrActCnt vs Blockchain.com.unique_addresses")
-    print(f"  - Transactions: CoinMetrics.TxCnt vs Blockchain.com.n_transactions")
+    print("\nCan cross-validate:")
+    print("  - Hash rate: CoinMetrics.HashRate vs Blockchain.com.hash_rate")
+    print("  - Active addresses: CoinMetrics.AdrActCnt vs Blockchain.com.unique_addresses")
+    print("  - Transactions: CoinMetrics.TxCnt vs Blockchain.com.n_transactions")
 
     print("\n" + "=" * 80)
     print("  CONCLUSION")

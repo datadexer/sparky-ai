@@ -11,32 +11,35 @@ Tests 5 distinct regime detection approaches:
 Each approach runs Donchian ONLY in 'trade' regime, flat otherwise.
 Walk-forward validated with yearly folds (2019–2023).
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 import time
 import warnings
+
 warnings.filterwarnings("ignore")
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from datetime import timezone
-
 from catboost import CatBoostClassifier
 
 from sparky.data.loader import load
-from sparky.tracking.experiment import ExperimentTracker
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.tracking.experiment import ExperimentTracker
 
 # ─── Constants ─────────────────────────────────────────────────────────────────
 BASELINE_DONCHIAN_SHARPE = 1.062
-BH_SHARPE = 0.65          # approximate BTC buy-and-hold Sharpe 2019-2023
-ENTRY_PERIOD = 40          # best Donchian entry from prior sweep
-EXIT_PERIOD  = 20          # best Donchian exit
+BH_SHARPE = 0.65  # approximate BTC buy-and-hold Sharpe 2019-2023
+ENTRY_PERIOD = 40  # best Donchian entry from prior sweep
+EXIT_PERIOD = 20  # best Donchian exit
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -74,7 +77,9 @@ def load_data():
     df_daily_feat = df_feat.resample("D").mean()
     df_daily_feat = df_daily_feat.loc["2019-01-01":"2023-12-31"]
 
-    print(f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})")
+    print(
+        f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})"
+    )
     print(f"  Daily features: {df_daily_feat.shape}")
     print(f"  Daily returns: {len(daily_returns)} rows")
     return prices_daily, daily_returns, df_daily_feat
@@ -163,7 +168,7 @@ def walk_forward_regime(
     full_donchian = donchian_signal(prices, ENTRY_PERIOD, EXIT_PERIOD)
 
     for yr in range(2019, 2024):
-        test_mask = (prices.index.year == yr)
+        test_mask = prices.index.year == yr
         test_prices = prices[test_mask]
         test_returns = daily_returns[test_mask]
 
@@ -237,7 +242,7 @@ def compute_adx(prices: pd.Series, period: int = 14) -> pd.Series:
     minus_dm = (-delta).clip(lower=0)
 
     # Smooth with Wilder's method (EWM approximation)
-    plus_di  = plus_dm.ewm(span=period, adjust=False).mean()
+    plus_di = plus_dm.ewm(span=period, adjust=False).mean()
     minus_di = minus_dm.ewm(span=period, adjust=False).mean()
     dx = (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-9) * 100
     adx = dx.ewm(span=period, adjust=False).mean()
@@ -249,6 +254,7 @@ def compute_adx(prices: pd.Series, period: int = 14) -> pd.Series:
 # ════════════════════════════════════════════════════════════════════════════════
 def make_vol_regime_fn(window: int, above_median: bool = True):
     """Trade Donchian only when realized vol is above rolling median (trending)."""
+
     def regime_fn(prices: pd.Series, test_year: int) -> pd.Series:
         returns = prices.pct_change()
         rolling_vol = returns.rolling(window).std() * np.sqrt(252)
@@ -264,6 +270,7 @@ def make_vol_regime_fn(window: int, above_median: bool = True):
         else:
             regime = (vol_test < median_vol).astype(int)
         return regime
+
     return regime_fn
 
 
@@ -272,12 +279,14 @@ def make_vol_regime_fn(window: int, above_median: bool = True):
 # ════════════════════════════════════════════════════════════════════════════════
 def make_adx_regime_fn(adx_period: int = 14, threshold: float = 25.0):
     """Trade only when ADX > threshold (market is trending, not choppy)."""
+
     def regime_fn(prices: pd.Series, test_year: int) -> pd.Series:
         adx = compute_adx(prices, period=adx_period)
         test_mask = prices.index.year == test_year
         adx_test = adx[test_mask]
         regime = (adx_test > threshold).astype(int)
         return regime
+
     return regime_fn
 
 
@@ -431,7 +440,11 @@ def run_ml_meta_learner(
                 f"CatBoost meta-learner (depth={depth}, lr={lr}): predicts whether Donchian "
                 f"will be profitable in next 30 days. Mean WF Sharpe {mean_sh:.3f}. "
                 f"2022 Sharpe {per_year.get('2022', 'N/A'):.3f} — "
-                + ("meta-learning identifies bear regimes" if mean_sh > BASELINE_DONCHIAN_SHARPE else "insufficient signal from meta-label features")
+                + (
+                    "meta-learning identifies bear regimes"
+                    if mean_sh > BASELINE_DONCHIAN_SHARPE
+                    else "insufficient signal from meta-label features"
+                )
             )
             config["notes"] = notes
 
@@ -556,7 +569,11 @@ def main():
         notes = (
             f"Vol regime {w}d window: trade when rolling vol > expanding-window median. "
             f"Mean WF Sharpe {res['mean_sharpe']:.3f}. 2022: {s22:.3f} (unfiltered {don_s22:.3f}). "
-            + ("Vol filter successfully suppresses 2022 drawdown." if s22 > don_s22 else "Vol filter fails to protect 2022 — high vol = bear regime too, so filter INCREASES exposure during crashes.")
+            + (
+                "Vol filter successfully suppresses 2022 drawdown."
+                if s22 > don_s22
+                else "Vol filter fails to protect 2022 — high vol = bear regime too, so filter INCREASES exposure during crashes."
+            )
         )
         config["notes"] = notes
         run_name = f"vol_regime_{w}d_S{res['mean_sharpe']:.2f}"
@@ -608,8 +625,11 @@ def main():
         notes = (
             f"ADX({period}) threshold={thresh}: trade only when market is trending. "
             f"Mean WF Sharpe {res['mean_sharpe']:.3f}. 2022: {s22:.3f} (unfiltered {don_s22:.3f}). "
-            + ("ADX correctly identifies trending vs directionless market." if s22 > don_s22
-               else "ADX still allows trading during trending bear market — directional filter alone insufficient.")
+            + (
+                "ADX correctly identifies trending vs directionless market."
+                if s22 > don_s22
+                else "ADX still allows trading during trending bear market — directional filter alone insufficient."
+            )
         )
         config["notes"] = notes
         metrics = {
@@ -657,11 +677,13 @@ def main():
     best_adx_t = best_adx["config"]["threshold"]
 
     print(f"\n  Combination A: Vol({best_vol_w}d) AND ADX({best_adx_p},{best_adx_t})")
+
     def combo_vol_adx(prices_p, yr):
         vol_regime = make_vol_regime_fn(best_vol_w)(prices_p, yr)
         adx_regime = make_adx_regime_fn(best_adx_p, best_adx_t)(prices_p, yr)
-        combined = (vol_regime.reindex(vol_regime.index).fillna(0) &
-                    adx_regime.reindex(vol_regime.index).fillna(0)).astype(int)
+        combined = (
+            vol_regime.reindex(vol_regime.index).fillna(0) & adx_regime.reindex(vol_regime.index).fillna(0)
+        ).astype(int)
         return combined
 
     res_va = walk_forward_regime(prices, daily_returns, combo_vol_adx, "vol_adx_combined")
@@ -683,7 +705,12 @@ def main():
         f"AND combination: Vol({best_vol_w}d) AND ADX({best_adx_p}>{best_adx_t}). "
         f"Mean WF Sharpe {res_va['mean_sharpe']:.3f}. 2022: {s22_va:.3f}. "
         "AND logic reduces trade count — potentially too conservative (low activity periods); "
-        "benefit over individual signals: " + ("YES — improved 2022" if s22_va > max(best_vol["res"]["per_year"].get("2022", 0), best_adx["res"]["per_year"].get("2022", 0)) else "NO — intersection too restrictive")
+        "benefit over individual signals: "
+        + (
+            "YES — improved 2022"
+            if s22_va > max(best_vol["res"]["per_year"].get("2022", 0), best_adx["res"]["per_year"].get("2022", 0))
+            else "NO — intersection too restrictive"
+        )
     )
     run_name_va = f"multi_vol_adx_AND_S{res_va['mean_sharpe']:.2f}"
     tracker.log_experiment(
@@ -711,11 +738,13 @@ def main():
 
     # Combination B: OR logic (trade if EITHER vol OR ADX says trade)
     print(f"\n  Combination B: Vol({best_vol_w}d) OR ADX({best_adx_p},{best_adx_t})")
+
     def combo_vol_adx_or(prices_p, yr):
         vol_regime = make_vol_regime_fn(best_vol_w)(prices_p, yr)
         adx_regime = make_adx_regime_fn(best_adx_p, best_adx_t)(prices_p, yr)
-        combined = (vol_regime.reindex(vol_regime.index).fillna(0) |
-                    adx_regime.reindex(vol_regime.index).fillna(0)).astype(int)
+        combined = (
+            vol_regime.reindex(vol_regime.index).fillna(0) | adx_regime.reindex(vol_regime.index).fillna(0)
+        ).astype(int)
         return combined
 
     res_vo = walk_forward_regime(prices, daily_returns, combo_vol_adx_or, "vol_adx_or")
@@ -769,14 +798,14 @@ def main():
     print("=" * 60)
 
     dd_configs = [
-        {"threshold": 0.05, "window": 20,  "name": "dd_5pct_20d"},
-        {"threshold": 0.10, "window": 40,  "name": "dd_10pct_40d"},
-        {"threshold": 0.15, "window": 60,  "name": "dd_15pct_60d"},
-        {"threshold": 0.10, "window": 20,  "name": "dd_10pct_20d"},
+        {"threshold": 0.05, "window": 20, "name": "dd_5pct_20d"},
+        {"threshold": 0.10, "window": 40, "name": "dd_10pct_40d"},
+        {"threshold": 0.15, "window": 60, "name": "dd_15pct_60d"},
+        {"threshold": 0.10, "window": 20, "name": "dd_10pct_20d"},
     ]
     for cfg in dd_configs:
         thresh, window = cfg["threshold"], cfg["window"]
-        print(f"\n  Drawdown filter: threshold={thresh*100:.0f}%, window={window}d")
+        print(f"\n  Drawdown filter: threshold={thresh * 100:.0f}%, window={window}d")
         regime_fn = make_drawdown_regime_fn(prices, daily_returns, thresh, window)
         res = walk_forward_regime(prices, daily_returns, regime_fn, cfg["name"])
         print(f"    Mean Sharpe: {res['mean_sharpe']:.3f} ± {res['std_sharpe']:.3f}")
@@ -792,10 +821,13 @@ def main():
         s22 = res["per_year"].get("2022", 0.0)
         don_s22 = don_yr.get("2022", -99)
         config["notes"] = (
-            f"Drawdown filter: go flat if Donchian drew down >{thresh*100:.0f}% in {window}d. "
+            f"Drawdown filter: go flat if Donchian drew down >{thresh * 100:.0f}% in {window}d. "
             f"Mean WF Sharpe {res['mean_sharpe']:.3f}. 2022: {s22:.3f} (unfiltered {don_s22:.3f}). "
-            + ("Direct loss-cut mechanism successfully reduces 2022 damage." if s22 > don_s22
-               else f"Filter triggers too late in 2022 bear — need tighter threshold or shorter window.")
+            + (
+                "Direct loss-cut mechanism successfully reduces 2022 damage."
+                if s22 > don_s22
+                else "Filter triggers too late in 2022 bear — need tighter threshold or shorter window."
+            )
         )
         metrics = {
             "sharpe": res["mean_sharpe"],
@@ -811,7 +843,7 @@ def main():
             "baseline_donchian": BASELINE_DONCHIAN_SHARPE,
             **{f"sharpe_{yr}": v for yr, v in res["per_year"].items()},
         }
-        run_name = f"dd_{int(thresh*100)}pct_{window}d_S{res['mean_sharpe']:.2f}"
+        run_name = f"dd_{int(thresh * 100)}pct_{window}d_S{res['mean_sharpe']:.2f}"
         tracker.log_experiment(
             name=run_name,
             config=config,
@@ -830,8 +862,10 @@ def main():
     print("-" * 80)
     for r in sorted(all_results, key=lambda x: x.get("mean_sharpe", 0), reverse=True):
         sh2022 = r.get("per_year", {}).get("2022", r.get("sharpe_2022", "N/A"))
-        print(f"{r['name']:<45} {r.get('mean_sharpe', 0):>8.3f} {r.get('std_sharpe', 0):>8.3f} "
-              f"{sh2022 if isinstance(sh2022, str) else sh2022:>8.3f} {r.get('max_drawdown', 0):>8.3f}")
+        print(
+            f"{r['name']:<45} {r.get('mean_sharpe', 0):>8.3f} {r.get('std_sharpe', 0):>8.3f} "
+            f"{sh2022 if isinstance(sh2022, str) else sh2022:>8.3f} {r.get('max_drawdown', 0):>8.3f}"
+        )
 
     # Find best approach for each criterion
     best_for_2022 = max(all_results, key=lambda x: x.get("per_year", {}).get("2022", x.get("sharpe_2022", -999)))
@@ -844,16 +878,22 @@ def main():
 
     # Save raw results JSON
     import json
+
     results_file = RESULTS_DIR / "regime_results.json"
     with open(results_file, "w") as f:
-        json.dump({
-            "unfiltered_donchian": {
-                "sharpe": don_metrics["sharpe"],
-                "max_drawdown": don_metrics["max_drawdown"],
-                "per_year": don_yr,
+        json.dump(
+            {
+                "unfiltered_donchian": {
+                    "sharpe": don_metrics["sharpe"],
+                    "max_drawdown": don_metrics["max_drawdown"],
+                    "per_year": don_yr,
+                },
+                "approaches": all_results,
             },
-            "approaches": all_results,
-        }, f, indent=2, default=str)
+            f,
+            indent=2,
+            default=str,
+        )
     print(f"\nResults saved to {results_file}")
 
     return all_results, don_metrics, don_yr

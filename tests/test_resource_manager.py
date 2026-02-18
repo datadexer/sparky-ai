@@ -1,16 +1,15 @@
 """Tests for resource manager."""
 
 import time
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 import yaml
 
 from sparky.oversight.resource_manager import (
+    CircuitBreakerOpen,
     ResourceManager,
     ResourceManagerError,
-    CircuitBreakerOpen,
     SystemStatus,
 )
 
@@ -297,6 +296,7 @@ def test_cleanup_stale_agents(mock_psutil, test_config):
 
     # Manually set start time for agent-1 to be stale
     from datetime import datetime, timedelta, timezone
+
     manager.active_agents["agent-1"].started_at = datetime.now(timezone.utc) - timedelta(hours=2)
 
     # Cleanup with 1 hour timeout

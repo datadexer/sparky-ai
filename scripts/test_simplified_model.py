@@ -11,12 +11,9 @@ This is Phase 0, Step 2 of the debugging protocol:
 
 import logging
 import sys
-from pathlib import Path
 
 import pandas as pd
 
-from sparky.backtest.costs import TransactionCostModel
-from sparky.backtest.engine import WalkForwardBacktester
 from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.models.xgboost_model import XGBoostModel
 
@@ -40,8 +37,8 @@ logger.info(f"Features: {list(X.columns)}")
 logger.info(f"Target shape: {y_7d.shape}")
 
 # Remove returns_1d feature (testing hypothesis that this is the leakage source)
-if 'returns_1d' in X.columns:
-    X_simple = X.drop(columns=['returns_1d'])
+if "returns_1d" in X.columns:
+    X_simple = X.drop(columns=["returns_1d"])
     logger.info("✓ Removed 'returns_1d' feature")
 else:
     X_simple = X.copy()
@@ -76,12 +73,12 @@ try:
     print("LEAKAGE DETECTION RESULTS")
     print("=" * 80)
     print(f"\nOverall: {'✅ PASSED' if report.passed else '❌ FAILED'}")
-    print(f"\nChecks:")
+    print("\nChecks:")
     for check in report.checks:
         status = "✅ PASS" if check.passed else "❌ FAIL"
         print(f"  {check.check_name}: {status}")
         print(f"    {check.detail}")
-        if hasattr(check, 'metric_value') and check.metric_value > 0:
+        if hasattr(check, "metric_value") and check.metric_value > 0:
             print(f"    Metric: {check.metric_value:.4f}")
 
     if report.failed_checks:
@@ -98,5 +95,6 @@ try:
 except Exception as e:
     logger.error(f"Leakage detector failed with error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

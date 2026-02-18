@@ -3,17 +3,17 @@ Sparky AI CEO Dashboard — Streamlit app for monitoring workflow progress,
 telemetry sessions, W&B runs, alerts, and git commits.
 """
 
-import json
 import glob
+import json
 import re
 import subprocess
-import os
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 from scipy.stats import norm
+
 from sparky.tracking.metrics import expected_max_sharpe
 
 # ---------------------------------------------------------------------------
@@ -50,6 +50,7 @@ st.set_page_config(page_title="Sparky AI", layout="wide", page_icon="⚡")
 # Data loaders
 # ---------------------------------------------------------------------------
 
+
 @st.cache_data(ttl=30)
 def load_telemetry() -> list[dict]:
     """Load all telemetry JSON files sorted by session_id (ascending)."""
@@ -83,17 +84,17 @@ def load_alerts() -> list[dict]:
     try:
         with open(ALERTS_LOG) as f:
             lines = f.readlines()
-        pattern = re.compile(
-            r"\[(?P<ts>[^\]]+)\]\s+\[(?P<level>[^\]]+)\]\s+(?P<msg>.+)"
-        )
+        pattern = re.compile(r"\[(?P<ts>[^\]]+)\]\s+\[(?P<level>[^\]]+)\]\s+(?P<msg>.+)")
         for line in lines:
             m = pattern.match(line.strip())
             if m:
-                alerts.append({
-                    "timestamp": m.group("ts"),
-                    "level": m.group("level"),
-                    "message": m.group("msg"),
-                })
+                alerts.append(
+                    {
+                        "timestamp": m.group("ts"),
+                        "level": m.group("level"),
+                        "message": m.group("msg"),
+                    }
+                )
     except Exception:
         pass
     return alerts
@@ -106,8 +107,9 @@ def load_wandb_session_runs() -> dict[str, str]:
     Returns a dict mapping session_id -> wandb run URL for fast lookup.
     """
     try:
-        import wandb
         import requests as _req
+
+        import wandb
 
         api = wandb.Api(timeout=30)
         api_key = api.api_key
@@ -179,8 +181,9 @@ def load_wandb_runs() -> list[dict]:
     and .config, which take ~40s for 200 runs. Direct GraphQL: ~0.5s.
     """
     try:
-        import wandb
         import requests as _req
+
+        import wandb
 
         api = wandb.Api(timeout=30)
         api_key = api.api_key
@@ -241,11 +244,7 @@ def load_wandb_runs() -> list[dict]:
                     summary = json.loads(sm)
                 except (json.JSONDecodeError, TypeError):
                     pass
-            sharpe = (
-                summary.get("sharpe_ratio")
-                or summary.get("best_sharpe")
-                or summary.get("mean_sharpe")
-            )
+            sharpe = summary.get("sharpe_ratio") or summary.get("best_sharpe") or summary.get("mean_sharpe")
             if sharpe is None:
                 m = re.search(r"_S([\d.]+)", run_name)
                 if m:
@@ -256,30 +255,32 @@ def load_wandb_runs() -> list[dict]:
 
             # Step tag from tags list
             step_tag = "other"
-            for tag in (node.get("tags") or []):
+            for tag in node.get("tags") or []:
                 if tag in ("sweep", "regime", "ensemble", "novel", "feature_analysis"):
                     step_tag = tag
                     break
 
-            records.append({
-                "id": run_id,
-                "name": run_name,
-                "step_tag": step_tag,
-                "tags": node.get("tags") or [],
-                "group": node.get("group") or "",
-                "created_at": node.get("createdAt") or "",
-                "sharpe": sharpe,
-                "git_hash": node.get("commit") or None,
-                "url": f"{WANDB_URL}/runs/{run_id}",
-                # Extended significance and risk metrics
-                "dsr": summary.get("dsr"),
-                "psr": summary.get("psr"),
-                "sortino": summary.get("sortino"),
-                "max_drawdown": summary.get("max_drawdown"),
-                "calmar": summary.get("calmar"),
-                "worst_year_sharpe": summary.get("worst_year_sharpe"),
-                "profit_factor": summary.get("profit_factor"),
-            })
+            records.append(
+                {
+                    "id": run_id,
+                    "name": run_name,
+                    "step_tag": step_tag,
+                    "tags": node.get("tags") or [],
+                    "group": node.get("group") or "",
+                    "created_at": node.get("createdAt") or "",
+                    "sharpe": sharpe,
+                    "git_hash": node.get("commit") or None,
+                    "url": f"{WANDB_URL}/runs/{run_id}",
+                    # Extended significance and risk metrics
+                    "dsr": summary.get("dsr"),
+                    "psr": summary.get("psr"),
+                    "sortino": summary.get("sortino"),
+                    "max_drawdown": summary.get("max_drawdown"),
+                    "calmar": summary.get("calmar"),
+                    "worst_year_sharpe": summary.get("worst_year_sharpe"),
+                    "profit_factor": summary.get("profit_factor"),
+                }
+            )
         return records
     except Exception:
         return []
@@ -322,6 +323,7 @@ def get_git_log(n: int = 10) -> list[dict]:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _now_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -359,6 +361,7 @@ def _level_color(level: str) -> str:
 # ---------------------------------------------------------------------------
 # Main app
 # ---------------------------------------------------------------------------
+
 
 def main():
     # Sidebar
@@ -421,7 +424,7 @@ def main():
 
         if best_sharpe is not None and n_total_runs > 0:
             sr0 = expected_max_sharpe(n_total_runs, T=T_hourly)
-            se = 1.0 / (T_hourly ** 0.5)
+            se = 1.0 / (T_hourly**0.5)
             approx_dsr = float(norm.cdf((best_sharpe - sr0) / se)) if se > 0 else 0.0
             if approx_dsr > 0.95:
                 verdict = "SIGNIFICANT"
@@ -453,7 +456,7 @@ def main():
 
     if n_total_runs > 0 and best_sharpe is not None:
         ems = expected_max_sharpe(n_total_runs, T=T_hourly)
-        se = 1.0 / (T_hourly ** 0.5)
+        se = 1.0 / (T_hourly**0.5)
         approx_dsr = float(norm.cdf((best_sharpe - ems) / se)) if se > 0 else 0.0
 
         # Minimum track record: observations still needed
@@ -461,6 +464,7 @@ def main():
         # => sr * sqrt(T) > 1.645 => T > (1.645 / sr)^2
         if best_sharpe > 0:
             import math as _math
+
             z_95 = norm.ppf(0.95)
             T_needed = (z_95 / best_sharpe) ** 2
             extra_obs = max(0, int(_math.ceil(T_needed - T_hourly)))
@@ -508,23 +512,25 @@ def main():
             threshold = DONE_THRESHOLDS.get(tag, 1)
             run_count = runs_per_step.get(tag, 0)
             # feature_analysis uses file check, not wandb
-            uses_file_check = (tag == "feature_analysis")
+            uses_file_check = tag == "feature_analysis"
             if uses_file_check:
                 file_exists = (PROJECT_ROOT / "results" / "feature_importance.json").exists()
                 progress_val = 1.0 if file_exists else 0.0
             else:
                 progress_val = min(run_count / threshold, 1.0) if threshold > 0 else 1.0
-            rows.append({
-                "step_name": step_name,
-                "status": step_data.get("status", "unknown"),
-                "attempts": step_data.get("attempts", 0),
-                "completed_at": _fmt_dt(step_data.get("completed_at")),
-                "last_attempt_at": _fmt_dt(step_data.get("last_attempt_at")),
-                "runs": run_count,
-                "threshold": threshold,
-                "progress": progress_val,
-                "uses_file_check": uses_file_check,
-            })
+            rows.append(
+                {
+                    "step_name": step_name,
+                    "status": step_data.get("status", "unknown"),
+                    "attempts": step_data.get("attempts", 0),
+                    "completed_at": _fmt_dt(step_data.get("completed_at")),
+                    "last_attempt_at": _fmt_dt(step_data.get("last_attempt_at")),
+                    "runs": run_count,
+                    "threshold": threshold,
+                    "progress": progress_val,
+                    "uses_file_check": uses_file_check,
+                }
+            )
 
         for row in rows:
             c1, c2, c3, c4, c5 = st.columns([3, 2, 1, 2, 4])
@@ -548,10 +554,7 @@ def main():
         # Budget row
         budget = state.get("budget", {})
         # Prefer CLI ground-truth cost_usd when available, fall back to estimated
-        total_cost_telem = sum(
-            s.get("cost_usd") or s.get("estimated_cost_usd", 0)
-            for s in telemetry
-        )
+        total_cost_telem = sum(s.get("cost_usd") or s.get("estimated_cost_usd", 0) for s in telemetry)
         has_cli_cost = any(s.get("cost_usd") for s in telemetry)
         cost_label = "Cost (telemetry, CLI)" if has_cli_cost else "Cost (telemetry, est.)"
         b1, b2, b3, b4 = st.columns(4)
@@ -578,21 +581,23 @@ def main():
             sid = s.get("session_id", "")
             wandb_url = session_wandb_map.get(sid, "")
             wandb_link = f"[W&B]({wandb_url})" if wandb_url else ""
-            rows_telem.append({
-                "Session": sid,
-                "Step": s.get("step", ""),
-                "Attempt": s.get("attempt", 0),
-                "Started": _fmt_dt(s.get("started_at")),
-                "Duration (m)": round(s.get("duration_minutes", 0), 2),
-                "Tools": s.get("tool_calls", 0),
-                "Cost ($)": round(cost, 4),
-                "CLI Cost ($)": round(s.get("cost_usd", 0), 4),
-                "Cache Read (K)": round(s.get("tokens_cache_read", 0) / 1000, 1),
-                "Turns": s.get("num_turns", 0),
-                "Exit": s.get("exit_reason", ""),
-                "Flags": ", ".join(flags) if flags else "",
-                "W&B": wandb_link,
-            })
+            rows_telem.append(
+                {
+                    "Session": sid,
+                    "Step": s.get("step", ""),
+                    "Attempt": s.get("attempt", 0),
+                    "Started": _fmt_dt(s.get("started_at")),
+                    "Duration (m)": round(s.get("duration_minutes", 0), 2),
+                    "Tools": s.get("tool_calls", 0),
+                    "Cost ($)": round(cost, 4),
+                    "CLI Cost ($)": round(s.get("cost_usd", 0), 4),
+                    "Cache Read (K)": round(s.get("tokens_cache_read", 0) / 1000, 1),
+                    "Turns": s.get("num_turns", 0),
+                    "Exit": s.get("exit_reason", ""),
+                    "Flags": ", ".join(flags) if flags else "",
+                    "W&B": wandb_link,
+                }
+            )
 
         df_telem = pd.DataFrame(rows_telem)
 
@@ -610,11 +615,7 @@ def main():
                 return "color: orange"
             return ""
 
-        styled = (
-            df_telem.style
-            .applymap(_color_exit, subset=["Exit"])
-            .applymap(_color_flags, subset=["Flags"])
-        )
+        styled = df_telem.style.applymap(_color_exit, subset=["Exit"]).applymap(_color_flags, subset=["Flags"])
         st.dataframe(styled, use_container_width=True, hide_index=True)
 
     st.markdown("---")
@@ -654,13 +655,15 @@ def main():
 
         rl_rows = []
         for g in groups:
-            rl_rows.append({
-                "Step": g["step"],
-                "First Event": g["first_ts"],
-                "Last Event": g["last_ts"],
-                "Retries": g["retries"],
-                "Recovered": "Yes" if g["recovered"] else "No",
-            })
+            rl_rows.append(
+                {
+                    "Step": g["step"],
+                    "First Event": g["first_ts"],
+                    "Last Event": g["last_ts"],
+                    "Retries": g["retries"],
+                    "Recovered": "Yes" if g["recovered"] else "No",
+                }
+            )
 
         st.dataframe(pd.DataFrame(rl_rows), use_container_width=True, hide_index=True)
 
@@ -672,10 +675,7 @@ def main():
     st.subheader("W&B Experiment Runs")
 
     if not wandb_runs:
-        st.info(
-            "No W&B runs loaded (offline or no runs tagged contract_004). "
-            f"[Open W&B project]({WANDB_URL})"
-        )
+        st.info(f"No W&B runs loaded (offline or no runs tagged contract_004). [Open W&B project]({WANDB_URL})")
     else:
         # Metric cards per step tag
         tag_counts: dict[str, int] = {}
@@ -708,14 +708,16 @@ def main():
             best_sortino_tag = f"{max(sortinos_tag):.3f}" if sortinos_tag else "—"
             worst_dd_tag = f"{min(dds_tag):.3f}" if dds_tag else "—"
 
-            step_summary_rows.append({
-                "Step": tag,
-                "Runs": run_count,
-                "Best Sharpe": best_sharpe_tag,
-                "Best DSR": best_dsr_tag,
-                "Best Sortino": best_sortino_tag,
-                "Worst DD": worst_dd_tag,
-            })
+            step_summary_rows.append(
+                {
+                    "Step": tag,
+                    "Runs": run_count,
+                    "Best Sharpe": best_sharpe_tag,
+                    "Best DSR": best_dsr_tag,
+                    "Best Sortino": best_sortino_tag,
+                    "Worst DD": worst_dd_tag,
+                }
+            )
 
         if step_summary_rows:
             st.dataframe(pd.DataFrame(step_summary_rows), use_container_width=True, hide_index=True)
@@ -757,15 +759,17 @@ def main():
             else:
                 verdict = "N/A"
 
-            wb_rows.append({
-                "Run": f"[{r['name']}]({r['url']})",
-                "Step": r["step_tag"],
-                "Sharpe": sharpe_str,
-                "DSR": dsr_str,
-                "Sortino": sortino_str,
-                "Max DD": dd_str,
-                "Verdict": verdict,
-            })
+            wb_rows.append(
+                {
+                    "Run": f"[{r['name']}]({r['url']})",
+                    "Step": r["step_tag"],
+                    "Sharpe": sharpe_str,
+                    "DSR": dsr_str,
+                    "Sortino": sortino_str,
+                    "Max DD": dd_str,
+                    "Verdict": verdict,
+                }
+            )
 
         if wb_rows:
             df_wb = pd.DataFrame(wb_rows)
@@ -801,11 +805,13 @@ def main():
         else:
             alert_rows = []
             for a in reversed(recent_alerts):
-                alert_rows.append({
-                    "Time": a["timestamp"],
-                    "Level": a["level"],
-                    "Message": a["message"],
-                })
+                alert_rows.append(
+                    {
+                        "Time": a["timestamp"],
+                        "Level": a["level"],
+                        "Message": a["message"],
+                    }
+                )
 
             def _color_level(val):
                 colors = {"ERROR": "color: red", "WARN": "color: orange", "INFO": "color: steelblue"}
@@ -818,8 +824,7 @@ def main():
     # Footer
     st.markdown("---")
     st.caption(
-        f"Sparky AI CEO Dashboard | Auto-refresh every 30s via sidebar | "
-        f"[W&B]({WANDB_URL}) | [GitHub]({GITHUB_URL})"
+        f"Sparky AI CEO Dashboard | Auto-refresh every 30s via sidebar | [W&B]({WANDB_URL}) | [GitHub]({GITHUB_URL})"
     )
 
 

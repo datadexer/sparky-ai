@@ -1,13 +1,12 @@
 """Tests for CoinGecko market context data fetcher."""
 
-import time
 from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
 import requests
 
-from sparky.data.market_context import CoinGeckoFetcher, BASE_URL, REQUEST_INTERVAL
+from sparky.data.market_context import BASE_URL, CoinGeckoFetcher
 
 
 @pytest.fixture
@@ -90,9 +89,7 @@ class TestCoinGeckoFetcherInit:
 
 class TestFetchMarketData:
     @patch("requests.Session.get")
-    def test_fetch_market_data_returns_correct_dataframe(
-        self, mock_get, fetcher, sample_market_data
-    ):
+    def test_fetch_market_data_returns_correct_dataframe(self, mock_get, fetcher, sample_market_data):
         mock_response = Mock()
         mock_response.json.return_value = sample_market_data
         mock_response.raise_for_status = Mock()
@@ -246,9 +243,7 @@ class TestFetchMarketData:
 
 class TestFetchHistoricalMarketChart:
     @patch("requests.Session.get")
-    def test_fetch_historical_returns_correct_dataframe(
-        self, mock_get, fetcher, sample_historical_data
-    ):
+    def test_fetch_historical_returns_correct_dataframe(self, mock_get, fetcher, sample_historical_data):
         mock_response = Mock()
         mock_response.json.return_value = sample_historical_data
         mock_response.raise_for_status = Mock()
@@ -401,9 +396,7 @@ class TestRateLimiting:
     @patch("requests.Session.get")
     @patch("time.sleep")
     @patch("time.time")
-    def test_no_sleep_when_interval_elapsed(
-        self, mock_time, mock_sleep, mock_get, fetcher, sample_market_data
-    ):
+    def test_no_sleep_when_interval_elapsed(self, mock_time, mock_sleep, mock_get, fetcher, sample_market_data):
         mock_response = Mock()
         mock_response.json.return_value = sample_market_data
         mock_response.raise_for_status = Mock()

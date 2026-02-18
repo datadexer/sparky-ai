@@ -1,19 +1,19 @@
 #!/bin/bash
-# Cron CEO guardrail — runs every 30 minutes via crontab.
+# Cron Research Agent guardrail — runs every 30 minutes via crontab.
 # Pure bash, zero API cost.
 #
 # Checks:
 # 1. Python process count (kills excess if >6)
 # 2. Disk usage growth rate
-# 3. CEO session still alive
+# 3. Research Agent session still alive
 # 4. Holdout data violations in session logs
 # 5. Stall detection (>4 hours without commit)
 
 set -uo pipefail
 
-PROJECT_ROOT="/home/akamath/sparky-ai"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ALERT_DIR="$PROJECT_ROOT/logs/alerts"
-CEO_STOP_FILE="$PROJECT_ROOT/logs/ceo_sessions/STOP"
+RESEARCH_STOP_FILE="$PROJECT_ROOT/logs/research_sessions/STOP"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 VIOLATIONS=0
 
@@ -61,36 +61,40 @@ if [ -f "$DISK_SNAPSHOT" ]; then
 fi
 echo "$DISK_USED_KB" > "$DISK_SNAPSHOT"
 
-# === 3. CEO session alive check ===
-# Check if CEO systemd service is running
-CEO_ACTIVE=$(systemctl --user is-active sparky-ceo 2>/dev/null || echo "inactive")
-if [ "$CEO_ACTIVE" != "active" ]; then
-    alert "INFO" "CEO service is not running. Start with: systemctl --user start sparky-ceo"
+# === 3. Research Agent session alive check ===
+# Check if Research Agent systemd service is running
+RESEARCH_ACTIVE=$(systemctl --user is-active sparky-research 2>/dev/null || echo "inactive")
+if [ "$RESEARCH_ACTIVE" != "active" ]; then
+    alert "INFO" "Research Agent service is not running. Start with: systemctl --user start sparky-research"
 fi
 
 # === 4. Holdout violation detection ===
-# Scan recent CEO session logs for access to holdout period (2024-07 onwards)
+# Scan recent Research Agent session logs for access to holdout period (2024-07 onwards)
 HOLDOUT_PATTERNS="2024-0[7-9]|2024-1[0-2]|2025-|2026-"
-LATEST_CEO_LOG=$(ls -t "$PROJECT_ROOT/logs/ceo_sessions"/ceo_session_*.log 2>/dev/null | head -1)
+LATEST_RESEARCH_LOG=$(ls -t "$PROJECT_ROOT/logs/research_sessions"/research_session_*.log 2>/dev/null | head -1)
 
-if [ -n "$LATEST_CEO_LOG" ] && [ -s "$LATEST_CEO_LOG" ]; then
+if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
     # Check last 500 lines for holdout period references in data operations
     # Look for patterns that suggest actual data access, not just mentions
-    HOLDOUT_HITS=$(tail -500 "$LATEST_CEO_LOG" | grep -cE "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null || echo 0)
+    # Exclusion filter reduces false positives from guardrail/boundary-check log lines.
+    # KNOWN LIMITATION: A log line containing both a holdout date pattern AND an
+    # exclusion keyword (e.g. "within boundary") would evade detection. This is
+    # acceptable for autonomous research but the exclusion list is security-relevant.
+    HOLDOUT_HITS=$(tail -500 "$LATEST_RESEARCH_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | grep -vcE "(PASSED|boundary|embargo|HoldoutGuard|within boundary)" 2>/dev/null || echo 0)
     HOLDOUT_HITS=$(echo "$HOLDOUT_HITS" | tr -d '[:space:]')
 
     if [ "$HOLDOUT_HITS" -gt 0 ]; then
-        alert "CRITICAL" "HOLDOUT VIOLATION DETECTED in CEO session log!
+        alert "CRITICAL" "HOLDOUT VIOLATION DETECTED in Research Agent session log!
 Found $HOLDOUT_HITS references to holdout period (2024-07+) in data access patterns.
-Log: $LATEST_CEO_LOG
+Log: $LATEST_RESEARCH_LOG
 Matching lines:
-$(tail -500 "$LATEST_CEO_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | head -10)"
-        # Stop the CEO
-        touch "$CEO_STOP_FILE"
+$(tail -500 "$LATEST_RESEARCH_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | head -10)"
+        # Stop the Research Agent
+        touch "$RESEARCH_STOP_FILE"
     fi
 fi
 
-# Also check any python scripts the CEO may have created/modified recently
+# Also check any python scripts the Research Agent may have created/modified recently
 for f in "$PROJECT_ROOT"/scripts/*.py; do
     if [ -f "$f" ] && [ "$(find "$f" -mmin -35 2>/dev/null)" ]; then
         # Recently modified script — check for holdout access
@@ -101,7 +105,7 @@ for f in "$PROJECT_ROOT"/scripts/*.py; do
 Script accesses holdout period (post 2024-07-01).
 Matching lines:
 $(grep -nE "test_end.*=.*(2024-0[7-9]|2024-1[0-2]|2025-|2026-)" "$f" 2>/dev/null | head -5)"
-            touch "$CEO_STOP_FILE"
+            touch "$RESEARCH_STOP_FILE"
         fi
     fi
 done
@@ -111,10 +115,10 @@ LAST_COMMIT_EPOCH=$(git -C "$PROJECT_ROOT" log -1 --format=%ct 2>/dev/null || ec
 NOW_EPOCH=$(date +%s)
 HOURS_SINCE_COMMIT=$(( (NOW_EPOCH - LAST_COMMIT_EPOCH) / 3600 ))
 
-if [ "$CEO_ALIVE" = true ] && [ "$HOURS_SINCE_COMMIT" -gt 4 ]; then
-    alert "WARNING" "CEO stall detected: last commit was ${HOURS_SINCE_COMMIT} hours ago.
+if [ "$RESEARCH_ACTIVE" = "active" ] && [ "$HOURS_SINCE_COMMIT" -gt 4 ]; then
+    alert "WARNING" "Research Agent stall detected: last commit was ${HOURS_SINCE_COMMIT} hours ago.
 Last commit: $(git -C "$PROJECT_ROOT" log -1 --oneline 2>/dev/null)
-The CEO may be stuck in a loop or hitting errors without committing progress."
+The Research Agent may be stuck in a loop or hitting errors without committing progress."
 fi
 
 # === Summary ===

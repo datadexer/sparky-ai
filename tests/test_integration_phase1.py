@@ -49,9 +49,7 @@ class TestDataStoreRoundTrip:
         store.save(synthetic_ohlcv, path, metadata=metadata)
         loaded_df, loaded_meta = store.load(path)
 
-        pd.testing.assert_frame_equal(
-            loaded_df, synthetic_ohlcv, check_freq=False
-        )
+        pd.testing.assert_frame_equal(loaded_df, synthetic_ohlcv, check_freq=False)
 
     def test_save_load_preserves_metadata(self, store, tmp_path, synthetic_ohlcv):
         """Metadata round-trips through Parquet schema."""
@@ -86,9 +84,7 @@ class TestDataStoreRoundTrip:
 class TestDataStoreToQualityChecker:
     """DataStore -> DataQualityChecker end-to-end pipeline."""
 
-    def test_stored_data_passes_quality_checks(
-        self, store, tmp_path, synthetic_ohlcv
-    ):
+    def test_stored_data_passes_quality_checks(self, store, tmp_path, synthetic_ohlcv):
         """Data saved through DataStore passes quality checks."""
         path = tmp_path / "btc" / "ohlcv.parquet"
         store.save(synthetic_ohlcv, path, metadata={"source": "binance"})
@@ -96,9 +92,7 @@ class TestDataStoreToQualityChecker:
         # Load and run quality checks
         loaded_df, _ = store.load(path)
         checker = DataQualityChecker()
-        report = checker.run_all_checks(
-            loaded_df, asset="btc", source="binance", price_range=(1.0, 1_000_000)
-        )
+        report = checker.run_all_checks(loaded_df, asset="btc", source="binance", price_range=(1.0, 1_000_000))
 
         # Completeness should pass (no gaps in synthetic data)
         assert report["checks"]["completeness"]["pass"] is True
@@ -107,9 +101,7 @@ class TestDataStoreToQualityChecker:
         # Price range should pass
         assert report["checks"]["price_range"]["pass"] is True
 
-    def test_quality_checker_detects_gaps_in_stored_data(
-        self, store, tmp_path
-    ):
+    def test_quality_checker_detects_gaps_in_stored_data(self, store, tmp_path):
         """Quality checker catches gaps in data that went through DataStore."""
         # Create data with a 5-day gap
         dates_before = pd.date_range("2023-01-01", periods=30, freq="D", tz="UTC")
@@ -117,9 +109,7 @@ class TestDataStoreToQualityChecker:
         dates = dates_before.union(dates_after)
 
         np.random.seed(42)
-        df = pd.DataFrame(
-            {"close": np.random.normal(30000, 500, len(dates))}, index=dates
-        )
+        df = pd.DataFrame({"close": np.random.normal(30000, 500, len(dates))}, index=dates)
 
         path = tmp_path / "gapped.parquet"
         store.save(df, path, metadata={"source": "test"})

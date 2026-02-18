@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 
 from sparky.backtest.costs import TransactionCostModel
-from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.data.storage import DataStore
+from sparky.features.returns import annualized_sharpe, max_drawdown
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +27,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
 
 def compute_sharpe(positions, returns, cost_model):
     """Compute Sharpe with transaction costs."""
@@ -45,6 +46,7 @@ def compute_sharpe(positions, returns, cost_model):
     num_trades = int(position_changes.sum())
 
     return sharpe, total_return, dd, num_trades
+
 
 def main():
     logger.info("=" * 100)
@@ -81,9 +83,9 @@ def main():
     # Generate signals (same as option3_strategic_pivot.py line 178)
     signals = (momentum_holdout > 0.05).astype(int)
 
-    logger.info(f"\nSignal distribution:")
+    logger.info("\nSignal distribution:")
     logger.info(f"  Long (1):  {signals.sum()} days ({signals.mean():.1%})")
-    logger.info(f"  Short (0): {(signals == 0).sum()} days ({(1-signals.mean()):.1%})")
+    logger.info(f"  Short (0): {(signals == 0).sum()} days ({(1 - signals.mean()):.1%})")
 
     # Transaction costs
     cost_model = TransactionCostModel.for_btc()
@@ -98,17 +100,17 @@ def main():
     # Line 157: returns_btc = btc_prices_df["close"].loc[common_idx].pct_change().fillna(0)
     returns_buggy = prices_holdout.pct_change().fillna(0)
 
-    logger.info(f"\nReturns definition: returns[T] = (close[T] - close[T-1]) / close[T-1]")
-    logger.info(f"This is the return FROM close[T-1] TO close[T]")
-    logger.info(f"\nMomentum definition: momentum[T] = (close[T] - close[T-30]) / close[T-30]")
-    logger.info(f"This USES close[T]")
-    logger.info(f"\nStrategy: position[T] = 1 if momentum[T] > 0.05")
-    logger.info(f"          return[T] = position[T] * returns[T]")
-    logger.info(f"\n⚠️  BUG: Momentum uses close[T] to predict returns that END at close[T]!")
+    logger.info("\nReturns definition: returns[T] = (close[T] - close[T-1]) / close[T-1]")
+    logger.info("This is the return FROM close[T-1] TO close[T]")
+    logger.info("\nMomentum definition: momentum[T] = (close[T] - close[T-30]) / close[T-30]")
+    logger.info("This USES close[T]")
+    logger.info("\nStrategy: position[T] = 1 if momentum[T] > 0.05")
+    logger.info("          return[T] = position[T] * returns[T]")
+    logger.info("\n⚠️  BUG: Momentum uses close[T] to predict returns that END at close[T]!")
 
     sharpe_buggy, ret_buggy, dd_buggy, trades_buggy = compute_sharpe(signals, returns_buggy, cost_model)
 
-    logger.info(f"\nBUGGY RESULTS:")
+    logger.info("\nBUGGY RESULTS:")
     logger.info(f"  Sharpe: {sharpe_buggy:.4f}")
     logger.info(f"  Return: {ret_buggy:.2f}%")
     logger.info(f"  Max DD: {dd_buggy:.2%}")
@@ -124,17 +126,17 @@ def main():
     # Use forward returns: returns[T] should be from close[T] to close[T+1]
     returns_correct = prices_holdout.pct_change().shift(-1).fillna(0)
 
-    logger.info(f"\nCorrected returns definition: returns[T] = (close[T+1] - close[T]) / close[T]")
-    logger.info(f"This is the return FROM close[T] TO close[T+1]")
-    logger.info(f"\nMomentum definition: momentum[T] = (close[T] - close[T-30]) / close[T-30]")
-    logger.info(f"This USES close[T]")
-    logger.info(f"\nStrategy: position[T] = 1 if momentum[T] > 0.05")
-    logger.info(f"          return[T] = position[T] * forward_returns[T]")
-    logger.info(f"\n✓ CORRECT: Momentum uses close[T] to predict NEXT period's return!")
+    logger.info("\nCorrected returns definition: returns[T] = (close[T+1] - close[T]) / close[T]")
+    logger.info("This is the return FROM close[T] TO close[T+1]")
+    logger.info("\nMomentum definition: momentum[T] = (close[T] - close[T-30]) / close[T-30]")
+    logger.info("This USES close[T]")
+    logger.info("\nStrategy: position[T] = 1 if momentum[T] > 0.05")
+    logger.info("          return[T] = position[T] * forward_returns[T]")
+    logger.info("\n✓ CORRECT: Momentum uses close[T] to predict NEXT period's return!")
 
     sharpe_correct, ret_correct, dd_correct, trades_correct = compute_sharpe(signals, returns_correct, cost_model)
 
-    logger.info(f"\nCORRECT RESULTS:")
+    logger.info("\nCORRECT RESULTS:")
     logger.info(f"  Sharpe: {sharpe_correct:.4f}")
     logger.info(f"  Return: {ret_correct:.2f}%")
     logger.info(f"  Max DD: {dd_correct:.2%}")
@@ -147,15 +149,15 @@ def main():
     logger.info("COMPARISON")
     logger.info("=" * 100)
 
-    logger.info(f"\nBUGGY (with look-ahead bias):")
+    logger.info("\nBUGGY (with look-ahead bias):")
     logger.info(f"  Sharpe: {sharpe_buggy:.4f} ← THIS IS THE CLAIMED 2.556!")
     logger.info(f"  Return: {ret_buggy:.2f}%")
 
-    logger.info(f"\nCORRECT (without look-ahead bias):")
+    logger.info("\nCORRECT (without look-ahead bias):")
     logger.info(f"  Sharpe: {sharpe_correct:.4f} ← TRUE PERFORMANCE")
     logger.info(f"  Return: {ret_correct:.2f}%")
 
-    logger.info(f"\nDifference:")
+    logger.info("\nDifference:")
     logger.info(f"  Sharpe degradation: {sharpe_buggy - sharpe_correct:.4f}")
     logger.info(f"  Return degradation: {ret_buggy - ret_correct:.2f}%")
 
@@ -168,13 +170,13 @@ def main():
 
     if sharpe_correct < 1.0:
         logger.info(f"\n❌ BUSTED: The correct Sharpe is {sharpe_correct:.4f}, NOT 2.556!")
-        logger.info(f"   The claimed result is FALSE due to look-ahead bias.")
+        logger.info("   The claimed result is FALSE due to look-ahead bias.")
     elif sharpe_correct < 2.0:
         logger.info(f"\n⚠️  DEGRADED: The correct Sharpe is {sharpe_correct:.4f}, significantly lower than 2.556")
         logger.info(f"   The claimed result is INFLATED by {sharpe_buggy - sharpe_correct:.2f} due to look-ahead bias.")
     else:
         logger.info(f"\n✓ VALIDATED: The correct Sharpe is {sharpe_correct:.4f}, similar to the claim")
-        logger.info(f"   The result appears genuine (though still needs proper validation).")
+        logger.info("   The result appears genuine (though still needs proper validation).")
 
     logger.info("\n" + "=" * 100)
 
@@ -195,14 +197,16 @@ def main():
         "degradation": {
             "sharpe": float(sharpe_buggy - sharpe_correct),
             "return": float(ret_buggy - ret_correct),
-        }
+        },
     }
 
     import json
+
     with open("results/experiments/bug_proof.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    logger.info(f"Detailed results saved to results/experiments/bug_proof.json")
+    logger.info("Detailed results saved to results/experiments/bug_proof.json")
+
 
 if __name__ == "__main__":
     main()

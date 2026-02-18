@@ -1,7 +1,6 @@
 """Tests for source selector module."""
 
 import logging
-from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -104,9 +103,7 @@ class TestSourceSelector:
             selected_count = sum(s.selected for s in metric_scores)
             assert selected_count == 1, f"Expected 1 selected source for {metric}, got {selected_count}"
 
-    def test_select_best_source_for_overlapping_metrics(
-        self, bgeometrics_df, reference_date
-    ):
+    def test_select_best_source_for_overlapping_metrics(self, bgeometrics_df, reference_date):
         """Test that the best source is selected based on completeness and freshness."""
         # Create coinmetrics data that is less complete than bgeometrics
         dates = bgeometrics_df.index
@@ -137,9 +134,7 @@ class TestSourceSelector:
         cm_score = [s for s in hash_rate_scores if s.source == "coinmetrics"][0]
         assert cm_score.completeness < 1.0
 
-    def test_bgeometrics_exclusive_metrics_always_included(
-        self, bgeometrics_df, reference_date
-    ):
+    def test_bgeometrics_exclusive_metrics_always_included(self, bgeometrics_df, reference_date):
         """Test that BGeometrics-exclusive metrics are always included from bgeometrics."""
         selector = SourceSelector()
         result, scores = selector.select_btc_onchain(
@@ -279,9 +274,7 @@ class TestSourceScore:
             np.linspace(100, 110, len(sample_dates)),
             index=sample_dates,
         )
-        score = selector._score_series(
-            complete_series, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(complete_series, "test_source", "test_metric", None, reference_date)
         assert score.completeness == 1.0
 
         # 50% completeness
@@ -289,16 +282,12 @@ class TestSourceScore:
             [100, np.nan, 102, np.nan, 104, np.nan, 106, np.nan, 108, np.nan],
             index=sample_dates,
         )
-        score = selector._score_series(
-            half_complete, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(half_complete, "test_source", "test_metric", None, reference_date)
         assert score.completeness == 0.5
 
         # Empty series
         empty_series = pd.Series([np.nan] * len(sample_dates), index=sample_dates)
-        score = selector._score_series(
-            empty_series, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(empty_series, "test_source", "test_metric", None, reference_date)
         assert score.completeness == 0.0
 
     def test_score_freshness(self, sample_dates, reference_date):
@@ -310,9 +299,7 @@ class TestSourceScore:
             np.linspace(100, 110, len(sample_dates)),
             index=sample_dates,
         )
-        score = selector._score_series(
-            series, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(series, "test_source", "test_metric", None, reference_date)
 
         # reference_date is 2024-01-15, last data is 2024-01-10
         expected_days = (reference_date - sample_dates[-1]).total_seconds() / 86400
@@ -320,9 +307,7 @@ class TestSourceScore:
 
         # Empty series should have high freshness penalty
         empty_series = pd.Series([np.nan] * len(sample_dates), index=sample_dates)
-        score = selector._score_series(
-            empty_series, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(empty_series, "test_source", "test_metric", None, reference_date)
         assert score.freshness_days == 999.0
 
     def test_score_reference_mape(self, sample_dates, reference_date):
@@ -338,9 +323,7 @@ class TestSourceScore:
             np.linspace(100, 110, len(sample_dates)),
             index=sample_dates,
         )
-        score = selector._score_series(
-            source_series, "test_source", "test_metric", reference_series, reference_date
-        )
+        score = selector._score_series(source_series, "test_source", "test_metric", reference_series, reference_date)
         assert score.reference_mape is not None
         assert score.reference_mape == pytest.approx(0.0, abs=1e-10)
 
@@ -349,16 +332,12 @@ class TestSourceScore:
             np.linspace(110, 121, len(sample_dates)),  # 10% higher
             index=sample_dates,
         )
-        score = selector._score_series(
-            divergent_series, "test_source", "test_metric", reference_series, reference_date
-        )
+        score = selector._score_series(divergent_series, "test_source", "test_metric", reference_series, reference_date)
         assert score.reference_mape is not None
         assert score.reference_mape == pytest.approx(0.1, rel=0.01)
 
         # No reference provided
-        score = selector._score_series(
-            source_series, "test_source", "test_metric", None, reference_date
-        )
+        score = selector._score_series(source_series, "test_source", "test_metric", None, reference_date)
         assert score.reference_mape is None
 
     def test_score_attributes(self, sample_dates, reference_date):
@@ -369,9 +348,7 @@ class TestSourceScore:
             index=sample_dates,
         )
 
-        score = selector._score_series(
-            series, "bgeometrics", "hash_rate", None, reference_date
-        )
+        score = selector._score_series(series, "bgeometrics", "hash_rate", None, reference_date)
 
         assert score.source == "bgeometrics"
         assert score.metric == "hash_rate"

@@ -7,7 +7,6 @@ and detects behavioral flags.
 
 import json
 import logging
-import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -17,10 +16,10 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Sonnet pricing (per token) — update as needed
-INPUT_RATE_USD = 3.0 / 1_000_000       # $3 per 1M input tokens
-OUTPUT_RATE_USD = 15.0 / 1_000_000     # $15 per 1M output tokens
+INPUT_RATE_USD = 3.0 / 1_000_000  # $3 per 1M input tokens
+OUTPUT_RATE_USD = 15.0 / 1_000_000  # $15 per 1M output tokens
 CACHE_WRITE_RATE_USD = 3.75 / 1_000_000  # $3.75 per 1M cache creation tokens
-CACHE_READ_RATE_USD = 0.30 / 1_000_000   # $0.30 per 1M cache read tokens
+CACHE_READ_RATE_USD = 0.30 / 1_000_000  # $0.30 per 1M cache read tokens
 
 
 @dataclass

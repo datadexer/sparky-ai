@@ -18,19 +18,19 @@ All tested with:
 - Comparison metrics: Sharpe, max DD, win rate
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
-from typing import Dict, List, Callable
+from pathlib import Path
+from typing import Callable, Dict
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -56,7 +56,9 @@ def strategy_conservative_donchian(prices: pd.Series) -> pd.Series:
     return donchian_channel_strategy(prices, entry_period=30, exit_period=15)
 
 
-def strategy_rsi_mean_reversion(prices: pd.Series, period: int = 14, oversold: int = 30, overbought: int = 70) -> pd.Series:
+def strategy_rsi_mean_reversion(
+    prices: pd.Series, period: int = 14, oversold: int = 30, overbought: int = 70
+) -> pd.Series:
     """RSI mean reversion: LONG when oversold, EXIT when overbought."""
     # Compute RSI
     delta = prices.diff()
@@ -94,7 +96,7 @@ def strategy_rsi_mean_reversion(prices: pd.Series, period: int = 14, oversold: i
                 # Hold position
                 signals.iloc[i] = 1
 
-    logger.info(f"RSI({period}): {signals.sum()} LONG days ({signals.sum()/len(signals)*100:.1f}%)")
+    logger.info(f"RSI({period}): {signals.sum()} LONG days ({signals.sum() / len(signals) * 100:.1f}%)")
     return signals
 
 
@@ -131,7 +133,9 @@ def strategy_bollinger_mean_reversion(prices: pd.Series, period: int = 20, num_s
                 # Hold position
                 signals.iloc[i] = 1
 
-    logger.info(f"Bollinger({period},{num_std}σ): {signals.sum()} LONG days ({signals.sum()/len(signals)*100:.1f}%)")
+    logger.info(
+        f"Bollinger({period},{num_std}σ): {signals.sum()} LONG days ({signals.sum() / len(signals) * 100:.1f}%)"
+    )
     return signals
 
 
@@ -144,7 +148,9 @@ def strategy_sma_crossover(prices: pd.Series, fast_period: int = 50, slow_period
     signals = (fast_sma > slow_sma).astype(int)
     signals = signals.fillna(0)
 
-    logger.info(f"SMA({fast_period}/{slow_period}): {signals.sum()} LONG days ({signals.sum()/len(signals)*100:.1f}%)")
+    logger.info(
+        f"SMA({fast_period}/{slow_period}): {signals.sum()} LONG days ({signals.sum() / len(signals) * 100:.1f}%)"
+    )
     return signals
 
 
@@ -191,9 +197,9 @@ def compute_fold_metrics(returns):
 def validate_strategy(name: str, strategy_func: Callable, prices: pd.Series) -> Dict:
     """Run walk-forward validation for a single strategy."""
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"VALIDATING: {name}")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Generate signals
     signals = strategy_func(prices)
@@ -223,15 +229,12 @@ def validate_strategy(name: str, strategy_func: Callable, prices: pd.Series) -> 
     # Run validation
     fold_results = []
     for fold in folds:
-        fold_returns = compute_fold_returns(signals, prices, fold['start'], fold['end'])
+        fold_returns = compute_fold_returns(signals, prices, fold["start"], fold["end"])
         metrics = compute_fold_metrics(fold_returns)
-        fold_results.append({
-            "fold": fold['name'],
-            **metrics
-        })
+        fold_results.append({"fold": fold["name"], **metrics})
 
     # Aggregate statistics
-    sharpes = [r['sharpe'] for r in fold_results]
+    sharpes = [r["sharpe"] for r in fold_results]
     mean_sharpe = np.mean(sharpes)
     std_sharpe = np.std(sharpes, ddof=1)
     min_sharpe = np.min(sharpes)
@@ -256,9 +259,9 @@ def validate_strategy(name: str, strategy_func: Callable, prices: pd.Series) -> 
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("UNIFIED STRATEGY VALIDATION")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Load data
     prices = load_prices()
@@ -286,32 +289,34 @@ def main():
 
     # Summary comparison
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("STRATEGY COMPARISON")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"{'Strategy':<30} {'Mean Sharpe':>12} {'Min':>8} {'Max':>8} {'Positive':>10}")
-    logger.info("-"*70)
+    logger.info("-" * 70)
 
     for result in all_results:
-        agg = result['aggregate']
-        logger.info(f"{result['strategy']:<30} {agg['mean_sharpe']:>12.3f} {agg['min_sharpe']:>8.3f} {agg['max_sharpe']:>8.3f} {agg['positive_folds']:>3}/{agg['total_folds']:<3}")
+        agg = result["aggregate"]
+        logger.info(
+            f"{result['strategy']:<30} {agg['mean_sharpe']:>12.3f} {agg['min_sharpe']:>8.3f} {agg['max_sharpe']:>8.3f} {agg['positive_folds']:>3}/{agg['total_folds']:<3}"
+        )
 
     # Find best strategy
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("BEST STRATEGY")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
-    best = max(all_results, key=lambda x: x['aggregate']['mean_sharpe'])
+    best = max(all_results, key=lambda x: x["aggregate"]["mean_sharpe"])
     logger.info(f"Winner: {best['strategy']}")
     logger.info(f"Mean Sharpe: {best['aggregate']['mean_sharpe']:.3f}")
     logger.info(f"Min Sharpe: {best['aggregate']['min_sharpe']:.3f}")
     logger.info(f"Positive folds: {best['aggregate']['positive_folds']}/{best['aggregate']['total_folds']}")
 
     # Check if passes criteria
-    passes_mean = best['aggregate']['mean_sharpe'] >= 1.0
-    passes_min = best['aggregate']['min_sharpe'] > 0.0
-    passes_positive = best['aggregate']['positive_folds'] >= 14  # 75%+ positive
+    passes_mean = best["aggregate"]["mean_sharpe"] >= 1.0
+    passes_min = best["aggregate"]["min_sharpe"] > 0.0
+    passes_positive = best["aggregate"]["positive_folds"] >= 14  # 75%+ positive
 
     logger.info("")
     if passes_mean and passes_min and passes_positive:
@@ -331,19 +336,19 @@ def main():
             "mean_sharpe_gte_1.0": passes_mean,
             "min_sharpe_gt_0": passes_min,
             "positive_folds_gte_75pct": passes_positive,
-        }
+        },
     }
 
     output_path = Path("results/validation/unified_strategy_comparison.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
 
     logger.info(f"\nResults saved to: {output_path}")
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("VALIDATION COMPLETE")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

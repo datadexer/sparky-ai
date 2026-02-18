@@ -27,7 +27,7 @@ class AgentActivityLogger:
     """Structured JSONL logger for agent activity tracking.
 
     Usage:
-        logger = AgentActivityLogger(agent_id="ceo", session_id="phase-0-validation")
+        logger = AgentActivityLogger(agent_id="research", session_id="phase-0-validation")
         logger.log_task_started("phase_0", "returns_calculations", "Implementing returns")
     """
 
@@ -86,13 +86,15 @@ class AgentActivityLogger:
     ) -> None:
         """Log completion of a STATE.yaml task."""
         entry = self._base_entry("task_completed")
-        entry.update({
-            "phase": phase,
-            "task": task,
-            "description": description,
-            "files_changed": files_changed,
-            "git_commit": git_commit,
-        })
+        entry.update(
+            {
+                "phase": phase,
+                "task": task,
+                "description": description,
+                "files_changed": files_changed,
+                "git_commit": git_commit,
+            }
+        )
         self._write_entry(entry)
 
     def log_experiment(
@@ -106,26 +108,28 @@ class AgentActivityLogger:
     ) -> None:
         """Log a completed experiment with results."""
         entry = self._base_entry("experiment_completed")
-        entry.update({
-            "task": task,
-            "hypothesis": hypothesis,
-            "strategic_goal": strategic_goal,
-            "result": result,
-            "conclusion": conclusion,
-            "mlflow_run_id": mlflow_run_id,
-        })
+        entry.update(
+            {
+                "task": task,
+                "hypothesis": hypothesis,
+                "strategic_goal": strategic_goal,
+                "result": result,
+                "conclusion": conclusion,
+                "mlflow_run_id": mlflow_run_id,
+            }
+        )
         self._write_entry(entry)
 
-    def log_validation(
-        self, mlflow_run_id: str, new_status: str, reason: str
-    ) -> None:
+    def log_validation(self, mlflow_run_id: str, new_status: str, reason: str) -> None:
         """Log a validation status change (preliminary -> validated -> proven)."""
         entry = self._base_entry("validation_check")
-        entry.update({
-            "mlflow_run_id": mlflow_run_id,
-            "new_status": new_status,
-            "reason": reason,
-        })
+        entry.update(
+            {
+                "mlflow_run_id": mlflow_run_id,
+                "new_status": new_status,
+                "reason": reason,
+            }
+        )
         self._write_entry(entry)
 
     def log_decision(
@@ -137,12 +141,14 @@ class AgentActivityLogger:
     ) -> None:
         """Log a decision made by the agent."""
         entry = self._base_entry("decision_made")
-        entry.update({
-            "description": description,
-            "options": options,
-            "chosen": chosen,
-            "reasoning": reasoning,
-        })
+        entry.update(
+            {
+                "description": description,
+                "options": options,
+                "chosen": chosen,
+                "reasoning": reasoning,
+            }
+        )
         self._write_entry(entry)
 
     def log_error(self, description: str, recovery: str) -> None:
@@ -151,26 +157,26 @@ class AgentActivityLogger:
         entry.update({"description": description, "recovery": recovery})
         self._write_entry(entry)
 
-    def log_direction_change(
-        self, old_direction: str, new_direction: str, reasoning: str
-    ) -> None:
+    def log_direction_change(self, old_direction: str, new_direction: str, reasoning: str) -> None:
         """Log a change in research direction."""
         entry = self._base_entry("direction_change")
-        entry.update({
-            "old_direction": old_direction,
-            "new_direction": new_direction,
-            "reasoning": reasoning,
-        })
+        entry.update(
+            {
+                "old_direction": old_direction,
+                "new_direction": new_direction,
+                "reasoning": reasoning,
+            }
+        )
         self._write_entry(entry)
 
-    def log_hypothesis_proposed(
-        self, hypothesis: str, strategic_goal: str, expected_outcome: str
-    ) -> None:
+    def log_hypothesis_proposed(self, hypothesis: str, strategic_goal: str, expected_outcome: str) -> None:
         """Log a new research hypothesis."""
         entry = self._base_entry("hypothesis_proposed")
-        entry.update({
-            "hypothesis": hypothesis,
-            "strategic_goal": strategic_goal,
-            "expected_outcome": expected_outcome,
-        })
+        entry.update(
+            {
+                "hypothesis": hypothesis,
+                "strategic_goal": strategic_goal,
+                "expected_outcome": expected_outcome,
+            }
+        )
         self._write_entry(entry)

@@ -10,7 +10,6 @@ All features are computed with explicit lookback windows to avoid leakage.
 import numpy as np
 import pandas as pd
 
-
 # =============================================================================
 # BTC On-Chain Features
 # =============================================================================
@@ -128,9 +127,7 @@ def gas_fee_zscore(fee_total_usd: pd.Series, window: int = 90) -> pd.Series:
     return (fee_total_usd - rolling_mean) / rolling_std.replace(0, np.nan)
 
 
-def eth_address_momentum(
-    active_addresses: pd.Series, period: int = 30
-) -> pd.Series:
+def eth_address_momentum(active_addresses: pd.Series, period: int = 30) -> pd.Series:
     """ETH active address momentum (pct change).
 
     Same calculation as BTC but ETH addresses are heavily DeFi/contract-driven.
@@ -138,9 +135,7 @@ def eth_address_momentum(
     return active_addresses.pct_change(periods=period, fill_method=None)
 
 
-def eth_transfer_value_zscore(
-    transfer_value_adj: pd.Series, window: int = 60
-) -> pd.Series:
+def eth_transfer_value_zscore(transfer_value_adj: pd.Series, window: int = 60) -> pd.Series:
     """Z-score of ETH adjusted transfer value.
 
     Large value transfers often precede major DeFi events or whale positioning.
@@ -150,9 +145,7 @@ def eth_transfer_value_zscore(
     return (transfer_value_adj - rolling_mean) / rolling_std.replace(0, np.nan)
 
 
-def eth_nvt_signal(
-    market_cap: pd.Series, transfer_value_adj: pd.Series, window: int = 90
-) -> pd.Series:
+def eth_nvt_signal(market_cap: pd.Series, transfer_value_adj: pd.Series, window: int = 90) -> pd.Series:
     """ETH NVT signal (z-score of market cap / transfer value).
 
     NVT works for ETH but uses adjusted transfer value (excludes contract churn).
@@ -163,9 +156,7 @@ def eth_nvt_signal(
     return (nvt - rolling_mean) / rolling_std.replace(0, np.nan)
 
 
-def eth_btc_ratio_momentum(
-    eth_price: pd.Series, btc_price: pd.Series, period: int = 30
-) -> pd.Series:
+def eth_btc_ratio_momentum(eth_price: pd.Series, btc_price: pd.Series, period: int = 30) -> pd.Series:
     """ETH/BTC ratio momentum.
 
     ETH outperformance signals risk-on altcoin rotation.
@@ -174,9 +165,7 @@ def eth_btc_ratio_momentum(
     return ratio.pct_change(periods=period, fill_method=None)
 
 
-def eth_btc_correlation_regime(
-    eth_returns: pd.Series, btc_returns: pd.Series, window: int = 60
-) -> pd.Series:
+def eth_btc_correlation_regime(eth_returns: pd.Series, btc_returns: pd.Series, window: int = 60) -> pd.Series:
     """Rolling correlation between ETH and BTC returns.
 
     Low correlation = ETH trading on own fundamentals (more alpha opportunity).

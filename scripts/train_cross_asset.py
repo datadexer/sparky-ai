@@ -22,8 +22,8 @@ Success criteria:
 import logging
 from pathlib import Path
 
-import pandas as pd
 import mlflow
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,8 +42,7 @@ def load_cross_asset_data():
 
     if not features_path.exists():
         raise FileNotFoundError(
-            f"Cross-asset features not found: {features_path}\n"
-            "Run scripts/prepare_cross_asset_features.py first"
+            f"Cross-asset features not found: {features_path}\nRun scripts/prepare_cross_asset_features.py first"
         )
 
     logger.info(f"Loading cross-asset features from {features_path}")
@@ -91,19 +90,25 @@ def create_cross_asset_splits(X: pd.DataFrame, y: pd.Series):
     train_mask = (X.index >= "2017-01-01") & (X.index < "2024-01-01")
     splits["X_train"] = X[train_mask]
     splits["y_train"] = y[train_mask]
-    logger.info(f"Train (all assets): {splits['X_train'].index.min().date()} to {splits['X_train'].index.max().date()} ({len(splits['X_train']):,} samples)")
+    logger.info(
+        f"Train (all assets): {splits['X_train'].index.min().date()} to {splits['X_train'].index.max().date()} ({len(splits['X_train']):,} samples)"
+    )
 
     # Validation: All assets 2024
     val_mask = (X.index >= "2024-01-01") & (X.index < "2025-01-01")
     splits["X_val"] = X[val_mask]
     splits["y_val"] = y[val_mask]
-    logger.info(f"Validation (all assets): {splits['X_val'].index.min().date()} to {splits['X_val'].index.max().date()} ({len(splits['X_val']):,} samples)")
+    logger.info(
+        f"Validation (all assets): {splits['X_val'].index.min().date()} to {splits['X_val'].index.max().date()} ({len(splits['X_val']):,} samples)"
+    )
 
     # Holdout: BTC 2025 ONLY
     holdout_mask = (X.index >= "2025-01-01") & (X.index < "2026-01-01") & (X["asset_name"] == "btc")
     splits["X_holdout"] = X[holdout_mask]
     splits["y_holdout"] = y[holdout_mask]
-    logger.info(f"Holdout (BTC only): {splits['X_holdout'].index.min().date()} to {splits['X_holdout'].index.max().date()} ({len(splits['X_holdout']):,} samples)")
+    logger.info(
+        f"Holdout (BTC only): {splits['X_holdout'].index.min().date()} to {splits['X_holdout'].index.max().date()} ({len(splits['X_holdout']):,} samples)"
+    )
 
     # Asset distribution in each split
     logger.info(f"\nTrain asset distribution:\n{splits['X_train']['asset_name'].value_counts()}")
@@ -122,8 +127,8 @@ def train_cross_asset_model(X_train, y_train):
     Returns:
         Trained XGBoost model
     """
+
     from sparky.models.xgboost_model import XGBoostModel
-    import numpy as np
 
     logger.info("Training XGBoost on pooled cross-asset data...")
 
@@ -147,8 +152,8 @@ def train_cross_asset_model(X_train, y_train):
         reg_alpha=0.5,
         reg_lambda=2.0,
         tree_method="hist",  # GPU-compatible method
-        device="cuda",       # Use GPU
-        random_state=42
+        device="cuda",  # Use GPU
+        random_state=42,
     )
 
     model.fit(X_train_encoded, y_train)
@@ -198,7 +203,9 @@ def evaluate_cross_asset(model, X, y, feature_cols, split_name: str):
         f"{split_name}_target_balance": target_balance,
     }
 
-    logger.info(f"{split_name} - Accuracy: {accuracy:.3f}, Positive rate: {positive_rate:.1%}, Target balance: {target_balance:.1%}")
+    logger.info(
+        f"{split_name} - Accuracy: {accuracy:.3f}, Positive rate: {positive_rate:.1%}, Target balance: {target_balance:.1%}"
+    )
 
     return metrics
 

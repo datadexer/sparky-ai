@@ -1,9 +1,7 @@
 """Tests for feature registry and matrix builder."""
 
 import logging
-from datetime import datetime
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -466,16 +464,17 @@ class TestBuildFeatureMatrix:
     def test_matrix_sorted_by_index(self, registry):
         """Test that feature matrix is sorted by index."""
         # Create unsorted data
-        dates = pd.DatetimeIndex([
-            "2024-01-05",
-            "2024-01-01",
-            "2024-01-03",
-            "2024-01-02",
-            "2024-01-04",
-        ], tz="UTC")
-        unsorted_data = {
-            "price": pd.DataFrame({"close": [105, 101, 103, 102, 104]}, index=dates)
-        }
+        dates = pd.DatetimeIndex(
+            [
+                "2024-01-05",
+                "2024-01-01",
+                "2024-01-03",
+                "2024-01-02",
+                "2024-01-04",
+            ],
+            tz="UTC",
+        )
+        unsorted_data = {"price": pd.DataFrame({"close": [105, 101, 103, 102, 104]}, index=dates)}
 
         registry.register(
             FeatureDefinition(

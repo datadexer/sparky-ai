@@ -17,18 +17,18 @@ Success Criteria:
 ✅ Std dev < 0.3 (stable across folds)
 """
 
-import sys
 import json
 import logging
+import sys
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -109,9 +109,9 @@ def compute_fold_metrics(returns, buyhold_returns):
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("WALK-FORWARD VALIDATION: Multi-Timeframe Donchian Ensemble")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Load data
     prices = load_prices()
@@ -158,18 +158,13 @@ def main():
 
         # Compute returns for this fold
         fold_returns, buyhold_returns = compute_fold_returns(
-            signals, prices, fold['test_start'], fold['test_end'], tc=0.0026
+            signals, prices, fold["test_start"], fold["test_end"], tc=0.0026
         )
 
         # Compute metrics
         metrics = compute_fold_metrics(fold_returns, buyhold_returns)
 
-        result = {
-            "fold": fold['name'],
-            "test_start": fold['test_start'],
-            "test_end": fold['test_end'],
-            **metrics
-        }
+        result = {"fold": fold["name"], "test_start": fold["test_start"], "test_end": fold["test_end"], **metrics}
 
         fold_results.append(result)
 
@@ -180,7 +175,7 @@ def main():
         logger.info("")
 
     # Aggregate statistics
-    sharpes = [r['sharpe'] for r in fold_results]
+    sharpes = [r["sharpe"] for r in fold_results]
     mean_sharpe = np.mean(sharpes)
     std_sharpe = np.std(sharpes, ddof=1)
     min_sharpe = np.min(sharpes)
@@ -189,9 +184,9 @@ def main():
     positive_sharpe_count = sum(1 for s in sharpes if s > 0)
     high_sharpe_count = sum(1 for s in sharpes if s > 0.8)
 
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("AGGREGATE STATISTICS")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"Mean Sharpe: {mean_sharpe:.3f}")
     logger.info(f"Std Sharpe: {std_sharpe:.3f}")
     logger.info(f"Min Sharpe: {min_sharpe:.3f}")
@@ -201,9 +196,9 @@ def main():
 
     # Success criteria
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("SUCCESS CRITERIA")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     criteria = []
 
@@ -271,15 +266,15 @@ def main():
 
     output_path = Path("results/validation/walkforward_validation.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info("")
     logger.info(f"Results saved to: {output_path}")
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("WALK-FORWARD VALIDATION COMPLETE")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

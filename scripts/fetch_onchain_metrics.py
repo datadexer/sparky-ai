@@ -12,7 +12,6 @@ Output:
 """
 
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -53,7 +52,7 @@ def fetch_coinmetrics_data() -> pd.DataFrame:
         "start_time": "2017-01-01",
         "end_time": "2026-02-16",
         "frequency": "1d",
-        "page_size": 10000
+        "page_size": 10000,
     }
 
     url = f"{base_url}{endpoint}"
@@ -110,7 +109,9 @@ def fetch_coinmetrics_data() -> pd.DataFrame:
     df = df.sort_index()
 
     # Drop unnecessary columns (status columns and asset)
-    cols_to_drop = [col for col in df.columns if col.endswith("-status") or col.endswith("-status-time") or col == "asset"]
+    cols_to_drop = [
+        col for col in df.columns if col.endswith("-status") or col.endswith("-status-time") or col == "asset"
+    ]
     df = df.drop(columns=cols_to_drop)
 
     # Convert all columns to numeric (they come as strings)
@@ -140,11 +141,7 @@ def fetch_blockchain_com_data() -> pd.DataFrame:
 
     base_url = "https://api.blockchain.info/charts"
 
-    metrics = {
-        "hash_rate": "hash-rate",
-        "unique_addresses": "n-unique-addresses",
-        "n_transactions": "n-transactions"
-    }
+    metrics = {"hash_rate": "hash-rate", "unique_addresses": "n-unique-addresses", "n_transactions": "n-transactions"}
 
     dfs = []
 
@@ -152,11 +149,7 @@ def fetch_blockchain_com_data() -> pd.DataFrame:
         print(f"[Blockchain.com] Fetching {metric_name}...")
 
         url = f"{base_url}/{chart_name}"
-        params = {
-            "timespan": "9years",
-            "format": "json",
-            "sampled": "false"
-        }
+        params = {"timespan": "9years", "format": "json", "sampled": "false"}
 
         response = requests.get(url, params=params, timeout=60)
         response.raise_for_status()

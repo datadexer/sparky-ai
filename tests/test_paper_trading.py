@@ -18,7 +18,6 @@ from sparky.trading.signal_pipeline import (
 from sparky.types.config_types import PaperTradingConfig
 from sparky.types.portfolio_types import OrderSide
 
-
 # ============================================================
 # Paper Trading Engine Tests
 # ============================================================
@@ -365,7 +364,7 @@ class TestPaperTradingIntegration:
 
         # Process signals day by day (start from day 21 to have enough history)
         for i in range(21, len(prices)):
-            history = prices.iloc[:i+1]
+            history = prices.iloc[: i + 1]
             signal = pipeline.generate_signal(history)
             engine.process_signal(
                 timestamp=signal.timestamp,
@@ -385,6 +384,7 @@ class TestPaperTradingIntegration:
     def test_real_btc_data_if_available(self):
         """Integration test with real BTC data (skipped if unavailable)."""
         from pathlib import Path
+
         data_path = Path("/home/akamath/sparky-ai/data/btc_daily.parquet")
         if not data_path.exists():
             pytest.skip("BTC data not available")
@@ -402,7 +402,7 @@ class TestPaperTradingIntegration:
         engine = PaperTradingEngine(start_capital=100_000, fee_pct=0.001, slippage_pct=0.0002)
 
         for i in range(41, len(prices_2023)):
-            history = prices_2023.iloc[:i+1]
+            history = prices_2023.iloc[: i + 1]
             signal = pipeline.generate_signal(history)
             engine.process_signal(
                 timestamp=signal.timestamp,

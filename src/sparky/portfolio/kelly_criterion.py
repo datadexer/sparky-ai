@@ -27,7 +27,6 @@ References:
 import logging
 from typing import Tuple
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -119,9 +118,7 @@ def apply_kelly_sizing(
         hist_signals = signals.iloc[i - lookback : i]
 
         # Calculate Kelly parameters on historical data
-        win_rate, win_loss_ratio, kelly_frac = calculate_kelly_parameters(
-            hist_returns, hist_signals
-        )
+        win_rate, win_loss_ratio, kelly_frac = calculate_kelly_parameters(hist_returns, hist_signals)
 
         if kelly_frac <= 0:
             # Negative Kelly = negative edge, don't trade

@@ -65,9 +65,9 @@ def walk_forward_ml_backtest(X, y, prices, test_years, min_train_years=2):
     Returns:
         Dict with yearly Sharpe ratios and overall metrics
     """
-    from sparky.models.xgboost_model import XGBoostModel
     from sparky.backtest.costs import TransactionCostModel
     from sparky.features.returns import annualized_sharpe
+    from sparky.models.xgboost_model import XGBoostModel
 
     cost_model = TransactionCostModel.for_btc()
     results = []
@@ -138,24 +138,26 @@ def walk_forward_ml_backtest(X, y, prices, test_years, min_train_years=2):
             f"Train={len(X_train)}, Test={len(X_test)}"
         )
 
-        results.append({
-            "year": year,
-            "sharpe": sharpe,
-            "accuracy": accuracy,
-            "total_return": total_return,
-            "n_trades": n_trades,
-            "train_samples": len(X_train),
-            "test_samples": len(X_test),
-        })
+        results.append(
+            {
+                "year": year,
+                "sharpe": sharpe,
+                "accuracy": accuracy,
+                "total_return": total_return,
+                "n_trades": n_trades,
+                "train_samples": len(X_train),
+                "test_samples": len(X_test),
+            }
+        )
 
     return results
 
 
 def run_baseline_comparison(prices, test_years):
     """Run Multi-TF Donchian baseline for comparison (with corrected methodology)."""
-    from sparky.models.simple_baselines import donchian_channel_strategy
     from sparky.backtest.costs import TransactionCostModel
     from sparky.features.returns import annualized_sharpe
+    from sparky.models.simple_baselines import donchian_channel_strategy
 
     cost_model = TransactionCostModel.for_btc()
 
@@ -185,11 +187,13 @@ def run_baseline_comparison(prices, test_years):
         sharpe = annualized_sharpe(strategy_returns_after_costs)
         total_return = ((1 + strategy_returns_after_costs).cumprod().iloc[-1] - 1) * 100
 
-        results.append({
-            "year": year,
-            "sharpe": sharpe,
-            "total_return": total_return,
-        })
+        results.append(
+            {
+                "year": year,
+                "sharpe": sharpe,
+                "total_return": total_return,
+            }
+        )
 
     return results
 

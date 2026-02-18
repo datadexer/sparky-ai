@@ -14,23 +14,23 @@ NEW APPROACH (from regime_indicators.py get_trend_aware_position_size):
 Expected: Better bear market protection without missing bull runs.
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.regime_indicators import (
     compute_volatility_regime,
     detect_trend,
     get_trend_aware_position_size,
 )
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -134,7 +134,9 @@ def main():
 
     logger.info("\n[1/2] Baseline Multi-Timeframe Donchian (fixed 100% position)...")
     baseline_signals = strategy_multi_timeframe_baseline(prices)
-    logger.info(f"Baseline signals: {baseline_signals.sum()} LONG days ({baseline_signals.sum()/len(baseline_signals)*100:.1f}%)")
+    logger.info(
+        f"Baseline signals: {baseline_signals.sum()} LONG days ({baseline_signals.sum() / len(baseline_signals) * 100:.1f}%)"
+    )
 
     logger.info("\n[2/2] Trend-Aware Position Sizing (25%-125% dynamic)...")
     trend_signals = strategy_trend_aware_position_sizing(prices)
@@ -147,13 +149,13 @@ def main():
     n_25 = (trend_signals == 0.25).sum()
     n_flat = (trend_signals == 0.0).sum()
 
-    logger.info(f"Position distribution:")
-    logger.info(f"  125% (HIGH vol + UPTREND):     {n_125} days ({n_125/len(trend_signals)*100:.1f}%)")
-    logger.info(f"  100% (MEDIUM/LOW + UPTREND):   {n_100} days ({n_100/len(trend_signals)*100:.1f}%)")
-    logger.info(f"  75%  (MEDIUM/LOW vol):         {n_75} days ({n_75/len(trend_signals)*100:.1f}%)")
-    logger.info(f"  50%  (MEDIUM/HIGH + SIDEWAYS): {n_50} days ({n_50/len(trend_signals)*100:.1f}%)")
-    logger.info(f"  25%  (HIGH vol + DOWNTREND):   {n_25} days ({n_25/len(trend_signals)*100:.1f}%)")
-    logger.info(f"  0%   (FLAT):                   {n_flat} days ({n_flat/len(trend_signals)*100:.1f}%)")
+    logger.info("Position distribution:")
+    logger.info(f"  125% (HIGH vol + UPTREND):     {n_125} days ({n_125 / len(trend_signals) * 100:.1f}%)")
+    logger.info(f"  100% (MEDIUM/LOW + UPTREND):   {n_100} days ({n_100 / len(trend_signals) * 100:.1f}%)")
+    logger.info(f"  75%  (MEDIUM/LOW vol):         {n_75} days ({n_75 / len(trend_signals) * 100:.1f}%)")
+    logger.info(f"  50%  (MEDIUM/HIGH + SIDEWAYS): {n_50} days ({n_50 / len(trend_signals) * 100:.1f}%)")
+    logger.info(f"  25%  (HIGH vol + DOWNTREND):   {n_25} days ({n_25 / len(trend_signals) * 100:.1f}%)")
+    logger.info(f"  0%   (FLAT):                   {n_flat} days ({n_flat / len(trend_signals) * 100:.1f}%)")
 
     # IN-SAMPLE TEST: 2018-2020
     logger.info("\n" + "=" * 80)
@@ -168,17 +170,21 @@ def main():
         logger.info(f"\n--- Year {year} ---")
 
         baseline_metrics = backtest_fractional_positions(baseline_signals, prices, start, end)
-        logger.info(f"Baseline:     Sharpe {baseline_metrics['sharpe']:.3f}, "
-                   f"Return {baseline_metrics['return_pct']:+.1f}%, "
-                   f"MaxDD {baseline_metrics['max_dd_pct']:.1f}%")
+        logger.info(
+            f"Baseline:     Sharpe {baseline_metrics['sharpe']:.3f}, "
+            f"Return {baseline_metrics['return_pct']:+.1f}%, "
+            f"MaxDD {baseline_metrics['max_dd_pct']:.1f}%"
+        )
 
         trend_metrics = backtest_fractional_positions(trend_signals, prices, start, end)
-        logger.info(f"Trend-Aware:  Sharpe {trend_metrics['sharpe']:.3f}, "
-                   f"Return {trend_metrics['return_pct']:+.1f}%, "
-                   f"MaxDD {trend_metrics['max_dd_pct']:.1f}%")
+        logger.info(
+            f"Trend-Aware:  Sharpe {trend_metrics['sharpe']:.3f}, "
+            f"Return {trend_metrics['return_pct']:+.1f}%, "
+            f"MaxDD {trend_metrics['max_dd_pct']:.1f}%"
+        )
 
-        delta_sharpe = trend_metrics['sharpe'] - baseline_metrics['sharpe']
-        delta_return = trend_metrics['return_pct'] - baseline_metrics['return_pct']
+        delta_sharpe = trend_metrics["sharpe"] - baseline_metrics["sharpe"]
+        delta_return = trend_metrics["return_pct"] - baseline_metrics["return_pct"]
         status = "✅ IMPROVED" if delta_sharpe > 0 else "❌ WORSE"
         logger.info(f"Delta:        Sharpe {delta_sharpe:+.3f}, Return {delta_return:+.1f}% {status}")
 
@@ -248,17 +254,21 @@ def main():
         logger.info(f"\n--- Year {year} ---")
 
         baseline_metrics = backtest_fractional_positions(baseline_signals, prices, start, end)
-        logger.info(f"Baseline:     Sharpe {baseline_metrics['sharpe']:.3f}, "
-                   f"Return {baseline_metrics['return_pct']:+.1f}%, "
-                   f"MaxDD {baseline_metrics['max_dd_pct']:.1f}%")
+        logger.info(
+            f"Baseline:     Sharpe {baseline_metrics['sharpe']:.3f}, "
+            f"Return {baseline_metrics['return_pct']:+.1f}%, "
+            f"MaxDD {baseline_metrics['max_dd_pct']:.1f}%"
+        )
 
         trend_metrics = backtest_fractional_positions(trend_signals, prices, start, end)
-        logger.info(f"Trend-Aware:  Sharpe {trend_metrics['sharpe']:.3f}, "
-                   f"Return {trend_metrics['return_pct']:+.1f}%, "
-                   f"MaxDD {trend_metrics['max_dd_pct']:.1f}%")
+        logger.info(
+            f"Trend-Aware:  Sharpe {trend_metrics['sharpe']:.3f}, "
+            f"Return {trend_metrics['return_pct']:+.1f}%, "
+            f"MaxDD {trend_metrics['max_dd_pct']:.1f}%"
+        )
 
-        delta_sharpe = trend_metrics['sharpe'] - baseline_metrics['sharpe']
-        delta_return = trend_metrics['return_pct'] - baseline_metrics['return_pct']
+        delta_sharpe = trend_metrics["sharpe"] - baseline_metrics["sharpe"]
+        delta_return = trend_metrics["return_pct"] - baseline_metrics["return_pct"]
         status = "✅ IMPROVED" if delta_sharpe > 0 else "❌ WORSE"
         logger.info(f"Delta:        Sharpe {delta_sharpe:+.3f}, Return {delta_return:+.1f}% {status}")
 
@@ -307,9 +317,15 @@ def main():
         "bear_market_improvement": oos_results[2022]["delta_sharpe"] > 0,
     }
 
-    logger.info(f"✓ Mean Sharpe ≥ 0.85:        {trend_mean:.3f} {'✅ PASS' if criteria['mean_sharpe_gte_0.85'] else '❌ FAIL'}")
-    logger.info(f"✓ Improvement vs baseline:  {improvement_pct:+.1f}% {'✅ PASS' if criteria['improvement_vs_baseline'] else '❌ FAIL'}")
-    logger.info(f"✓ Better 2022 bear market:  {oos_results[2022]['delta_sharpe']:+.3f} {'✅ PASS' if criteria['bear_market_improvement'] else '❌ FAIL'}")
+    logger.info(
+        f"✓ Mean Sharpe ≥ 0.85:        {trend_mean:.3f} {'✅ PASS' if criteria['mean_sharpe_gte_0.85'] else '❌ FAIL'}"
+    )
+    logger.info(
+        f"✓ Improvement vs baseline:  {improvement_pct:+.1f}% {'✅ PASS' if criteria['improvement_vs_baseline'] else '❌ FAIL'}"
+    )
+    logger.info(
+        f"✓ Better 2022 bear market:  {oos_results[2022]['delta_sharpe']:+.3f} {'✅ PASS' if criteria['bear_market_improvement'] else '❌ FAIL'}"
+    )
 
     passed = sum(criteria.values())
     total = len(criteria)

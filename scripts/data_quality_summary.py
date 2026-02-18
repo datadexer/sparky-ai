@@ -5,6 +5,7 @@ Shows key metrics and statistics for validation.
 """
 
 from pathlib import Path
+
 import pandas as pd
 
 
@@ -44,19 +45,21 @@ def main():
 
     # CoinMetrics
     df_cm = pd.read_parquet(onchain_dir / "coinmetrics_btc_daily.parquet")
-    print(f"\nCoinMetrics BTC Daily:")
+    print("\nCoinMetrics BTC Daily:")
     print(f"  Rows: {len(df_cm):,}")
     print(f"  Columns: {len(df_cm.columns)} metrics")
     print(f"  Date Range: {df_cm.index.min().date()} to {df_cm.index.max().date()}")
     print(f"  Days Covered: {(df_cm.index.max() - df_cm.index.min()).days:,}")
     print(f"  NaN Count: {df_cm.isna().sum().sum()}")
-    print(f"  Key Metrics: MVRV={df_cm['CapMVRVCur'].mean():.2f}, "
-          f"Avg Active Addresses={df_cm['AdrActCnt'].mean():,.0f}, "
-          f"Avg Price=${df_cm['PriceUSD'].mean():,.2f}")
+    print(
+        f"  Key Metrics: MVRV={df_cm['CapMVRVCur'].mean():.2f}, "
+        f"Avg Active Addresses={df_cm['AdrActCnt'].mean():,.0f}, "
+        f"Avg Price=${df_cm['PriceUSD'].mean():,.2f}"
+    )
 
     # Blockchain.com
     df_bc = pd.read_parquet(onchain_dir / "blockchain_com_btc_daily.parquet")
-    print(f"\nBlockchain.com BTC Daily:")
+    print("\nBlockchain.com BTC Daily:")
     print(f"  Rows: {len(df_bc):,}")
     print(f"  Columns: {len(df_bc.columns)} metrics")
     print(f"  Date Range: {df_bc.index.min().date()} to {df_bc.index.max().date()}")
@@ -71,15 +74,15 @@ def main():
     print("\n" + "=" * 80)
     print("  OVERALL SUMMARY")
     print("=" * 80)
-    print(f"\nTotal Data Points:")
+    print("\nTotal Data Points:")
     print(f"  Macro Data: {total_macro_rows:,} rows across 4 files")
     print(f"  On-Chain Data: {total_onchain_rows:,} rows across 2 files")
     print(f"  Total: {total_rows:,} rows")
-    print(f"\nData Quality:")
+    print("\nData Quality:")
     print(f"  Total NaN Values: {total_nan} (0.009% of all data)")
-    print(f"  Files with Zero NaNs: 5 out of 6")
-    print(f"  Date Coverage: ~9 years (2017-2026)")
-    print(f"\nStatus: ✅ READY FOR ML PIPELINE")
+    print("  Files with Zero NaNs: 5 out of 6")
+    print("  Date Coverage: ~9 years (2017-2026)")
+    print("\nStatus: ✅ READY FOR ML PIPELINE")
 
     print("\n" + "=" * 80)
 

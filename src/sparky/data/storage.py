@@ -67,8 +67,12 @@ class DataStore:
         meta["saved_at"] = datetime.now(timezone.utc).isoformat()
         meta["row_count"] = len(df)
         if not df.empty:
-            meta["date_range_start"] = str(df.index.min()) if isinstance(df.index, pd.DatetimeIndex) else str(df.index[0])
-            meta["date_range_end"] = str(df.index.max()) if isinstance(df.index, pd.DatetimeIndex) else str(df.index[-1])
+            meta["date_range_start"] = (
+                str(df.index.min()) if isinstance(df.index, pd.DatetimeIndex) else str(df.index[0])
+            )
+            meta["date_range_end"] = (
+                str(df.index.max()) if isinstance(df.index, pd.DatetimeIndex) else str(df.index[-1])
+            )
 
         # Convert metadata to bytes for Parquet schema metadata
         table = pa.Table.from_pandas(df)

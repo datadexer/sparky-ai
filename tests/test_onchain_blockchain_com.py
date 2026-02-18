@@ -1,6 +1,6 @@
 """Tests for Blockchain.com on-chain data fetcher."""
 
-from datetime import datetime, timezone
+from datetime import timezone
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -226,9 +226,7 @@ class TestFetchAllMetrics:
             return mock_response
 
         with patch.object(fetcher.session, "get", side_effect=mock_get_side_effect):
-            df = fetcher.fetch_all_metrics(
-                metrics=["hash_rate", "active_addresses"], timespan="1year"
-            )
+            df = fetcher.fetch_all_metrics(metrics=["hash_rate", "active_addresses"], timespan="1year")
 
             assert isinstance(df, pd.DataFrame)
             assert len(df) == 2
@@ -263,9 +261,7 @@ class TestFetchAllMetrics:
             return mock_response
 
         with patch.object(fetcher.session, "get", side_effect=mock_get_side_effect):
-            df = fetcher.fetch_all_metrics(
-                metrics=["hash_rate", "active_addresses"], timespan="1year"
-            )
+            df = fetcher.fetch_all_metrics(metrics=["hash_rate", "active_addresses"], timespan="1year")
 
             # Should have 3 rows (outer join)
             assert len(df) == 3
@@ -293,25 +289,19 @@ class TestFetchAllMetrics:
             mock_response = MagicMock()
             if "hash-rate" in url:
                 # First metric succeeds
-                mock_response.json.return_value = {
-                    "values": [{"x": 1704067200, "y": 100.5}]
-                }
+                mock_response.json.return_value = {"values": [{"x": 1704067200, "y": 100.5}]}
             elif "n-unique-addresses" in url:
                 # Second metric fails
                 raise requests.RequestException("Network error")
             elif "n-transactions" in url:
                 # Third metric succeeds
-                mock_response.json.return_value = {
-                    "values": [{"x": 1704067200, "y": 50000}]
-                }
+                mock_response.json.return_value = {"values": [{"x": 1704067200, "y": 50000}]}
             else:
                 mock_response.json.return_value = {"values": []}
             return mock_response
 
         with patch.object(fetcher.session, "get", side_effect=mock_get_side_effect):
-            df = fetcher.fetch_all_metrics(
-                metrics=["hash_rate", "active_addresses", "transaction_count"]
-            )
+            df = fetcher.fetch_all_metrics(metrics=["hash_rate", "active_addresses", "transaction_count"])
 
             # Should have 2 metrics (hash_rate and transaction_count)
             assert len(df.columns) == 2
@@ -362,9 +352,10 @@ class TestAvailableMetrics:
 class TestRateLimiting:
     def test_rate_limiting_is_applied(self, fetcher, sample_response_data):
         """Test that rate limiting delay is applied between requests."""
-        with patch.object(fetcher.session, "get") as mock_get, patch(
-            "sparky.data.onchain_blockchain_com.time.sleep"
-        ) as mock_sleep:
+        with (
+            patch.object(fetcher.session, "get") as mock_get,
+            patch("sparky.data.onchain_blockchain_com.time.sleep") as mock_sleep,
+        ):
             mock_response = MagicMock()
             mock_response.json.return_value = sample_response_data
             mock_get.return_value = mock_response

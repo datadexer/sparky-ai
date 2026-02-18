@@ -50,27 +50,27 @@ from sklearn.metrics import roc_auc_score
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from sparky.features.technical import rsi, ema, macd, momentum
-from sparky.features.returns import simple_returns
+from sparky.backtest.costs import TransactionCostModel
 from sparky.features.advanced import (
+    atr,
     bollinger_bandwidth,
     bollinger_position,
-    atr,
-    intraday_range,
-    volume_momentum,
-    volume_ma_ratio,
-    vwap_deviation,
-    higher_highs_lower_lows,
-    volatility_clustering,
-    price_distance_from_sma,
-    momentum_quality,
-    session_hour,
     day_of_week,
+    higher_highs_lower_lows,
+    intraday_range,
+    momentum_quality,
     price_acceleration,
+    price_distance_from_sma,
+    session_hour,
+    volatility_clustering,
+    volume_ma_ratio,
+    volume_momentum,
+    vwap_deviation,
 )
-from sparky.backtest.costs import TransactionCostModel
+from sparky.features.returns import simple_returns
+from sparky.features.technical import ema, macd, momentum, rsi
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -205,7 +205,7 @@ def load_and_pool_assets():
     logger.info("\nAsset distribution:")
     for asset in assets:
         count = (X["asset_id"] == asset).sum()
-        logger.info(f"  {asset.upper()}: {count:,} ({count/len(X)*100:.1f}%)")
+        logger.info(f"  {asset.upper()}: {count:,} ({count / len(X) * 100:.1f}%)")
 
     return X, y
 
@@ -224,17 +224,18 @@ def train_catboost(X_train, y_train, X_val, y_val, seed=42):
         iterations=1000,
         depth=4,
         learning_rate=0.05,
-        loss_function='Logloss',
-        eval_metric='AUC',
+        loss_function="Logloss",
+        eval_metric="AUC",
         random_seed=seed,
         verbose=False,
         cat_features=cat_features,
-        task_type='GPU',  # Use GPU if available
-        devices='0',
+        task_type="GPU",  # Use GPU if available
+        devices="0",
     )
 
     model.fit(
-        X_train, y_train,
+        X_train,
+        y_train,
         eval_set=(X_val, y_val),
         early_stopping_rounds=50,
         verbose=100,
@@ -264,19 +265,18 @@ def aggregate_hourly_to_daily_signals(hourly_probs: pd.Series, hourly_index: pd.
         Daily signals (1=LONG, 0=FLAT)
     """
     # Create DataFrame with hourly predictions
-    df = pd.DataFrame({
-        'prob': hourly_probs,
-        'pred': (hourly_probs > 0.5).astype(int)
-    }, index=hourly_index)
+    df = pd.DataFrame({"prob": hourly_probs, "pred": (hourly_probs > 0.5).astype(int)}, index=hourly_index)
 
     # Resample to daily
-    daily = df.resample('D').agg({
-        'prob': 'mean',  # Average probability
-        'pred': 'mean'   # Fraction of hours predicting UP
-    })
+    daily = df.resample("D").agg(
+        {
+            "prob": "mean",  # Average probability
+            "pred": "mean",  # Fraction of hours predicting UP
+        }
+    )
 
     # Signal: LONG if ≥60% of hours predict UP
-    daily_signals = (daily['pred'] >= 0.6).astype(int)
+    daily_signals = (daily["pred"] >= 0.6).astype(int)
 
     return daily_signals
 
@@ -352,7 +352,7 @@ def yearly_walk_forward_validation(X_hourly, y_hourly, btc_prices_daily):
         logger.info(f"\n--- YEAR {year} ---")
 
         # Splits
-        train_end = f"{year-1}-12-31"
+        train_end = f"{year - 1}-12-31"
         test_start = f"{year}-01-01"
         test_end = f"{year}-12-31"
 
@@ -361,7 +361,7 @@ def yearly_walk_forward_validation(X_hourly, y_hourly, btc_prices_daily):
         y_train = y_hourly[y_hourly.index < test_start]
 
         # Use previous year as validation
-        val_start = f"{year-1}-01-01"
+        val_start = f"{year - 1}-01-01"
         X_val = X_hourly[(X_hourly.index >= val_start) & (X_hourly.index < test_start)]
         y_val = y_hourly[(y_hourly.index >= val_start) & (y_hourly.index < test_start)]
 
@@ -374,7 +374,7 @@ def yearly_walk_forward_validation(X_hourly, y_hourly, btc_prices_daily):
         X_test_btc = X_test_hourly[btc_mask]
 
         logger.info(f"  Train: {len(X_train):,} hourly (all assets, up to {train_end})")
-        logger.info(f"  Val: {len(X_val):,} hourly (year {year-1})")
+        logger.info(f"  Val: {len(X_val):,} hourly (year {year - 1})")
         logger.info(f"  Test: {len(X_test_btc):,} hourly (BTC {year})")
 
         # Train model
@@ -395,14 +395,11 @@ def yearly_walk_forward_validation(X_hourly, y_hourly, btc_prices_daily):
         metrics = backtest_daily_signals(daily_signals, test_prices, year)
 
         logger.info(f"  Sharpe: {metrics['sharpe']:.3f}")
-        logger.info(f"  Return: {metrics['total_return']*100:+.1f}%")
-        logger.info(f"  Max DD: {metrics['max_drawdown']*100:.1f}%")
+        logger.info(f"  Return: {metrics['total_return'] * 100:+.1f}%")
+        logger.info(f"  Max DD: {metrics['max_drawdown'] * 100:.1f}%")
         logger.info(f"  Trades: {metrics['trades']}")
 
-        results.append({
-            "year": year,
-            **metrics
-        })
+        results.append({"year": year, **metrics})
 
     return results
 
@@ -425,7 +422,7 @@ def summarize_results(yearly_results):
 
     positive_years = sum(1 for s in sharpes if s > 0)
 
-    logger.info(f"\nML CROSS-ASSET (6 years: 2018-2023):")
+    logger.info("\nML CROSS-ASSET (6 years: 2018-2023):")
     logger.info(f"  Mean Sharpe: {mean_sharpe:.3f}")
     logger.info(f"  Std Sharpe: {std_sharpe:.3f}")
     logger.info(f"  Median Sharpe: {median_sharpe:.3f}")
@@ -436,13 +433,13 @@ def summarize_results(yearly_results):
     # Baseline
     baseline_sharpe = 0.772
 
-    logger.info(f"\nBASELINE (Multi-Timeframe Ensemble):")
+    logger.info("\nBASELINE (Multi-Timeframe Ensemble):")
     logger.info(f"  Mean Sharpe: {baseline_sharpe:.3f}")
 
     delta = mean_sharpe - baseline_sharpe
     pct_improvement = (delta / baseline_sharpe) * 100
 
-    logger.info(f"\nCOMPARISON:")
+    logger.info("\nCOMPARISON:")
     logger.info(f"  Delta: {delta:+.3f} ({pct_improvement:+.1f}%)")
 
     # Verdict
@@ -485,7 +482,7 @@ def save_results(results: dict):
 
     output_path = output_dir / "ml_cross_asset_validation.json"
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"\nResults saved to {output_path}")
@@ -498,8 +495,8 @@ def main():
     logger.info("ML CROSS-ASSET ALPHA SEARCH")
     logger.info("=" * 80)
     logger.info(f"Timestamp: {datetime.utcnow().isoformat()}")
-    logger.info(f"Objective: Beat Multi-Timeframe (0.772 Sharpe) with ML")
-    logger.info(f"Target: Sharpe ≥0.85 (10% improvement)")
+    logger.info("Objective: Beat Multi-Timeframe (0.772 Sharpe) with ML")
+    logger.info("Target: Sharpe ≥0.85 (10% improvement)")
 
     # 1. Load and pool cross-asset hourly data
     X_hourly, y_hourly = load_and_pool_assets()
@@ -512,7 +509,9 @@ def main():
 
     btc_daily = pd.read_parquet(btc_daily_path)
     btc_prices_daily = btc_daily["close"]
-    logger.info(f"  BTC daily: {len(btc_prices_daily):,} days ({btc_prices_daily.index.min().date()} to {btc_prices_daily.index.max().date()})")
+    logger.info(
+        f"  BTC daily: {len(btc_prices_daily):,} days ({btc_prices_daily.index.min().date()} to {btc_prices_daily.index.max().date()})"
+    )
 
     # 3. Yearly walk-forward validation
     yearly_results = yearly_walk_forward_validation(X_hourly, y_hourly, btc_prices_daily)

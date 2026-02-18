@@ -74,9 +74,7 @@ class CoinGeckoFetcher:
         }
 
         try:
-            resp = self.session.get(
-                f"{BASE_URL}/coins/markets", params=params, timeout=30
-            )
+            resp = self.session.get(f"{BASE_URL}/coins/markets", params=params, timeout=30)
             self._last_request_time = time.time()
             self._request_count += 1
             resp.raise_for_status()
@@ -96,23 +94,21 @@ class CoinGeckoFetcher:
                 current = coin.get("current_price", 0)
                 ath_distance = ((current - ath) / ath * 100) if ath else None
 
-                records.append({
-                    "coin_id": coin["id"],
-                    "symbol": coin.get("symbol", "").upper(),
-                    "current_price": current,
-                    "market_cap": coin.get("market_cap"),
-                    "total_volume": coin.get("total_volume"),
-                    "circulating_supply": coin.get("circulating_supply"),
-                    "fdv": coin.get("fully_diluted_valuation"),
-                    "price_change_24h_pct": coin.get("price_change_percentage_24h"),
-                    "price_change_7d_pct": coin.get(
-                        "price_change_percentage_7d_in_currency"
-                    ),
-                    "price_change_30d_pct": coin.get(
-                        "price_change_percentage_30d_in_currency"
-                    ),
-                    "ath_distance_pct": ath_distance,
-                })
+                records.append(
+                    {
+                        "coin_id": coin["id"],
+                        "symbol": coin.get("symbol", "").upper(),
+                        "current_price": current,
+                        "market_cap": coin.get("market_cap"),
+                        "total_volume": coin.get("total_volume"),
+                        "circulating_supply": coin.get("circulating_supply"),
+                        "fdv": coin.get("fully_diluted_valuation"),
+                        "price_change_24h_pct": coin.get("price_change_percentage_24h"),
+                        "price_change_7d_pct": coin.get("price_change_percentage_7d_in_currency"),
+                        "price_change_30d_pct": coin.get("price_change_percentage_30d_in_currency"),
+                        "ath_distance_pct": ath_distance,
+                    }
+                )
             except (KeyError, TypeError) as e:
                 coin_id = coin.get("id", "unknown") if isinstance(coin, dict) else "unknown"
                 logger.warning(f"[DATA] Skipping malformed CoinGecko entry '{coin_id}': {e}")
@@ -168,28 +164,19 @@ class CoinGeckoFetcher:
             return pd.DataFrame()
 
         # Parse [timestamp_ms, value] arrays
-        prices = {
-            pd.Timestamp(ts, unit="ms", tz="UTC"): val
-            for ts, val in data.get("prices", [])
-        }
-        market_caps = {
-            pd.Timestamp(ts, unit="ms", tz="UTC"): val
-            for ts, val in data.get("market_caps", [])
-        }
-        volumes = {
-            pd.Timestamp(ts, unit="ms", tz="UTC"): val
-            for ts, val in data.get("total_volumes", [])
-        }
+        prices = {pd.Timestamp(ts, unit="ms", tz="UTC"): val for ts, val in data.get("prices", [])}
+        market_caps = {pd.Timestamp(ts, unit="ms", tz="UTC"): val for ts, val in data.get("market_caps", [])}
+        volumes = {pd.Timestamp(ts, unit="ms", tz="UTC"): val for ts, val in data.get("total_volumes", [])}
 
-        df = pd.DataFrame({
-            "price": pd.Series(prices),
-            "market_cap": pd.Series(market_caps),
-            "volume": pd.Series(volumes),
-        })
+        df = pd.DataFrame(
+            {
+                "price": pd.Series(prices),
+                "market_cap": pd.Series(market_caps),
+                "volume": pd.Series(volumes),
+            }
+        )
         df = df.sort_index()
         df = df[~df.index.duplicated(keep="last")]
 
-        logger.info(
-            f"[DATA] Fetched {len(df)} days of historical data for {coin_id}"
-        )
+        logger.info(f"[DATA] Fetched {len(df)} days of historical data for {coin_id}")
         return df

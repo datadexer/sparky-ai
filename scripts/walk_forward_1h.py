@@ -20,18 +20,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
 
@@ -69,23 +65,23 @@ def define_walk_forward_folds():
     """
     folds = [
         # Fold 1: Train 2017-01 to 2019-06 → Test 2019-07 to 2019-12
-        (None, '2019-07-01', '2019-07-01', '2020-01-01'),
+        (None, "2019-07-01", "2019-07-01", "2020-01-01"),
         # Fold 2: Train 2017-01 to 2019-12 → Test 2020-01 to 2020-06
-        (None, '2020-01-01', '2020-01-01', '2020-07-01'),
+        (None, "2020-01-01", "2020-01-01", "2020-07-01"),
         # Fold 3: Train 2017-01 to 2020-06 → Test 2020-07 to 2020-12
-        (None, '2020-07-01', '2020-07-01', '2021-01-01'),
+        (None, "2020-07-01", "2020-07-01", "2021-01-01"),
         # Fold 4: Train 2017-01 to 2020-12 → Test 2021-01 to 2021-06
-        (None, '2021-01-01', '2021-01-01', '2021-07-01'),
+        (None, "2021-01-01", "2021-01-01", "2021-07-01"),
         # Fold 5: Train 2017-01 to 2021-06 → Test 2021-07 to 2021-12
-        (None, '2021-07-01', '2021-07-01', '2022-01-01'),
+        (None, "2021-07-01", "2021-07-01", "2022-01-01"),
         # Fold 6: Train 2017-01 to 2021-12 → Test 2022-01 to 2022-06
-        (None, '2022-01-01', '2022-01-01', '2022-07-01'),
+        (None, "2022-01-01", "2022-01-01", "2022-07-01"),
         # Fold 7: Train 2017-01 to 2022-06 → Test 2022-07 to 2022-12
-        (None, '2022-07-01', '2022-07-01', '2023-01-01'),
+        (None, "2022-07-01", "2022-07-01", "2023-01-01"),
         # Fold 8: Train 2017-01 to 2022-12 → Test 2023-01 to 2023-06
-        (None, '2023-01-01', '2023-01-01', '2023-07-01'),
+        (None, "2023-01-01", "2023-01-01", "2023-07-01"),
         # Fold 9: Train 2017-01 to 2023-06 → Test 2023-07 to 2023-12
-        (None, '2023-07-01', '2023-07-01', '2024-01-01'),
+        (None, "2023-07-01", "2023-07-01", "2024-01-01"),
     ]
 
     return folds
@@ -107,24 +103,24 @@ def create_fold_splits(features, targets, train_start, train_end, test_start, te
         X_train, y_train, X_test, y_test
     """
     # Convert dates to UTC timestamps
-    train_end_ts = pd.Timestamp(train_end, tz='UTC')
-    test_start_ts = pd.Timestamp(test_start, tz='UTC')
-    test_end_ts = pd.Timestamp(test_end, tz='UTC')
+    train_end_ts = pd.Timestamp(train_end, tz="UTC")
+    test_start_ts = pd.Timestamp(test_start, tz="UTC")
+    test_end_ts = pd.Timestamp(test_end, tz="UTC")
 
     # Create masks
     if train_start is None:
         train_mask = features.index < train_end_ts
     else:
-        train_start_ts = pd.Timestamp(train_start, tz='UTC')
+        train_start_ts = pd.Timestamp(train_start, tz="UTC")
         train_mask = (features.index >= train_start_ts) & (features.index < train_end_ts)
 
     test_mask = (features.index >= test_start_ts) & (features.index < test_end_ts)
 
     # Split data
     X_train = features.loc[train_mask]
-    y_train = targets.loc[train_mask, 'target']
+    y_train = targets.loc[train_mask, "target"]
     X_test = features.loc[test_mask]
-    y_test = targets.loc[test_mask, 'target']
+    y_test = targets.loc[test_mask, "target"]
 
     return X_train, y_train, X_test, y_test
 
@@ -141,14 +137,7 @@ def train_catboost(X_train, y_train):
         Trained CatBoost model
     """
     model = CatBoostClassifier(
-        depth=5,
-        learning_rate=0.05,
-        iterations=200,
-        l2_leaf_reg=3.0,
-        random_seed=42,
-        verbose=0,
-        subsample=0.8,
-        rsm=0.8
+        depth=5, learning_rate=0.05, iterations=200, l2_leaf_reg=3.0, random_seed=42, verbose=0, subsample=0.8, rsm=0.8
     )
 
     model.fit(X_train, y_train)
@@ -168,11 +157,11 @@ def compute_metrics(y_true, y_pred, y_proba):
         Dictionary of metrics
     """
     return {
-        'accuracy': float(accuracy_score(y_true, y_pred)),
-        'roc_auc': float(roc_auc_score(y_true, y_proba)),
-        'precision': float(precision_score(y_true, y_pred, zero_division=0)),
-        'recall': float(recall_score(y_true, y_pred, zero_division=0)),
-        'f1': float(f1_score(y_true, y_pred, zero_division=0)),
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "roc_auc": float(roc_auc_score(y_true, y_proba)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
+        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
     }
 
 
@@ -231,18 +220,20 @@ def main():
         logger.info(f"Test F1:        {metrics['f1']:.4f}")
 
         # Store results
-        results.append({
-            'fold': fold_idx,
-            'train_start': train_start or 'start',
-            'train_end': train_end,
-            'test_start': test_start,
-            'test_end': test_end,
-            'train_samples': len(X_train),
-            'test_samples': len(X_test),
-            'train_balance': float(y_train.mean()),
-            'test_balance': float(y_test.mean()),
-            'metrics': metrics
-        })
+        results.append(
+            {
+                "fold": fold_idx,
+                "train_start": train_start or "start",
+                "train_end": train_end,
+                "test_start": test_start,
+                "test_end": test_end,
+                "train_samples": len(X_train),
+                "test_samples": len(X_test),
+                "train_balance": float(y_train.mean()),
+                "test_balance": float(y_test.mean()),
+                "metrics": metrics,
+            }
+        )
 
     # Aggregate statistics
     logger.info(f"\n{'=' * 80}")
@@ -250,13 +241,13 @@ def main():
     logger.info(f"{'=' * 80}")
 
     # Extract AUC scores
-    auc_scores = [r['metrics']['roc_auc'] for r in results]
+    auc_scores = [r["metrics"]["roc_auc"] for r in results]
 
-    logger.info(f"\nROC-AUC by fold:")
+    logger.info("\nROC-AUC by fold:")
     for r in results:
         logger.info(f"  Fold {r['fold']} ({r['test_start']} to {r['test_end']}): {r['metrics']['roc_auc']:.4f}")
 
-    logger.info(f"\nAUC Statistics:")
+    logger.info("\nAUC Statistics:")
     logger.info(f"  Mean:   {np.mean(auc_scores):.4f}")
     logger.info(f"  Std:    {np.std(auc_scores):.4f}")
     logger.info(f"  Min:    {np.min(auc_scores):.4f}")
@@ -264,7 +255,7 @@ def main():
     logger.info(f"  Median: {np.median(auc_scores):.4f}")
 
     # Check for temporal degradation
-    logger.info(f"\nTemporal stability check:")
+    logger.info("\nTemporal stability check:")
     early_folds = auc_scores[:3]
     late_folds = auc_scores[-3:]
     logger.info(f"  Early folds (1-3) mean AUC: {np.mean(early_folds):.4f}")
@@ -272,7 +263,7 @@ def main():
     logger.info(f"  Difference:                 {np.mean(late_folds) - np.mean(early_folds):.4f}")
 
     # Validation check
-    logger.info(f"\nValidation check:")
+    logger.info("\nValidation check:")
     reference_auc = 0.557
     mean_auc = np.mean(auc_scores)
     diff = abs(mean_auc - reference_auc)
@@ -281,9 +272,9 @@ def main():
     logger.info(f"  Absolute difference:        {diff:.4f}")
 
     if diff > 0.02:
-        logger.warning(f"  ⚠️  Walk-forward AUC differs by >2% — potential overfitting!")
+        logger.warning("  ⚠️  Walk-forward AUC differs by >2% — potential overfitting!")
     else:
-        logger.info(f"  ✓ Walk-forward AUC within 2% — model is stable")
+        logger.info("  ✓ Walk-forward AUC within 2% — model is stable")
 
     # Save results
     output_dir = project_root / "results/walk_forward"
@@ -292,30 +283,30 @@ def main():
     output_file = output_dir / "walk_forward_results.json"
 
     summary = {
-        'model': 'CatBoost',
-        'target': '1h-ahead',
-        'folds': results,
-        'aggregate_statistics': {
-            'mean_auc': float(np.mean(auc_scores)),
-            'std_auc': float(np.std(auc_scores)),
-            'min_auc': float(np.min(auc_scores)),
-            'max_auc': float(np.max(auc_scores)),
-            'median_auc': float(np.median(auc_scores)),
+        "model": "CatBoost",
+        "target": "1h-ahead",
+        "folds": results,
+        "aggregate_statistics": {
+            "mean_auc": float(np.mean(auc_scores)),
+            "std_auc": float(np.std(auc_scores)),
+            "min_auc": float(np.min(auc_scores)),
+            "max_auc": float(np.max(auc_scores)),
+            "median_auc": float(np.median(auc_scores)),
         },
-        'temporal_stability': {
-            'early_folds_mean': float(np.mean(early_folds)),
-            'late_folds_mean': float(np.mean(late_folds)),
-            'difference': float(np.mean(late_folds) - np.mean(early_folds)),
+        "temporal_stability": {
+            "early_folds_mean": float(np.mean(early_folds)),
+            "late_folds_mean": float(np.mean(late_folds)),
+            "difference": float(np.mean(late_folds) - np.mean(early_folds)),
         },
-        'validation_check': {
-            'reference_auc': reference_auc,
-            'mean_auc': float(mean_auc),
-            'difference': float(diff),
-            'passes': bool(diff <= 0.02),
-        }
+        "validation_check": {
+            "reference_auc": reference_auc,
+            "mean_auc": float(mean_auc),
+            "difference": float(diff),
+            "passes": bool(diff <= 0.02),
+        },
     }
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(summary, f, indent=2)
 
     logger.info(f"\nResults saved to: {output_file}")

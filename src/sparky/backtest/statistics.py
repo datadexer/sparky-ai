@@ -93,10 +93,7 @@ class BacktestStatistics:
         return p_value
 
     @staticmethod
-    def strategy_vs_benchmark(
-        strat_returns: pd.Series,
-        bench_returns: pd.Series
-    ) -> float:
+    def strategy_vs_benchmark(strat_returns: pd.Series, bench_returns: pd.Series) -> float:
         """Test if strategy returns are significantly different from benchmark.
 
         Uses a paired t-test to compare strategy returns against benchmark returns.
@@ -186,12 +183,12 @@ class BacktestStatistics:
         ties = 0
         losses = 0
 
-        for i in range(n_simulations):
+        for _ in range(n_simulations):
             # Resample blocks for strategy
             strategy_blocks = []
             for _ in range(n_blocks):
                 start_idx = np.random.randint(0, n - block_size + 1)
-                block = strategy_array[start_idx:start_idx + block_size]
+                block = strategy_array[start_idx : start_idx + block_size]
                 strategy_blocks.append(block)
 
             # Concatenate blocks and trim to original length
@@ -201,21 +198,17 @@ class BacktestStatistics:
             market_blocks = []
             for _ in range(n_blocks):
                 start_idx = np.random.randint(0, n - block_size + 1)
-                block = market_array[start_idx:start_idx + block_size]
+                block = market_array[start_idx : start_idx + block_size]
                 market_blocks.append(block)
 
             market_resampled = np.concatenate(market_blocks)[:n]
 
             # Compute Sharpe ratios on resampled data
             strategy_sharpe = annualized_sharpe(
-                pd.Series(strategy_resampled),
-                risk_free_rate=rf_per_period,
-                periods_per_year=periods_per_year
+                pd.Series(strategy_resampled), risk_free_rate=rf_per_period, periods_per_year=periods_per_year
             )
             market_sharpe = annualized_sharpe(
-                pd.Series(market_resampled),
-                risk_free_rate=rf_per_period,
-                periods_per_year=periods_per_year
+                pd.Series(market_resampled), risk_free_rate=rf_per_period, periods_per_year=periods_per_year
             )
 
             # Compare
@@ -228,14 +221,10 @@ class BacktestStatistics:
 
         # Compute baseline Sharpe ratios on original data
         baseline_strategy_sharpe = annualized_sharpe(
-            pd.Series(strategy_array),
-            risk_free_rate=rf_per_period,
-            periods_per_year=periods_per_year
+            pd.Series(strategy_array), risk_free_rate=rf_per_period, periods_per_year=periods_per_year
         )
         baseline_market_sharpe = annualized_sharpe(
-            pd.Series(market_array),
-            risk_free_rate=rf_per_period,
-            periods_per_year=periods_per_year
+            pd.Series(market_array), risk_free_rate=rf_per_period, periods_per_year=periods_per_year
         )
 
         return {

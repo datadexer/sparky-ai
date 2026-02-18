@@ -1,13 +1,13 @@
 """Tests for CCXT price fetcher."""
 
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch, PropertyMock
+from unittest.mock import Mock, patch
 
 import ccxt
 import pandas as pd
 import pytest
 
-from sparky.data.price import CCXTPriceFetcher, MAX_CANDLES_PER_REQUEST, MS_PER_DAY
+from sparky.data.price import MAX_CANDLES_PER_REQUEST, MS_PER_DAY, CCXTPriceFetcher
 
 
 @pytest.fixture
@@ -37,14 +37,16 @@ def create_candles(start_ts: int, count: int) -> list:
         ts = start_ts + (i * MS_PER_DAY)
         # Generate realistic OHLCV data
         base_price = 100.0 + i
-        candles.append([
-            ts,
-            base_price,  # open
-            base_price + 5.0,  # high
-            base_price - 3.0,  # low
-            base_price + 2.0,  # close
-            1000.0 + (i * 10),  # volume
-        ])
+        candles.append(
+            [
+                ts,
+                base_price,  # open
+                base_price + 5.0,  # high
+                base_price - 3.0,  # low
+                base_price + 2.0,  # close
+                1000.0 + (i * 10),  # volume
+            ]
+        )
     return candles
 
 
@@ -257,7 +259,7 @@ class TestValidation:
 
         # Inject negative prices
         candles[2][1] = -10.0  # negative open
-        candles[5][4] = -5.0   # negative close
+        candles[5][4] = -5.0  # negative close
 
         mock_exchange.fetch_ohlcv.return_value = candles
 
@@ -328,14 +330,16 @@ class TestDeduplication:
 
         # Add duplicate timestamp with different values
         duplicate_ts = start_ts + (2 * MS_PER_DAY)
-        candles.append([
-            duplicate_ts,
-            999.0,  # Different open
-            1000.0,
-            998.0,
-            999.5,
-            5000.0,  # Different volume
-        ])
+        candles.append(
+            [
+                duplicate_ts,
+                999.0,  # Different open
+                1000.0,
+                998.0,
+                999.5,
+                5000.0,  # Different volume
+            ]
+        )
 
         mock_exchange.fetch_ohlcv.return_value = candles
 
@@ -393,6 +397,7 @@ class TestDateRange:
 
         # Shuffle candles
         import random
+
         random.shuffle(candles)
 
         mock_exchange.fetch_ohlcv.return_value = candles

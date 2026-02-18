@@ -4,16 +4,16 @@ These tests require local data files (data/processed/macro_features_hourly.parqu
 They are skipped in CI where data files are not available.
 """
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
-from pathlib import Path
 
 MACRO_PATH = Path("data/processed/macro_features_hourly.parquet")
 _has_macro_data = MACRO_PATH.exists()
 
 pytestmark = pytest.mark.skipif(
-    not _has_macro_data,
-    reason="Macro features data not available (requires local data files)"
+    not _has_macro_data, reason="Macro features data not available (requires local data files)"
 )
 
 
@@ -31,11 +31,19 @@ def test_output_file_exists():
 def test_expected_columns(macro_features):
     """Verify all expected columns are present."""
     expected_columns = [
-        'dxy_return_1d', 'dxy_return_5d', 'dxy_sma_ratio_20d',
-        'gold_return_1d', 'gold_return_5d', 'gold_sma_ratio_20d',
-        'spx_return_1d', 'spx_return_5d', 'spx_vol_5d',
-        'vix_level', 'vix_change_1d', 'vix_sma_ratio_10d',
-        'btc_gold_corr_30d'
+        "dxy_return_1d",
+        "dxy_return_5d",
+        "dxy_sma_ratio_20d",
+        "gold_return_1d",
+        "gold_return_5d",
+        "gold_sma_ratio_20d",
+        "spx_return_1d",
+        "spx_return_5d",
+        "spx_vol_5d",
+        "vix_level",
+        "vix_change_1d",
+        "vix_sma_ratio_10d",
+        "btc_gold_corr_30d",
     ]
     assert list(macro_features.columns) == expected_columns, "Column mismatch"
 
@@ -54,7 +62,7 @@ def test_no_lookahead_bias(macro_features):
     Within a day, all hourly rows should have identical feature values.
     """
     # Sample a random day with non-null data
-    non_null_data = macro_features.dropna(subset=['dxy_return_1d'])
+    non_null_data = macro_features.dropna(subset=["dxy_return_1d"])
     if len(non_null_data) < 48:
         pytest.skip("Not enough data to test within-day consistency")
 
@@ -79,7 +87,7 @@ def test_no_lookahead_bias(macro_features):
 def test_feature_value_ranges(macro_features):
     """Verify features have reasonable values."""
     # Returns should be between -0.5 and 0.5 (50% daily move is extreme)
-    return_cols = [col for col in macro_features.columns if 'return' in col]
+    return_cols = [col for col in macro_features.columns if "return" in col]
     for col in return_cols:
         non_null = macro_features[col].dropna()
         if len(non_null) > 0:
@@ -87,7 +95,7 @@ def test_feature_value_ranges(macro_features):
             assert non_null.max() <= 0.5, f"{col} has unreasonably high values"
 
     # SMA ratios should be reasonable (-0.5 to 0.5 means 50% deviation)
-    sma_cols = [col for col in macro_features.columns if 'sma_ratio' in col]
+    sma_cols = [col for col in macro_features.columns if "sma_ratio" in col]
     for col in sma_cols:
         non_null = macro_features[col].dropna()
         if len(non_null) > 0:
@@ -95,15 +103,15 @@ def test_feature_value_ranges(macro_features):
             assert non_null.max() <= 2.0, f"{col} has unreasonably high values"
 
     # Correlation should be between -1 and 1
-    if 'btc_gold_corr_30d' in macro_features.columns:
-        corr = macro_features['btc_gold_corr_30d'].dropna()
+    if "btc_gold_corr_30d" in macro_features.columns:
+        corr = macro_features["btc_gold_corr_30d"].dropna()
         if len(corr) > 0:
             assert corr.min() >= -1.0, "Correlation cannot be less than -1"
             assert corr.max() <= 1.0, "Correlation cannot be greater than 1"
 
     # VIX level should be positive
-    if 'vix_level' in macro_features.columns:
-        vix = macro_features['vix_level'].dropna()
+    if "vix_level" in macro_features.columns:
+        vix = macro_features["vix_level"].dropna()
         if len(vix) > 0:
             assert vix.min() > 0, "VIX level must be positive"
 
@@ -116,7 +124,7 @@ def test_nan_only_in_warmup_period(macro_features):
     This test verifies that WITHIN the macro data range, warmup is handled correctly.
     """
     # Find first valid data point
-    first_valid = macro_features['dxy_return_1d'].first_valid_index()
+    first_valid = macro_features["dxy_return_1d"].first_valid_index()
     if first_valid is None:
         pytest.skip("No valid data found")
 
@@ -131,8 +139,7 @@ def test_nan_only_in_warmup_period(macro_features):
     for col in macro_features.columns:
         non_null_pct = after_warmup[col].notna().sum() / len(after_warmup)
         assert non_null_pct > 0.95, (
-            f"Column {col} should have >95% non-null after warmup period, "
-            f"but has only {non_null_pct:.1%}"
+            f"Column {col} should have >95% non-null after warmup period, but has only {non_null_pct:.1%}"
         )
 
 
@@ -142,7 +149,7 @@ def test_forward_fill_behavior(macro_features):
     should have identical values.
     """
     # Sample data with complete data
-    non_null_data = macro_features.dropna(subset=['dxy_return_1d'])
+    non_null_data = macro_features.dropna(subset=["dxy_return_1d"])
 
     if len(non_null_data) < 24:
         pytest.skip("Not enough data to test forward-fill behavior")
@@ -156,8 +163,7 @@ def test_forward_fill_behavior(macro_features):
 
     # Get all hours of that single day
     single_day = non_null_data[
-        (non_null_data.index >= day_start) &
-        (non_null_data.index < day_start + pd.Timedelta(days=1))
+        (non_null_data.index >= day_start) & (non_null_data.index < day_start + pd.Timedelta(days=1))
     ]
 
     if len(single_day) == 0:
@@ -168,16 +174,15 @@ def test_forward_fill_behavior(macro_features):
         if col in single_day.columns:
             unique_values = single_day[col].dropna().unique()
             assert len(unique_values) <= 1, (
-                f"{col} should be constant within a single day, "
-                f"but found {len(unique_values)} unique values"
+                f"{col} should be constant within a single day, but found {len(unique_values)} unique values"
             )
 
 
 def test_cross_asset_correlation_computed(macro_features):
     """Verify BTC-Gold correlation is computed and has reasonable values."""
-    assert 'btc_gold_corr_30d' in macro_features.columns, "BTC-Gold correlation should exist"
+    assert "btc_gold_corr_30d" in macro_features.columns, "BTC-Gold correlation should exist"
 
-    corr = macro_features['btc_gold_corr_30d'].dropna()
+    corr = macro_features["btc_gold_corr_30d"].dropna()
     assert len(corr) > 0, "BTC-Gold correlation should have non-null values"
 
     # Correlation should vary over time (not all the same)
@@ -194,14 +199,13 @@ def test_data_coverage(macro_features):
         coverage_pct = non_null_count / total_rows
 
         # Adjusted thresholds for different feature types
-        if 'corr_30d' in col:
+        if "corr_30d" in col:
             min_coverage = 0.60  # 30-day features need longer warmup
-        elif 'sma_ratio_20d' in col or 'vol_5d' in col:
+        elif "sma_ratio_20d" in col or "vol_5d" in col:
             min_coverage = 0.65  # 20-day features
         else:
             min_coverage = 0.68  # Other features
 
         assert coverage_pct >= min_coverage, (
-            f"Column {col} has only {coverage_pct:.1%} coverage, "
-            f"expected at least {min_coverage:.1%}"
+            f"Column {col} has only {coverage_pct:.1%} coverage, expected at least {min_coverage:.1%}"
         )

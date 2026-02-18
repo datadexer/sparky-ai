@@ -9,10 +9,11 @@ This script refetches assets that have incomplete coverage:
 """
 
 import logging
-from pathlib import Path
-import pandas as pd
-import ccxt
 from datetime import datetime, timezone
+from pathlib import Path
+
+import ccxt
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,18 +41,8 @@ def fetch_asset_hourly(
 ) -> pd.DataFrame:
     """Fetch hourly OHLCV for a single asset with exchange failover."""
 
-    start_ts = int(
-        datetime.strptime(start_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    end_ts = int(
-        datetime.strptime(end_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
+    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+    end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     # Try each exchange + symbol combo until one works
     exchange = None
@@ -93,9 +84,7 @@ def fetch_asset_hourly(
         batch_num += 1
 
         try:
-            candles = exchange.fetch_ohlcv(
-                working_symbol, "1h", since=since, limit=1000
-            )
+            candles = exchange.fetch_ohlcv(working_symbol, "1h", since=since, limit=1000)
 
             if not candles:
                 consecutive_empty += 1
@@ -109,8 +98,7 @@ def fetch_asset_hourly(
             if batch_num % 50 == 0:
                 current_date = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
                 logger.info(
-                    f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles "
-                    f"(current: {current_date.date()})"
+                    f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles (current: {current_date.date()})"
                 )
 
             last_ts = candles[-1][0]
@@ -135,10 +123,7 @@ def fetch_asset_hourly(
         return pd.DataFrame()
 
     # Convert to DataFrame
-    df = pd.DataFrame(
-        all_candles,
-        columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.set_index("timestamp")
 
@@ -189,13 +174,15 @@ def main():
             df.to_parquet(output_path)
             logger.info(f"  Saved {asset_name} to {output_path}")
 
-            results.append({
-                "asset": asset_name,
-                "rows": len(df),
-                "start_date": df.index.min(),
-                "end_date": df.index.max(),
-                "path": str(output_path),
-            })
+            results.append(
+                {
+                    "asset": asset_name,
+                    "rows": len(df),
+                    "start_date": df.index.min(),
+                    "end_date": df.index.max(),
+                    "path": str(output_path),
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to fetch {asset_name}: {e}")
@@ -203,6 +190,7 @@ def main():
 
         # Rate limit between assets
         import time
+
         time.sleep(5)
 
     # Summary

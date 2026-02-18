@@ -83,9 +83,7 @@ def test_sequence_creation(synthetic_data):
     assert y_seq[0] == y.iloc[10], "First label incorrect"
 
     # Last sequence should be X[-11:-1], label should be y[-1]
-    np.testing.assert_array_equal(
-        X_seq[-1], X.iloc[-11:-1].values, err_msg="Last sequence incorrect"
-    )
+    np.testing.assert_array_equal(X_seq[-1], X.iloc[-11:-1].values, err_msg="Last sequence incorrect")
     assert y_seq[-1] == y.iloc[-1], "Last label incorrect"
 
 
@@ -226,10 +224,13 @@ def test_normalization():
     np.random.seed(42)
 
     # Create features with different scales
-    X = pd.DataFrame({
-        "small_scale": np.random.randn(200) * 0.01,  # Mean~0, std~0.01
-        "large_scale": np.random.randn(200) * 100,  # Mean~0, std~100
-    }, index=pd.date_range("2020-01-01", periods=200, freq="D", tz="UTC"))
+    X = pd.DataFrame(
+        {
+            "small_scale": np.random.randn(200) * 0.01,  # Mean~0, std~0.01
+            "large_scale": np.random.randn(200) * 100,  # Mean~0, std~100
+        },
+        index=pd.date_range("2020-01-01", periods=200, freq="D", tz="UTC"),
+    )
 
     y = pd.Series(np.random.randint(0, 2, size=200), index=X.index)
 

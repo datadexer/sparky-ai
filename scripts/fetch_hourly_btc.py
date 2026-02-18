@@ -52,7 +52,7 @@ def fetch_hourly_ohlcv(
     logger.info("=" * 80)
     logger.info(f"Symbol: {symbol}")
     logger.info(f"Period: {start_date} to {end_date}")
-    logger.info(f"Timeframe: 1 hour (1h)")
+    logger.info("Timeframe: 1 hour (1h)")
     logger.info("=" * 80)
 
     # Create CCXT fetcher - try multiple exchanges (Binance may be geo-blocked)
@@ -85,18 +85,8 @@ def fetch_hourly_ohlcv(
     # The existing fetch_daily_ohlcv uses "1d" timeframe hardcoded
     # We need to use the raw fetch_ohlcv with "1h" timeframe
 
-    start_ts = int(
-        datetime.strptime(start_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    end_ts = int(
-        datetime.strptime(end_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
+    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+    end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     logger.info(f"Fetching hourly candles from {start_date} to {end_date}...")
     logger.info("This may take several minutes due to pagination (CCXT limit: 1000 candles/request)")
@@ -112,9 +102,7 @@ def fetch_hourly_ohlcv(
 
         try:
             # Fetch up to 1000 hourly candles
-            candles = fetcher.exchange.fetch_ohlcv(
-                symbol, "1h", since=since, limit=1000
-            )
+            candles = fetcher.exchange.fetch_ohlcv(symbol, "1h", since=since, limit=1000)
 
             if not candles:
                 logger.warning(f"No candles returned at timestamp {since}")
@@ -126,8 +114,7 @@ def fetch_hourly_ohlcv(
             if batch_num % 10 == 0:
                 current_date = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
                 logger.info(
-                    f"Fetched batch {batch_num}: {len(all_candles)} total candles "
-                    f"(current: {current_date.date()})"
+                    f"Fetched batch {batch_num}: {len(all_candles)} total candles (current: {current_date.date()})"
                 )
 
             # Move to after the last candle
@@ -148,10 +135,7 @@ def fetch_hourly_ohlcv(
         return pd.DataFrame()
 
     # Convert to DataFrame
-    df = pd.DataFrame(
-        all_candles,
-        columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.set_index("timestamp")
 
@@ -196,7 +180,7 @@ def main():
     df_hourly = fetch_hourly_ohlcv(
         symbol="BTC/USDT",
         start_date="2019-01-01",  # Most exchanges have reliable data from 2019
-        end_date="2025-12-31"
+        end_date="2025-12-31",
     )
 
     if df_hourly.empty:
@@ -213,6 +197,7 @@ def main():
     # Update data manifest
     try:
         from sparky.data.storage import DataStore
+
         store = DataStore()
         store.update_manifest(output_path, df_hourly)
         logger.info("Updated data manifest with SHA-256 hash")
@@ -226,7 +211,7 @@ def main():
     logger.info(f"Fetched {len(df_hourly):,} hourly candles for BTC")
     logger.info(f"Date range: {df_hourly.index.min().date()} to {df_hourly.index.max().date()}")
     logger.info(f"File: {output_path}")
-    logger.info(f"Next step: Run scripts/prepare_hourly_features.py")
+    logger.info("Next step: Run scripts/prepare_hourly_features.py")
 
 
 if __name__ == "__main__":

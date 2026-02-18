@@ -42,8 +42,7 @@ class TestRSICrossValidation:
         assert len(our_valid) > 900, "Should have >900 valid RSI values"
 
         max_diff = (our_valid - ta_valid).abs().max()
-        assert max_diff < 0.1, \
-            f"RSI max difference {max_diff:.4f} exceeds 0.1 threshold"
+        assert max_diff < 0.1, f"RSI max difference {max_diff:.4f} exceeds 0.1 threshold"
 
     def test_rsi_different_periods(self, random_prices):
         """Test RSI cross-validation with different periods."""
@@ -53,8 +52,7 @@ class TestRSICrossValidation:
 
             valid_mask = our_rsi.notna() & ta_rsi.notna()
             max_diff = (our_rsi[valid_mask] - ta_rsi[valid_mask]).abs().max()
-            assert max_diff < 0.1, \
-                f"RSI(period={period}) max diff {max_diff:.4f} exceeds 0.1"
+            assert max_diff < 0.1, f"RSI(period={period}) max diff {max_diff:.4f} exceeds 0.1"
 
 
 class TestEMACrossValidation:
@@ -72,8 +70,7 @@ class TestEMACrossValidation:
 
             # Normalize by price level to get relative difference
             max_diff = (our_valid - ta_valid).abs().max()
-            assert max_diff < 0.01, \
-                f"EMA(span={span}) max diff {max_diff:.6f} exceeds 0.01"
+            assert max_diff < 0.01, f"EMA(span={span}) max diff {max_diff:.6f} exceeds 0.01"
 
 
 class TestMACDCrossValidation:
@@ -118,5 +115,4 @@ class TestMomentumCrossValidation:
             our_valid = our_mom[valid]
 
             max_diff = (our_valid - ta_mom_fraction).abs().max()
-            assert max_diff < 0.001, \
-                f"Momentum(period={period}) max diff {max_diff:.6f} exceeds 0.001"
+            assert max_diff < 0.001, f"Momentum(period={period}) max diff {max_diff:.6f} exceeds 0.001"

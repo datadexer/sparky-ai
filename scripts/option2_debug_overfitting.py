@@ -20,7 +20,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from sparky.backtest.costs import TransactionCostModel
-from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.xgboost_model import XGBoostModel
 
@@ -95,6 +94,7 @@ def main():
     X = pd.read_parquet("data/processed/feature_matrix_btc.parquet")
 
     from sparky.data.storage import DataStore
+
     store = DataStore()
     prices_df, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
 
@@ -192,8 +192,8 @@ def main():
         def __init__(self, C=0.01, random_state=0):
             self.model = LogisticRegression(
                 C=C,  # Inverse of regularization strength (smaller = more regularization)
-                penalty='l2',
-                solver='lbfgs',
+                penalty="l2",
+                solver="lbfgs",
                 random_state=random_state,
                 max_iter=1000,
             )
@@ -257,13 +257,17 @@ def main():
         reg_alpha=5.0,
         reg_lambda=10.0,
     )
-    result_3a = evaluate_model(model_3a, X_train_7d, y_train_7d, X_holdout_7d, y_holdout_7d, returns_holdout_7d, "Shallow XGBoost 7d")
+    result_3a = evaluate_model(
+        model_3a, X_train_7d, y_train_7d, X_holdout_7d, y_holdout_7d, returns_holdout_7d, "Shallow XGBoost 7d"
+    )
     results.append(result_3a)
 
     # 3b. Logistic on 7d
     logger.info("\n3b. Logistic Regression on 7d horizon")
     model_3b = LogisticModel(C=0.01)
-    result_3b = evaluate_model(model_3b, X_train_7d, y_train_7d, X_holdout_7d, y_holdout_7d, returns_holdout_7d, "Logistic Reg 7d")
+    result_3b = evaluate_model(
+        model_3b, X_train_7d, y_train_7d, X_holdout_7d, y_holdout_7d, returns_holdout_7d, "Logistic Reg 7d"
+    )
     results.append(result_3b)
 
     # =========================================================================
@@ -310,7 +314,9 @@ def main():
         reg_alpha=5.0,
         reg_lambda=10.0,
     )
-    result_4b = evaluate_model(model_4b, X_train_momentum, y_train, X_holdout_momentum, y_holdout, returns_holdout, "Momentum only")
+    result_4b = evaluate_model(
+        model_4b, X_train_momentum, y_train, X_holdout_momentum, y_holdout, returns_holdout, "Momentum only"
+    )
     results.append(result_4b)
 
     # =========================================================================
@@ -356,6 +362,7 @@ def main():
 
     # Save results
     import json
+
     output = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "verdict": verdict,
@@ -371,20 +378,20 @@ def main():
     # Append to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## OPTION 2: Debug Overfitting — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## OPTION 2: Debug Overfitting — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Approaches Tested**: {len(results)} configurations
 
-**Best Result**: {best['name']}
-- Holdout Sharpe: {best['holdout_sharpe']:.4f}
-- Holdout Return: {best['holdout_return_pct']:.2f}%
-- Max DD: {best['max_dd']:.2%}
-- Trades: {best['num_trades']}
+**Best Result**: {best["name"]}
+- Holdout Sharpe: {best["holdout_sharpe"]:.4f}
+- Holdout Return: {best["holdout_return_pct"]:.2f}%
+- Max DD: {best["max_dd"]:.2%}
+- Trades: {best["num_trades"]}
 
 **Verdict**: [{verdict}]
-{'✅ Found configuration with acceptable holdout performance (Sharpe >= 0.4)' if verdict == 'SUCCESS' else '❌ All configurations still fail holdout (Sharpe < 0.4). Overfitting persists.'}
+{"✅ Found configuration with acceptable holdout performance (Sharpe >= 0.4)" if verdict == "SUCCESS" else "❌ All configurations still fail holdout (Sharpe < 0.4). Overfitting persists."}
 
-**Next Step**: {'Validate best configuration with multi-seed' if verdict == 'SUCCESS' else 'Proceed to OPTION 3 (strategic pivot)'}
+**Next Step**: {"Validate best configuration with multi-seed" if verdict == "SUCCESS" else "Proceed to OPTION 3 (strategic pivot)"}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:

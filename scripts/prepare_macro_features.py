@@ -12,8 +12,9 @@ Features computed:
 Output: data/processed/macro_features_hourly.parquet
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def compute_macro_features() -> pd.DataFrame:
@@ -34,7 +35,7 @@ def compute_macro_features() -> pd.DataFrame:
 
     # Compute BTC daily returns for cross-asset correlation
     # Normalize to date (no time component) for alignment with daily macro data
-    btc_daily = btc['close'].resample('D').last()
+    btc_daily = btc["close"].resample("D").last()
     btc_daily.index = btc_daily.index.normalize()  # Set to midnight UTC
     btc_daily_return = btc_daily.pct_change()
 
@@ -59,34 +60,32 @@ def compute_macro_features() -> pd.DataFrame:
     daily_features = pd.DataFrame(index=dxy.index)
 
     # DXY features
-    daily_features['dxy_return_1d'] = dxy['close'].pct_change(1)
-    daily_features['dxy_return_5d'] = dxy['close'].pct_change(5)
-    daily_features['dxy_sma_ratio_20d'] = dxy['close'] / dxy['close'].rolling(20).mean() - 1
+    daily_features["dxy_return_1d"] = dxy["close"].pct_change(1)
+    daily_features["dxy_return_5d"] = dxy["close"].pct_change(5)
+    daily_features["dxy_sma_ratio_20d"] = dxy["close"] / dxy["close"].rolling(20).mean() - 1
 
     # Gold features
-    daily_features['gold_return_1d'] = gold['close'].pct_change(1)
-    daily_features['gold_return_5d'] = gold['close'].pct_change(5)
-    daily_features['gold_sma_ratio_20d'] = gold['close'] / gold['close'].rolling(20).mean() - 1
+    daily_features["gold_return_1d"] = gold["close"].pct_change(1)
+    daily_features["gold_return_5d"] = gold["close"].pct_change(5)
+    daily_features["gold_sma_ratio_20d"] = gold["close"] / gold["close"].rolling(20).mean() - 1
 
     # SPX features
-    daily_features['spx_return_1d'] = spx['close'].pct_change(1)
-    daily_features['spx_return_5d'] = spx['close'].pct_change(5)
-    spx_returns = spx['close'].pct_change(1)
-    daily_features['spx_vol_5d'] = spx_returns.rolling(5).std()
+    daily_features["spx_return_1d"] = spx["close"].pct_change(1)
+    daily_features["spx_return_5d"] = spx["close"].pct_change(5)
+    spx_returns = spx["close"].pct_change(1)
+    daily_features["spx_vol_5d"] = spx_returns.rolling(5).std()
 
     # VIX features
-    daily_features['vix_level'] = vix['close']
-    daily_features['vix_change_1d'] = vix['close'].diff(1)
-    daily_features['vix_sma_ratio_10d'] = vix['close'] / vix['close'].rolling(10).mean() - 1
+    daily_features["vix_level"] = vix["close"]
+    daily_features["vix_change_1d"] = vix["close"].diff(1)
+    daily_features["vix_sma_ratio_10d"] = vix["close"] / vix["close"].rolling(10).mean() - 1
 
     # Cross-asset: BTC-Gold correlation (30-day rolling)
-    gold_daily_return = gold['close'].pct_change(1)
+    gold_daily_return = gold["close"].pct_change(1)
     # Align BTC and Gold returns on common dates
     aligned_btc = btc_daily_return.reindex(daily_features.index)
     aligned_gold = gold_daily_return.reindex(daily_features.index)
-    daily_features['btc_gold_corr_30d'] = (
-        aligned_btc.rolling(30).corr(aligned_gold)
-    )
+    daily_features["btc_gold_corr_30d"] = aligned_btc.rolling(30).corr(aligned_gold)
 
     # CRITICAL: Shift daily features by 1 day to prevent look-ahead bias
     # This ensures that hourly features on day D use macro data from day D-1
@@ -97,9 +96,12 @@ def compute_macro_features() -> pd.DataFrame:
 
     # Forward-fill daily features to hourly frequency
     # Method: reindex to hourly, then forward-fill
-    hourly_features = daily_features_shifted.reindex(
-        hourly_index.union(daily_features_shifted.index)
-    ).sort_index().ffill().reindex(hourly_index)
+    hourly_features = (
+        daily_features_shifted.reindex(hourly_index.union(daily_features_shifted.index))
+        .sort_index()
+        .ffill()
+        .reindex(hourly_index)
+    )
 
     return hourly_features
 
@@ -114,7 +116,7 @@ def main():
     print(f"Columns: {hourly_features.columns.tolist()}")
     print(f"Date range: {hourly_features.index.min()} to {hourly_features.index.max()}")
     print(f"\nFirst non-null row index: {hourly_features.first_valid_index()}")
-    print(f"NaN counts by column:")
+    print("NaN counts by column:")
     print(hourly_features.isna().sum())
 
     # Save to processed directory
@@ -123,7 +125,7 @@ def main():
     hourly_features.to_parquet(output_path)
 
     print(f"\nSaved to {output_path}")
-    print(f"\nSample of features (first 10 non-null rows):")
+    print("\nSample of features (first 10 non-null rows):")
     first_valid_idx = hourly_features.first_valid_index()
     if first_valid_idx is not None:
         print(hourly_features.loc[first_valid_idx:].head(10))

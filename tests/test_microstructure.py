@@ -5,15 +5,15 @@ import pandas as pd
 import pytest
 
 from sparky.features.microstructure import (
-    tick_direction_ratio,
+    bid_ask_imbalance_proxy,
     candle_body_ratio,
-    upper_wick_ratio,
-    lower_wick_ratio,
     consecutive_candles,
     high_low_ratio,
-    bid_ask_imbalance_proxy,
     intraday_momentum_reversal,
+    lower_wick_ratio,
     overnight_gap,
+    tick_direction_ratio,
+    upper_wick_ratio,
 )
 
 

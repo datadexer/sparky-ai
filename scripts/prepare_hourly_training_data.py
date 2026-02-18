@@ -23,7 +23,6 @@ Autocorrelation analysis determines effective independent samples per horizon.
 import logging
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 logging.basicConfig(
@@ -90,9 +89,7 @@ def compute_autocorrelation_report(
     ]
 
     for name, target in targets.items():
-        train_target = target.loc[
-            (target.index >= train_start) & (target.index < train_end)
-        ].dropna()
+        train_target = target.loc[(target.index >= train_start) & (target.index < train_end)].dropna()
 
         n_nominal = len(train_target)
         ac_lag1 = train_target.autocorr(lag=1)
@@ -196,8 +193,7 @@ def main():
     logger.info(f"Feature matrix rows: {len(features_clean):,} (should be ~115K, NOT ~4.8K)")
 
     assert len(features_clean) > 50000, (
-        f"Feature matrix has {len(features_clean)} rows — expected 100K+. "
-        "Check for accidental daily resampling."
+        f"Feature matrix has {len(features_clean)} rows — expected 100K+. Check for accidental daily resampling."
     )
 
     logger.info("\nSUCCESS — Hourly training data ready for multi-horizon experiment")

@@ -89,10 +89,13 @@ def make_test_data(n_days: int = 200, seed: int = 42) -> tuple[pd.DataFrame, pd.
     dates = pd.date_range("2020-01-01", periods=n_days, freq="D")
 
     # Features: random values
-    X = pd.DataFrame({
-        "feature1": np.random.randn(n_days),
-        "feature2": np.random.randn(n_days),
-    }, index=dates)
+    X = pd.DataFrame(
+        {
+            "feature1": np.random.randn(n_days),
+            "feature2": np.random.randn(n_days),
+        },
+        index=dates,
+    )
 
     # Target: random binary labels
     y = pd.Series(np.random.randint(0, 2, n_days), index=dates)
@@ -190,13 +193,10 @@ class TestWalkForwardBacktester:
             pass  # The expanding window means we train on all data up to embargo boundary
 
         # Actually, let's check train size increases
-        train_sizes = [
-            (fold["train_end"] - fold["train_start"]).days
-            for fold in result.per_fold_metrics
-        ]
+        train_sizes = [(fold["train_end"] - fold["train_start"]).days for fold in result.per_fold_metrics]
         # Train sizes should not decrease
         for i in range(len(train_sizes) - 1):
-            assert train_sizes[i+1] >= train_sizes[i]
+            assert train_sizes[i + 1] >= train_sizes[i]
 
     def test_equity_curve_starts_at_one(self):
         """Verify equity curve starts at 1.0."""
@@ -262,8 +262,15 @@ class TestWalkForwardBacktester:
         result = backtester.run(model, X, y, returns)
 
         required_fields = {
-            "fold", "train_start", "train_end", "test_start", "test_end",
-            "sharpe", "total_return", "accuracy", "num_trades"
+            "fold",
+            "train_start",
+            "train_end",
+            "test_start",
+            "test_end",
+            "sharpe",
+            "total_return",
+            "accuracy",
+            "num_trades",
         }
 
         for fold_metrics in result.per_fold_metrics:
@@ -327,10 +334,13 @@ class TestWalkForwardBacktester:
         # Create data where threshold model will trade frequently
         np.random.seed(42)
         dates = pd.date_range("2020-01-01", periods=300, freq="D")
-        X = pd.DataFrame({
-            "feature1": np.random.randn(300),
-            "feature2": np.random.randn(300),
-        }, index=dates)
+        X = pd.DataFrame(
+            {
+                "feature1": np.random.randn(300),
+                "feature2": np.random.randn(300),
+            },
+            index=dates,
+        )
         y = pd.Series(np.random.randint(0, 2, 300), index=dates)
         returns = pd.Series(np.random.normal(0.01, 0.02, 300), index=dates)
 
@@ -411,9 +421,12 @@ class TestWalkForwardBacktester:
         dates_y = pd.date_range("2020-01-02", periods=299, freq="D")  # Off by 1 day
         dates_returns = pd.date_range("2020-01-01", periods=300, freq="D")
 
-        X = pd.DataFrame({
-            "feature1": np.random.randn(300),
-        }, index=dates_X)
+        X = pd.DataFrame(
+            {
+                "feature1": np.random.randn(300),
+            },
+            index=dates_X,
+        )
         y = pd.Series(np.random.randint(0, 2, 299), index=dates_y)
         returns = pd.Series(np.random.normal(0.001, 0.02, 300), index=dates_returns)
 

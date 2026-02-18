@@ -8,18 +8,17 @@ Crypto volatility is so high that quarterly metrics are too noisy.
 Yearly validation provides better signal-to-noise ratio.
 """
 
-import sys
 import json
 import logging
+import sys
 from pathlib import Path
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
+from sparky.features.returns import annualized_sharpe
 from sparky.models.simple_baselines import donchian_channel_strategy
-from sparky.features.returns import annualized_sharpe, max_drawdown
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ logger = logging.getLogger(__name__)
 def load_prices():
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -148,9 +147,9 @@ def compute_fold_metrics(signals, prices, start, end):
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("YEARLY-FOLD STRATEGY VALIDATION")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     prices = load_prices()
     logger.info(f"Loaded {len(prices)} days of BTC prices (2017-2023)\n")
@@ -183,21 +182,25 @@ def main():
 
         fold_results = []
         for fold in folds:
-            metrics = compute_fold_metrics(signals, prices, fold['start'], fold['end'])
-            fold_results.append({
-                "year": fold['name'],
-                "sharpe": metrics['sharpe'],
-                "return_pct": metrics['return_pct'],
-            })
+            metrics = compute_fold_metrics(signals, prices, fold["start"], fold["end"])
+            fold_results.append(
+                {
+                    "year": fold["name"],
+                    "sharpe": metrics["sharpe"],
+                    "return_pct": metrics["return_pct"],
+                }
+            )
             logger.info(f"  {fold['name']}: Sharpe={metrics['sharpe']:.3f}, Return={metrics['return_pct']:.1f}%")
 
-        sharpes = [r['sharpe'] for r in fold_results]
+        sharpes = [r["sharpe"] for r in fold_results]
         mean_sharpe = np.mean(sharpes)
         min_sharpe = np.min(sharpes)
         max_sharpe = np.max(sharpes)
         positive_count = sum(1 for s in sharpes if s > 0)
 
-        logger.info(f"  AGGREGATE: Mean={mean_sharpe:.3f}, Min={min_sharpe:.3f}, Max={max_sharpe:.3f}, Positive={positive_count}/6")
+        logger.info(
+            f"  AGGREGATE: Mean={mean_sharpe:.3f}, Min={min_sharpe:.3f}, Max={max_sharpe:.3f}, Positive={positive_count}/6"
+        )
 
         all_results[strat_name] = {
             "mean_sharpe": mean_sharpe,
@@ -209,18 +212,20 @@ def main():
 
     # Comparison
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("YEARLY-FOLD COMPARISON")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"{'Strategy':<25} {'Mean Sharpe':>12} {'Min':>8} {'Max':>8} {'Positive':>10}")
-    logger.info("-"*70)
+    logger.info("-" * 70)
 
     for name, result in all_results.items():
-        logger.info(f"{name:<25} {result['mean_sharpe']:>12.3f} {result['min_sharpe']:>8.3f} {result['max_sharpe']:>8.3f} {result['positive_count']:>3}/6")
+        logger.info(
+            f"{name:<25} {result['mean_sharpe']:>12.3f} {result['min_sharpe']:>8.3f} {result['max_sharpe']:>8.3f} {result['positive_count']:>3}/6"
+        )
 
     # Save
     output_path = Path("results/validation/yearly_strategy_comparison.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(all_results, f, indent=2)
 
     logger.info(f"\nResults saved to: {output_path}")

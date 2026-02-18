@@ -19,7 +19,7 @@ class TaskTimer:
     """Track wall-clock time for agent tasks.
 
     Usage:
-        timer = TaskTimer(agent_id="ceo")
+        timer = TaskTimer(agent_id="research")
         timer.start("regime_detection_experiments")
         # ... do work ...
         timer.end(claimed_duration_minutes=45)
@@ -37,8 +37,7 @@ class TaskTimer:
         """Start timing a task."""
         if self._current_task is not None:
             logger.warning(
-                f"[TIME] Starting '{task_name}' but '{self._current_task}' "
-                f"was never ended. Auto-ending previous task."
+                f"[TIME] Starting '{task_name}' but '{self._current_task}' was never ended. Auto-ending previous task."
             )
             self.end(claimed_duration_minutes=0)
 
@@ -61,7 +60,9 @@ class TaskTimer:
 
         discrepancy_flag = False
         if claimed_duration_minutes > 0 and actual_minutes > 0:
-            ratio = max(claimed_duration_minutes, actual_minutes) / max(min(claimed_duration_minutes, actual_minutes), 0.1)
+            ratio = max(claimed_duration_minutes, actual_minutes) / max(
+                min(claimed_duration_minutes, actual_minutes), 0.1
+            )
             discrepancy_flag = ratio > 2.0
 
         entry = {

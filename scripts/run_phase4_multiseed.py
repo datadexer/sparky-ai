@@ -101,9 +101,7 @@ def run_single_seed(
     max_dd = max_drawdown(result.equity_curve)
     total_return = (result.equity_curve.iloc[-1] - 1.0) * 100
 
-    sharpe_ci = BacktestStatistics.sharpe_confidence_interval(
-        returns_from_equity, n_bootstrap=1000
-    )
+    sharpe_ci = BacktestStatistics.sharpe_confidence_interval(returns_from_equity, n_bootstrap=1000)
 
     logger.info(f"Seed {seed} results:")
     logger.info(f"  Sharpe: {sharpe:.4f}")
@@ -139,6 +137,7 @@ def main():
     y = pd.read_parquet(f"data/processed/targets_btc_{HORIZON}d.parquet")["target"]
 
     from sparky.data.storage import DataStore
+
     store = DataStore()
     btc_ohlcv, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
     returns = btc_ohlcv["close"].pct_change().reindex(X.index)
@@ -211,7 +210,7 @@ def main():
         print(f"✅ Mean Sharpe check: {mean_sharpe:.4f} ≈ {EXPECTED_SHARPE:.4f} (deviation: {deviation:.4f})")
     else:
         print(f"⚠️  Mean Sharpe check: {mean_sharpe:.4f} vs {EXPECTED_SHARPE:.4f} (deviation: {deviation:.4f})")
-        print(f"   Large deviation from Phase 2-3 result, but not blocking")
+        print("   Large deviation from Phase 2-3 result, but not blocking")
 
     # Final decision
     print(f"\n{'=' * 80}")
@@ -228,21 +227,25 @@ def main():
     output_file = output_dir / "phase4_multiseed_results.json"
 
     with open(output_file, "w") as f:
-        json.dump({
-            "configuration": {
-                "feature_set": FEATURE_SET,
-                "horizon": HORIZON,
-                "seeds": SEEDS,
+        json.dump(
+            {
+                "configuration": {
+                    "feature_set": FEATURE_SET,
+                    "horizon": HORIZON,
+                    "seeds": SEEDS,
+                },
+                "summary": {
+                    "mean_sharpe": mean_sharpe,
+                    "std_sharpe": std_sharpe,
+                    "min_sharpe": min_sharpe,
+                    "max_sharpe": max_sharpe,
+                    "passed": passed,
+                },
+                "results": results,
             },
-            "summary": {
-                "mean_sharpe": mean_sharpe,
-                "std_sharpe": std_sharpe,
-                "min_sharpe": min_sharpe,
-                "max_sharpe": max_sharpe,
-                "passed": passed,
-            },
-            "results": results,
-        }, f, indent=2)
+            f,
+            indent=2,
+        )
 
     logger.info(f"\n✓ Results saved to {output_file}")
 

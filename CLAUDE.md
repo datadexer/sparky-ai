@@ -44,6 +44,23 @@ The Deflated Sharpe Ratio (DSR) is the primary evaluation metric, not raw Sharpe
 DSR > 0.95 = statistically significant after multiple testing correction.
 DSR < 0.95 = could be a fluke. Do not declare victory.
 
+## Guardrails (MANDATORY)
+Run pre/post experiment checks on every training run. Blocking failures must halt execution.
+```python
+from sparky.tracking.guardrails import run_pre_checks, run_post_checks, has_blocking_failure, log_results
+
+# Before training
+pre_results = run_pre_checks(data, config)
+if has_blocking_failure(pre_results):
+    raise RuntimeError("Pre-experiment checks failed")
+
+# After backtest
+post_results = run_post_checks(returns, metrics, config, n_trials=N)
+log_results(pre_results + post_results, run_id="my_run")
+```
+Pre-checks: holdout boundary, minimum samples, no lookahead, costs specified, param-data ratio.
+Post-checks: sharpe sanity, minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
+
 ## GPU Training (DGX Spark)
 - XGBoost: `tree_method="hist", device="cuda"`
 - CatBoost: `task_type="GPU", devices="0"`
@@ -65,11 +82,41 @@ Two-stage: (1) Feature selection first, keep top 15-20. (2) Stage 1 screening on
 - **Package manager:** `uv` — `uv venv`, `uv pip install -e ".[dev]"`
 - **Run tests:** `pytest tests/ -v`
 
+## Code Quality Requirements
+All code must pass the quality gate before reaching main.
+
+**Before committing:** pre-commit hooks run automatically on `git commit`.
+If pre-commit fails, fix the issues. Do NOT use `--no-verify`.
+
+**What CI checks (blocking):**
+- Ruff lint (E, F, W, I, S, B — errors, imports, security, bugbear)
+- Ruff format (consistent formatting)
+- Bandit security scan (HIGH severity blocks merge)
+- Sparky-specific checks (holdout leaks, guardrail bypasses, cost requirements)
+- Full test suite (must pass, 120s timeout per test)
+- Guardrail self-test (verifies guardrails catch holdout violations and missing costs)
+- Metrics self-test (verifies compute_all_metrics returns expected keys)
+- Import hygiene (core modules import cleanly)
+- Coverage (40% minimum threshold)
+
+**Research Validation (Layer 3, on PRs):**
+Every PR is reviewed by a Sonnet validation agent that checks for:
+- Statistical methodology errors (missing DSR, wrong CV, bad annualization)
+- Backtesting violations (lookahead bias, missing costs, holdout leaks)
+- Crypto-specific issues (wrong trading hours, missing regime awareness)
+- Formula correctness (verified against published sources)
+
+The agent posts findings as a PR comment. HIGH severity issues block merge.
+The rubric is in `scripts/research_validation/rubric.md`. If you believe
+a HIGH finding is a false positive, explain why in the PR comments.
+
 ## Git Workflow
 - NEVER commit to `main`. Use `phase-N/short-description` branches.
 - Commit frequently: `feat/fix/test/data/docs/chore/refactor/ci/quality`
 - At phase completion: push branch, open PR via `gh pr create`
+- CI runs automatically on PRs to main. Merge only if CI passes.
 - Merge conflicts: see `docs/FULL_GUIDELINES.md`
+- Branch naming: `oversight/`, `contract-NNN/`, `fix/`, `feat/`, `phase-N/`
 
 ## Holdout Data Policy
 See `configs/holdout_policy.yaml` — IMMUTABLE.
@@ -107,6 +154,17 @@ Before declaring ANY approach "failed":
 - Before paper/live trading goes live
 - Before adding paid data sources
 - When TIER 1 result needs deployment approval
+
+## Manager Session Protocol
+The Opus manager tracks all infrastructure sessions for audit trail:
+```python
+from sparky.tracking.manager_log import ManagerLog
+mlog = ManagerLog()
+session = mlog.start_session(objective="Contract 005 setup", branch="manager/contract-005")
+# ... work ...
+mlog.end_session(session, summary="Completed guardrails + workflow")
+```
+All manager decisions, sub-agent spawns, and research launches are logged to `logs/manager_sessions/session_log.jsonl`.
 
 ## Trading Rules
 See `configs/trading_rules.yaml` — IMMUTABLE.

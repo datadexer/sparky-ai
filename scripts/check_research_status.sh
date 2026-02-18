@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Quick status check for CEO watchdog.
-# Usage: bash scripts/check_ceo_status.sh
+# Quick status check for Research Agent watchdog.
+# Usage: bash scripts/check_research_status.sh
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOG_DIR="$PROJECT_ROOT/logs/ceo_sessions"
+LOG_DIR="$PROJECT_ROOT/logs/research_sessions"
 
-echo "=== CEO Watchdog Status ==="
+echo "=== Research Agent Watchdog Status ==="
 echo ""
 
 # Check if tmux session exists
-if tmux has-session -t ceo 2>/dev/null; then
-    echo "tmux session 'ceo': RUNNING"
+if tmux has-session -t research 2>/dev/null; then
+    echo "tmux session 'research': RUNNING"
 else
-    echo "tmux session 'ceo': NOT RUNNING"
+    echo "tmux session 'research': NOT RUNNING"
 fi
 echo ""
 
 # Latest log file
-LATEST_LOG=$(ls -t "$LOG_DIR"/ceo_session_*.log 2>/dev/null | head -1)
+LATEST_LOG=$(ls -t "$LOG_DIR"/research_session_*.log 2>/dev/null | head -1)
 if [ -n "$LATEST_LOG" ]; then
     echo "Latest log: $LATEST_LOG"
     echo "Last 20 lines:"
@@ -25,7 +25,7 @@ if [ -n "$LATEST_LOG" ]; then
     tail -20 "$LATEST_LOG"
     echo "---"
 else
-    echo "No CEO session logs found yet."
+    echo "No Research Agent session logs found yet."
 fi
 echo ""
 

@@ -40,12 +40,23 @@ logger = logging.getLogger(__name__)
 # Asset configuration — symbols per exchange (Binance blocked from this location)
 # Per-asset start dates: many altcoins launched after 2017
 ASSETS = [
-    {"symbols": ["BTC/USDT", "BTC/USD"], "name": "btc", "asset_id": 0, "start": "2017-01-01", "skip": True},  # Already have max coverage data
+    {
+        "symbols": ["BTC/USDT", "BTC/USD"],
+        "name": "btc",
+        "asset_id": 0,
+        "start": "2017-01-01",
+        "skip": True,
+    },  # Already have max coverage data
     {"symbols": ["ETH/USDT", "ETH/USD"], "name": "eth", "asset_id": 1, "start": "2017-01-01"},
     {"symbols": ["SOL/USDT", "SOL/USD"], "name": "sol", "asset_id": 2, "start": "2020-04-01"},  # SOL launched 2020
     {"symbols": ["ADA/USDT", "ADA/USD"], "name": "ada", "asset_id": 3, "start": "2017-10-01"},
     {"symbols": ["DOT/USDT", "DOT/USD"], "name": "dot", "asset_id": 4, "start": "2020-08-01"},  # DOT launched 2020
-    {"symbols": ["POL/USDT", "POL/USD", "MATIC/USDT", "MATIC/USD"], "name": "matic", "asset_id": 5, "start": "2019-04-01"},  # MATIC renamed to POL
+    {
+        "symbols": ["POL/USDT", "POL/USD", "MATIC/USDT", "MATIC/USD"],
+        "name": "matic",
+        "asset_id": 5,
+        "start": "2019-04-01",
+    },  # MATIC renamed to POL
     {"symbols": ["AVAX/USDT", "AVAX/USD"], "name": "avax", "asset_id": 6, "start": "2020-09-01"},  # AVAX launched 2020
     {"symbols": ["LINK/USDT", "LINK/USD"], "name": "link", "asset_id": 7, "start": "2017-09-01"},
 ]
@@ -77,21 +88,12 @@ def fetch_asset_hourly(
     Returns:
         DataFrame with hourly OHLCV data
     """
-    import ccxt
     from datetime import datetime, timezone
 
-    start_ts = int(
-        datetime.strptime(start_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    end_ts = int(
-        datetime.strptime(end_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
+    import ccxt
+
+    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+    end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     # Try each exchange + symbol combo until one works with historical data
     exchange = None
@@ -132,9 +134,7 @@ def fetch_asset_hourly(
         batch_num += 1
 
         try:
-            candles = exchange.fetch_ohlcv(
-                working_symbol, "1h", since=since, limit=1000
-            )
+            candles = exchange.fetch_ohlcv(working_symbol, "1h", since=since, limit=1000)
 
             if not candles:
                 consecutive_empty += 1
@@ -148,8 +148,7 @@ def fetch_asset_hourly(
             if batch_num % 50 == 0:
                 current_date = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
                 logger.info(
-                    f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles "
-                    f"(current: {current_date.date()})"
+                    f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles (current: {current_date.date()})"
                 )
 
             last_ts = candles[-1][0]
@@ -174,10 +173,7 @@ def fetch_asset_hourly(
         return pd.DataFrame()
 
     # Convert to DataFrame
-    df = pd.DataFrame(
-        all_candles,
-        columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.set_index("timestamp")
 
@@ -206,8 +202,8 @@ def main():
     logger.info("FETCH CROSS-ASSET HOURLY DATA (7 CRYPTOS)")
     logger.info("=" * 80)
     logger.info(f"Assets: {len(ASSETS)}")
-    logger.info(f"Timeframe: 1 hour (1h)")
-    logger.info(f"Period: 2017-01-01 to 2025-12-31")
+    logger.info("Timeframe: 1 hour (1h)")
+    logger.info("Period: 2017-01-01 to 2025-12-31")
     logger.info("=" * 80)
 
     results = []
@@ -224,13 +220,19 @@ def main():
             existing_path = Path(f"data/raw/{asset_name}/ohlcv_hourly.parquet")
             if existing_path.exists():
                 import pandas as _pd
+
                 _df = _pd.read_parquet(existing_path)
-                results.append({
-                    "asset": asset_name, "asset_id": asset_id,
-                    "symbol": str(symbols), "rows": len(_df),
-                    "start_date": _df.index.min(), "end_date": _df.index.max(),
-                    "path": str(existing_path),
-                })
+                results.append(
+                    {
+                        "asset": asset_name,
+                        "asset_id": asset_id,
+                        "symbol": str(symbols),
+                        "rows": len(_df),
+                        "start_date": _df.index.min(),
+                        "end_date": _df.index.max(),
+                        "path": str(existing_path),
+                    }
+                )
             continue
 
         try:
@@ -246,15 +248,17 @@ def main():
             df.to_parquet(output_path)
             logger.info(f"  Saved {asset_name} to {output_path}")
 
-            results.append({
-                "asset": asset_name,
-                "asset_id": asset_id,
-                "symbol": str(symbols),
-                "rows": len(df),
-                "start_date": df.index.min(),
-                "end_date": df.index.max(),
-                "path": str(output_path),
-            })
+            results.append(
+                {
+                    "asset": asset_name,
+                    "asset_id": asset_id,
+                    "symbol": str(symbols),
+                    "rows": len(df),
+                    "start_date": df.index.min(),
+                    "end_date": df.index.max(),
+                    "path": str(output_path),
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to fetch {asset_name}: {e}")
@@ -262,6 +266,7 @@ def main():
 
         # Rate limit between assets to avoid exchange bans
         import time
+
         time.sleep(5)
 
     # Summary
@@ -291,7 +296,7 @@ def main():
     logger.info("=" * 80)
     logger.info(f"Fetched {len(results)}/{len(ASSETS)} assets")
     logger.info(f"Total samples: {total_rows:,}")
-    logger.info(f"Next step: Run scripts/prepare_cross_asset_features.py")
+    logger.info("Next step: Run scripts/prepare_cross_asset_features.py")
 
 
 if __name__ == "__main__":

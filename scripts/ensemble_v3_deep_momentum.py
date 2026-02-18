@@ -18,38 +18,43 @@ NEW EXPERIMENTS:
 Target: ≥30 total wandb runs tagged ['contract_004', 'ensemble'].
 Currently at 24 runs — need 6+ more.
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+import json
 import time
 import warnings
-import json
+
 warnings.filterwarnings("ignore")
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 from sparky.data.loader import load
-from sparky.tracking.experiment import ExperimentTracker
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.tracking.experiment import ExperimentTracker
 
 # ─── Constants ──────────────────────────────────────────────────────────────────
 BASELINE_DONCHIAN_SHARPE = 1.062
-BEST_MOM_VOL_ADX_OR      = 1.279   # mom_vol_adx_OR best prior run
-BEST_MOM_ADX30           = 1.143   # mom_adx30
-BEST_TRIPLE_GATE         = 1.102   # don_lgbm_avg_adx30
+BEST_MOM_VOL_ADX_OR = 1.279  # mom_vol_adx_OR best prior run
+BEST_MOM_ADX30 = 1.143  # mom_adx30
+BEST_TRIPLE_GATE = 1.102  # don_lgbm_avg_adx30
 
 ENTRY_PERIOD = 40
-EXIT_PERIOD  = 20
+EXIT_PERIOD = 20
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-TAGS     = ["contract_004", "ensemble"]
+TAGS = ["contract_004", "ensemble"]
 JOB_TYPE = "ensemble"
 
 
@@ -65,7 +70,7 @@ def load_data():
 
     # Raw hourly prices → resample to daily
     prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
-    prices_daily  = prices_hourly["close"].resample("D").last().dropna()
+    prices_daily = prices_hourly["close"].resample("D").last().dropna()
     if prices_daily.index.tz is None:
         prices_daily.index = prices_daily.index.tz_localize("UTC")
     prices_daily = prices_daily.loc["2019-01-01":"2023-12-31"]
@@ -83,7 +88,7 @@ def donchian_signal(prices: pd.Series, entry: int = 40, exit_p: int = 20) -> pd.
     """No look-ahead Donchian channel signal."""
     upper = prices.rolling(window=entry).max()
     lower = prices.rolling(window=exit_p).min()
-    sig   = pd.Series(0, index=prices.index, dtype=int)
+    sig = pd.Series(0, index=prices.index, dtype=int)
     in_pos = False
     for i in range(len(prices)):
         if i < entry:
@@ -129,26 +134,26 @@ def adaptive_momentum_signal(prices: pd.Series, lookback: int = 20) -> pd.Series
 
 
 def compute_adx(prices: pd.Series, period: int = 14) -> pd.Series:
-    delta     = prices.diff()
-    plus_dm   = delta.clip(lower=0)
-    minus_dm  = (-delta).clip(lower=0)
-    plus_di   = plus_dm.ewm(span=period, adjust=False).mean()
-    minus_di  = minus_dm.ewm(span=period, adjust=False).mean()
-    dx        = (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-9) * 100
+    delta = prices.diff()
+    plus_dm = delta.clip(lower=0)
+    minus_dm = (-delta).clip(lower=0)
+    plus_di = plus_dm.ewm(span=period, adjust=False).mean()
+    minus_di = minus_dm.ewm(span=period, adjust=False).mean()
+    dx = (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-9) * 100
     return dx.ewm(span=period, adjust=False).mean()
 
 
 def vol_regime(prices: pd.Series, window: int = 20) -> pd.Series:
     """1 when rolling vol > expanding median (trending high-vol)."""
     ret = prices.pct_change()
-    rv  = ret.rolling(window).std() * np.sqrt(252)
+    rv = ret.rolling(window).std() * np.sqrt(252)
     exp_med = rv.expanding().median()
     return (rv > exp_med).astype(int)
 
 
 def sharpe_from_signals(returns: pd.Series, positions: pd.Series) -> float:
     """positions can be float [0..1]."""
-    pos   = positions.reindex(returns.index).fillna(0).shift(1).fillna(0)
+    pos = positions.reindex(returns.index).fillna(0).shift(1).fillna(0)
     strat = pos * returns
     if strat.std() == 0 or len(strat) < 10:
         return 0.0
@@ -161,9 +166,9 @@ def year_sharpe(returns: pd.Series, positions: pd.Series, year: int) -> float:
 
 
 def maxdd_from_signals(returns: pd.Series, positions: pd.Series) -> float:
-    pos   = positions.reindex(returns.index).fillna(0).shift(1).fillna(0)
+    pos = positions.reindex(returns.index).fillna(0).shift(1).fillna(0)
     strat = pos * returns
-    eq    = (1 + strat).cumprod()
+    eq = (1 + strat).cumprod()
     return float(max_drawdown(eq))
 
 
@@ -174,11 +179,11 @@ def summarize(prices_daily, daily_returns, sig_fn, label: str) -> dict:
     for yr in range(2019, 2024):
         sh = year_sharpe(daily_returns, sig, yr)
         per_year[yr] = round(sh, 3)
-    values  = list(per_year.values())
+    values = list(per_year.values())
     mean_sh = float(np.mean(values))
-    std_sh  = float(np.std(values))
-    mdd     = maxdd_from_signals(daily_returns, sig)
-    in_mkt  = float(sig.mean()) if sig.dtype != float else float((sig > 0).mean())
+    std_sh = float(np.std(values))
+    mdd = maxdd_from_signals(daily_returns, sig)
+    in_mkt = float(sig.mean()) if sig.dtype != float else float((sig > 0).mean())
     print(f"  [{label}] Sharpe={mean_sh:.3f} std={std_sh:.3f} mdd={mdd:.3f} inMkt={in_mkt:.1%}")
     print(f"  per year: {per_year}")
     return {"mean": mean_sh, "std": std_sh, "mdd": mdd, "in_market": in_mkt, "per_year": per_year}
@@ -206,41 +211,43 @@ def run_mom_vol_adx_or_sweep(prices_daily, daily_returns, tracker):
         dict(lb=40, th=0.02, adx_p=14, adx_t=30, vol_w=20),
         dict(lb=40, th=0.05, adx_p=14, adx_t=30, vol_w=20),
         # Vary ADX window (lb=40, t=0 is winner)
-        dict(lb=40, th=0.0, adx_p=7,  adx_t=30, vol_w=20),
+        dict(lb=40, th=0.0, adx_p=7, adx_t=30, vol_w=20),
         dict(lb=40, th=0.0, adx_p=21, adx_t=30, vol_w=20),
         # Vary ADX threshold
         dict(lb=40, th=0.0, adx_p=14, adx_t=25, vol_w=20),
         # Vary vol window
         dict(lb=40, th=0.0, adx_p=14, adx_t=30, vol_w=10),
         # Best combo candidate (lower adx threshold + shorter vol window)
-        dict(lb=40, th=0.0, adx_p=7,  adx_t=25, vol_w=10),
+        dict(lb=40, th=0.0, adx_p=7, adx_t=25, vol_w=10),
     ]
 
     results = []
     for cfg in configs:
-        lb    = cfg["lb"]
-        th    = cfg["th"]
+        lb = cfg["lb"]
+        th = cfg["th"]
         adx_p = cfg["adx_p"]
         adx_t = cfg["adx_t"]
         vol_w = cfg["vol_w"]
 
         def make_sig(p, _lb=lb, _th=th, _adx_p=adx_p, _adx_t=adx_t, _vol_w=vol_w):
             mom_sig = momentum_signal(p, lookback=_lb, threshold=_th)
-            adx     = compute_adx(p, period=_adx_p)
+            adx = compute_adx(p, period=_adx_p)
             vol_reg = vol_regime(p, window=_vol_w)
-            or_reg  = ((adx.shift(1) > _adx_t) | (vol_reg.shift(1) == 1)).astype(int)
+            or_reg = ((adx.shift(1) > _adx_t) | (vol_reg.shift(1) == 1)).astype(int)
             return (mom_sig * or_reg).clip(0, 1)
 
-        label = f"mom_OR_lb{lb}_t{int(th*100)}_adx{adx_p}t{adx_t}_v{vol_w}"
+        label = f"mom_OR_lb{lb}_t{int(th * 100)}_adx{adx_p}t{adx_t}_v{vol_w}"
         stats = summarize(prices_daily, daily_returns, make_sig, label)
 
-        run_name = f"mom_OR_lb{lb}_t{int(th*100)}_adx{adx_p}t{adx_t}_v{vol_w}_S{stats['mean']:.2f}"
+        run_name = f"mom_OR_lb{lb}_t{int(th * 100)}_adx{adx_p}t{adx_t}_v{vol_w}_S{stats['mean']:.2f}"
         tracker.log_experiment(
             name=run_name,
             config={**cfg, "strategy": "momentum_vol_adx_OR_sweep"},
             metrics={
-                "wf_sharpe": stats["mean"], "wf_std": stats["std"],
-                "max_drawdown": stats["mdd"], "in_market": stats["in_market"],
+                "wf_sharpe": stats["mean"],
+                "wf_std": stats["std"],
+                "max_drawdown": stats["mdd"],
+                "in_market": stats["in_market"],
                 "sharpe_2019": stats["per_year"].get(2019, 0),
                 "sharpe_2020": stats["per_year"].get(2020, 0),
                 "sharpe_2021": stats["per_year"].get(2021, 0),
@@ -281,27 +288,30 @@ def run_adaptive_momentum(prices_daily, daily_returns, tracker):
 
     results = []
     for label, lb, regime in configs:
+
         def make_sig(p, _lb=lb, _reg=regime):
             pos = adaptive_momentum_signal(p, lookback=_lb)
             if _reg == "adx30":
-                adx    = compute_adx(p, period=14)
-                gate   = (adx.shift(1) > 30).astype(float)
-                pos    = pos * gate
+                adx = compute_adx(p, period=14)
+                gate = (adx.shift(1) > 30).astype(float)
+                pos = pos * gate
             elif _reg == "vol_adx_OR":
-                adx    = compute_adx(p, period=14)
-                vol_r  = vol_regime(p, window=20)
+                adx = compute_adx(p, period=14)
+                vol_r = vol_regime(p, window=20)
                 or_reg = ((adx.shift(1) > 30) | (vol_r.shift(1) == 1)).astype(float)
-                pos    = pos * or_reg
+                pos = pos * or_reg
             return pos
 
-        stats    = summarize(prices_daily, daily_returns, make_sig, label)
+        stats = summarize(prices_daily, daily_returns, make_sig, label)
         run_name = f"{label}_S{stats['mean']:.2f}"
         tracker.log_experiment(
             name=run_name,
             config={"strategy": "adaptive_momentum", "lookback": lb, "regime": str(regime)},
             metrics={
-                "wf_sharpe": stats["mean"], "wf_std": stats["std"],
-                "max_drawdown": stats["mdd"], "in_market": stats["in_market"],
+                "wf_sharpe": stats["mean"],
+                "wf_std": stats["std"],
+                "max_drawdown": stats["mdd"],
+                "in_market": stats["in_market"],
                 "sharpe_2019": stats["per_year"].get(2019, 0),
                 "sharpe_2020": stats["per_year"].get(2020, 0),
                 "sharpe_2021": stats["per_year"].get(2021, 0),
@@ -332,27 +342,39 @@ def run_mom_donchian_confirmation(prices_daily, daily_returns, tracker):
     don_sig = donchian_signal(prices_daily, entry=ENTRY_PERIOD, exit_p=EXIT_PERIOD)
 
     configs = [
-        (10, 0.0), (20, 0.0), (40, 0.0), (60, 0.0),
-        (20, 0.02), (40, 0.02),
+        (10, 0.0),
+        (20, 0.0),
+        (40, 0.0),
+        (60, 0.0),
+        (20, 0.02),
+        (40, 0.02),
     ]
 
     results = []
     for lb, th in configs:
+
         def make_sig(p, _lb=lb, _th=th, _don=don_sig):
             mom = momentum_signal(p, lookback=_lb, threshold=_th)
             # Both must agree to buy; if Donchian exits, exit regardless of mom
             return (mom * _don).clip(0, 1)
 
-        label    = f"mom_don_lb{lb}_t{int(th*100)}"
-        stats    = summarize(prices_daily, daily_returns, make_sig, label)
+        label = f"mom_don_lb{lb}_t{int(th * 100)}"
+        stats = summarize(prices_daily, daily_returns, make_sig, label)
         run_name = f"{label}_S{stats['mean']:.2f}"
         tracker.log_experiment(
             name=run_name,
-            config={"strategy": "mom_donchian_confirmation", "lookback": lb, "threshold": th,
-                    "entry_period": ENTRY_PERIOD, "exit_period": EXIT_PERIOD},
+            config={
+                "strategy": "mom_donchian_confirmation",
+                "lookback": lb,
+                "threshold": th,
+                "entry_period": ENTRY_PERIOD,
+                "exit_period": EXIT_PERIOD,
+            },
             metrics={
-                "wf_sharpe": stats["mean"], "wf_std": stats["std"],
-                "max_drawdown": stats["mdd"], "in_market": stats["in_market"],
+                "wf_sharpe": stats["mean"],
+                "wf_std": stats["std"],
+                "max_drawdown": stats["mdd"],
+                "in_market": stats["in_market"],
                 "sharpe_2019": stats["per_year"].get(2019, 0),
                 "sharpe_2020": stats["per_year"].get(2020, 0),
                 "sharpe_2021": stats["per_year"].get(2021, 0),
@@ -397,28 +419,30 @@ def run_regime_conditional_selection(prices_daily, daily_returns, tracker):
         adx_m = cfg["adx_mild"]
         don_e = cfg["don_e"]
         don_x = cfg["don_x"]
-        lb    = cfg["mom_lb"]
+        lb = cfg["mom_lb"]
 
         def make_sig(p, _as=adx_s, _am=adx_m, _de=don_e, _dx=don_x, _lb=lb):
-            adx     = compute_adx(p, period=14).shift(1)  # no look-ahead
+            adx = compute_adx(p, period=14).shift(1)  # no look-ahead
             mom_sig = momentum_signal(p, lookback=_lb, threshold=0.0)
             don_sig = donchian_signal(p, entry=_de, exit_p=_dx)
             # Regime conditional
-            strong  = (adx > _as).astype(int)
-            mild    = ((adx > _am) & (adx <= _as)).astype(int)
+            strong = (adx > _as).astype(int)
+            mild = ((adx > _am) & (adx <= _as)).astype(int)
             # Use momentum in strong trend, Donchian in mild trend, flat otherwise
             combined = (strong * mom_sig + mild * don_sig).clip(0, 1)
             return combined
 
-        label    = f"regime_cond_as{adx_s}_am{adx_m}_don{don_e}{don_x}_lb{lb}"
-        stats    = summarize(prices_daily, daily_returns, make_sig, label)
+        label = f"regime_cond_as{adx_s}_am{adx_m}_don{don_e}{don_x}_lb{lb}"
+        stats = summarize(prices_daily, daily_returns, make_sig, label)
         run_name = f"{label}_S{stats['mean']:.2f}"
         tracker.log_experiment(
             name=run_name,
             config={**cfg, "strategy": "regime_conditional_selection"},
             metrics={
-                "wf_sharpe": stats["mean"], "wf_std": stats["std"],
-                "max_drawdown": stats["mdd"], "in_market": stats["in_market"],
+                "wf_sharpe": stats["mean"],
+                "wf_std": stats["std"],
+                "max_drawdown": stats["mdd"],
+                "in_market": stats["in_market"],
                 "sharpe_2019": stats["per_year"].get(2019, 0),
                 "sharpe_2020": stats["per_year"].get(2020, 0),
                 "sharpe_2021": stats["per_year"].get(2021, 0),
@@ -454,49 +478,82 @@ def run_wf_verification(prices_daily, daily_returns, tracker):
 
     # Top-1: Momentum + vol_adx_OR (default params: lb=40, t=0)
     def mom_vol_adx_OR(p):
-        mom  = momentum_signal(p, lookback=40, threshold=0.0)
-        adx  = compute_adx(p, period=14)
-        vol  = vol_regime(p, window=20)
+        mom = momentum_signal(p, lookback=40, threshold=0.0)
+        adx = compute_adx(p, period=14)
+        vol = vol_regime(p, window=20)
         gate = ((adx.shift(1) > 30) | (vol.shift(1) == 1)).astype(int)
         return (mom * gate).clip(0, 1)
 
     # Top-2: Momentum + ADX(14,30)
     def mom_adx30(p):
-        mom  = momentum_signal(p, lookback=40, threshold=0.0)
-        adx  = compute_adx(p, period=14)
+        mom = momentum_signal(p, lookback=40, threshold=0.0)
+        adx = compute_adx(p, period=14)
         gate = (adx.shift(1) > 30).astype(int)
         return (mom * gate).clip(0, 1)
 
     # Top-3: Donchian(40/20) signal-averaged with LGBM (using simple ensemble proxy)
     # We can't run ML here cleanly, so log the best confirmed Donchian+ADX30 combo
     def don_adx30_revalidated(p):
-        don  = donchian_signal(p, entry=40, exit_p=20)
-        adx  = compute_adx(p, period=14)
+        don = donchian_signal(p, entry=40, exit_p=20)
+        adx = compute_adx(p, period=14)
         gate = (adx.shift(1) > 30).astype(int)
         return (don * gate).clip(0, 1)
 
     verification_configs = [
-        ("mom_vol_adx_OR_verified", mom_vol_adx_OR, "wf_verification",
-         {"lookback": 40, "threshold": 0.0, "adx_period": 14, "adx_thresh": 30, "vol_window": 20,
-          "prior_sharpe": 1.279, "strategy": "momentum_vol_adx_OR"}),
-        ("mom_adx30_verified", mom_adx30, "wf_verification",
-         {"lookback": 40, "threshold": 0.0, "adx_period": 14, "adx_thresh": 30,
-          "prior_sharpe": 1.143, "strategy": "momentum_adx30"}),
-        ("don_adx30_revalidated", don_adx30_revalidated, "wf_verification",
-         {"entry_period": 40, "exit_period": 20, "adx_period": 14, "adx_thresh": 30,
-          "prior_sharpe": 1.181, "strategy": "donchian_adx30_revalidated"}),
+        (
+            "mom_vol_adx_OR_verified",
+            mom_vol_adx_OR,
+            "wf_verification",
+            {
+                "lookback": 40,
+                "threshold": 0.0,
+                "adx_period": 14,
+                "adx_thresh": 30,
+                "vol_window": 20,
+                "prior_sharpe": 1.279,
+                "strategy": "momentum_vol_adx_OR",
+            },
+        ),
+        (
+            "mom_adx30_verified",
+            mom_adx30,
+            "wf_verification",
+            {
+                "lookback": 40,
+                "threshold": 0.0,
+                "adx_period": 14,
+                "adx_thresh": 30,
+                "prior_sharpe": 1.143,
+                "strategy": "momentum_adx30",
+            },
+        ),
+        (
+            "don_adx30_revalidated",
+            don_adx30_revalidated,
+            "wf_verification",
+            {
+                "entry_period": 40,
+                "exit_period": 20,
+                "adx_period": 14,
+                "adx_thresh": 30,
+                "prior_sharpe": 1.181,
+                "strategy": "donchian_adx30_revalidated",
+            },
+        ),
     ]
 
     results = []
     for name, sig_fn, group, cfg in verification_configs:
-        stats    = summarize(prices_daily, daily_returns, sig_fn, name)
+        stats = summarize(prices_daily, daily_returns, sig_fn, name)
         run_name = f"{name}_S{stats['mean']:.2f}"
         tracker.log_experiment(
             name=run_name,
             config=cfg,
             metrics={
-                "wf_sharpe": stats["mean"], "wf_std": stats["std"],
-                "max_drawdown": stats["mdd"], "in_market": stats["in_market"],
+                "wf_sharpe": stats["mean"],
+                "wf_std": stats["std"],
+                "max_drawdown": stats["mdd"],
+                "in_market": stats["in_market"],
                 "sharpe_2019": stats["per_year"].get(2019, 0),
                 "sharpe_2020": stats["per_year"].get(2020, 0),
                 "sharpe_2021": stats["per_year"].get(2021, 0),
@@ -525,45 +582,45 @@ def main():
     all_results = {}
 
     # --- Exp 1: Momentum + vol_adx_OR sweep (10 configs) ---
-    print(f"\n\n{'#'*80}")
+    print(f"\n\n{'#' * 80}")
     print("# EXPERIMENT 1: Momentum + vol_adx_OR Parameter Sweep (10 configs)")
-    print(f"{'#'*80}")
+    print(f"{'#' * 80}")
     r1 = run_mom_vol_adx_or_sweep(prices_daily, daily_returns, tracker)
     all_results["mom_vol_adx_OR_sweep"] = r1
 
     # --- Exp 2: Adaptive Momentum Sizing (5 configs) ---
-    print(f"\n\n{'#'*80}")
+    print(f"\n\n{'#' * 80}")
     print("# EXPERIMENT 2: Adaptive Momentum Sizing (5 configs)")
-    print(f"{'#'*80}")
+    print(f"{'#' * 80}")
     r2 = run_adaptive_momentum(prices_daily, daily_returns, tracker)
     all_results["adaptive_momentum"] = r2
 
     # --- Exp 3: Momentum + Donchian Confirmation (6 configs) ---
-    print(f"\n\n{'#'*80}")
+    print(f"\n\n{'#' * 80}")
     print("# EXPERIMENT 3: Momentum + Donchian Dual Confirmation (6 configs)")
-    print(f"{'#'*80}")
+    print(f"{'#' * 80}")
     r3 = run_mom_donchian_confirmation(prices_daily, daily_returns, tracker)
     all_results["mom_donchian_confirmation"] = r3
 
     # --- Exp 4: Regime-Conditional Selection (4 configs) ---
-    print(f"\n\n{'#'*80}")
+    print(f"\n\n{'#' * 80}")
     print("# EXPERIMENT 4: Regime-Conditional Strategy Selection (4 configs)")
-    print(f"{'#'*80}")
+    print(f"{'#' * 80}")
     r4 = run_regime_conditional_selection(prices_daily, daily_returns, tracker)
     all_results["regime_conditional_selection"] = r4
 
     # --- Exp 5: Walk-Forward Verification of Top-3 (3 configs) ---
-    print(f"\n\n{'#'*80}")
+    print(f"\n\n{'#' * 80}")
     print("# EXPERIMENT 5: Walk-Forward Verification of Prior Top-3 (3 configs)")
-    print(f"{'#'*80}")
+    print(f"{'#' * 80}")
     r5 = run_wf_verification(prices_daily, daily_returns, tracker)
     all_results["wf_verification"] = r5
 
     # ─── Summary ────────────────────────────────────────────────────────────────
     elapsed_total = time.time() - t_total
-    print(f"\n\n{'='*80}")
+    print(f"\n\n{'=' * 80}")
     print(f"ALL EXPERIMENTS COMPLETE in {elapsed_total:.1f}s")
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
 
     # Flatten all results for ranking
     flat = []
@@ -571,14 +628,16 @@ def main():
     def flatten(results_list, exp_name):
         for r in results_list:
             if "stats" in r:
-                flat.append({
-                    "exp": exp_name,
-                    "label": r.get("label", r.get("name", "?")),
-                    "sharpe": r["stats"]["mean"],
-                    "std": r["stats"]["std"],
-                    "mdd": r["stats"]["mdd"],
-                    "2022": r["stats"]["per_year"].get(2022, 0),
-                })
+                flat.append(
+                    {
+                        "exp": exp_name,
+                        "label": r.get("label", r.get("name", "?")),
+                        "sharpe": r["stats"]["mean"],
+                        "std": r["stats"]["std"],
+                        "mdd": r["stats"]["mdd"],
+                        "2022": r["stats"]["per_year"].get(2022, 0),
+                    }
+                )
 
     flatten(r1, "mom_vol_adx_OR_sweep")
     flatten(r2, "adaptive_momentum")
@@ -605,7 +664,7 @@ def main():
     }
     with open("results/ensemble_v3_results.json", "w") as f:
         json.dump(results_json, f, indent=2)
-    print(f"\nSaved results to results/ensemble_v3_results.json")
+    print("\nSaved results to results/ensemble_v3_results.json")
 
     return results_json
 

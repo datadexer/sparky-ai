@@ -1,6 +1,5 @@
 """Tests for transaction cost model."""
 
-import numpy as np
 import pandas as pd
 import pytest
 

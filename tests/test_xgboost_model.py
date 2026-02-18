@@ -6,7 +6,6 @@ import pytest
 
 from sparky.backtest.costs import TransactionCostModel
 from sparky.backtest.engine import WalkForwardBacktester
-from sparky.features.returns import simple_returns
 from sparky.models.xgboost_model import XGBoostModel
 
 

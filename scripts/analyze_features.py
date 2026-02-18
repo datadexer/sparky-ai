@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -83,8 +82,7 @@ def main(dataset: str = "btc_1h_features"):
         "n_features": len(X.columns),
         "n_samples": len(X),
         "ranked_features": [
-            {"rank": i + 1, "name": name, "importance": float(score)}
-            for i, (name, score) in enumerate(ranked)
+            {"rank": i + 1, "name": name, "importance": float(score)} for i, (name, score) in enumerate(ranked)
         ],
         "top_20": [name for name, _ in ranked[:20]],
     }
@@ -93,7 +91,7 @@ def main(dataset: str = "btc_1h_features"):
     logger.info(f"\nSaved to {OUTPUT_PATH}")
 
     # Summary
-    print(f"\nTop 20 features for sweep (copy to config):")
+    print("\nTop 20 features for sweep (copy to config):")
     print(f"  {[name for name, _ in ranked[:20]]}")
 
 

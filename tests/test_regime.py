@@ -5,14 +5,14 @@ import pandas as pd
 import pytest
 
 from sparky.features.regime import (
+    breakout_proximity_lower,
+    breakout_proximity_upper,
+    choppiness_index,
     drawdown_from_high,
     recovery_from_low,
+    trend_strength_adx_proxy,
     volatility_regime,
     volume_regime,
-    trend_strength_adx_proxy,
-    choppiness_index,
-    breakout_proximity_upper,
-    breakout_proximity_lower,
 )
 
 
@@ -21,10 +21,12 @@ def sample_prices():
     """Sample price series for testing."""
     dates = pd.date_range("2024-01-01", periods=200, freq="h", tz="UTC")
     # Trend: 40000 -> 45000 -> 42000
-    prices = np.concatenate([
-        np.linspace(40000, 45000, 100),
-        np.linspace(45000, 42000, 100),
-    ])
+    prices = np.concatenate(
+        [
+            np.linspace(40000, 45000, 100),
+            np.linspace(45000, 42000, 100),
+        ]
+    )
     return pd.Series(prices, index=dates)
 
 

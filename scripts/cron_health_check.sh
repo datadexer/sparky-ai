@@ -4,13 +4,13 @@
 #
 # - HEALTHY: silent (no output, no log)
 # - DEGRADED: logs warning to logs/alerts/
-# - CRITICAL: runs emergency_cleanup, pauses CEO, writes alert
+# - CRITICAL: runs emergency_cleanup, pauses Research Agent, writes alert
 
 set -uo pipefail
 
-PROJECT_ROOT="/home/akamath/sparky-ai"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ALERT_DIR="$PROJECT_ROOT/logs/alerts"
-CEO_STOP_FILE="$PROJECT_ROOT/logs/ceo_sessions/STOP"
+RESEARCH_STOP_FILE="$PROJECT_ROOT/logs/research_sessions/STOP"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$ALERT_DIR"
@@ -45,7 +45,7 @@ case $EXIT_CODE in
             echo ""
             echo "Actions taken:"
             echo "  1. Running emergency_cleanup.sh"
-            echo "  2. Pausing CEO watchdog (STOP file created)"
+            echo "  2. Pausing Research Agent watchdog (STOP file created)"
             echo ""
             echo "=== Health Check Output ==="
             cat "$HEALTH_OUTPUT"
@@ -54,8 +54,8 @@ case $EXIT_CODE in
             bash "$PROJECT_ROOT/scripts/emergency_cleanup.sh" 2>&1
         } > "$ALERT_FILE"
 
-        # Pause CEO watchdog
-        touch "$CEO_STOP_FILE"
+        # Pause Research Agent watchdog
+        touch "$RESEARCH_STOP_FILE"
 
         rm -f "$HEALTH_OUTPUT"
         ;;

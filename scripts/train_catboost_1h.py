@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 logging.basicConfig(
     level=logging.INFO,
@@ -88,7 +88,9 @@ def clean_data(X: pd.DataFrame):
     after_count = len(X_clean)
 
     if before_count > after_count:
-        logger.info(f"Dropped {before_count - after_count:,} NaN rows ({(before_count - after_count) / before_count:.1%})")
+        logger.info(
+            f"Dropped {before_count - after_count:,} NaN rows ({(before_count - after_count) / before_count:.1%})"
+        )
 
     return X_clean
 
@@ -229,10 +231,9 @@ def get_feature_importances(model, feature_names):
     importances = model.get_feature_importance()
 
     # Create DataFrame and sort
-    importance_df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': importances
-    }).sort_values('importance', ascending=False)
+    importance_df = pd.DataFrame({"feature": feature_names, "importance": importances}).sort_values(
+        "importance", ascending=False
+    )
 
     # Get top 10
     top_10 = importance_df.head(10)
@@ -241,7 +242,7 @@ def get_feature_importances(model, feature_names):
     for idx, row in top_10.iterrows():
         logger.info(f"  {row['feature']}: {row['importance']:.4f}")
 
-    return dict(zip(top_10['feature'].tolist(), top_10['importance'].tolist()))
+    return dict(zip(top_10["feature"].tolist(), top_10["importance"].tolist()))
 
 
 def save_results(metrics: dict, feature_importances: dict, n_train_samples: int):
@@ -269,10 +270,10 @@ def save_results(metrics: dict, feature_importances: dict, n_train_samples: int)
             "val_roc_auc": 0.5549,
             "test_accuracy": 0.5357,
             "test_roc_auc": 0.5521,
-        }
+        },
     }
 
-    with open(results_path, 'w') as f:
+    with open(results_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"\nResults saved to {results_path}")
@@ -296,8 +297,8 @@ def print_comparison_table(metrics: dict):
     print("\n" + "=" * 80)
 
     # Compute deltas
-    val_auc_delta = metrics['validation_roc_auc'] - 0.5549
-    test_auc_delta = metrics['test_roc_auc'] - 0.5521
+    val_auc_delta = metrics["validation_roc_auc"] - 0.5549
+    test_auc_delta = metrics["test_roc_auc"] - 0.5521
 
     print("\nDELTA FROM XGBOOST:")
     print(f"  Validation AUC: {val_auc_delta:+.4f} ({val_auc_delta / 0.5549 * 100:+.2f}%)")

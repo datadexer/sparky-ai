@@ -106,13 +106,15 @@ class HourlyToDailyAggregator:
             weights /= weights.sum()
 
             weighted_proba = np.sum(weights * group.values)
-            results.append({
-                "date": pd.Timestamp(date),
-                "daily_proba": weighted_proba,
-                "std": group.std(),
-                "n_hours": n,
-                "signal": int(weighted_proba > self.threshold),
-            })
+            results.append(
+                {
+                    "date": pd.Timestamp(date),
+                    "daily_proba": weighted_proba,
+                    "std": group.std(),
+                    "n_hours": n,
+                    "signal": int(weighted_proba > self.threshold),
+                }
+            )
 
         daily = pd.DataFrame(results).set_index("date")
         logger.info(
@@ -157,12 +159,10 @@ class HourlyToDailyAggregator:
         high_vol_mask = valid & high_vol.fillna(False)
         low_vol_mask = valid & ~high_vol.fillna(False)
 
-        daily.loc[high_vol_mask, "signal"] = (
-            daily.loc[high_vol_mask, "daily_proba"] > self.threshold + 0.02
-        ).astype(int)
-        daily.loc[low_vol_mask, "signal"] = (
-            daily.loc[low_vol_mask, "daily_proba"] > self.threshold - 0.01
-        ).astype(int)
+        daily.loc[high_vol_mask, "signal"] = (daily.loc[high_vol_mask, "daily_proba"] > self.threshold + 0.02).astype(
+            int
+        )
+        daily.loc[low_vol_mask, "signal"] = (daily.loc[low_vol_mask, "daily_proba"] > self.threshold - 0.01).astype(int)
 
         logger.info(
             f"Aggregated with regime adjustment: "
@@ -227,9 +227,7 @@ class RegimeAwareAggregator:
         from sparky.features.regime_indicators import compute_volatility_regime
 
         # Compute volatility regime
-        regimes = compute_volatility_regime(
-            prices, window=self.regime_window, frequency=self.frequency
-        )
+        regimes = compute_volatility_regime(prices, window=self.regime_window, frequency=self.frequency)
 
         # Aggregate hourly probabilities to daily
         daily_proba = hourly_probas.resample("D").mean()
@@ -262,29 +260,28 @@ class RegimeAwareAggregator:
             signal = 1 if prob > threshold else 0
             position_size = rules["position_size"] if signal == 1 else 0.0
 
-            results.append({
-                "date": date,
-                "daily_proba": prob,
-                "std": daily_std[date],
-                "regime": regime,
-                "threshold": threshold,
-                "signal": signal,
-                "position_size": position_size,
-                "n_hours": daily_n_hours[date],
-            })
+            results.append(
+                {
+                    "date": date,
+                    "daily_proba": prob,
+                    "std": daily_std[date],
+                    "regime": regime,
+                    "threshold": threshold,
+                    "signal": signal,
+                    "position_size": position_size,
+                    "n_hours": daily_n_hours[date],
+                }
+            )
 
         df = pd.DataFrame(results).set_index("date")
 
         n_long = (df["signal"] == 1).sum()
         regime_counts = df["regime"].value_counts()
 
+        logger.info(f"Aggregated {len(hourly_probas):,} hourly predictions to {len(df)} daily signals (regime-aware)")
         logger.info(
-            f"Aggregated {len(hourly_probas):,} hourly predictions to {len(df)} daily signals "
-            f"(regime-aware)"
-        )
-        logger.info(
-            f"  Signals: {n_long} LONG ({n_long/len(df)*100:.1f}%), "
-            f"{len(df) - n_long} FLAT ({(len(df) - n_long)/len(df)*100:.1f}%)"
+            f"  Signals: {n_long} LONG ({n_long / len(df) * 100:.1f}%), "
+            f"{len(df) - n_long} FLAT ({(len(df) - n_long) / len(df) * 100:.1f}%)"
         )
         logger.info(
             f"  Regimes: low={regime_counts.get('low', 0)}, "

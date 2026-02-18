@@ -11,7 +11,6 @@ Usage:
 import logging
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from sparky.backtest.costs import TransactionCostModel
@@ -74,7 +73,10 @@ def main():
     model = BuyAndHold()
     cost_model = TransactionCostModel.for_btc()
     backtester = WalkForwardBacktester(
-        train_min_length=252, embargo_days=7, test_length=30, step_size=30,
+        train_min_length=252,
+        embargo_days=7,
+        test_length=30,
+        step_size=30,
     )
 
     result = backtester.run(model, X, y, returns, cost_model=cost_model, asset="BTC")
@@ -103,7 +105,11 @@ def main():
 
     # Bootstrap CI
     lower, upper = BacktestStatistics.sharpe_confidence_interval(
-        equity_returns, n_bootstrap=5000, ci=0.95, annualize=True, random_state=42,
+        equity_returns,
+        n_bootstrap=5000,
+        ci=0.95,
+        annualize=True,
+        random_state=42,
     )
 
     # Significance
@@ -124,7 +130,11 @@ def main():
     y_test_check = y.loc[X_test_check.index]
 
     report = detector.run_all_checks(
-        model, X_train_check, y_train_check, X_test_check, y_test_check,
+        model,
+        X_train_check,
+        y_train_check,
+        X_test_check,
+        y_test_check,
     )
     leakage_passed = report.passed
     logger.info(f"Leakage check: {'PASSED' if leakage_passed else 'FAILED'}")

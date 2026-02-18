@@ -12,11 +12,10 @@ Tests cover:
 import numpy as np
 import pandas as pd
 import pytest
-from datetime import datetime, timedelta
 
 from sparky.backtest.leakage_detector import (
-    LeakageDetector,
     LeakageCheckResult,
+    LeakageDetector,
     LeakageReport,
 )
 
@@ -55,22 +54,26 @@ class LeakyModel:
 def temporal_data_no_overlap():
     """Create temporal data with proper train/test split (no overlap)."""
     # Training data: Jan 1-10, 2025
-    train_dates = pd.date_range('2025-01-01', '2025-01-10', freq='D')
-    X_train = pd.DataFrame({
-        'feature_1': np.random.randn(len(train_dates)),
-        'feature_2': np.random.randn(len(train_dates)),
-    }, index=train_dates)
-    y_train = pd.Series(np.random.randint(0, 2, len(train_dates)),
-                       index=train_dates, name='target')
+    train_dates = pd.date_range("2025-01-01", "2025-01-10", freq="D")
+    X_train = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(len(train_dates)),
+            "feature_2": np.random.randn(len(train_dates)),
+        },
+        index=train_dates,
+    )
+    y_train = pd.Series(np.random.randint(0, 2, len(train_dates)), index=train_dates, name="target")
 
     # Test data: Jan 15-20, 2025 (gap of 5 days)
-    test_dates = pd.date_range('2025-01-15', '2025-01-20', freq='D')
-    X_test = pd.DataFrame({
-        'feature_1': np.random.randn(len(test_dates)),
-        'feature_2': np.random.randn(len(test_dates)),
-    }, index=test_dates)
-    y_test = pd.Series(np.random.randint(0, 2, len(test_dates)),
-                      index=test_dates, name='target')
+    test_dates = pd.date_range("2025-01-15", "2025-01-20", freq="D")
+    X_test = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(len(test_dates)),
+            "feature_2": np.random.randn(len(test_dates)),
+        },
+        index=test_dates,
+    )
+    y_test = pd.Series(np.random.randint(0, 2, len(test_dates)), index=test_dates, name="target")
 
     return X_train, y_train, X_test, y_test
 
@@ -79,22 +82,26 @@ def temporal_data_no_overlap():
 def temporal_data_with_overlap():
     """Create temporal data with overlapping train/test split."""
     # Training data: Jan 1-15, 2025
-    train_dates = pd.date_range('2025-01-01', '2025-01-15', freq='D')
-    X_train = pd.DataFrame({
-        'feature_1': np.random.randn(len(train_dates)),
-        'feature_2': np.random.randn(len(train_dates)),
-    }, index=train_dates)
-    y_train = pd.Series(np.random.randint(0, 2, len(train_dates)),
-                       index=train_dates, name='target')
+    train_dates = pd.date_range("2025-01-01", "2025-01-15", freq="D")
+    X_train = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(len(train_dates)),
+            "feature_2": np.random.randn(len(train_dates)),
+        },
+        index=train_dates,
+    )
+    y_train = pd.Series(np.random.randint(0, 2, len(train_dates)), index=train_dates, name="target")
 
     # Test data: Jan 10-20, 2025 (overlaps with training)
-    test_dates = pd.date_range('2025-01-10', '2025-01-20', freq='D')
-    X_test = pd.DataFrame({
-        'feature_1': np.random.randn(len(test_dates)),
-        'feature_2': np.random.randn(len(test_dates)),
-    }, index=test_dates)
-    y_test = pd.Series(np.random.randint(0, 2, len(test_dates)),
-                      index=test_dates, name='target')
+    test_dates = pd.date_range("2025-01-10", "2025-01-20", freq="D")
+    X_test = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(len(test_dates)),
+            "feature_2": np.random.randn(len(test_dates)),
+        },
+        index=test_dates,
+    )
+    y_test = pd.Series(np.random.randint(0, 2, len(test_dates)), index=test_dates, name="target")
 
     return X_train, y_train, X_test, y_test
 
@@ -102,17 +109,21 @@ def temporal_data_with_overlap():
 @pytest.fixture
 def non_temporal_data():
     """Create data without datetime index."""
-    X_train = pd.DataFrame({
-        'feature_1': np.random.randn(100),
-        'feature_2': np.random.randn(100),
-    })
-    y_train = pd.Series(np.random.randint(0, 2, 100), name='target')
+    X_train = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(100),
+            "feature_2": np.random.randn(100),
+        }
+    )
+    y_train = pd.Series(np.random.randint(0, 2, 100), name="target")
 
-    X_test = pd.DataFrame({
-        'feature_1': np.random.randn(50),
-        'feature_2': np.random.randn(50),
-    })
-    y_test = pd.Series(np.random.randint(0, 2, 50), name='target')
+    X_test = pd.DataFrame(
+        {
+            "feature_1": np.random.randn(50),
+            "feature_2": np.random.randn(50),
+        }
+    )
+    y_test = pd.Series(np.random.randint(0, 2, 50), name="target")
 
     return X_train, y_train, X_test, y_test
 
@@ -137,8 +148,8 @@ class TestShuffledLabelTest:
 
         # Should fail because leaky model predicts noise too well (100% accuracy on all 1s)
         assert not result.passed
-        assert result.check_name == 'shuffled_label'
-        assert 'FAIL' in result.detail or 'leakage' in result.detail.lower()
+        assert result.check_name == "shuffled_label"
+        assert "FAIL" in result.detail or "leakage" in result.detail.lower()
 
     def test_passes_when_predicting_noise_below_threshold(self, temporal_data_no_overlap):
         """Shuffled-label test passes when model predicts shuffled data below threshold."""
@@ -156,8 +167,8 @@ class TestShuffledLabelTest:
 
         # Should pass because dummy model has ~50% accuracy on balanced data
         assert result.passed
-        assert result.check_name == 'shuffled_label'
-        assert 'PASS' in result.detail
+        assert result.check_name == "shuffled_label"
+        assert "PASS" in result.detail
 
     def test_multiple_shuffle_trials(self, temporal_data_no_overlap):
         """Shuffled-label test runs multiple trials and averages."""
@@ -180,6 +191,7 @@ class TestShuffledLabelTest:
         class FailingModel:
             def fit(self, X, y):
                 raise ValueError("Fit failed")
+
             def predict(self, X):
                 return np.zeros(len(X))
 
@@ -190,7 +202,7 @@ class TestShuffledLabelTest:
 
         # Should pass when test cannot run
         assert result.passed
-        assert 'Could not run' in result.detail
+        assert "Could not run" in result.detail
 
 
 class TestTemporalBoundaryTest:
@@ -204,9 +216,9 @@ class TestTemporalBoundaryTest:
         result = detector.temporal_boundary_test(X_train, X_test)
 
         assert not result.passed
-        assert result.check_name == 'temporal_boundary'
-        assert 'FAIL' in result.detail
-        assert 'overlap' in result.detail.lower()
+        assert result.check_name == "temporal_boundary"
+        assert "FAIL" in result.detail
+        assert "overlap" in result.detail.lower()
 
     def test_passes_with_gap_between_train_test(self, temporal_data_no_overlap):
         """Temporal boundary test passes when there's a gap between train and test."""
@@ -216,8 +228,8 @@ class TestTemporalBoundaryTest:
         result = detector.temporal_boundary_test(X_train, X_test)
 
         assert result.passed
-        assert result.check_name == 'temporal_boundary'
-        assert 'PASS' in result.detail
+        assert result.check_name == "temporal_boundary"
+        assert "PASS" in result.detail
         assert result.metric_value > 0  # Gap in days
 
     def test_skips_non_datetime_index(self, non_temporal_data):
@@ -228,7 +240,7 @@ class TestTemporalBoundaryTest:
         result = detector.temporal_boundary_test(X_train, X_test)
 
         assert result.passed
-        assert 'Non-datetime index' in result.detail
+        assert "Non-datetime index" in result.detail
 
     def test_reports_gap_in_days(self, temporal_data_no_overlap):
         """Temporal boundary test reports the gap between train and test in days."""
@@ -239,7 +251,7 @@ class TestTemporalBoundaryTest:
 
         # There's a 5-day gap in the fixture
         assert result.metric_value >= 4  # At least 4 days gap
-        assert 'Gap:' in result.detail
+        assert "Gap:" in result.detail
 
 
 class TestIndexOverlapAudit:
@@ -248,23 +260,29 @@ class TestIndexOverlapAudit:
     def test_fails_with_overlapping_indices(self):
         """Feature timestamp audit fails when train/test have overlapping indices."""
         # Create overlapping timestamps
-        dates = pd.date_range('2025-01-01', '2025-01-20', freq='D')
+        dates = pd.date_range("2025-01-01", "2025-01-20", freq="D")
 
-        X_train = pd.DataFrame({
-            'feature_1': np.random.randn(15),
-        }, index=dates[:15])  # Jan 1-15
+        X_train = pd.DataFrame(
+            {
+                "feature_1": np.random.randn(15),
+            },
+            index=dates[:15],
+        )  # Jan 1-15
 
-        X_test = pd.DataFrame({
-            'feature_1': np.random.randn(10),
-        }, index=dates[10:20])  # Jan 11-20 (overlaps with train)
+        X_test = pd.DataFrame(
+            {
+                "feature_1": np.random.randn(10),
+            },
+            index=dates[10:20],
+        )  # Jan 11-20 (overlaps with train)
 
         detector = LeakageDetector()
         result = detector.index_overlap_audit(X_train, X_test)
 
         assert not result.passed
-        assert result.check_name == 'index_overlap_audit'
-        assert 'FAIL' in result.detail
-        assert 'overlapping' in result.detail.lower()
+        assert result.check_name == "index_overlap_audit"
+        assert "FAIL" in result.detail
+        assert "overlapping" in result.detail.lower()
         assert result.metric_value > 0  # Number of overlapping timestamps
 
     def test_passes_with_no_overlap(self, temporal_data_no_overlap):
@@ -275,8 +293,8 @@ class TestIndexOverlapAudit:
         result = detector.index_overlap_audit(X_train, X_test)
 
         assert result.passed
-        assert result.check_name == 'index_overlap_audit'
-        assert 'PASS' in result.detail
+        assert result.check_name == "index_overlap_audit"
+        assert "PASS" in result.detail
         assert result.metric_value == 0.0
 
     def test_skips_non_datetime_index(self, non_temporal_data):
@@ -287,7 +305,7 @@ class TestIndexOverlapAudit:
         result = detector.index_overlap_audit(X_train, X_test)
 
         assert result.passed
-        assert 'Non-datetime index' in result.detail
+        assert "Non-datetime index" in result.detail
 
 
 class TestRunAllChecks:
@@ -349,11 +367,7 @@ class TestRunAllChecks:
 
         assert len(report.checks) == 3
         check_names = {check.check_name for check in report.checks}
-        assert check_names == {
-            'shuffled_label',
-            'temporal_boundary',
-            'index_overlap_audit'
-        }
+        assert check_names == {"shuffled_label", "temporal_boundary", "index_overlap_audit"}
 
 
 class TestLeakageCheckResult:
@@ -361,25 +375,16 @@ class TestLeakageCheckResult:
 
     def test_check_result_creation(self):
         """LeakageCheckResult can be created with required fields."""
-        result = LeakageCheckResult(
-            check_name='test_check',
-            passed=True,
-            detail='Test passed',
-            metric_value=0.5
-        )
+        result = LeakageCheckResult(check_name="test_check", passed=True, detail="Test passed", metric_value=0.5)
 
-        assert result.check_name == 'test_check'
+        assert result.check_name == "test_check"
         assert result.passed is True
-        assert result.detail == 'Test passed'
+        assert result.detail == "Test passed"
         assert result.metric_value == 0.5
 
     def test_check_result_default_metric(self):
         """LeakageCheckResult has default metric_value of 0.0."""
-        result = LeakageCheckResult(
-            check_name='test_check',
-            passed=False,
-            detail='Test failed'
-        )
+        result = LeakageCheckResult(check_name="test_check", passed=False, detail="Test failed")
 
         assert result.metric_value == 0.0
 
@@ -390,8 +395,8 @@ class TestLeakageReport:
     def test_report_creation(self):
         """LeakageReport can be created with checks."""
         checks = [
-            LeakageCheckResult('check1', True, 'Pass'),
-            LeakageCheckResult('check2', False, 'Fail'),
+            LeakageCheckResult("check1", True, "Pass"),
+            LeakageCheckResult("check2", False, "Fail"),
         ]
 
         report = LeakageReport(checks=checks, passed=False)
@@ -402,9 +407,9 @@ class TestLeakageReport:
     def test_failed_checks_property(self):
         """LeakageReport.failed_checks filters to failed checks only."""
         checks = [
-            LeakageCheckResult('check1', True, 'Pass'),
-            LeakageCheckResult('check2', False, 'Fail 1'),
-            LeakageCheckResult('check3', False, 'Fail 2'),
+            LeakageCheckResult("check1", True, "Pass"),
+            LeakageCheckResult("check2", False, "Fail 1"),
+            LeakageCheckResult("check3", False, "Fail 2"),
         ]
 
         report = LeakageReport(checks=checks, passed=False)
@@ -412,7 +417,7 @@ class TestLeakageReport:
 
         assert len(failed) == 2
         assert all(not check.passed for check in failed)
-        assert {check.check_name for check in failed} == {'check2', 'check3'}
+        assert {check.check_name for check in failed} == {"check2", "check3"}
 
 
 class TestDetectorConfiguration:

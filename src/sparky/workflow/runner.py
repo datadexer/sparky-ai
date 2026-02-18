@@ -33,9 +33,7 @@ def load_workflow(filepath: str):
     spec.loader.exec_module(module)
 
     if not hasattr(module, "build_workflow"):
-        raise AttributeError(
-            f"Workflow file {path} must define a build_workflow() function"
-        )
+        raise AttributeError(f"Workflow file {path} must define a build_workflow() function")
 
     return module.build_workflow()
 

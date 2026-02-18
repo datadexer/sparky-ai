@@ -131,9 +131,7 @@ class LSTMModel:
         torch.manual_seed(self.random_state)
         np.random.seed(self.random_state)
 
-    def _create_sequences(
-        self, X: pd.DataFrame, y: pd.Series
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _create_sequences(self, X: pd.DataFrame, y: pd.Series) -> tuple[np.ndarray, np.ndarray]:
         """Convert tabular data to rolling window sequences.
 
         Given X of shape (n_samples, n_features), creates rolling windows
@@ -157,8 +155,7 @@ class LSTMModel:
         # Need at least window_length + 1 samples to create one sequence
         if n_samples < self.window_length + 1:
             logger.warning(
-                f"Insufficient samples ({n_samples}) for window_length={self.window_length}. "
-                "Returning empty sequences."
+                f"Insufficient samples ({n_samples}) for window_length={self.window_length}. Returning empty sequences."
             )
             return np.array([]), np.array([])
 
@@ -281,12 +278,11 @@ class LSTMModel:
 
             if (epoch + 1) % 10 == 0:
                 logger.info(
-                    f"Epoch {epoch+1}/{self.max_epochs}: "
-                    f"train_loss={mean_train_loss:.4f}, val_loss={val_loss:.4f}"
+                    f"Epoch {epoch + 1}/{self.max_epochs}: train_loss={mean_train_loss:.4f}, val_loss={val_loss:.4f}"
                 )
 
             if patience_counter >= self.patience:
-                logger.info(f"Early stopping at epoch {epoch+1} (patience={self.patience})")
+                logger.info(f"Early stopping at epoch {epoch + 1} (patience={self.patience})")
                 break
 
         logger.info(f"LSTM training complete (best val_loss={best_val_loss:.4f})")
@@ -311,10 +307,7 @@ class LSTMModel:
 
         # Handle edge case: test set too short for window
         if len(X) < self.window_length:
-            logger.warning(
-                f"Test set too short ({len(X)} < {self.window_length}). "
-                "Padding predictions with 0 (flat)."
-            )
+            logger.warning(f"Test set too short ({len(X)} < {self.window_length}). Padding predictions with 0 (flat).")
             return np.zeros(len(X), dtype=int)
 
         # Create sequences for prediction
@@ -345,9 +338,11 @@ class LSTMModel:
         # Pad predictions to match input length
         # First window_length samples have no prediction (used in sequences)
         # Prepend zeros for those
-        padded_predictions = np.concatenate([
-            np.zeros(self.window_length, dtype=int),
-            predictions,
-        ])
+        padded_predictions = np.concatenate(
+            [
+                np.zeros(self.window_length, dtype=int),
+                predictions,
+            ]
+        )
 
         return padded_predictions

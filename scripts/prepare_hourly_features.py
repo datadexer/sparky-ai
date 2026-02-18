@@ -17,7 +17,6 @@ Result:
 """
 
 import logging
-from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
@@ -45,10 +44,7 @@ def load_hourly_data() -> pd.DataFrame:
         logger.info("Using standard dataset (single exchange)")
 
     if not input_path.exists():
-        raise FileNotFoundError(
-            f"Hourly data not found: {input_path}\n"
-            "Run scripts/fetch_hourly_btc.py first"
-        )
+        raise FileNotFoundError(f"Hourly data not found: {input_path}\nRun scripts/fetch_hourly_btc.py first")
 
     logger.info(f"Loading hourly data from {input_path}")
     df = pd.read_parquet(input_path)
@@ -78,48 +74,48 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with hourly features
     """
-    from sparky.features.technical import rsi, ema, macd, momentum
-    from sparky.features.returns import simple_returns
     from sparky.features.advanced import (
+        atr,
         bollinger_bandwidth,
         bollinger_position,
-        atr,
-        intraday_range,
-        volume_momentum,
-        volume_ma_ratio,
-        vwap_deviation,
-        higher_highs_lower_lows,
-        volatility_clustering,
-        price_distance_from_sma,
-        momentum_quality,
-        session_hour,
         day_of_week,
-        price_acceleration,
-        on_balance_volume,
-        obv_rate_of_change,
+        higher_highs_lower_lows,
+        intraday_range,
+        momentum_quality,
         money_flow_index,
+        obv_rate_of_change,
+        on_balance_volume,
+        price_acceleration,
+        price_distance_from_sma,
+        session_hour,
+        volatility_clustering,
+        volume_ma_ratio,
+        volume_momentum,
+        vwap_deviation,
     )
     from sparky.features.microstructure import (
-        tick_direction_ratio,
+        bid_ask_imbalance_proxy,
         candle_body_ratio,
-        upper_wick_ratio,
-        lower_wick_ratio,
         consecutive_candles,
         high_low_ratio,
-        bid_ask_imbalance_proxy,
         intraday_momentum_reversal,
+        lower_wick_ratio,
         overnight_gap,
+        tick_direction_ratio,
+        upper_wick_ratio,
     )
     from sparky.features.regime import (
+        breakout_proximity_lower,
+        breakout_proximity_upper,
+        choppiness_index,
         drawdown_from_high,
         recovery_from_low,
+        trend_strength_adx_proxy,
         volatility_regime,
         volume_regime,
-        trend_strength_adx_proxy,
-        choppiness_index,
-        breakout_proximity_upper,
-        breakout_proximity_lower,
     )
+    from sparky.features.returns import simple_returns
+    from sparky.features.technical import ema, macd, momentum, rsi
 
     logger.info("Computing comprehensive hourly features (50+ features)...")
 
@@ -130,7 +126,7 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # RSI (multiple timeframes)
     features["rsi_14h"] = rsi(df["close"], period=14)  # Standard RSI
-    features["rsi_6h"] = rsi(df["close"], period=6)    # Fast RSI (oversold/overbought)
+    features["rsi_6h"] = rsi(df["close"], period=6)  # Fast RSI (oversold/overbought)
 
     # MACD (12/26/9 hourly)
     macd_line, signal_line, histogram = macd(df["close"], fast_period=12, slow_period=26, signal_period=9)
@@ -138,8 +134,8 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     features["macd_histogram"] = histogram
 
     # EMA ratios (trend strength)
-    ema_fast = ema(df["close"], span=10)   # 10-hour EMA
-    ema_slow = ema(df["close"], span=20)   # 20-hour EMA
+    ema_fast = ema(df["close"], span=10)  # 10-hour EMA
+    ema_slow = ema(df["close"], span=20)  # 20-hour EMA
     features["ema_ratio_20h"] = ema_fast / ema_slow - 1.0
 
     # Bollinger Bands
@@ -149,7 +145,7 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     # === MOMENTUM FEATURES ===
     logger.info("Computing momentum features...")
 
-    features["momentum_4h"] = momentum(df["close"], period=4)    # 4-hour momentum (short-term)
+    features["momentum_4h"] = momentum(df["close"], period=4)  # 4-hour momentum (short-term)
     features["momentum_24h"] = momentum(df["close"], period=24)  # Daily momentum
     features["momentum_168h"] = momentum(df["close"], period=168)  # Weekly momentum (7 days)
 
@@ -233,16 +229,12 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
 
     features["momentum_divergence_4h_24h"] = features["momentum_4h"] - features["momentum_24h"]
     features["momentum_divergence_24h_168h"] = features["momentum_24h"] - features["momentum_168h"]
-    features["vol_divergence_4h_24h"] = (
-        hourly_returns.rolling(window=4).std() - features["realized_vol_24h"]
-    )
+    features["vol_divergence_4h_24h"] = hourly_returns.rolling(window=4).std() - features["realized_vol_24h"]
     features["rsi_divergence_4h_24h"] = features["rsi_4h"] - features["rsi_14h"]
     features["rsi_divergence_14h_168h"] = features["rsi_14h"] - features["rsi_168h"]
     # Price-momentum divergence: intraday vs daily
     intraday_direction = np.sign(df["close"] - df["open"])
-    features["price_momentum_divergence"] = (
-        (intraday_direction != np.sign(features["momentum_24h"])).astype(int)
-    )
+    features["price_momentum_divergence"] = (intraday_direction != np.sign(features["momentum_24h"])).astype(int)
 
     # === VOLUME-PRICE INTERACTION (8 features) ===
     logger.info("Computing volume-price interaction features...")
@@ -250,22 +242,14 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     features["obv"] = on_balance_volume(df["close"], df["volume"])
     features["obv_rate_of_change_24h"] = obv_rate_of_change(df["close"], df["volume"], period=24)
     features["mfi_14h"] = money_flow_index(df["high"], df["low"], df["close"], df["volume"], period=14)
-    features["volume_surge_4h"] = (
-        df["volume"] > (2 * df["volume"].rolling(window=20).mean())
-    ).astype(int)
+    features["volume_surge_4h"] = (df["volume"] > (2 * df["volume"].rolling(window=20).mean())).astype(int)
     # Price-volume correlation
-    features["price_volume_correlation_24h"] = (
-        hourly_returns.rolling(window=24).corr(df["volume"].pct_change())
-    )
+    features["price_volume_correlation_24h"] = hourly_returns.rolling(window=24).corr(df["volume"].pct_change())
     # VWAP cross (deviation from VWAP)
-    features["vwap_cross"] = vwap_deviation(
-        df["high"], df["low"], df["close"], df["volume"], period=24
-    )
+    features["vwap_cross"] = vwap_deviation(df["high"], df["low"], df["close"], df["volume"], period=24)
     # Volume exhaustion: high volume but negative momentum
     vol_ma_20h = df["volume"].rolling(window=20).mean()
-    features["volume_exhaustion"] = (
-        (df["volume"] > 3 * vol_ma_20h) & (features["momentum_4h"] < 0)
-    ).astype(int)
+    features["volume_exhaustion"] = ((df["volume"] > 3 * vol_ma_20h) & (features["momentum_4h"] < 0)).astype(int)
     # Volume-weighted RSI approximation (use VWAP instead of close)
     typical_price = (df["high"] + df["low"] + df["close"]) / 3
     vwap_24h = (typical_price * df["volume"]).rolling(window=24).sum() / df["volume"].rolling(window=24).sum()
@@ -276,10 +260,10 @@ def compute_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Check for NaNs
     nan_counts = features.isna().sum()
-    logger.info(f"\nNaN counts per feature:")
+    logger.info("\nNaN counts per feature:")
     for col in features.columns:
         if nan_counts[col] > 0:
-            logger.info(f"  {col}: {nan_counts[col]} ({100*nan_counts[col]/len(features):.1f}%)")
+            logger.info(f"  {col}: {nan_counts[col]} ({100 * nan_counts[col] / len(features):.1f}%)")
 
     return features
 
@@ -314,10 +298,7 @@ def resample_to_daily(features_hourly: pd.DataFrame) -> pd.DataFrame:
     return features_daily
 
 
-def generate_daily_targets(
-    prices_hourly: pd.DataFrame,
-    horizon_days: int = 1
-) -> pd.Series:
+def generate_daily_targets(prices_hourly: pd.DataFrame, horizon_days: int = 1) -> pd.Series:
     """Generate daily targets from hourly price data.
 
     Target: Close at T+horizon > Close at T (binary classification)
@@ -398,7 +379,7 @@ def main():
     logger.info(f"Sample increase: {len(df_hourly) / len(features_aligned):.1f}x more hourly data")
     logger.info(f"Feature columns: {list(features_aligned.columns)}")
     logger.info(f"Target balance: {targets_aligned.mean():.1%} positive (long)")
-    logger.info(f"\nNext step: Run scripts/train_on_hourly.py")
+    logger.info("\nNext step: Run scripts/train_on_hourly.py")
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.metrics import roc_auc_score
 from xgboost import XGBClassifier
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -28,26 +28,26 @@ RESULTS_PATH = PROJECT_ROOT / "results/model_comparison/feature_selection_1h.jso
 
 # XGBoost parameters (reduced for memory efficiency)
 XGBOOST_PARAMS = {
-    'max_depth': 5,
-    'learning_rate': 0.05,
-    'n_estimators': 150,  # Reduced from 200
-    'subsample': 0.8,
-    'colsample_bytree': 0.8,
-    'min_child_weight': 5,
-    'reg_alpha': 0.5,
-    'reg_lambda': 2.0,
-    'eval_metric': 'logloss',
-    'use_label_encoder': False,
-    'random_state': 42,
-    'n_jobs': 1,  # Single thread to reduce memory
-    'tree_method': 'hist',  # Memory-efficient histogram method
+    "max_depth": 5,
+    "learning_rate": 0.05,
+    "n_estimators": 150,  # Reduced from 200
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 5,
+    "reg_alpha": 0.5,
+    "reg_lambda": 2.0,
+    "eval_metric": "logloss",
+    "use_label_encoder": False,
+    "random_state": 42,
+    "n_jobs": 1,  # Single thread to reduce memory
+    "tree_method": "hist",  # Memory-efficient histogram method
 }
 
 # Data split dates
-TRAIN_START = '2017-01-01'
-TRAIN_END = '2020-12-31'
-VAL_START = '2021-01-01'
-VAL_END = '2022-12-31'
+TRAIN_START = "2017-01-01"
+TRAIN_END = "2020-12-31"
+VAL_START = "2021-01-01"
+VAL_END = "2022-12-31"
 
 # Feature elimination settings
 MIN_FEATURES = 5
@@ -120,13 +120,13 @@ def train_and_evaluate(X_train, y_train, X_val, y_val, feature_subset=None):
 
 def get_feature_importance_ranking(model, feature_names):
     """Get feature importance ranking based on gain."""
-    importances = model.get_booster().get_score(importance_type='gain')
+    importances = model.get_booster().get_score(importance_type="gain")
 
     # XGBoost uses f0, f1, ... as feature names internally
     # Map back to original feature names
     feature_importance = {}
     for i, fname in enumerate(feature_names):
-        key = f'f{i}'
+        key = f"f{i}"
         feature_importance[fname] = importances.get(key, 0.0)
 
     # Sort by importance descending
@@ -142,11 +142,13 @@ def get_permutation_importance_ranking(model, X_val, y_val, feature_names):
     X_val = X_val.astype(np.float32)
 
     perm_result = permutation_importance(
-        model, X_val, y_val,
+        model,
+        X_val,
+        y_val,
         n_repeats=5,  # Reduced from 10
         random_state=42,
         n_jobs=1,  # Single thread
-        scoring='roc_auc'
+        scoring="roc_auc",
     )
 
     # Create ranking
@@ -163,9 +165,9 @@ def sequential_backward_elimination(X_train, y_train, X_val, y_val):
     Returns:
         elimination_history: list of (n_features, val_auc, removed_feature)
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SEQUENTIAL BACKWARD ELIMINATION")
-    print("="*80)
+    print("=" * 80)
 
     current_features = list(X_train.columns)
     elimination_history = []
@@ -179,12 +181,12 @@ def sequential_backward_elimination(X_train, y_train, X_val, y_val):
     # Eliminate features one by one
     while len(current_features) > MIN_FEATURES:
         # Get importance of current features
-        importances = model.get_booster().get_score(importance_type='gain')
+        importances = model.get_booster().get_score(importance_type="gain")
 
         # Map to current feature names
         feature_importance = {}
         for i, fname in enumerate(current_features):
-            key = f'f{i}'
+            key = f"f{i}"
             feature_importance[fname] = importances.get(key, 0.0)
 
         # Find least important feature
@@ -222,9 +224,9 @@ def get_optimal_feature_names(X_train, y_train, X_val, y_val, n_features):
 
 def print_results(gain_ranking, perm_ranking, elimination_history, optimal_n_features, optimal_features):
     """Print formatted tables to console."""
-    print("\n" + "="*100)
+    print("\n" + "=" * 100)
     print("FEATURE IMPORTANCE RANKING (Gain vs Permutation)")
-    print("="*100)
+    print("=" * 100)
     print(f"{'Rank':<6} {'Feature (Gain)':<30} {'Gain':<12} {'Feature (Perm)':<30} {'Perm Imp':<12}")
     print("-" * 100)
 
@@ -232,21 +234,23 @@ def print_results(gain_ranking, perm_ranking, elimination_history, optimal_n_fea
     for i in range(max_rank):
         gain_feat, gain_val = gain_ranking[i] if i < len(gain_ranking) else ("", 0.0)
         perm_feat, perm_val = perm_ranking[i] if i < len(perm_ranking) else ("", 0.0)
-        print(f"{i+1:<6} {gain_feat:<30} {gain_val:<12.6f} {perm_feat:<30} {perm_val:<12.6f}")
+        print(f"{i + 1:<6} {gain_feat:<30} {gain_val:<12.6f} {perm_feat:<30} {perm_val:<12.6f}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("BACKWARD ELIMINATION")
-    print("="*80)
+    print("=" * 80)
     print(f"{'N Features':<12} {'Val AUC':<12} {'Removed Feature':<40}")
     print("-" * 80)
 
     for n_features, val_auc, removed in elimination_history:
         print(f"{n_features:<12} {val_auc:<12.6f} {removed:<40}")
 
-    print("\n" + "="*80)
-    print(f"OPTIMAL: N={optimal_n_features} features, Val AUC={elimination_history[[h[0] for h in elimination_history].index(optimal_n_features)][1]:.6f}")
-    print("="*80)
-    print(f"Optimal feature subset:")
+    print("\n" + "=" * 80)
+    print(
+        f"OPTIMAL: N={optimal_n_features} features, Val AUC={elimination_history[[h[0] for h in elimination_history].index(optimal_n_features)][1]:.6f}"
+    )
+    print("=" * 80)
+    print("Optimal feature subset:")
     for i, feat in enumerate(optimal_features, 1):
         print(f"  {i}. {feat}")
 
@@ -254,7 +258,7 @@ def print_results(gain_ranking, perm_ranking, elimination_history, optimal_n_fea
     baseline_auc = elimination_history[0][1]
     best_auc = elimination_history[[h[0] for h in elimination_history].index(optimal_n_features)][1]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     if best_auc > baseline_auc:
         improvement = best_auc - baseline_auc
         print(f"✓ Removing features IMPROVED AUC by {improvement:.6f}")
@@ -263,26 +267,16 @@ def print_results(gain_ranking, perm_ranking, elimination_history, optimal_n_fea
         degradation = baseline_auc - best_auc
         print(f"✗ Removing features DEGRADED AUC by {degradation:.6f}")
         print("  The full feature set performs best on validation.")
-    print("="*80)
+    print("=" * 80)
 
 
 def save_results(gain_ranking, perm_ranking, elimination_history, optimal_n_features, optimal_features):
     """Save results to JSON file."""
     results = {
-        "feature_importance_gain": [
-            {"feature": feat, "importance": float(imp)}
-            for feat, imp in gain_ranking
-        ],
-        "feature_importance_permutation": [
-            {"feature": feat, "importance": float(imp)}
-            for feat, imp in perm_ranking
-        ],
+        "feature_importance_gain": [{"feature": feat, "importance": float(imp)} for feat, imp in gain_ranking],
+        "feature_importance_permutation": [{"feature": feat, "importance": float(imp)} for feat, imp in perm_ranking],
         "elimination_history": [
-            {
-                "n_features": n_feat,
-                "val_auc": float(auc),
-                "removed_feature": removed
-            }
+            {"n_features": n_feat, "val_auc": float(auc), "removed_feature": removed}
             for n_feat, auc, removed in elimination_history
         ],
         "optimal_n_features": optimal_n_features,
@@ -292,31 +286,31 @@ def save_results(gain_ranking, perm_ranking, elimination_history, optimal_n_feat
     }
 
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_PATH, 'w') as f:
+    with open(RESULTS_PATH, "w") as f:
         json.dump(results, f, indent=2)
 
     print(f"\nResults saved to: {RESULTS_PATH}")
 
 
 def main():
-    print("="*80)
+    print("=" * 80)
     print("FEATURE SELECTION ANALYSIS: 1H XGBOOST MODEL")
-    print("="*80)
+    print("=" * 80)
 
     # Load and prepare data
     X_train, y_train, X_val, y_val = load_and_prepare_data()
 
     # Train baseline model
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("BASELINE MODEL (ALL FEATURES)")
-    print("="*80)
+    print("=" * 80)
     baseline_model, baseline_val_auc = train_and_evaluate(X_train, y_train, X_val, y_val)
     print(f"Val AUC: {baseline_val_auc:.6f}")
 
     # Feature importance rankings
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("FEATURE IMPORTANCE (GAIN-BASED)")
-    print("="*80)
+    print("=" * 80)
     gain_ranking = get_feature_importance_ranking(baseline_model, X_train.columns.tolist())
     for i, (feat, imp) in enumerate(gain_ranking[:10], 1):
         print(f"{i:2d}. {feat:30s} {imp:.6f}")

@@ -23,11 +23,11 @@ Performance Metrics:
 - Comparison to Buy & Hold and Static baseline
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -35,8 +35,8 @@ from catboost import CatBoostClassifier
 from sklearn.metrics import roc_auc_score
 
 sys.path.insert(0, "src")
+from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.signal_aggregator import HourlyToDailyAggregator, RegimeAwareAggregator
-from sparky.features.returns import simple_returns, annualized_sharpe, max_drawdown
 
 logging.basicConfig(
     level=logging.INFO,
@@ -192,16 +192,16 @@ def load_price_data(start_date, end_date):
     prices = pd.read_parquet(price_path)
 
     # Hourly close prices
-    prices_hourly = prices['close']
+    prices_hourly = prices["close"]
 
     # Remove timezone for consistency (do this first)
     if prices_hourly.index.tz is not None:
         prices_hourly.index = prices_hourly.index.tz_localize(None)
 
     # Convert start/end dates to tz-naive if needed
-    if hasattr(start_date, 'tz') and start_date.tz is not None:
+    if hasattr(start_date, "tz") and start_date.tz is not None:
         start_date = start_date.tz_localize(None)
-    if hasattr(end_date, 'tz') and end_date.tz is not None:
+    if hasattr(end_date, "tz") and end_date.tz is not None:
         end_date = end_date.tz_localize(None)
 
     # Filter date range
@@ -273,7 +273,7 @@ def compute_strategy_returns(daily_signals, prices, use_position_sizing=False):
     logger.info("=" * 80)
 
     # Resample prices to daily
-    prices_daily = prices.resample('D').last()
+    prices_daily = prices.resample("D").last()
 
     # Remove timezone for consistency
     if prices_daily.index.tz is not None:
@@ -290,14 +290,14 @@ def compute_strategy_returns(daily_signals, prices, use_position_sizing=False):
     daily_returns = prices_daily.pct_change()
 
     # Strategy returns
-    if use_position_sizing and 'position_size' in daily_signals.columns:
+    if use_position_sizing and "position_size" in daily_signals.columns:
         # Regime-aware: use position_size directly (already accounts for signal)
-        positions = daily_signals['position_size'].shift(1).fillna(0)
-        logger.info(f"Using regime-aware position sizing")
+        positions = daily_signals["position_size"].shift(1).fillna(0)
+        logger.info("Using regime-aware position sizing")
     else:
         # Static: signal is 0 or 1, position is 100% when signal=1
-        positions = daily_signals['signal'].shift(1).fillna(0)
-        logger.info(f"Using static position sizing")
+        positions = daily_signals["signal"].shift(1).fillna(0)
+        logger.info("Using static position sizing")
 
     strategy_returns = positions * daily_returns
 
@@ -367,7 +367,7 @@ def compute_baseline_performance(prices):
     logger.info("=" * 80)
 
     # Resample to daily
-    prices_daily = prices.resample('D').last()
+    prices_daily = prices.resample("D").last()
 
     # Remove timezone
     if prices_daily.index.tz is not None:
@@ -481,7 +481,7 @@ def save_results(results, output_path):
     """Save results to JSON file."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"Results saved to: {output_path}")
@@ -514,9 +514,7 @@ def main():
     logger.info("HOLDOUT EVALUATION (2024-2025)")
     logger.info("=" * 80)
 
-    holdout_probas, holdout_auc = generate_predictions(
-        model, splits["X_holdout"], splits["y_holdout"], "Holdout"
-    )
+    holdout_probas, holdout_auc = generate_predictions(model, splits["X_holdout"], splits["y_holdout"], "Holdout")
     logger.info("")
 
     # Load price data for holdout period
@@ -582,10 +580,14 @@ def main():
         "baseline_metrics": baseline_metrics,
         "regime_analysis": regime_analysis,
         "signal_stats": {
-            "regime_aware_long_pct": float(regime_signals['signal'].sum() / len(regime_signals) * 100),
-            "static_long_pct": float(static_signals['signal'].sum() / len(static_signals) * 100),
+            "regime_aware_long_pct": float(regime_signals["signal"].sum() / len(regime_signals) * 100),
+            "static_long_pct": float(static_signals["signal"].sum() / len(static_signals) * 100),
         },
-        "verdict": "SUCCESS" if regime_metrics['sharpe_ratio'] >= 0.95 else "PARTIAL" if regime_metrics['sharpe_ratio'] >= 0.85 else "FAILED",
+        "verdict": "SUCCESS"
+        if regime_metrics["sharpe_ratio"] >= 0.95
+        else "PARTIAL"
+        if regime_metrics["sharpe_ratio"] >= 0.85
+        else "FAILED",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
@@ -596,27 +598,29 @@ def main():
     print("=" * 80)
     print("SUMMARY")
     print("=" * 80)
-    print(f"\nPhase 2A: Regime-Aware Trading")
+    print("\nPhase 2A: Regime-Aware Trading")
     print(f"Holdout Period: {holdout_start.date()} to {holdout_end.date()} ({len(regime_signals)} days)")
-    print(f"\nModel Quality:")
+    print("\nModel Quality:")
     print(f"  Holdout AUC (2024-2025): {holdout_auc:.4f}")
-    print(f"\nRegime-Aware Strategy:")
+    print("\nRegime-Aware Strategy:")
     print(f"  Sharpe Ratio: {regime_metrics['sharpe_ratio']:.3f}")
     print(f"  Total Return: {regime_metrics['total_return_pct']:.2f}%")
     print(f"  Max Drawdown: {regime_metrics['max_drawdown_pct']:.2f}%")
-    print(f"\nStatic Strategy:")
+    print("\nStatic Strategy:")
     print(f"  Sharpe Ratio: {static_metrics['sharpe_ratio']:.3f}")
     print(f"  Total Return: {static_metrics['total_return_pct']:.2f}%")
-    print(f"\nBaseline (Buy & Hold):")
+    print("\nBaseline (Buy & Hold):")
     print(f"  Sharpe Ratio: {baseline_metrics['sharpe_ratio']:.3f}")
     print(f"  Total Return: {baseline_metrics['total_return_pct']:.2f}%")
-    print(f"\nImprovement:")
+    print("\nImprovement:")
     print(f"  Sharpe Delta (Regime - Static): {regime_metrics['sharpe_ratio'] - static_metrics['sharpe_ratio']:+.3f}")
-    print(f"  Sharpe Delta (Regime - Buy&Hold): {regime_metrics['sharpe_ratio'] - baseline_metrics['sharpe_ratio']:+.3f}")
+    print(
+        f"  Sharpe Delta (Regime - Buy&Hold): {regime_metrics['sharpe_ratio'] - baseline_metrics['sharpe_ratio']:+.3f}"
+    )
     print(f"\nVerdict: {results['verdict']}")
-    if results['verdict'] == "SUCCESS":
+    if results["verdict"] == "SUCCESS":
         print("✅ Sharpe ≥ 0.95 → Proceed to paper trading (SKIP Phase 2B)")
-    elif results['verdict'] == "PARTIAL":
+    elif results["verdict"] == "PARTIAL":
         print("⚠️ Sharpe 0.85-0.94 → Execute Phase 2B to push over 1.0")
     else:
         print("❌ Sharpe < 0.85 → Reassess approach")

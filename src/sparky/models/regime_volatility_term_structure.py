@@ -21,8 +21,9 @@ Target:
 """
 
 import logging
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 from sparky.models.simple_baselines import donchian_channel_strategy
 
@@ -64,21 +65,24 @@ def compute_volatility_term_structure(
 
     # Classify regimes based on slope
     regime = pd.Series(index=prices.index, dtype=str)
-    regime[slope > 0.002] = "contango"      # Stable (long > short vol)
+    regime[slope > 0.002] = "contango"  # Stable (long > short vol)
     regime[slope < -0.002] = "backwardation"  # Unstable (short > long vol)
     regime[(slope >= -0.002) & (slope <= 0.002)] = "flat"  # Low uncertainty
 
     # Forward-fill initial NaN values
     regime = regime.bfill()
 
-    df = pd.DataFrame({
-        "vol_7d": vol_7d,
-        "vol_30d": vol_30d,
-        "vol_90d": vol_90d,
-        "slope": slope,
-        "curvature": curvature,
-        "regime": regime,
-    }, index=prices.index)
+    df = pd.DataFrame(
+        {
+            "vol_7d": vol_7d,
+            "vol_30d": vol_30d,
+            "vol_90d": vol_90d,
+            "slope": slope,
+            "curvature": curvature,
+            "regime": regime,
+        },
+        index=prices.index,
+    )
 
     n_contango = (regime == "contango").sum()
     n_backwardation = (regime == "backwardation").sum()
@@ -86,9 +90,9 @@ def compute_volatility_term_structure(
 
     logger.info(
         f"Volatility term structure regimes: "
-        f"contango={n_contango} ({n_contango/len(regime)*100:.1f}%), "
-        f"backwardation={n_backwardation} ({n_backwardation/len(regime)*100:.1f}%), "
-        f"flat={n_flat} ({n_flat/len(regime)*100:.1f}%)"
+        f"contango={n_contango} ({n_contango / len(regime) * 100:.1f}%), "
+        f"backwardation={n_backwardation} ({n_backwardation / len(regime) * 100:.1f}%), "
+        f"flat={n_flat} ({n_flat / len(regime) * 100:.1f}%)"
     )
 
     return df
@@ -147,12 +151,10 @@ def volatility_term_structure_donchian(
     n_total = len(base_signals)
     n_long_adj = adjusted_signals.sum()
 
+    logger.info(f"Term Structure Donchian: {n_filtered} signals filtered (backwardation + high uncertainty)")
     logger.info(
-        f"Term Structure Donchian: {n_filtered} signals filtered (backwardation + high uncertainty)"
-    )
-    logger.info(
-        f"Final signals: {n_long_adj} LONG ({n_long_adj/n_total*100:.1f}%), "
-        f"{n_total - n_long_adj} FLAT ({(n_total - n_long_adj)/n_total*100:.1f}%)"
+        f"Final signals: {n_long_adj} LONG ({n_long_adj / n_total * 100:.1f}%), "
+        f"{n_total - n_long_adj} FLAT ({(n_total - n_long_adj) / n_total * 100:.1f}%)"
     )
 
     return adjusted_signals
@@ -202,12 +204,10 @@ def volatility_term_structure_ensemble(
     n_total = len(base_ensemble)
     n_long_adj = adjusted_ensemble.sum()
 
+    logger.info(f"Term Structure Ensemble: {n_filtered} signals filtered (backwardation + high uncertainty)")
     logger.info(
-        f"Term Structure Ensemble: {n_filtered} signals filtered (backwardation + high uncertainty)"
-    )
-    logger.info(
-        f"Final ensemble: {n_long_adj} LONG ({n_long_adj/n_total*100:.1f}%), "
-        f"{n_total - n_long_adj} FLAT ({(n_total - n_long_adj)/n_total*100:.1f}%)"
+        f"Final ensemble: {n_long_adj} LONG ({n_long_adj / n_total * 100:.1f}%), "
+        f"{n_total - n_long_adj} FLAT ({(n_total - n_long_adj) / n_total * 100:.1f}%)"
     )
 
     return adjusted_ensemble
@@ -247,7 +247,7 @@ def early_warning_indicator(
     n_total = len(warnings)
 
     logger.info(
-        f"Early Warning Indicator: {n_warnings} warnings ({n_warnings/n_total*100:.1f}%) "
+        f"Early Warning Indicator: {n_warnings} warnings ({n_warnings / n_total * 100:.1f}%) "
         f"for potential regime shifts"
     )
 

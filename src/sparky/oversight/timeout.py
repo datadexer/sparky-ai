@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ExperimentTimeout(Exception):
     """Raised when an experiment step exceeds its time budget."""
+
     pass
 
 
@@ -38,6 +39,7 @@ def with_timeout(seconds: int = 900) -> Callable:
     Returns:
         Decorated function that raises ExperimentTimeout on timeout.
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -46,13 +48,13 @@ def with_timeout(seconds: int = 900) -> Callable:
             try:
                 result = func(*args, **kwargs)
             except ExperimentTimeout:
-                logger.error(
-                    f"[TIMEOUT] {func.__name__} exceeded {seconds}s limit"
-                )
+                logger.error(f"[TIMEOUT] {func.__name__} exceeded {seconds}s limit")
                 raise
             finally:
                 signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
             return result
+
         return wrapper
+
     return decorator

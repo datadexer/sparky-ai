@@ -14,8 +14,8 @@ Validates all 7 crypto asset parquet files for:
 
 import logging
 from pathlib import Path
+
 import pandas as pd
-import numpy as np
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,9 +45,9 @@ def validate_file(file_path: str) -> dict:
         dict with validation results
     """
     asset_name = Path(file_path).parent.name
-    logger.info(f"\n{'='*80}")
+    logger.info(f"\n{'=' * 80}")
     logger.info(f"VALIDATING: {asset_name.upper()}")
-    logger.info(f"{'='*80}")
+    logger.info(f"{'=' * 80}")
     logger.info(f"File: {file_path}")
 
     results = {
@@ -90,7 +90,7 @@ def validate_file(file_path: str) -> dict:
     # Read parquet file
     try:
         df = pd.read_parquet(file_path)
-        logger.info(f"Successfully loaded parquet file")
+        logger.info("Successfully loaded parquet file")
     except Exception as e:
         error = f"Failed to read parquet: {e}"
         logger.error(error)
@@ -130,7 +130,9 @@ def validate_file(file_path: str) -> dict:
         # Check if date range is reasonable (2017-2025 should be ~8 years = 2920 days)
         expected_days = 365 * 8  # ~2920 days
         if results["date_range_days"] < 365:
-            warning = f"SHORT DATE RANGE: {results['date_range_days']} days (expected ~{expected_days} days for 2017-2025)"
+            warning = (
+                f"SHORT DATE RANGE: {results['date_range_days']} days (expected ~{expected_days} days for 2017-2025)"
+            )
             logger.warning(warning)
             results["warnings"].append(warning)
     else:
@@ -160,7 +162,9 @@ def validate_file(file_path: str) -> dict:
         if results["gaps_over_2h"] > 0:
             max_gap = time_diffs.max()
             results["max_gap_hours"] = max_gap.total_seconds() / 3600
-            warning = f"GAPS > 2 hours: {results['gaps_over_2h']} gaps found (max gap: {results['max_gap_hours']:.1f} hours)"
+            warning = (
+                f"GAPS > 2 hours: {results['gaps_over_2h']} gaps found (max gap: {results['max_gap_hours']:.1f} hours)"
+            )
             logger.warning(warning)
             results["warnings"].append(warning)
 
@@ -245,15 +249,15 @@ def validate_file(file_path: str) -> dict:
         logger.error(f"Price validation: FAILED ({zero_neg_count} zero/negative prices)")
 
     # Summary
-    logger.info(f"\n{'='*40}")
+    logger.info(f"\n{'=' * 40}")
     logger.info(f"VALIDATION SUMMARY: {asset_name.upper()}")
-    logger.info(f"{'='*40}")
+    logger.info(f"{'=' * 40}")
     logger.info(f"Errors: {len(results['errors'])}")
     logger.info(f"Warnings: {len(results['warnings'])}")
 
-    if len(results['errors']) == 0 and len(results['warnings']) == 0:
+    if len(results["errors"]) == 0 and len(results["warnings"]) == 0:
         logger.info("STATUS: ✓ PASSED")
-    elif len(results['errors']) == 0:
+    elif len(results["errors"]) == 0:
         logger.info("STATUS: ⚠ PASSED WITH WARNINGS")
     else:
         logger.info("STATUS: ✗ FAILED")
@@ -284,16 +288,18 @@ def main():
     # Summary table
     summary_data = []
     for r in all_results:
-        summary_data.append({
-            "Asset": r["asset"].upper(),
-            "File Size (KB)": f"{r['file_size_bytes'] / 1024:.1f}",
-            "Rows": f"{r['row_count']:,}",
-            "Start Date": str(r['start_date'].date()) if r['start_date'] else "N/A",
-            "End Date": str(r['end_date'].date()) if r['end_date'] else "N/A",
-            "Days": r['date_range_days'],
-            "Errors": len(r['errors']),
-            "Warnings": len(r['warnings']),
-        })
+        summary_data.append(
+            {
+                "Asset": r["asset"].upper(),
+                "File Size (KB)": f"{r['file_size_bytes'] / 1024:.1f}",
+                "Rows": f"{r['row_count']:,}",
+                "Start Date": str(r["start_date"].date()) if r["start_date"] else "N/A",
+                "End Date": str(r["end_date"].date()) if r["end_date"] else "N/A",
+                "Days": r["date_range_days"],
+                "Errors": len(r["errors"]),
+                "Warnings": len(r["warnings"]),
+            }
+        )
 
     summary_df = pd.DataFrame(summary_data)
     logger.info("\n" + summary_df.to_string(index=False))
@@ -354,7 +360,9 @@ def main():
             logger.info(f"  {asset.upper()}: {ratio:.1%} of {largest[0].upper()}")
 
             if ratio < 0.05:  # < 5% of largest
-                logger.warning(f"    ⚠ WARNING: {asset.upper()} is suspiciously small ({ratio:.1%} of {largest[0].upper()})")
+                logger.warning(
+                    f"    ⚠ WARNING: {asset.upper()} is suspiciously small ({ratio:.1%} of {largest[0].upper()})"
+                )
 
     # Overall status
     logger.info("\n" + "=" * 80)

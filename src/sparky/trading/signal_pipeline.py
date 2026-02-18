@@ -11,7 +11,7 @@ Usage:
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
 
@@ -69,9 +69,7 @@ class DonchianSignalPipeline:
             TradingSignal with target weight.
         """
         if len(prices) < self.entry_period + 1:
-            raise ValueError(
-                f"Need at least {self.entry_period + 1} prices, got {len(prices)}"
-            )
+            raise ValueError(f"Need at least {self.entry_period + 1} prices, got {len(prices)}")
 
         # Generate full signal series
         signals = donchian_channel_strategy(
@@ -93,10 +91,7 @@ class DonchianSignalPipeline:
         lower_channel = prices.rolling(window=self.exit_period).min().iloc[-2]
 
         if latest_signal == 1:
-            reason = (
-                f"LONG: price ${current_price:,.0f} broke above "
-                f"{self.entry_period}-day high ${upper_channel:,.0f}"
-            )
+            reason = f"LONG: price ${current_price:,.0f} broke above {self.entry_period}-day high ${upper_channel:,.0f}"
         else:
             reason = (
                 f"FLAT: price ${current_price:,.0f} below "
@@ -172,7 +167,9 @@ class MultiTFSignalPipeline:
         reason = f"Vote: {long_votes}/{len(self.entry_periods)} LONG -> {'LONG' if latest_signal else 'FLAT'}"
 
         return TradingSignal(
-            timestamp=prices.index[-1].to_pydatetime() if hasattr(prices.index[-1], "to_pydatetime") else prices.index[-1],
+            timestamp=prices.index[-1].to_pydatetime()
+            if hasattr(prices.index[-1], "to_pydatetime")
+            else prices.index[-1],
             asset=self.asset,
             target_weight=target_weight,
             signal_value=latest_signal,

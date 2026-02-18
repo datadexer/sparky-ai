@@ -73,6 +73,7 @@ def main():
     logger.info("=" * 100)
 
     from sparky.data.storage import DataStore
+
     store = DataStore()
 
     results = []
@@ -129,7 +130,11 @@ def main():
 
             # Test XGBoost on ETH
             model = XGBoostModel(random_state=0)
-            results.append(run_experiment("1. XGBoost on ETH (30d)", model, X_train_eth, y_train_eth, X_hold_eth, y_hold_eth, ret_hold_eth))
+            results.append(
+                run_experiment(
+                    "1. XGBoost on ETH (30d)", model, X_train_eth, y_train_eth, X_hold_eth, y_hold_eth, ret_hold_eth
+                )
+            )
 
         except Exception as e:
             logger.info(f"Could not test ETH: {e}")
@@ -172,15 +177,27 @@ def main():
 
     # 2a. Momentum > 0 (simple threshold)
     signals_2a = (momentum_holdout > 0).astype(int)
-    results.append(run_experiment("2a. Momentum > 0 (long if positive)", signals_2a, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "2a. Momentum > 0 (long if positive)", signals_2a, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # 2b. Momentum > 0.05 (more selective)
     signals_2b = (momentum_holdout > 0.05).astype(int)
-    results.append(run_experiment("2b. Momentum > 0.05 (selective)", signals_2b, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "2b. Momentum > 0.05 (selective)", signals_2b, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # 2c. Momentum > 0.10 (very selective)
     signals_2c = (momentum_holdout > 0.10).astype(int)
-    results.append(run_experiment("2c. Momentum > 0.10 (very selective)", signals_2c, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "2c. Momentum > 0.10 (very selective)", signals_2c, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # =========================================================================
     # APPROACH 3: RSI Mean Reversion (No ML)
@@ -212,15 +229,25 @@ def main():
 
     # 3a. Buy when oversold (RSI < 30)
     signals_3a = (rsi_holdout < 30).astype(int)
-    results.append(run_experiment("3a. RSI < 30 (buy oversold)", signals_3a, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment("3a. RSI < 30 (buy oversold)", signals_3a, None, None, None, None, ret_hold_btc, is_signals=True)
+    )
 
     # 3b. Buy when not overbought (RSI < 70)
     signals_3b = (rsi_holdout < 70).astype(int)
-    results.append(run_experiment("3b. RSI < 70 (avoid overbought)", signals_3b, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "3b. RSI < 70 (avoid overbought)", signals_3b, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # 3c. Buy in neutral range (30 < RSI < 70)
     signals_3c = ((rsi_holdout > 30) & (rsi_holdout < 70)).astype(int)
-    results.append(run_experiment("3c. 30 < RSI < 70 (neutral range)", signals_3c, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "3c. 30 < RSI < 70 (neutral range)", signals_3c, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # =========================================================================
     # APPROACH 4: Buy and Hold (Baseline)
@@ -235,7 +262,11 @@ def main():
 
     # 4a. Buy and Hold (100% long)
     signals_4a = np.ones(len(ret_hold_btc), dtype=int)
-    results.append(run_experiment("4a. Buy and Hold BTC (100% long)", signals_4a, None, None, None, None, ret_hold_btc, is_signals=True))
+    results.append(
+        run_experiment(
+            "4a. Buy and Hold BTC (100% long)", signals_4a, None, None, None, None, ret_hold_btc, is_signals=True
+        )
+    )
 
     # =========================================================================
     # SUMMARY
@@ -278,6 +309,7 @@ def main():
 
     # Save
     import json
+
     output = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "verdict": verdict,
@@ -291,7 +323,7 @@ def main():
     # Log to RESEARCH_LOG
     log_entry = f"""
 ---
-## OPTION 3: Strategic Pivot — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## OPTION 3: Strategic Pivot — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Approaches Tested**: {len(results)} configurations
 - ETH vs BTC
@@ -299,20 +331,20 @@ def main():
 - RSI mean reversion
 - Buy and hold baseline
 
-**Best**: {best['name']}
-- Sharpe: {best['sharpe']:.4f}
-- Return: {best['return_pct']:.2f}%
-- Trades: {best['num_trades']}
+**Best**: {best["name"]}
+- Sharpe: {best["sharpe"]:.4f}
+- Return: {best["return_pct"]:.2f}%
+- Trades: {best["num_trades"]}
 
 **Verdict**: [{verdict}]
 
-{'✅ Found viable approach via strategic pivot' if verdict == 'SUCCESS' else '❌ All approaches fail. No alpha exists. RECOMMEND TERMINATION.'}
+{"✅ Found viable approach via strategic pivot" if verdict == "SUCCESS" else "❌ All approaches fail. No alpha exists. RECOMMEND TERMINATION."}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:
         f.write(log_entry)
 
-    logger.info(f"\nResults saved to results/experiments/option3_pivot_results.json")
+    logger.info("\nResults saved to results/experiments/option3_pivot_results.json")
 
     return output
 

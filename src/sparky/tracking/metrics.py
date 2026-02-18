@@ -18,10 +18,10 @@ def probabilistic_sharpe_ratio(returns, sr_benchmark=0.0):
     skew = float(np.mean(((returns - np.mean(returns)) / np.std(returns)) ** 3))
     kurt = float(np.mean(((returns - np.mean(returns)) / np.std(returns)) ** 4))
 
-    se = np.sqrt((1 - skew * sr + ((kurt - 1) / 4) * sr**2) / (T - 1))
-    if se == 0:
+    variance = (1 - skew * sr + ((kurt - 1) / 4) * sr**2) / (T - 1)
+    if variance <= 0:
         return 0.0
-    return float(norm.cdf((sr - sr_benchmark) / se))
+    return float(norm.cdf((sr - sr_benchmark) / np.sqrt(variance)))
 
 
 def deflated_sharpe_ratio(returns, n_trials, sr_variance=None):
@@ -30,6 +30,10 @@ def deflated_sharpe_ratio(returns, n_trials, sr_variance=None):
 
     This is THE key metric. A DSR > 0.95 means <5% chance the result is a fluke
     after accounting for all n_trials strategies tested.
+
+    The SE uses the observed SR (not sr0) per the paper's formula:
+      DSR = Phi( (SR_hat - SR_0) / SE(SR_hat) )
+    where SE(SR_hat) = sqrt((1 - γ₃·SR_hat + (γ₄-1)/4·SR_hat²) / (T-1))
     """
     sr = sharpe_ratio(returns)
     T = len(returns)
@@ -43,14 +47,14 @@ def deflated_sharpe_ratio(returns, n_trials, sr_variance=None):
     gamma = 0.5772156649015329  # Euler-Mascheroni constant
     e = np.exp(1)
     sr0 = np.sqrt(sr_variance) * (
-        (1 - gamma) * norm.ppf(1 - 1 / max(n_trials, 2))
-        + gamma * norm.ppf(1 - 1 / (max(n_trials, 2) * e))
+        (1 - gamma) * norm.ppf(1 - 1 / max(n_trials, 2)) + gamma * norm.ppf(1 - 1 / (max(n_trials, 2) * e))
     )
 
-    se = np.sqrt((1 - skew * sr0 + ((kurt - 1) / 4) * sr0**2) / (T - 1))
-    if se == 0:
+    # SE of the observed SR estimator (Mertens 2002, non-normality adjusted)
+    variance = (1 - skew * sr + ((kurt - 1) / 4) * sr**2) / (T - 1)
+    if variance <= 0:
         return 0.0
-    return float(norm.cdf((sr - sr0) / se))
+    return float(norm.cdf((sr - sr0) / np.sqrt(variance)))
 
 
 def expected_max_sharpe(n_trials, T, sr_variance=None):
@@ -62,11 +66,59 @@ def expected_max_sharpe(n_trials, T, sr_variance=None):
     e = np.exp(1)
     return float(
         np.sqrt(sr_variance)
-        * (
-            (1 - gamma) * norm.ppf(1 - 1 / max(n_trials, 2))
-            + gamma * norm.ppf(1 - 1 / (max(n_trials, 2) * e))
-        )
+        * ((1 - gamma) * norm.ppf(1 - 1 / max(n_trials, 2)) + gamma * norm.ppf(1 - 1 / (max(n_trials, 2) * e)))
     )
+
+
+def analytical_dsr(sr, skewness, kurtosis, T, n_trials, sr_variance=None):
+    """DSR from summary statistics only — no return series needed.
+
+    Computes the Deflated Sharpe Ratio analytically from five summary
+    statistics. Mathematically identical to deflated_sharpe_ratio() but
+    does not require the raw return array.
+
+    Args:
+        sr: Observed (sample) Sharpe ratio.
+        skewness: Sample skewness (3rd standardized moment). None → 0 (Gaussian).
+        kurtosis: Sample raw/Pearson kurtosis (4th standardized moment).
+            Normal distribution = 3. NOT excess kurtosis (scipy default).
+            None → 3 (Gaussian).
+        T: Number of return observations.
+        n_trials: Number of independent strategies tested.
+        sr_variance: Variance of SR across trials. Default: 1/T.
+
+    Returns:
+        DSR in [0, 1]. >0.95 means <5% chance the result is a fluke.
+
+    Note:
+        When skewness/kurtosis are None (Gaussian fallback), DSR may be
+        overstated for fat-tailed returns (typical of crypto). Results
+        should be labeled as approximate.
+    """
+    import logging as _log
+
+    if skewness is None or kurtosis is None:
+        _log.getLogger(__name__).warning(
+            "analytical_dsr: skewness/kurtosis not provided, using Gaussian "
+            "assumption (skew=0, kurt=3). DSR may be overstated for fat-tailed returns."
+        )
+        skewness = skewness if skewness is not None else 0.0
+        kurtosis = kurtosis if kurtosis is not None else 3.0
+
+    if sr_variance is None:
+        sr_variance = 1.0 / T
+
+    # Expected maximum SR under null (False Strategy Theorem)
+    gamma = 0.5772156649015329  # Euler-Mascheroni constant
+    e = np.exp(1)
+    N = max(n_trials, 2)
+    sr0 = np.sqrt(sr_variance) * ((1 - gamma) * norm.ppf(1 - 1.0 / N) + gamma * norm.ppf(1 - 1.0 / (N * e)))
+
+    # SE of the observed SR estimator (Mertens 2002)
+    variance = (1 - skewness * sr + ((kurtosis - 1) / 4) * sr**2) / (T - 1)
+    if variance <= 0:
+        return 0.0
+    return float(norm.cdf((sr - sr0) / np.sqrt(variance)))
 
 
 def minimum_track_record_length(returns, sr_benchmark=0.0, confidence=0.95):
@@ -80,9 +132,7 @@ def minimum_track_record_length(returns, sr_benchmark=0.0, confidence=0.95):
     if sr - sr_benchmark == 0:
         return float("inf")
 
-    return float(
-        (1 - skew * sr + ((kurt - 1) / 4) * sr**2) * (z / (sr - sr_benchmark)) ** 2
-    )
+    return float((1 - skew * sr + ((kurt - 1) / 4) * sr**2) * (z / (sr - sr_benchmark)) ** 2)
 
 
 # === RISK METRICS ===
@@ -92,9 +142,7 @@ def sortino_ratio(returns, risk_free=0.0):
     """Like Sharpe but only penalizes downside volatility."""
     excess = returns - risk_free
     downside = excess[excess < 0]
-    downside_std = (
-        np.std(downside, ddof=1) if len(downside) > 1 else np.std(excess, ddof=1)
-    )
+    downside_std = np.std(downside, ddof=1) if len(downside) > 1 else np.std(excess, ddof=1)
     return float(np.mean(excess) / downside_std) if downside_std > 0 else 0.0
 
 
@@ -131,9 +179,7 @@ def rolling_sharpe_std(returns, window=126):
     rolling_srs = []
     for i in range(len(returns) - window):
         chunk = returns[i : i + window]
-        rolling_srs.append(
-            np.mean(chunk) / np.std(chunk, ddof=1) if np.std(chunk) > 0 else 0
-        )
+        rolling_srs.append(np.mean(chunk) / np.std(chunk, ddof=1) if np.std(chunk) > 0 else 0)
     return float(np.std(rolling_srs))
 
 
@@ -172,6 +218,17 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=252
         dict of metrics suitable for wandb.log()
     """
     returns = np.asarray(returns, dtype=float)
+
+    # Pre-compute distribution moments for logging (raw Pearson kurtosis, normal=3)
+    std = np.std(returns)
+    if std > 0:
+        standardized = (returns - np.mean(returns)) / std
+        _skewness = float(np.mean(standardized**3))
+        _kurtosis = float(np.mean(standardized**4))
+    else:
+        _skewness = 0.0
+        _kurtosis = 3.0
+
     return {
         # Statistical significance
         "sharpe": sharpe_ratio(returns, risk_free),
@@ -179,6 +236,9 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=252
         "dsr": deflated_sharpe_ratio(returns, n_trials),
         "min_track_record": minimum_track_record_length(returns),
         "n_trials": n_trials,
+        # Distribution moments (for analytical_dsr recomputation)
+        "skewness": _skewness,
+        "kurtosis": _kurtosis,  # raw Pearson kurtosis, normal=3
         # Risk
         "sortino": sortino_ratio(returns, risk_free),
         "max_drawdown": max_drawdown(returns),

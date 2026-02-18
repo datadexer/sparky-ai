@@ -4,8 +4,10 @@ import math
 
 import numpy as np
 import pytest
+from scipy.stats import norm
 
 from sparky.tracking.metrics import (
+    analytical_dsr,
     compute_all_metrics,
     deflated_sharpe_ratio,
     expected_max_sharpe,
@@ -17,12 +19,12 @@ from sparky.tracking.metrics import (
     sortino_ratio,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 RNG = np.random.default_rng(42)
+
 
 @pytest.fixture
 def profitable_returns():
@@ -68,6 +70,7 @@ def positive_skew_returns():
 # compute_all_metrics
 # ---------------------------------------------------------------------------
 
+
 class TestComputeAllMetrics:
     EXPECTED_KEYS = {
         "sharpe",
@@ -75,6 +78,8 @@ class TestComputeAllMetrics:
         "dsr",
         "min_track_record",
         "n_trials",
+        "skewness",
+        "kurtosis",
         "sortino",
         "max_drawdown",
         "calmar",
@@ -144,14 +149,13 @@ class TestComputeAllMetrics:
 # DSR vs PSR — multiple-testing penalty
 # ---------------------------------------------------------------------------
 
+
 class TestDSRvsPSR:
     def test_dsr_less_than_psr_when_multiple_trials(self, profitable_returns):
         """With n_trials > 1, DSR must be strictly less than PSR."""
         psr = probabilistic_sharpe_ratio(profitable_returns)
         dsr = deflated_sharpe_ratio(profitable_returns, n_trials=50)
-        assert dsr < psr, (
-            f"Expected DSR ({dsr:.4f}) < PSR ({psr:.4f}) with 50 trials."
-        )
+        assert dsr < psr, f"Expected DSR ({dsr:.4f}) < PSR ({psr:.4f}) with 50 trials."
 
     def test_dsr_approx_psr_when_one_trial(self, profitable_returns):
         """With n_trials=1, DSR should be approximately equal to PSR."""
@@ -159,20 +163,13 @@ class TestDSRvsPSR:
         dsr = deflated_sharpe_ratio(profitable_returns, n_trials=1)
         # When n_trials=1 the expected max SR benchmark is near 0, similar to PSR
         # They won't be exactly equal but should be close (within 0.15)
-        assert abs(dsr - psr) < 0.15, (
-            f"DSR ({dsr:.4f}) and PSR ({psr:.4f}) differ too much for n_trials=1."
-        )
+        assert abs(dsr - psr) < 0.15, f"DSR ({dsr:.4f}) and PSR ({psr:.4f}) differ too much for n_trials=1."
 
     def test_dsr_decreases_as_trials_increase(self, profitable_returns):
         """More trials = more skepticism = lower DSR."""
-        dsrs = [
-            deflated_sharpe_ratio(profitable_returns, n_trials=n)
-            for n in [1, 5, 20, 100]
-        ]
+        dsrs = [deflated_sharpe_ratio(profitable_returns, n_trials=n) for n in [1, 5, 20, 100]]
         for i in range(len(dsrs) - 1):
-            assert dsrs[i] >= dsrs[i + 1], (
-                f"DSR did not decrease as trials increased: {dsrs}"
-            )
+            assert dsrs[i] >= dsrs[i + 1], f"DSR did not decrease as trials increased: {dsrs}"
 
     def test_dsr_is_probability(self, profitable_returns):
         """DSR must be in [0, 1]."""
@@ -188,6 +185,7 @@ class TestDSRvsPSR:
 # ---------------------------------------------------------------------------
 # max_drawdown
 # ---------------------------------------------------------------------------
+
 
 class TestMaxDrawdown:
     def test_max_drawdown_non_positive(self, profitable_returns):
@@ -229,6 +227,7 @@ class TestMaxDrawdown:
 # profit_factor
 # ---------------------------------------------------------------------------
 
+
 class TestProfitFactor:
     def test_profit_factor_greater_than_one_for_profitable(self, profitable_returns):
         pf = profit_factor(profitable_returns)
@@ -259,6 +258,7 @@ class TestProfitFactor:
 # sortino_ratio vs sharpe_ratio
 # ---------------------------------------------------------------------------
 
+
 class TestSortinoVsSharpe:
     def test_sortino_greater_than_sharpe_with_positive_skew(self, positive_skew_returns):
         """For positively skewed returns, Sortino > Sharpe because downside vol < total vol."""
@@ -266,9 +266,7 @@ class TestSortinoVsSharpe:
         so = sortino_ratio(positive_skew_returns)
         # Positive skew means losses cluster (small), gains spread out (large)
         # Downside std is smaller than total std => Sortino > Sharpe
-        assert so > sr, (
-            f"Expected Sortino ({so:.4f}) > Sharpe ({sr:.4f}) for positively skewed returns."
-        )
+        assert so > sr, f"Expected Sortino ({so:.4f}) > Sharpe ({sr:.4f}) for positively skewed returns."
 
     def test_sortino_equals_sharpe_for_symmetric_returns(self):
         """For perfectly symmetric (normal) returns, Sortino ≈ Sharpe * sqrt(2)."""
@@ -287,6 +285,7 @@ class TestSortinoVsSharpe:
 # ---------------------------------------------------------------------------
 # expected_max_sharpe
 # ---------------------------------------------------------------------------
+
 
 class TestExpectedMaxSharpe:
     def test_expected_max_sharpe_increases_with_trials(self):
@@ -318,23 +317,21 @@ class TestExpectedMaxSharpe:
         ems_1 = expected_max_sharpe(1, T=100)
         ems_1000 = expected_max_sharpe(1000, T=100)
         # With 1000 trials vs 1 trial, EMS should be materially larger
-        assert ems_1000 > ems_1 * 2.0, (
-            f"Expected EMS(1000) > 2x EMS(1): {ems_1000:.4f} vs {ems_1:.4f}"
-        )
+        assert ems_1000 > ems_1 * 2.0, f"Expected EMS(1000) > 2x EMS(1): {ems_1000:.4f} vs {ems_1:.4f}"
 
     def test_expected_max_sharpe_increases_with_fewer_observations(self):
         """Less data (smaller T) => larger sr_variance => higher expected max Sharpe."""
         ems_long = expected_max_sharpe(100, T=8760)
         ems_short = expected_max_sharpe(100, T=100)
         assert ems_short > ems_long, (
-            f"Expected EMS to be larger with fewer observations. "
-            f"Short ({ems_short:.4f}) vs Long ({ems_long:.4f})"
+            f"Expected EMS to be larger with fewer observations. Short ({ems_short:.4f}) vs Long ({ems_long:.4f})"
         )
 
 
 # ---------------------------------------------------------------------------
 # minimum_track_record_length
 # ---------------------------------------------------------------------------
+
 
 class TestMinimumTrackRecordLength:
     def test_finite_for_nonzero_sharpe(self, profitable_returns):
@@ -366,8 +363,7 @@ class TestMinimumTrackRecordLength:
         # Higher SR needs fewer observations
         if math.isfinite(mtrl_low) and math.isfinite(mtrl_high):
             assert mtrl_high < mtrl_low, (
-                f"Expected MTRL to decrease with higher SR: "
-                f"low SR MTRL={mtrl_low:.1f}, high SR MTRL={mtrl_high:.1f}"
+                f"Expected MTRL to decrease with higher SR: low SR MTRL={mtrl_low:.1f}, high SR MTRL={mtrl_high:.1f}"
             )
 
     def test_mtrl_is_positive(self, profitable_returns):
@@ -378,6 +374,7 @@ class TestMinimumTrackRecordLength:
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     def test_all_zero_returns_sharpe(self, zero_returns):
@@ -432,3 +429,142 @@ class TestEdgeCases:
         returns = rng.normal(0.01, 0.01, 500)  # SR ~= 1.0
         dsr = deflated_sharpe_ratio(returns, n_trials=1)
         assert dsr > 0.90, f"Expected high DSR for very profitable strategy, got {dsr:.4f}"
+
+
+# ---------------------------------------------------------------------------
+# DSR formula regression test — verifies SE uses observed SR (not sr0)
+# ---------------------------------------------------------------------------
+
+
+class TestDSRFormulaRegression:
+    """Regression test: DSR SE formula must use observed SR, not sr0."""
+
+    def test_dsr_matches_hand_computed_formula(self):
+        """Verify DSR output matches hand-computed value using the correct formula."""
+        rng = np.random.default_rng(0)
+        returns = rng.normal(0.001, 0.01, 1000)
+
+        sr = sharpe_ratio(returns)
+        T = len(returns)
+        std = np.std(returns)
+        standardized = (returns - np.mean(returns)) / std
+        skew = float(np.mean(standardized**3))
+        kurt = float(np.mean(standardized**4))
+
+        sr0 = expected_max_sharpe(10, T)
+
+        # Correct formula: SE uses observed sr (not sr0)
+        se = np.sqrt((1 - skew * sr + ((kurt - 1) / 4) * sr**2) / (T - 1))
+        expected_dsr = float(norm.cdf((sr - sr0) / se))
+
+        actual_dsr = deflated_sharpe_ratio(returns, n_trials=10)
+        assert abs(actual_dsr - expected_dsr) < 1e-10, (
+            f"DSR mismatch: actual={actual_dsr:.10f}, expected={expected_dsr:.10f}. SE may be using sr0 instead of sr."
+        )
+
+    def test_dsr_se_uses_sr_not_sr0(self):
+        """Confirm the SE formula uses the observed SR by checking against sr0-based result."""
+        rng = np.random.default_rng(42)
+        returns = rng.normal(0.002, 0.01, 2000)
+
+        sr = sharpe_ratio(returns)
+        T = len(returns)
+        std = np.std(returns)
+        standardized = (returns - np.mean(returns)) / std
+        skew = float(np.mean(standardized**3))
+        kurt = float(np.mean(standardized**4))
+        sr0 = expected_max_sharpe(50, T)
+
+        # Wrong formula (using sr0 in SE) — this is what the old bug computed
+        se_wrong = np.sqrt((1 - skew * sr0 + ((kurt - 1) / 4) * sr0**2) / (T - 1))
+        dsr_wrong = float(norm.cdf((sr - sr0) / se_wrong))
+
+        # Correct formula (using sr in SE)
+        se_correct = np.sqrt((1 - skew * sr + ((kurt - 1) / 4) * sr**2) / (T - 1))
+        dsr_correct = float(norm.cdf((sr - sr0) / se_correct))
+
+        actual_dsr = deflated_sharpe_ratio(returns, n_trials=50)
+
+        # actual must match correct, NOT the wrong version
+        assert abs(actual_dsr - dsr_correct) < 1e-10
+        # The wrong formula gives a different result (unless sr ≈ sr0)
+        if abs(sr - sr0) > 0.01:
+            assert abs(actual_dsr - dsr_wrong) > 1e-6, "DSR matched the wrong formula — SE may still use sr0"
+
+
+# ---------------------------------------------------------------------------
+# analytical_dsr
+# ---------------------------------------------------------------------------
+
+
+class TestAnalyticalDSR:
+    """Tests for analytical_dsr() — DSR from summary statistics."""
+
+    def test_matches_deflated_sharpe_ratio(self):
+        """analytical_dsr must match deflated_sharpe_ratio for the same inputs."""
+        rng = np.random.default_rng(7)
+        returns = rng.normal(0.001, 0.01, 1000)
+
+        sr = sharpe_ratio(returns)
+        T = len(returns)
+        std = np.std(returns)
+        standardized = (returns - np.mean(returns)) / std
+        skew = float(np.mean(standardized**3))
+        kurt = float(np.mean(standardized**4))
+
+        dsr_from_returns = deflated_sharpe_ratio(returns, n_trials=20)
+        dsr_analytical = analytical_dsr(sr, skew, kurt, T, n_trials=20)
+
+        assert abs(dsr_from_returns - dsr_analytical) < 1e-10, (
+            f"analytical_dsr ({dsr_analytical}) != deflated_sharpe_ratio ({dsr_from_returns})"
+        )
+
+    def test_gaussian_fallback_when_none(self):
+        """None skewness/kurtosis should use Gaussian defaults (0, 3)."""
+        dsr_explicit = analytical_dsr(sr=1.0, skewness=0.0, kurtosis=3.0, T=5000, n_trials=10)
+        dsr_none = analytical_dsr(sr=1.0, skewness=None, kurtosis=None, T=5000, n_trials=10)
+        assert abs(dsr_explicit - dsr_none) < 1e-10
+
+    def test_is_probability(self):
+        """analytical_dsr must return a value in [0, 1]."""
+        dsr = analytical_dsr(sr=1.5, skewness=-0.5, kurtosis=5.0, T=5000, n_trials=50)
+        assert 0.0 <= dsr <= 1.0
+
+    def test_decreases_with_more_trials(self):
+        """More trials = higher bar = lower DSR."""
+        dsrs = [analytical_dsr(sr=1.0, skewness=0.0, kurtosis=3.0, T=5000, n_trials=n) for n in [1, 10, 50, 200]]
+        for i in range(len(dsrs) - 1):
+            assert dsrs[i] >= dsrs[i + 1], f"DSR did not decrease: {dsrs}"
+
+    def test_zero_for_losing_strategy(self):
+        """Negative Sharpe with many trials should give near-zero DSR."""
+        dsr = analytical_dsr(sr=-0.5, skewness=0.0, kurtosis=3.0, T=5000, n_trials=100)
+        assert dsr < 0.01
+
+    def test_negative_variance_guard(self):
+        """Extreme skew + high SR that makes variance negative should return 0."""
+        # skew=10, sr=3, kurt=3: 1 - 10*3 + 0.5*9 = 1-30+4.5 = -24.5 (negative!)
+        dsr = analytical_dsr(sr=3.0, skewness=10.0, kurtosis=3.0, T=1000, n_trials=5)
+        assert dsr == 0.0
+
+    def test_compute_all_metrics_includes_moments(self):
+        """compute_all_metrics should include skewness and kurtosis for recomputation."""
+        rng = np.random.default_rng(42)
+        returns = rng.normal(0.001, 0.01, 500)
+        metrics = compute_all_metrics(returns, n_trials=10)
+
+        assert "skewness" in metrics
+        assert "kurtosis" in metrics
+        # Kurtosis should be raw (near 3 for Gaussian)
+        assert 2.0 < metrics["kurtosis"] < 4.0, f"Kurtosis {metrics['kurtosis']} looks wrong for Gaussian"
+        assert -1.0 < metrics["skewness"] < 1.0, f"Skewness {metrics['skewness']} looks wrong for Gaussian"
+
+        # Verify we can round-trip through analytical_dsr
+        dsr_roundtrip = analytical_dsr(
+            sr=metrics["sharpe"],
+            skewness=metrics["skewness"],
+            kurtosis=metrics["kurtosis"],
+            T=metrics["n_observations"],
+            n_trials=metrics["n_trials"],
+        )
+        assert abs(dsr_roundtrip - metrics["dsr"]) < 1e-10

@@ -1,0 +1,106 @@
+name: Code Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e ".[dev]" --system
+          uv pip install bandit --system
+
+      - name: Ruff lint
+        run: ruff check src/ scripts/ tests/
+
+      - name: Ruff format check
+        run: ruff format --check src/
+
+      - name: Bandit security scan
+        run: |
+          bandit -r src/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json || true
+          bandit -r src/ -c pyproject.toml --severity-level high
+
+      - name: Sparky-specific checks
+        run: python scripts/hooks/sparky_checks.py
+
+      - name: Unit tests with coverage
+        run: pytest tests/ -v --tb=short -x --timeout=120 --cov=src/sparky --cov-report=term-missing --cov-fail-under=40
+
+      - name: Guardrail self-test
+        run: |
+          python -c "
+          from sparky.tracking.guardrails import run_pre_checks, has_blocking_failure
+          import pandas as pd
+
+          # 1. Holdout violation must be caught
+          bad_data = pd.DataFrame({'close': [1,2,3]},
+              index=pd.to_datetime(['2025-01-01', '2025-06-01', '2025-12-01'], utc=True))
+          config = {'transaction_costs_bps': 10, 'features': ['f1'], 'target': 'target_1h'}
+          result = run_pre_checks(bad_data, config)
+          holdout_check = [r for r in result if r.check_name == 'holdout_boundary']
+          assert holdout_check and not holdout_check[0].passed, 'Holdout guardrail failed to catch violation!'
+
+          # 2. Missing costs must be caught
+          good_data = pd.DataFrame({'close': range(3000)},
+              index=pd.date_range('2020-01-01', periods=3000, freq='h', tz='UTC'))
+          result = run_pre_checks(good_data, {'features': ['f1'], 'target': 'target_1h'})
+          cost_check = [r for r in result if r.check_name == 'costs_specified']
+          assert cost_check and not cost_check[0].passed, 'Cost guardrail failed to catch missing costs!'
+
+          print('Guardrail self-test passed')
+          "
+
+      - name: Metrics self-test
+        run: |
+          python -c "
+          from sparky.tracking.metrics import compute_all_metrics
+          import numpy as np
+
+          np.random.seed(42)
+          returns = np.random.normal(0.001, 0.02, 1000)
+          metrics = compute_all_metrics(returns, n_trials=10)
+
+          required_keys = ['sharpe', 'sortino', 'max_drawdown', 'calmar', 'psr', 'dsr']
+          missing = [k for k in required_keys if k not in metrics]
+          assert not missing, f'Missing metrics keys: {missing}'
+          assert metrics['dsr'] <= metrics['psr'], 'DSR must be <= PSR when n_trials > 1'
+
+          print(f'Metrics self-test passed ({len(metrics)} metrics computed)')
+          "
+
+      - name: Import hygiene
+        run: |
+          python -c "
+          from sparky.tracking.metrics import compute_all_metrics
+          from sparky.tracking.guardrails import run_pre_checks, run_post_checks, has_blocking_failure
+          from sparky.data.loader import load, list_datasets
+          from sparky.tracking.experiment import ExperimentTracker
+          print('All core imports clean')
+          "
+
+      - name: Upload bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          if-no-files-found: ignore
+          retention-days: 30

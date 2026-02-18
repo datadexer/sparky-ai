@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validate macro and on-chain data collected by CEO agent.
+Validate macro and on-chain data collected by Research Agent.
 
 Checks:
 1. Row count and date range coverage
@@ -13,10 +13,9 @@ Checks:
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import pandas as pd
-
 
 # Expected value ranges for macro data (typical ranges)
 MACRO_RANGES = {
@@ -127,21 +126,18 @@ def validate_parquet_file(file_path: Path, file_type: str, expected_ranges: Dict
             results["issues"].append(f"Index is not DatetimeIndex: {type(df.index)}")
 
         # 3. Columns and data types
-        print(f"\n[INFO] Columns and data types:")
+        print("\n[INFO] Columns and data types:")
         for col, dtype in df.dtypes.items():
             print(f"  - {col}: {dtype}")
 
         # 4. Missing values
-        print(f"\n[INFO] Missing values (NaN counts):")
+        print("\n[INFO] Missing values (NaN counts):")
         nan_counts = df.isna().sum()
         results["nan_counts"] = {}
         for col in df.columns:
             nan_count = nan_counts[col]
             nan_pct = 100 * nan_count / len(df)
-            results["nan_counts"][col] = {
-                "count": int(nan_count),
-                "percentage": round(nan_pct, 2)
-            }
+            results["nan_counts"][col] = {"count": int(nan_count), "percentage": round(nan_pct, 2)}
 
             status = "OK" if nan_count == 0 else "WARNING" if nan_pct < 5 else "ERROR"
             print(f"  [{status}] {col}: {nan_count} ({nan_pct:.2f}%)")
@@ -151,8 +147,8 @@ def validate_parquet_file(file_path: Path, file_type: str, expected_ranges: Dict
                 results["issues"].append(msg)
 
         # 5. Basic statistics for numeric columns
-        print(f"\n[INFO] Basic statistics (numeric columns):")
-        numeric_cols = df.select_dtypes(include=['number']).columns
+        print("\n[INFO] Basic statistics (numeric columns):")
+        numeric_cols = df.select_dtypes(include=["number"]).columns
 
         if len(numeric_cols) > 0:
             stats = df[numeric_cols].describe()
@@ -201,12 +197,12 @@ def validate_parquet_file(file_path: Path, file_type: str, expected_ranges: Dict
             results["issues"].append(msg)
             print(f"\n[WARNING] {msg}")
         else:
-            print(f"\n[OK] No duplicate index entries")
+            print("\n[OK] No duplicate index entries")
 
         # 8. Summary
-        print(f"\n[SUMMARY]")
+        print("\n[SUMMARY]")
         if len(results["issues"]) == 0:
-            print(f"  [OK] No issues found")
+            print("  [OK] No issues found")
         else:
             print(f"  [WARNING] {len(results['issues'])} issue(s) found:")
             for i, issue in enumerate(results["issues"], 1):
@@ -217,6 +213,7 @@ def validate_parquet_file(file_path: Path, file_type: str, expected_ranges: Dict
     except Exception as e:
         print(f"[ERROR] Failed to validate file: {e}")
         import traceback
+
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
 
@@ -268,8 +265,8 @@ def validate_onchain_data() -> List[Dict]:
         "coinmetrics_btc_daily.parquet": [
             "CapMVRVCur",  # MVRV ratio
             "HashRate",
-            "AdrActCnt",   # Active addresses
-            "TxCnt",       # Transaction count
+            "AdrActCnt",  # Active addresses
+            "TxCnt",  # Transaction count
             "PriceUSD",
         ],
         "blockchain_com_btc_daily.parquet": [
@@ -332,7 +329,7 @@ def main():
     """Main validation function."""
     print("=" * 80)
     print("  SPARKY AI - DATA VALIDATION AGENT")
-    print("  Validating CEO Agent's Macro and On-Chain Data Collection")
+    print("  Validating Research Agent's Macro and On-Chain Data Collection")
     print("=" * 80)
 
     try:
@@ -359,6 +356,7 @@ def main():
     except Exception as e:
         print(f"\n[FATAL ERROR] Validation failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

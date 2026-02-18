@@ -5,8 +5,7 @@ valid_from dates (critical for ETH features), and feature matrix construction.
 """
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import numpy as np
@@ -145,9 +144,7 @@ class FeatureRegistry:
             before = len(matrix)
             matrix = matrix.dropna(how="all")
             if len(matrix) < before:
-                logger.info(
-                    f"Dropped {before - len(matrix)} all-NaN rows (lookback periods)"
-                )
+                logger.info(f"Dropped {before - len(matrix)} all-NaN rows (lookback periods)")
 
         if skipped_features:
             for name, reason in skipped_features:

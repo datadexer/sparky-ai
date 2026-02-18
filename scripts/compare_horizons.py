@@ -167,7 +167,7 @@ def generate_report(results: dict) -> str:
         lines.append(f"### {h}")
         lines.append("")
         for i, item in enumerate(results[h]["feature_importance"][:5]):
-            lines.append(f"{i+1}. `{item['feature']}` ({item['importance']:.4f})")
+            lines.append(f"{i + 1}. `{item['feature']}` ({item['importance']:.4f})")
         lines.append("")
 
     # Check for hour_of_day dominance

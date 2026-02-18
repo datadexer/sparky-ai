@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Analyze 58-feature hyperparameter sweep results."""
+
 import json
 import sys
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
 
 
@@ -29,8 +29,8 @@ def analyze(results):
     print()
 
     # Filter out errors
-    valid_results = [r for r in results if 'error' not in r]
-    error_results = [r for r in results if 'error' in r]
+    valid_results = [r for r in results if "error" not in r]
+    error_results = [r for r in results if "error" in r]
 
     print(f"Total configs: {len(results)}")
     print(f"Valid results: {len(valid_results)}")
@@ -42,17 +42,19 @@ def analyze(results):
         return
 
     # Sort by Sharpe
-    valid_results.sort(key=lambda x: x['mean_sharpe'], reverse=True)
+    valid_results.sort(key=lambda x: x["mean_sharpe"], reverse=True)
 
     # Statistics
-    sharpes = [r['mean_sharpe'] for r in valid_results]
-    accuracies = [r['mean_accuracy'] for r in valid_results]
-    aucs = [r['mean_auc'] for r in valid_results]
+    sharpes = [r["mean_sharpe"] for r in valid_results]
+    accuracies = [r["mean_accuracy"] for r in valid_results]
+    aucs = [r["mean_auc"] for r in valid_results]
 
     print("OVERALL STATISTICS")
     print("-" * 80)
-    print(f"Sharpe:   mean={np.mean(sharpes):.3f}, std={np.std(sharpes):.3f}, "
-          f"min={np.min(sharpes):.3f}, max={np.max(sharpes):.3f}")
+    print(
+        f"Sharpe:   mean={np.mean(sharpes):.3f}, std={np.std(sharpes):.3f}, "
+        f"min={np.min(sharpes):.3f}, max={np.max(sharpes):.3f}"
+    )
     print(f"Accuracy: mean={np.mean(accuracies):.3f}, std={np.std(accuracies):.3f}")
     print(f"AUC:      mean={np.mean(aucs):.3f}, std={np.std(aucs):.3f}")
     print()
@@ -66,32 +68,36 @@ def analyze(results):
 
     print("BASELINE COMPARISON")
     print("-" * 80)
-    print(f"Configs beating Multi-TF baseline (1.062): {beats_multi}/{len(valid_results)} "
-          f"({100*beats_multi/len(valid_results):.1f}%)")
-    print(f"Configs beating Single-TF baseline (1.243): {beats_single}/{len(valid_results)} "
-          f"({100*beats_single/len(valid_results):.1f}%)")
+    print(
+        f"Configs beating Multi-TF baseline (1.062): {beats_multi}/{len(valid_results)} "
+        f"({100 * beats_multi / len(valid_results):.1f}%)"
+    )
+    print(
+        f"Configs beating Single-TF baseline (1.243): {beats_single}/{len(valid_results)} "
+        f"({100 * beats_single / len(valid_results):.1f}%)"
+    )
     print()
 
     # Top 10
     print("TOP 10 CONFIGS")
     print("-" * 80)
     for i, r in enumerate(valid_results[:10], 1):
-        model = r['config']['model']
-        params = r['config']['params']
-        sharpe = r['mean_sharpe']
-        acc = r['mean_accuracy']
-        auc = r['mean_auc']
+        model = r["config"]["model"]
+        params = r["config"]["params"]
+        sharpe = r["mean_sharpe"]
+        acc = r["mean_accuracy"]
+        auc = r["mean_auc"]
 
         # Extract key params
-        if model == 'CatBoost':
-            depth = params['depth']
-            lr = params['learning_rate']
-            l2 = params['l2_leaf_reg']
+        if model == "CatBoost":
+            depth = params["depth"]
+            lr = params["learning_rate"]
+            l2 = params["l2_leaf_reg"]
             param_str = f"d={depth}, lr={lr}, l2={l2}"
         else:  # LightGBM
-            depth = params['max_depth']
-            lr = params['learning_rate']
-            l1 = params['reg_alpha']
+            depth = params["max_depth"]
+            lr = params["learning_rate"]
+            l1 = params["reg_alpha"]
             param_str = f"d={depth}, lr={lr}, l1={l1}"
 
         print(f"{i:2d}. {model:8s} - Sharpe={sharpe:.3f}, Acc={acc:.3f}, AUC={auc:.3f}")
@@ -107,16 +113,18 @@ def analyze(results):
     print(f"Params: {best['config']['params']}")
     print()
 
-    for yr in best['yearly_results']:
-        print(f"  {yr['year']}: Sharpe={yr['sharpe']:.3f}, Acc={yr['accuracy']:.3f}, "
-              f"AUC={yr['auc']:.3f}, N={yr['test_samples']}")
+    for yr in best["yearly_results"]:
+        print(
+            f"  {yr['year']}: Sharpe={yr['sharpe']:.3f}, Acc={yr['accuracy']:.3f}, "
+            f"AUC={yr['auc']:.3f}, N={yr['test_samples']}"
+        )
 
     print()
 
     # Verdict
     print("VERDICT")
     print("-" * 80)
-    best_sharpe = valid_results[0]['mean_sharpe']
+    best_sharpe = valid_results[0]["mean_sharpe"]
 
     if best_sharpe > single_tf_sharpe:
         print(f"✅ ML BEATS BEST BASELINE (Sharpe {best_sharpe:.3f} vs {single_tf_sharpe:.3f})")
@@ -135,6 +143,6 @@ def analyze(results):
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     results = load_results()
     analyze(results)

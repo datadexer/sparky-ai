@@ -19,7 +19,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -27,8 +27,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from sparky.data.loader import load
-from sparky.tracking.experiment import ExperimentTracker
 from sparky.models.simple_baselines import donchian_channel_strategy
+from sparky.tracking.experiment import ExperimentTracker
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -54,8 +54,10 @@ def load_merged_daily() -> pd.DataFrame:
 
     # Inner join on date index
     merged = df_daily.join(df_feat, how="inner")
-    logger.info(f"Merged dataset: {merged.shape[0]} daily rows, {merged.shape[1]} cols, "
-                f"{merged.index.min().date()} to {merged.index.max().date()}")
+    logger.info(
+        f"Merged dataset: {merged.shape[0]} daily rows, {merged.shape[1]} cols, "
+        f"{merged.index.min().date()} to {merged.index.max().date()}"
+    )
     return merged
 
 
@@ -72,8 +74,7 @@ def backtest_daily(signals: pd.Series, close: pd.Series) -> Dict[str, float]:
     strat_returns = strat_returns.dropna()
 
     if len(strat_returns) == 0 or strat_returns.std() == 0:
-        return {"sharpe": 0.0, "total_return": 0.0, "max_drawdown": 0.0,
-                "win_rate": 0.0, "time_in_market": 0.0}
+        return {"sharpe": 0.0, "total_return": 0.0, "max_drawdown": 0.0, "win_rate": 0.0, "time_in_market": 0.0}
 
     cum = (1 + strat_returns).cumprod()
     total_return = float(cum.iloc[-1] - 1)
@@ -184,6 +185,7 @@ def walk_forward_regime(
 
 def vol_regime_fn(window: int, threshold_multiplier: float = 1.0):
     """High rolling volatility = trending, go flat in low-vol chop."""
+
     def fn(train_df: pd.DataFrame, test_df: pd.DataFrame) -> pd.Series:
         # Compute vol on full train history to get stable median
         returns_train = train_df["close"].pct_change()
@@ -199,6 +201,7 @@ def vol_regime_fn(window: int, threshold_multiplier: float = 1.0):
         pct = regime.mean() * 100
         logger.info(f"Vol regime (w={window}): {pct:.1f}% in-market")
         return regime
+
     return fn
 
 
@@ -211,11 +214,14 @@ def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int =
     """Compute Average Directional Index (ADX). Returns ADX series."""
     # True Range
     prev_close = close.shift(1)
-    tr = pd.concat([
-        high - low,
-        (high - prev_close).abs(),
-        (low - prev_close).abs(),
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
 
     # Directional movement
     up_move = high - high.shift(1)
@@ -236,6 +242,7 @@ def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int =
 
 def adx_regime_fn(adx_period: int, adx_threshold: float):
     """ADX > threshold = trending (directional), trade. Below = choppy, flat."""
+
     def fn(train_df: pd.DataFrame, test_df: pd.DataFrame) -> pd.Series:
         # Need OHLC: use training + test for ADX continuity
         combined = pd.concat([train_df, test_df])
@@ -245,6 +252,7 @@ def adx_regime_fn(adx_period: int, adx_threshold: float):
         pct = regime.mean() * 100
         logger.info(f"ADX regime (period={adx_period}, thresh={adx_threshold}): {pct:.1f}% in-market")
         return regime
+
     return fn
 
 
@@ -283,11 +291,13 @@ def ml_meta_learner_fn(
     n_iter: int = 300,
 ):
     """ML meta-learner: CatBoost trains to predict when Donchian profits."""
+
     def fn(train_df: pd.DataFrame, test_df: pd.DataFrame) -> pd.Series:
         import catboost as cb
 
         feature_cols = [
-            c for c in train_df.columns
+            c
+            for c in train_df.columns
             if c not in ["open", "high", "low", "close", "volume"]
             and train_df[c].dtype in [np.float64, np.float32, float, int, np.int64, np.int32]
         ]
@@ -298,8 +308,9 @@ def ml_meta_learner_fn(
             return pd.Series(1, index=test_df.index)
 
         # Build training labels (meta-labels: profitable Donchian periods)
-        y_train = make_donchian_labels(train_df, entry_period=entry_period,
-                                        exit_period=exit_period, lookahead=label_lookahead)
+        y_train = make_donchian_labels(
+            train_df, entry_period=entry_period, exit_period=exit_period, lookahead=label_lookahead
+        )
         X_train = train_df[feature_cols].fillna(0).replace([np.inf, -np.inf], 0)
 
         # Align
@@ -329,6 +340,7 @@ def ml_meta_learner_fn(
         pct = regime.mean() * 100
         logger.info(f"ML meta-learner regime: {pct:.1f}% in-market")
         return regime
+
     return fn
 
 
@@ -343,6 +355,7 @@ def multi_signal_fn(regime_fns: List, mode: str = "all"):
     mode='all': trade only when ALL regimes say trade (AND logic, most conservative)
     mode='any': trade when ANY regime says trade (OR logic, more permissive)
     """
+
     def fn(train_df: pd.DataFrame, test_df: pd.DataFrame) -> pd.Series:
         signals = [rfn(train_df, test_df) for rfn in regime_fns]
         combined = pd.concat(signals, axis=1)
@@ -358,6 +371,7 @@ def multi_signal_fn(regime_fns: List, mode: str = "all"):
         pct = regime.mean() * 100
         logger.info(f"Multi-signal ({mode}, {len(regime_fns)} signals): {pct:.1f}% in-market")
         return regime
+
     return fn
 
 
@@ -378,11 +392,10 @@ def rolling_drawdown_filter_fn(
     Uses training history to compute rolling strategy performance.
     This is forward-pass safe: at test time T, only history up to T-1 is used.
     """
+
     def fn(train_df: pd.DataFrame, test_df: pd.DataFrame) -> pd.Series:
         combined = pd.concat([train_df, test_df])
-        signals_all = donchian_channel_strategy(
-            combined["close"], entry_period=entry_period, exit_period=exit_period
-        )
+        signals_all = donchian_channel_strategy(combined["close"], entry_period=entry_period, exit_period=exit_period)
         returns_all = combined["close"].pct_change()
         strat_returns_all = signals_all.shift(1).fillna(0) * returns_all
 
@@ -407,6 +420,7 @@ def rolling_drawdown_filter_fn(
         pct = regime_test.mean() * 100
         logger.info(f"Drawdown filter (dd={dd_threshold:.0%}, lb={lookback_days}d): {pct:.1f}% in-market")
         return regime_test
+
     return fn
 
 
@@ -506,13 +520,17 @@ def main():
         interpretation = (
             f"Vol({vc['window']}d) filter: {results['mean_sharpe']:.2f} Sharpe. "
             f"2022: {results['per_year'].get(2022, {}).get('sharpe', 0):.2f}. "
-            + ("Reduces 2022 damage vs unfiltered." if results['per_year'].get(2022, {}).get('sharpe', -99) > -1.0 else "2022 still bad — vol not regime-discriminative.")
+            + (
+                "Reduces 2022 damage vs unfiltered."
+                if results["per_year"].get(2022, {}).get("sharpe", -99) > -1.0
+                else "2022 still bad — vol not regime-discriminative."
+            )
         )
 
-        log_regime_run(tracker, name=name, config=cfg, results=results,
-                       interpretation=interpretation, tags=["vol_regime"])
-        all_results.append({"approach": "vol_threshold", "name": name,
-                             "config": cfg, "results": results})
+        log_regime_run(
+            tracker, name=name, config=cfg, results=results, interpretation=interpretation, tags=["vol_regime"]
+        )
+        all_results.append({"approach": "vol_threshold", "name": name, "config": cfg, "results": results})
 
     # ----------------------------------------------------------
     # APPROACH 2: ADX-BASED TREND STRENGTH
@@ -545,17 +563,21 @@ def main():
             exit_period=ac["exit"],
         )
 
-        sharpe_2022 = results['per_year'].get(2022, {}).get('sharpe', 0)
+        sharpe_2022 = results["per_year"].get(2022, {}).get("sharpe", 0)
         interpretation = (
             f"ADX({ac['period']}, thresh={ac['threshold']}): {results['mean_sharpe']:.2f} Sharpe. "
             f"2022: {sharpe_2022:.2f}. "
-            + ("ADX successfully avoids chop/bear." if sharpe_2022 > -0.5 else "ADX insufficient to identify bear regime — market had directional momentum in 2022 decline.")
+            + (
+                "ADX successfully avoids chop/bear."
+                if sharpe_2022 > -0.5
+                else "ADX insufficient to identify bear regime — market had directional momentum in 2022 decline."
+            )
         )
 
-        log_regime_run(tracker, name=name, config=cfg, results=results,
-                       interpretation=interpretation, tags=["adx_regime"])
-        all_results.append({"approach": "adx_trend", "name": name,
-                             "config": cfg, "results": results})
+        log_regime_run(
+            tracker, name=name, config=cfg, results=results, interpretation=interpretation, tags=["adx_regime"]
+        )
+        all_results.append({"approach": "adx_trend", "name": name, "config": cfg, "results": results})
 
     # ----------------------------------------------------------
     # APPROACH 3: ML META-LEARNER (CatBoost GPU)
@@ -598,18 +620,19 @@ def main():
             exit_period=mc["exit"],
         )
 
-        sharpe_2022 = results['per_year'].get(2022, {}).get('sharpe', 0)
+        sharpe_2022 = results["per_year"].get(2022, {}).get("sharpe", 0)
         interpretation = (
             f"ML meta-learner (lh={mc['lookahead']}d, d={mc['depth']}): "
             f"{results['mean_sharpe']:.2f} Sharpe. 2022: {sharpe_2022:.2f}. "
-            + ("Meta-learner successfully identifies non-profitable Donchian periods." if sharpe_2022 > -0.3
-               else "Meta-labels contain future leakage in label construction but NOT at inference — still saw 2022 loss, model misjudged regime.")
+            + (
+                "Meta-learner successfully identifies non-profitable Donchian periods."
+                if sharpe_2022 > -0.3
+                else "Meta-labels contain future leakage in label construction but NOT at inference — still saw 2022 loss, model misjudged regime."
+            )
         )
 
-        log_regime_run(tracker, name=name, config=cfg, results=results,
-                       interpretation=interpretation, tags=["ml_meta"])
-        all_results.append({"approach": "ml_meta", "name": name,
-                             "config": cfg, "results": results})
+        log_regime_run(tracker, name=name, config=cfg, results=results, interpretation=interpretation, tags=["ml_meta"])
+        all_results.append({"approach": "ml_meta", "name": name, "config": cfg, "results": results})
 
     # ----------------------------------------------------------
     # APPROACH 4: MULTI-SIGNAL COMBINATION
@@ -643,16 +666,21 @@ def main():
         exit_period=10,
     )
 
-    sharpe_2022_a = results_a['per_year'].get(2022, {}).get('sharpe', 0)
-    interpretation_a = (
-        f"Vol(20d) AND ADX(25): {results_a['mean_sharpe']:.2f} Sharpe. "
-        f"2022: {sharpe_2022_a:.2f}. "
-        + ("Strict AND filter severely reduces time-in-market — less capital at risk but also fewer profits." if results_a.get("fold_metrics") else "No fold results.")
+    sharpe_2022_a = results_a["per_year"].get(2022, {}).get("sharpe", 0)
+    interpretation_a = f"Vol(20d) AND ADX(25): {results_a['mean_sharpe']:.2f} Sharpe. 2022: {sharpe_2022_a:.2f}. " + (
+        "Strict AND filter severely reduces time-in-market — less capital at risk but also fewer profits."
+        if results_a.get("fold_metrics")
+        else "No fold results."
     )
-    log_regime_run(tracker, name=name_a, config=combo_a_cfg, results=results_a,
-                   interpretation=interpretation_a, tags=["multi_signal"])
-    all_results.append({"approach": "multi_signal", "name": name_a,
-                         "config": combo_a_cfg, "results": results_a})
+    log_regime_run(
+        tracker,
+        name=name_a,
+        config=combo_a_cfg,
+        results=results_a,
+        interpretation=interpretation_a,
+        tags=["multi_signal"],
+    )
+    all_results.append({"approach": "multi_signal", "name": name_a, "config": combo_a_cfg, "results": results_a})
 
     # Combo B: ML meta-learner with vol as additional feature (use OR mode for coverage)
     combo_b_cfg = {
@@ -669,8 +697,9 @@ def main():
         df,
         regime_fn=multi_signal_fn(
             [
-                ml_meta_learner_fn(top_n_features=20, entry_period=20, exit_period=10,
-                                   label_lookahead=20, depth=3, lr=0.05, n_iter=300),
+                ml_meta_learner_fn(
+                    top_n_features=20, entry_period=20, exit_period=10, label_lookahead=20, depth=3, lr=0.05, n_iter=300
+                ),
                 vol_regime_fn(window=20, threshold_multiplier=1.0),
             ],
             mode="any",
@@ -679,17 +708,21 @@ def main():
         exit_period=10,
     )
 
-    sharpe_2022_b = results_b['per_year'].get(2022, {}).get('sharpe', 0)
-    interpretation_b = (
-        f"ML OR Vol(20d): {results_b['mean_sharpe']:.2f} Sharpe. "
-        f"2022: {sharpe_2022_b:.2f}. "
-        + ("OR combination gives ML a vol-regime safety net — if either says trade, we trade." if sharpe_2022_b > -0.5
-           else "OR logic too permissive — inherits ML/vol failures without reducing them.")
+    sharpe_2022_b = results_b["per_year"].get(2022, {}).get("sharpe", 0)
+    interpretation_b = f"ML OR Vol(20d): {results_b['mean_sharpe']:.2f} Sharpe. 2022: {sharpe_2022_b:.2f}. " + (
+        "OR combination gives ML a vol-regime safety net — if either says trade, we trade."
+        if sharpe_2022_b > -0.5
+        else "OR logic too permissive — inherits ML/vol failures without reducing them."
     )
-    log_regime_run(tracker, name=name_b, config=combo_b_cfg, results=results_b,
-                   interpretation=interpretation_b, tags=["multi_signal"])
-    all_results.append({"approach": "multi_signal", "name": name_b,
-                         "config": combo_b_cfg, "results": results_b})
+    log_regime_run(
+        tracker,
+        name=name_b,
+        config=combo_b_cfg,
+        results=results_b,
+        interpretation=interpretation_b,
+        tags=["multi_signal"],
+    )
+    all_results.append({"approach": "multi_signal", "name": name_b, "config": combo_b_cfg, "results": results_b})
 
     # ----------------------------------------------------------
     # APPROACH 5: ROLLING DRAWDOWN FILTER
@@ -713,7 +746,7 @@ def main():
             "entry_period": dc["entry"],
             "exit_period": dc["exit"],
         }
-        name = f"dd_filter_{int(dc['dd']*100)}pct_{dc['lb']}d"
+        name = f"dd_filter_{int(dc['dd'] * 100)}pct_{dc['lb']}d"
         logger.info(f"\nRunning: {name}")
 
         results = walk_forward_regime(
@@ -729,19 +762,23 @@ def main():
             exit_period=dc["exit"],
         )
 
-        sharpe_2022 = results['per_year'].get(2022, {}).get('sharpe', 0)
+        sharpe_2022 = results["per_year"].get(2022, {}).get("sharpe", 0)
         interpretation = (
             f"DD filter ({dc['dd']:.0%}, {dc['lb']}d): {results['mean_sharpe']:.2f} Sharpe. "
             f"2022: {sharpe_2022:.2f}. "
-            + ("Drawdown filter successfully cuts off losing streaks — 2022 protected." if sharpe_2022 > 0
-               else "Drawdown filter exits too late — 2022 loss already locked in before trigger fires." if sharpe_2022 > -0.5
-               else "Drawdown filter insufficient — 2022 bear too deep to avoid with this threshold.")
+            + (
+                "Drawdown filter successfully cuts off losing streaks — 2022 protected."
+                if sharpe_2022 > 0
+                else "Drawdown filter exits too late — 2022 loss already locked in before trigger fires."
+                if sharpe_2022 > -0.5
+                else "Drawdown filter insufficient — 2022 bear too deep to avoid with this threshold."
+            )
         )
 
-        log_regime_run(tracker, name=name, config=cfg, results=results,
-                       interpretation=interpretation, tags=["dd_filter"])
-        all_results.append({"approach": "drawdown_filter", "name": name,
-                             "config": cfg, "results": results})
+        log_regime_run(
+            tracker, name=name, config=cfg, results=results, interpretation=interpretation, tags=["dd_filter"]
+        )
+        all_results.append({"approach": "drawdown_filter", "name": name, "config": cfg, "results": results})
 
     # ----------------------------------------------------------
     # RESULTS SUMMARY
@@ -762,7 +799,9 @@ def main():
         # Estimate time in market from fold metrics
         tims = [m.get("time_in_market", 1.0) for m in res.get("fold_metrics", [])]
         tim = np.mean(tims) if tims else 1.0
-        logger.info(f"{r['name']:<40} {res['mean_sharpe']:>7.3f} {res['std_sharpe']:>6.3f} {sharpe_2022:>7.3f} {tim*100:>6.1f}%")
+        logger.info(
+            f"{r['name']:<40} {res['mean_sharpe']:>7.3f} {res['std_sharpe']:>6.3f} {sharpe_2022:>7.3f} {tim * 100:>6.1f}%"
+        )
 
     logger.info("-" * 70)
     logger.info(f"{'Unfiltered Donchian baseline':<40} {BASELINE_SHARPE:>7.3f}  (ref)")
@@ -791,7 +830,7 @@ def main():
     logger.info(f"\nResults saved: {out_file}")
 
     elapsed = time.time() - start
-    logger.info(f"Total time: {elapsed/60:.1f} minutes | {len(all_results)} runs logged")
+    logger.info(f"Total time: {elapsed / 60:.1f} minutes | {len(all_results)} runs logged")
 
     return all_results
 

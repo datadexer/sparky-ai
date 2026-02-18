@@ -17,7 +17,6 @@ Research:
 import logging
 from typing import Literal
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -53,8 +52,8 @@ def sma_crossover_strategy(
     n_total = len(signals)
 
     logger.info(
-        f"SMA({sma_period}) Crossover: {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"SMA({sma_period}) Crossover: {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return signals
@@ -121,8 +120,8 @@ def donchian_channel_strategy(
     n_total = len(signals)
 
     logger.info(
-        f"Donchian({entry_period}/{exit_period}): {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Donchian({entry_period}/{exit_period}): {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return signals
@@ -180,8 +179,8 @@ def atr_filtered_momentum_strategy(
 
     logger.info(
         f"ATR-Filtered Momentum({momentum_period}/{atr_period}): "
-        f"{n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"{n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return signals

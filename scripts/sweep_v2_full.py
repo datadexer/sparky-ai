@@ -11,21 +11,24 @@ Logs:
   - log_sweep() for stage 1 batches (tags=['contract_004', 'sweep'])
   - log_experiment() for each walk-forward result (tags=['contract_004', 'sweep'])
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-import time
-import json
 import csv
+import json
+import time
 import warnings
+from datetime import datetime, timezone
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Optional
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -45,12 +48,26 @@ PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # Top 20 features from feature_importance.json
 TOP_20_FEATURES = [
-    "volume_dry_up", "rsi_6h", "rsi_168h", "price_range_expansion",
-    "momentum_720h", "rsi_4h", "momentum_divergence_72h_336h", "vwap_cross",
-    "mfi_14h", "price_acceleration_10h", "bb_position_20h",
-    "momentum_divergence_4h_24h", "momentum_4h", "atr_14h",
-    "rsi_divergence_14h_168h", "breakout_proximity_upper", "rsi_14h",
-    "momentum_336h", "rsi_volume_interaction", "close_above_open_ratio_20h",
+    "volume_dry_up",
+    "rsi_6h",
+    "rsi_168h",
+    "price_range_expansion",
+    "momentum_720h",
+    "rsi_4h",
+    "momentum_divergence_72h_336h",
+    "vwap_cross",
+    "mfi_14h",
+    "price_acceleration_10h",
+    "bb_position_20h",
+    "momentum_divergence_4h_24h",
+    "momentum_4h",
+    "atr_14h",
+    "rsi_divergence_14h_168h",
+    "breakout_proximity_upper",
+    "rsi_14h",
+    "momentum_336h",
+    "rsi_volume_interaction",
+    "close_above_open_ratio_20h",
 ]
 TOP_15_FEATURES = TOP_20_FEATURES[:15]
 TOP_10_FEATURES = TOP_20_FEATURES[:10]
@@ -66,6 +83,7 @@ def load_data():
     # Use loader for holdout enforcement
     try:
         from sparky.data.loader import load
+
         features = load("btc_1h_features", purpose="training")
     except Exception:
         # Fallback to direct parquet if dataset name doesn't exist
@@ -164,6 +182,7 @@ def run_single_config(
 
     try:
         from sklearn.metrics import roc_auc_score
+
         auc = float(roc_auc_score(y_val, probs_val))
     except Exception:
         auc = 0.5
@@ -247,7 +266,7 @@ def walk_forward_validate(
 
         w_sharpe = compute_sharpe(sig, prices_daily)
         window_sharpes.append(w_sharpe)
-        print(f"  Window {i+1}: train[:{te.date()}] val[{vs.date()}:{ve.date()}] Sharpe={w_sharpe:.3f}", flush=True)
+        print(f"  Window {i + 1}: train[:{te.date()}] val[{vs.date()}:{ve.date()}] Sharpe={w_sharpe:.3f}", flush=True)
 
     if not all_signals:
         return {"wf_sharpe": 0.0, "wf_sharpe_std": 0.0, "n_windows": 0}
@@ -272,20 +291,42 @@ def init_progress():
     if not PROGRESS_FILE.exists():
         with open(PROGRESS_FILE, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["timestamp", "stage", "model", "sharpe_val", "sharpe_train",
-                             "accuracy", "auc", "feature_set", "params_hash", "params"])
+            writer.writerow(
+                [
+                    "timestamp",
+                    "stage",
+                    "model",
+                    "sharpe_val",
+                    "sharpe_train",
+                    "accuracy",
+                    "auc",
+                    "feature_set",
+                    "params_hash",
+                    "params",
+                ]
+            )
 
 
 def log_progress(stage, model_name, sharpe_val, sharpe_train, accuracy, auc, feature_set, params_str):
     import hashlib
+
     params_hash = hashlib.md5(params_str.encode()).hexdigest()[:8]
     with open(PROGRESS_FILE, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-            stage, model_name, f"{sharpe_val:.4f}", f"{sharpe_train:.4f}",
-            f"{accuracy:.4f}", f"{auc:.4f}", feature_set, params_hash, params_str,
-        ])
+        writer.writerow(
+            [
+                datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                stage,
+                model_name,
+                f"{sharpe_val:.4f}",
+                f"{sharpe_train:.4f}",
+                f"{accuracy:.4f}",
+                f"{auc:.4f}",
+                feature_set,
+                params_hash,
+                params_str,
+            ]
+        )
 
 
 # ── Config definitions ─────────────────────────────────────────────────────────
@@ -308,8 +349,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**xgb_base, "n_estimators": 500, "learning_rate": 0.01, "max_depth": 4,
-                       "reg_alpha": 0.1, "reg_lambda": 2.0, "subsample": 0.8, "colsample_bytree": 0.8},
+            "params": {
+                **xgb_base,
+                "n_estimators": 500,
+                "learning_rate": 0.01,
+                "max_depth": 4,
+                "reg_alpha": 0.1,
+                "reg_lambda": 2.0,
+                "subsample": 0.8,
+                "colsample_bytree": 0.8,
+            },
             "note": "Conservative XGB: low LR + high n_estimators + regularization to prevent overfit on vol/RSI features",
         },
         {
@@ -317,8 +366,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**xgb_base, "n_estimators": 300, "learning_rate": 0.05, "max_depth": 4,
-                       "reg_alpha": 0.5, "reg_lambda": 1.0, "subsample": 0.9, "colsample_bytree": 0.7},
+            "params": {
+                **xgb_base,
+                "n_estimators": 300,
+                "learning_rate": 0.05,
+                "max_depth": 4,
+                "reg_alpha": 0.5,
+                "reg_lambda": 1.0,
+                "subsample": 0.9,
+                "colsample_bytree": 0.7,
+            },
             "note": "Moderate XGB: balanced LR/depth with feature col subsampling for diversity on all 20 features",
         },
         {
@@ -326,8 +383,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**xgb_base, "n_estimators": 200, "learning_rate": 0.05, "max_depth": 3,
-                       "reg_alpha": 0.0, "reg_lambda": 1.0, "min_child_weight": 5},
+            "params": {
+                **xgb_base,
+                "n_estimators": 200,
+                "learning_rate": 0.05,
+                "max_depth": 3,
+                "reg_alpha": 0.0,
+                "reg_lambda": 1.0,
+                "min_child_weight": 5,
+            },
             "note": "Shallow XGB on top-10 only: avoids noise from lower-ranked features, emphasizes volume+RSI signal",
         },
         {
@@ -335,8 +399,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**xgb_base, "n_estimators": 500, "learning_rate": 0.02, "max_depth": 6,
-                       "reg_alpha": 1.0, "reg_lambda": 5.0, "subsample": 0.7, "colsample_bytree": 0.6},
+            "params": {
+                **xgb_base,
+                "n_estimators": 500,
+                "learning_rate": 0.02,
+                "max_depth": 6,
+                "reg_alpha": 1.0,
+                "reg_lambda": 5.0,
+                "subsample": 0.7,
+                "colsample_bytree": 0.6,
+            },
             "note": "Deep XGB with heavy L1+L2 reg: tests if complex interactions can be learned without overfitting",
         },
         {
@@ -344,8 +416,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**xgb_base, "n_estimators": 1000, "learning_rate": 0.01, "max_depth": 3,
-                       "reg_alpha": 0.0, "reg_lambda": 1.0, "subsample": 0.8, "colsample_bytree": 0.8},
+            "params": {
+                **xgb_base,
+                "n_estimators": 1000,
+                "learning_rate": 0.01,
+                "max_depth": 3,
+                "reg_alpha": 0.0,
+                "reg_lambda": 1.0,
+                "subsample": 0.8,
+                "colsample_bytree": 0.8,
+            },
             "note": "Very long training XGB (1000 trees, low LR): ensemble effect with gradient boosting on all features",
         },
         {
@@ -353,8 +433,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**xgb_base, "n_estimators": 300, "learning_rate": 0.1, "max_depth": 3,
-                       "reg_alpha": 2.0, "reg_lambda": 2.0, "subsample": 0.6, "colsample_bytree": 0.5},
+            "params": {
+                **xgb_base,
+                "n_estimators": 300,
+                "learning_rate": 0.1,
+                "max_depth": 3,
+                "reg_alpha": 2.0,
+                "reg_lambda": 2.0,
+                "subsample": 0.6,
+                "colsample_bytree": 0.5,
+            },
             "note": "High LR, aggressive dropout-style subsampling, stochastic gradient boosting for noisy financial data",
         },
         {
@@ -362,8 +450,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**xgb_base, "n_estimators": 500, "learning_rate": 0.03, "max_depth": 5,
-                       "reg_alpha": 0.5, "reg_lambda": 3.0, "min_child_weight": 10},
+            "params": {
+                **xgb_base,
+                "n_estimators": 500,
+                "learning_rate": 0.03,
+                "max_depth": 5,
+                "reg_alpha": 0.5,
+                "reg_lambda": 3.0,
+                "min_child_weight": 10,
+            },
             "note": "High min_child_weight (10): requires large leaf samples, reduces noise-fitting on sparse features",
         },
         {
@@ -371,8 +466,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "xgboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**xgb_base, "n_estimators": 200, "learning_rate": 0.2, "max_depth": 4,
-                       "reg_alpha": 0.0, "reg_lambda": 0.5, "subsample": 1.0, "colsample_bytree": 1.0},
+            "params": {
+                **xgb_base,
+                "n_estimators": 200,
+                "learning_rate": 0.2,
+                "max_depth": 4,
+                "reg_alpha": 0.0,
+                "reg_lambda": 0.5,
+                "subsample": 1.0,
+                "colsample_bytree": 1.0,
+            },
             "note": "Fast learner (lr=0.2, no reg): tests if raw gradient signal without regularization extracts more alpha",
         },
     ]
@@ -388,9 +491,18 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**lgbm_base, "n_estimators": 500, "learning_rate": 0.01, "num_leaves": 31,
-                       "min_child_samples": 20, "feature_fraction": 0.8, "bagging_fraction": 0.8,
-                       "bagging_freq": 5, "reg_alpha": 0.1, "reg_lambda": 1.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 500,
+                "learning_rate": 0.01,
+                "num_leaves": 31,
+                "min_child_samples": 20,
+                "feature_fraction": 0.8,
+                "bagging_fraction": 0.8,
+                "bagging_freq": 5,
+                "reg_alpha": 0.1,
+                "reg_lambda": 1.0,
+            },
             "note": "Conservative LGBM: standard 31 leaves, bagging for variance reduction on 15-feature subset",
         },
         {
@@ -398,9 +510,18 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**lgbm_base, "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 63,
-                       "min_child_samples": 30, "feature_fraction": 0.7, "bagging_fraction": 0.9,
-                       "bagging_freq": 3, "reg_alpha": 0.5, "reg_lambda": 2.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 300,
+                "learning_rate": 0.05,
+                "num_leaves": 63,
+                "min_child_samples": 30,
+                "feature_fraction": 0.7,
+                "bagging_fraction": 0.9,
+                "bagging_freq": 3,
+                "reg_alpha": 0.5,
+                "reg_lambda": 2.0,
+            },
             "note": "64-leaf LGBM (more complex than XGB default): explores richer momentum+vol interactions",
         },
         {
@@ -408,8 +529,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**lgbm_base, "n_estimators": 1000, "learning_rate": 0.01, "num_leaves": 15,
-                       "min_child_samples": 50, "feature_fraction": 1.0, "reg_alpha": 0.0, "reg_lambda": 0.5},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 1000,
+                "learning_rate": 0.01,
+                "num_leaves": 15,
+                "min_child_samples": 50,
+                "feature_fraction": 1.0,
+                "reg_alpha": 0.0,
+                "reg_lambda": 0.5,
+            },
             "note": "Shallow 15-leaf LGBM on top-10: high min_samples prevents overfitting sparse cryptocurrency signals",
         },
         {
@@ -417,9 +546,18 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**lgbm_base, "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 127,
-                       "min_child_samples": 15, "feature_fraction": 0.6, "bagging_fraction": 0.8,
-                       "bagging_freq": 5, "reg_alpha": 1.0, "reg_lambda": 5.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 300,
+                "learning_rate": 0.05,
+                "num_leaves": 127,
+                "min_child_samples": 15,
+                "feature_fraction": 0.6,
+                "bagging_fraction": 0.8,
+                "bagging_freq": 5,
+                "reg_alpha": 1.0,
+                "reg_lambda": 5.0,
+            },
             "note": "128-leaf deep LGBM + heavy L1+L2: tests if very complex decision boundaries exist in BTC hourly data",
         },
         {
@@ -427,8 +565,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**lgbm_base, "n_estimators": 500, "learning_rate": 0.02, "num_leaves": 31,
-                       "min_child_samples": 100, "feature_fraction": 0.9, "reg_alpha": 0.3, "reg_lambda": 1.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 500,
+                "learning_rate": 0.02,
+                "num_leaves": 31,
+                "min_child_samples": 100,
+                "feature_fraction": 0.9,
+                "reg_alpha": 0.3,
+                "reg_lambda": 1.0,
+            },
             "note": "Very conservative min_samples=100: rejects noisy splits, focuses on robust large-scale patterns",
         },
         {
@@ -436,9 +582,18 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**lgbm_base, "n_estimators": 200, "learning_rate": 0.1, "num_leaves": 31,
-                       "min_child_samples": 20, "feature_fraction": 0.8, "bagging_fraction": 0.7,
-                       "bagging_freq": 10, "reg_alpha": 0.0, "reg_lambda": 0.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 200,
+                "learning_rate": 0.1,
+                "num_leaves": 31,
+                "min_child_samples": 20,
+                "feature_fraction": 0.8,
+                "bagging_fraction": 0.7,
+                "bagging_freq": 10,
+                "reg_alpha": 0.0,
+                "reg_lambda": 0.0,
+            },
             "note": "No regularization LGBM on top-10: tests pure gradient signal without explicit penalty on compact feature set",
         },
         {
@@ -446,9 +601,19 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**lgbm_base, "n_estimators": 500, "learning_rate": 0.03, "num_leaves": 63,
-                       "min_child_samples": 40, "feature_fraction": 0.7, "bagging_fraction": 0.8,
-                       "bagging_freq": 5, "reg_alpha": 0.5, "reg_lambda": 2.0, "max_depth": 6},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 500,
+                "learning_rate": 0.03,
+                "num_leaves": 63,
+                "min_child_samples": 40,
+                "feature_fraction": 0.7,
+                "bagging_fraction": 0.8,
+                "bagging_freq": 5,
+                "reg_alpha": 0.5,
+                "reg_lambda": 2.0,
+                "max_depth": 6,
+            },
             "note": "Depth-limited LGBM: combined max_depth + num_leaves double-constraint for cleaner tree structure",
         },
         {
@@ -456,9 +621,18 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "lightgbm",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**lgbm_base, "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 31,
-                       "min_child_samples": 30, "feature_fraction": 0.5, "bagging_fraction": 0.6,
-                       "bagging_freq": 3, "reg_alpha": 2.0, "reg_lambda": 2.0},
+            "params": {
+                **lgbm_base,
+                "n_estimators": 300,
+                "learning_rate": 0.05,
+                "num_leaves": 31,
+                "min_child_samples": 30,
+                "feature_fraction": 0.5,
+                "bagging_fraction": 0.6,
+                "bagging_freq": 3,
+                "reg_alpha": 2.0,
+                "reg_lambda": 2.0,
+            },
             "note": "Aggressive feature + sample subsampling (50%/60%): stochastic ensemble on full 20 features",
         },
     ]
@@ -474,8 +648,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**cat_base, "iterations": 500, "learning_rate": 0.01, "depth": 4,
-                       "l2_leaf_reg": 3.0, "rsm": 0.8, "border_count": 64},
+            "params": {
+                **cat_base,
+                "iterations": 500,
+                "learning_rate": 0.01,
+                "depth": 4,
+                "l2_leaf_reg": 3.0,
+                "rsm": 0.8,
+                "border_count": 64,
+            },
             "note": "CatBoost with border_count=64 (more bins) + rsm=0.8: finer split thresholds for smooth momentum signals",
         },
         {
@@ -483,8 +664,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**cat_base, "iterations": 300, "learning_rate": 0.05, "depth": 5,
-                       "l2_leaf_reg": 5.0, "rsm": 0.7, "border_count": 32},
+            "params": {
+                **cat_base,
+                "iterations": 300,
+                "learning_rate": 0.05,
+                "depth": 5,
+                "l2_leaf_reg": 5.0,
+                "rsm": 0.7,
+                "border_count": 32,
+            },
             "note": "Higher LR CatBoost with L2=5 + coarser bins (32): tests if heavy regularization prevents RSI/vol overfit",
         },
         {
@@ -492,8 +680,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**cat_base, "iterations": 1000, "learning_rate": 0.01, "depth": 3,
-                       "l2_leaf_reg": 1.0, "rsm": 1.0, "od_type": "Iter", "od_wait": 50},
+            "params": {
+                **cat_base,
+                "iterations": 1000,
+                "learning_rate": 0.01,
+                "depth": 3,
+                "l2_leaf_reg": 1.0,
+                "rsm": 1.0,
+                "od_type": "Iter",
+                "od_wait": 50,
+            },
             "note": "Long CatBoost with early stopping on top-10: uses all features but stops before overfitting begins",
         },
         {
@@ -501,8 +697,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**cat_base, "iterations": 200, "learning_rate": 0.01, "depth": 6,
-                       "l2_leaf_reg": 10.0, "rsm": 0.8, "border_count": 128},
+            "params": {
+                **cat_base,
+                "iterations": 200,
+                "learning_rate": 0.01,
+                "depth": 6,
+                "l2_leaf_reg": 10.0,
+                "rsm": 0.8,
+                "border_count": 128,
+            },
             "note": "Deep CatBoost (depth=6) with very high L2=10: complex interactions + aggressive shrinkage for stability",
         },
         {
@@ -510,8 +713,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**cat_base, "iterations": 500, "learning_rate": 0.02, "depth": 4,
-                       "l2_leaf_reg": 2.0, "rsm": 0.6, "bagging_temperature": 0.5},
+            "params": {
+                **cat_base,
+                "iterations": 500,
+                "learning_rate": 0.02,
+                "depth": 4,
+                "l2_leaf_reg": 2.0,
+                "rsm": 0.6,
+                "bagging_temperature": 0.5,
+            },
             "note": "CatBoost with Bayesian bagging (temperature=0.5) + high feature drop: diversified ensemble effect",
         },
         {
@@ -519,8 +729,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top15",
             "feature_names": top15,
-            "params": {**cat_base, "iterations": 300, "learning_rate": 0.05, "depth": 3,
-                       "l2_leaf_reg": 1.0, "rsm": 0.9, "grow_policy": "Lossguide", "max_leaves": 31},
+            "params": {
+                **cat_base,
+                "iterations": 300,
+                "learning_rate": 0.05,
+                "depth": 3,
+                "l2_leaf_reg": 1.0,
+                "rsm": 0.9,
+                "grow_policy": "Lossguide",
+                "max_leaves": 31,
+            },
             "note": "LossGuide growth policy: leaf-wise like LGBM rather than depth-first, may find finer signal boundaries",
         },
         {
@@ -528,8 +746,15 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top10",
             "feature_names": top10,
-            "params": {**cat_base, "iterations": 200, "learning_rate": 0.03, "depth": 4,
-                       "l2_leaf_reg": 3.0, "rsm": 0.8, "border_count": 64},
+            "params": {
+                **cat_base,
+                "iterations": 200,
+                "learning_rate": 0.03,
+                "depth": 4,
+                "l2_leaf_reg": 3.0,
+                "rsm": 0.8,
+                "border_count": 64,
+            },
             "note": "CatBoost on minimal top-10 set + moderate rsm: focused on purest signals (vol dry-up + RSI divergence)",
         },
         {
@@ -537,8 +762,16 @@ def build_configs(available_top20: list[str]) -> list[dict]:
             "model_type": "catboost",
             "feature_set": "top20",
             "feature_names": top20,
-            "params": {**cat_base, "iterations": 500, "learning_rate": 0.01, "depth": 5,
-                       "l2_leaf_reg": 5.0, "rsm": 0.7, "border_count": 64, "bagging_temperature": 1.0},
+            "params": {
+                **cat_base,
+                "iterations": 500,
+                "learning_rate": 0.01,
+                "depth": 5,
+                "l2_leaf_reg": 5.0,
+                "rsm": 0.7,
+                "border_count": 64,
+                "bagging_temperature": 1.0,
+            },
             "note": "Long conservative CatBoost: full Bayesian bagging + L2=5 + fine bins on all 20 features",
         },
     ]
@@ -577,14 +810,14 @@ def run_stage1(features, target, prices_daily, available_top20, tracker):
         feature_set = cfg["feature_set"]
         note = cfg["note"]
 
-        print(f"\n[{i+1:2d}/{len(configs)}] {model_type.upper()} | {feature_set} | {note[:60]}...", flush=True)
-        print(f"  Params: {json.dumps({k: v for k, v in params.items() if k not in ['tree_method', 'device', 'task_type', 'devices', 'random_state', 'verbose', 'eval_metric', 'n_jobs']}, default=str)}", flush=True)
+        print(f"\n[{i + 1:2d}/{len(configs)}] {model_type.upper()} | {feature_set} | {note[:60]}...", flush=True)
+        print(
+            f"  Params: {json.dumps({k: v for k, v in params.items() if k not in ['tree_method', 'device', 'task_type', 'devices', 'random_state', 'verbose', 'eval_metric', 'n_jobs']}, default=str)}",
+            flush=True,
+        )
 
         try:
-            metrics = run_single_config(
-                model_cls, params, X_train, y_train, X_val, y_val,
-                prices_daily, feature_names
-            )
+            metrics = run_single_config(model_cls, params, X_train, y_train, X_val, y_val, prices_daily, feature_names)
             sharpe_val = metrics["sharpe"]
             sharpe_train = metrics.get("sharpe_train", 0.0)
             accuracy = metrics["accuracy"]
@@ -595,7 +828,7 @@ def run_stage1(features, target, prices_daily, available_top20, tracker):
             overfit = sharpe_train > sharpe_val * 1.5 if sharpe_val > 0.2 else False
             interp = f"Val Sharpe={sharpe_val:.3f}, Train Sharpe={sharpe_train:.3f}"
             if overfit:
-                interp += f" — OVERFIT (train 2× val)"
+                interp += " — OVERFIT (train 2× val)"
             elif sharpe_val >= BASELINE_SHARPE:
                 interp += f" — BEATS BASELINE ({BASELINE_SHARPE})"
             elif sharpe_val >= 0.7:
@@ -603,12 +836,19 @@ def run_stage1(features, target, prices_daily, available_top20, tracker):
             else:
                 interp += " — below threshold"
 
-            print(f"  RESULT: Sharpe={sharpe_val:.3f} (train={sharpe_train:.3f}) Acc={accuracy:.4f} AUC={auc:.4f} [{elapsed:.1f}s]", flush=True)
+            print(
+                f"  RESULT: Sharpe={sharpe_val:.3f} (train={sharpe_train:.3f}) Acc={accuracy:.4f} AUC={auc:.4f} [{elapsed:.1f}s]",
+                flush=True,
+            )
             print(f"  INTERPRETATION: {interp}", flush=True)
 
             result_entry = {
-                "config": {**params, "model_type": model_type, "feature_set": feature_set,
-                           "n_features": len(feature_names)},
+                "config": {
+                    **params,
+                    "model_type": model_type,
+                    "feature_set": feature_set,
+                    "n_features": len(feature_names),
+                },
                 "metrics": metrics,
                 "note": note,
                 "interpretation": interp,
@@ -616,18 +856,19 @@ def run_stage1(features, target, prices_daily, available_top20, tracker):
             results_by_family[model_type].append(result_entry)
             all_results.append(result_entry)
 
-            log_progress("screen", model_type, sharpe_val, sharpe_train, accuracy, auc,
-                         feature_set, str(params))
+            log_progress("screen", model_type, sharpe_val, sharpe_train, accuracy, auc, feature_set, str(params))
 
         except Exception as e:
             print(f"  ERROR: {e}", flush=True)
             log_progress("screen", model_type, 0.0, 0.0, 0.0, 0.0, feature_set, str(params))
-            all_results.append({
-                "config": {**params, "model_type": model_type, "feature_set": feature_set},
-                "metrics": {"sharpe": 0.0, "accuracy": 0.0, "auc": 0.5, "elapsed_seconds": 0.0},
-                "note": note,
-                "interpretation": f"ERROR: {e}",
-            })
+            all_results.append(
+                {
+                    "config": {**params, "model_type": model_type, "feature_set": feature_set},
+                    "metrics": {"sharpe": 0.0, "accuracy": 0.0, "auc": 0.5, "elapsed_seconds": 0.0},
+                    "note": note,
+                    "interpretation": f"ERROR: {e}",
+                }
+            )
 
     # Log each family as a sweep batch
     for family, results in results_by_family.items():
@@ -655,9 +896,12 @@ def run_stage1(features, target, prices_daily, available_top20, tracker):
     for r in sorted(all_results, key=lambda x: x["metrics"].get("sharpe", 0), reverse=True)[:10]:
         cfg = r["config"]
         m = r["metrics"]
-        print(f"  {cfg.get('model_type','?'):10} {cfg.get('feature_set','?'):7} "
-              f"Sharpe={m.get('sharpe',0):.3f} "
-              f"Acc={m.get('accuracy',0):.4f} | {r['note'][:50]}", flush=True)
+        print(
+            f"  {cfg.get('model_type', '?'):10} {cfg.get('feature_set', '?'):7} "
+            f"Sharpe={m.get('sharpe', 0):.3f} "
+            f"Acc={m.get('accuracy', 0):.4f} | {r['note'][:50]}",
+            flush=True,
+        )
 
     return all_results
 
@@ -669,9 +913,7 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
     print("=" * 80, flush=True)
 
     # Sort by validation Sharpe, take top 5
-    sorted_results = sorted(all_stage1_results,
-                            key=lambda x: x["metrics"].get("sharpe", 0),
-                            reverse=True)
+    sorted_results = sorted(all_stage1_results, key=lambda x: x["metrics"].get("sharpe", 0), reverse=True)
 
     # Ensure at least 1 from each family in top 5 if possible
     top5 = []
@@ -694,12 +936,15 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
 
     top5.sort(key=lambda x: x["metrics"].get("sharpe", 0), reverse=True)
 
-    print(f"\nTop 5 configs for walk-forward:", flush=True)
+    print("\nTop 5 configs for walk-forward:", flush=True)
     for i, r in enumerate(top5):
         cfg = r["config"]
         m = r["metrics"]
-        print(f"  {i+1}. {cfg.get('model_type','?'):10} {cfg.get('feature_set','?'):7} "
-              f"Stage1_Sharpe={m.get('sharpe',0):.3f} | {r['note'][:50]}", flush=True)
+        print(
+            f"  {i + 1}. {cfg.get('model_type', '?'):10} {cfg.get('feature_set', '?'):7} "
+            f"Stage1_Sharpe={m.get('sharpe', 0):.3f} | {r['note'][:50]}",
+            flush=True,
+        )
 
     wf_results = []
 
@@ -725,21 +970,27 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
         feature_names = feat_map.get(feature_set, TOP_15_FEATURES)
 
         # Rebuild params without non-model keys
-        params = {k: v for k, v in cfg.items()
-                  if k not in ["model_type", "feature_set", "n_features", "config_hash",
-                               "git_hash", "data_manifest_hash"]}
+        params = {
+            k: v
+            for k, v in cfg.items()
+            if k not in ["model_type", "feature_set", "n_features", "config_hash", "git_hash", "data_manifest_hash"]
+        }
 
         stage1_sharpe = r["metrics"].get("sharpe", 0)
-        print(f"\n[{i+1}/5] Walk-forward: {model_type.upper()} {feature_set} (Stage1 Sharpe={stage1_sharpe:.3f})", flush=True)
+        print(
+            f"\n[{i + 1}/5] Walk-forward: {model_type.upper()} {feature_set} (Stage1 Sharpe={stage1_sharpe:.3f})",
+            flush=True,
+        )
 
         try:
-            wf_metrics = walk_forward_validate(
-                model_cls, params, features, target, prices_daily, feature_names
-            )
+            wf_metrics = walk_forward_validate(model_cls, params, features, target, prices_daily, feature_names)
             wf_sharpe = wf_metrics["wf_sharpe"]
 
-            print(f"  Walk-forward Sharpe: {wf_sharpe:.3f} (std={wf_metrics.get('wf_sharpe_std',0):.3f}, "
-                  f"wins={wf_metrics.get('pct_positive_windows',0):.0%})", flush=True)
+            print(
+                f"  Walk-forward Sharpe: {wf_sharpe:.3f} (std={wf_metrics.get('wf_sharpe_std', 0):.3f}, "
+                f"wins={wf_metrics.get('pct_positive_windows', 0):.0%})",
+                flush=True,
+            )
 
             # Log as individual experiment
             all_metrics = {**r["metrics"], **wf_metrics}
@@ -747,8 +998,13 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
 
             tracker.log_experiment(
                 name=log_name,
-                config={**params, "model_type": model_type, "feature_set": feature_set,
-                        "stage": "walk_forward", "stage1_sharpe": stage1_sharpe},
+                config={
+                    **params,
+                    "model_type": model_type,
+                    "feature_set": feature_set,
+                    "stage": "walk_forward",
+                    "stage1_sharpe": stage1_sharpe,
+                },
                 metrics={
                     "sharpe": wf_sharpe,
                     "sharpe_stage1": stage1_sharpe,
@@ -761,34 +1017,45 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
                 job_type="sweep",
             )
 
-            log_progress("walkforward", model_type, wf_sharpe, stage1_sharpe,
-                         r["metrics"].get("accuracy", 0), r["metrics"].get("auc", 0.5),
-                         feature_set, str(params))
+            log_progress(
+                "walkforward",
+                model_type,
+                wf_sharpe,
+                stage1_sharpe,
+                r["metrics"].get("accuracy", 0),
+                r["metrics"].get("auc", 0.5),
+                feature_set,
+                str(params),
+            )
 
-            wf_results.append({
-                "model_type": model_type,
-                "feature_set": feature_set,
-                "params": params,
-                "stage1_sharpe": stage1_sharpe,
-                "wf_sharpe": wf_sharpe,
-                "wf_metrics": wf_metrics,
-                "note": note,
-                "beats_baseline": wf_sharpe >= BASELINE_SHARPE,
-            })
+            wf_results.append(
+                {
+                    "model_type": model_type,
+                    "feature_set": feature_set,
+                    "params": params,
+                    "stage1_sharpe": stage1_sharpe,
+                    "wf_sharpe": wf_sharpe,
+                    "wf_metrics": wf_metrics,
+                    "note": note,
+                    "beats_baseline": wf_sharpe >= BASELINE_SHARPE,
+                }
+            )
 
         except Exception as e:
             print(f"  ERROR in walk-forward: {e}", flush=True)
-            wf_results.append({
-                "model_type": model_type,
-                "feature_set": feature_set,
-                "params": params,
-                "stage1_sharpe": stage1_sharpe,
-                "wf_sharpe": 0.0,
-                "wf_metrics": {},
-                "note": note,
-                "beats_baseline": False,
-                "error": str(e),
-            })
+            wf_results.append(
+                {
+                    "model_type": model_type,
+                    "feature_set": feature_set,
+                    "params": params,
+                    "stage1_sharpe": stage1_sharpe,
+                    "wf_sharpe": 0.0,
+                    "wf_metrics": {},
+                    "note": note,
+                    "beats_baseline": False,
+                    "error": str(e),
+                }
+            )
 
     # Sort by WF Sharpe
     wf_results.sort(key=lambda x: x["wf_sharpe"], reverse=True)
@@ -798,8 +1065,11 @@ def run_stage2(all_stage1_results, features, target, prices_daily, tracker):
     print("=" * 80, flush=True)
     for r in wf_results:
         beat = " *** BEATS BASELINE ***" if r["beats_baseline"] else ""
-        print(f"  {r['model_type']:10} {r['feature_set']:7} "
-              f"WF_Sharpe={r['wf_sharpe']:.3f} Stage1={r['stage1_sharpe']:.3f}{beat}", flush=True)
+        print(
+            f"  {r['model_type']:10} {r['feature_set']:7} "
+            f"WF_Sharpe={r['wf_sharpe']:.3f} Stage1={r['stage1_sharpe']:.3f}{beat}",
+            flush=True,
+        )
 
     return wf_results
 
@@ -824,8 +1094,7 @@ def write_summary(all_stage1_results, wf_results):
         "|---|-------|-------------|:---:|:---:|:---:|:---:|------|",
     ]
 
-    sorted_s1 = sorted(all_stage1_results,
-                       key=lambda x: x["metrics"].get("sharpe", 0), reverse=True)
+    sorted_s1 = sorted(all_stage1_results, key=lambda x: x["metrics"].get("sharpe", 0), reverse=True)
     for i, r in enumerate(sorted_s1):
         cfg = r["config"]
         m = r["metrics"]
@@ -833,9 +1102,9 @@ def write_summary(all_stage1_results, wf_results):
         sharpe_t = m.get("sharpe_train", 0)
         beat = " ✓" if sharpe_v >= BASELINE_SHARPE else ""
         lines.append(
-            f"| {i+1} | {cfg.get('model_type','?')} | {cfg.get('feature_set','?')} "
+            f"| {i + 1} | {cfg.get('model_type', '?')} | {cfg.get('feature_set', '?')} "
             f"| {sharpe_v:.3f}{beat} | {sharpe_t:.3f} "
-            f"| {m.get('accuracy',0):.4f} | {m.get('auc',0):.4f} "
+            f"| {m.get('accuracy', 0):.4f} | {m.get('auc', 0):.4f} "
             f"| {r['note'][:60]} |"
         )
 
@@ -851,7 +1120,7 @@ def write_summary(all_stage1_results, wf_results):
         wm = r.get("wf_metrics", {})
         beat = "**YES**" if r["beats_baseline"] else "No"
         lines.append(
-            f"| {i+1} | {r['model_type']} | {r['feature_set']} "
+            f"| {i + 1} | {r['model_type']} | {r['feature_set']} "
             f"| **{r['wf_sharpe']:.3f}** | {r['stage1_sharpe']:.3f} "
             f"| {wm.get('wf_sharpe_std', 0):.3f} "
             f"| {wm.get('pct_positive_windows', 0):.0%} "
@@ -877,20 +1146,23 @@ def write_summary(all_stage1_results, wf_results):
         "",
     ]
     for fam, sharpes in sorted(family_sharpes.items(), key=lambda x: -np.mean(x[1])):
-        lines.append(f"- **{fam}**: mean={np.mean(sharpes):.3f}, max={np.max(sharpes):.3f}, "
-                     f"n_above_baseline={sum(1 for s in sharpes if s>=BASELINE_SHARPE)}/{len(sharpes)}")
+        lines.append(
+            f"- **{fam}**: mean={np.mean(sharpes):.3f}, max={np.max(sharpes):.3f}, "
+            f"n_above_baseline={sum(1 for s in sharpes if s >= BASELINE_SHARPE)}/{len(sharpes)}"
+        )
 
     lines += [
         "",
         f"**Best family: {best_family}** (mean Sharpe={best_family_mean:.3f}, max={best_family_max:.3f})",
         "",
-        "**Hypothesis:** " + {
+        "**Hypothesis:** "
+        + {
             "catboost": "CatBoost's symmetric tree structure and built-in handling of ordered boosting "
-                        "reduces temporal look-ahead risk better than XGB/LGBM, helping on financial time-series.",
+            "reduces temporal look-ahead risk better than XGB/LGBM, helping on financial time-series.",
             "lightgbm": "LightGBM's leaf-wise growth with num_leaves control finds finer signal thresholds "
-                        "in the RSI/momentum feature space that depth-limited models miss.",
+            "in the RSI/momentum feature space that depth-limited models miss.",
             "xgboost": "XGBoost's exact greedy splitting with colsample variance reduction generalizes "
-                        "better on the top-20 feature set due to explicit feature dropout.",
+            "better on the top-20 feature set due to explicit feature dropout.",
         }.get(best_family, "No clear winner — all families performing similarly."),
         "",
         "## Top 5 Configs by Walk-forward Sharpe",
@@ -899,10 +1171,10 @@ def write_summary(all_stage1_results, wf_results):
 
     for i, r in enumerate(wf_results[:5]):
         lines += [
-            f"### {i+1}. {r['model_type'].upper()} — {r['feature_set']} (WF Sharpe: {r['wf_sharpe']:.3f})",
+            f"### {i + 1}. {r['model_type'].upper()} — {r['feature_set']} (WF Sharpe: {r['wf_sharpe']:.3f})",
             f"- Stage1 Sharpe: {r['stage1_sharpe']:.3f}",
             f"- WF metrics: {r.get('wf_metrics', {})}",
-            f"- Key params: {json.dumps({k: v for k, v in r['params'].items() if k not in ['tree_method','device','task_type','devices','random_state','verbose','eval_metric','n_jobs']}, default=str)}",
+            f"- Key params: {json.dumps({k: v for k, v in r['params'].items() if k not in ['tree_method', 'device', 'task_type', 'devices', 'random_state', 'verbose', 'eval_metric', 'n_jobs']}, default=str)}",
             f"- Note: {r['note']}",
             "",
         ]
@@ -1001,8 +1273,10 @@ def main():
     print("SWEEP COMPLETE", flush=True)
     best_wf = max(wf_results, key=lambda x: x["wf_sharpe"]) if wf_results else None
     if best_wf:
-        print(f"Best walk-forward Sharpe: {best_wf['wf_sharpe']:.3f} "
-              f"({best_wf['model_type']} {best_wf['feature_set']})", flush=True)
+        print(
+            f"Best walk-forward Sharpe: {best_wf['wf_sharpe']:.3f} ({best_wf['model_type']} {best_wf['feature_set']})",
+            flush=True,
+        )
         beats = "YES" if best_wf["beats_baseline"] else "NO"
         print(f"Beats Donchian {BASELINE_SHARPE}? {beats}", flush=True)
     print("=" * 80, flush=True)

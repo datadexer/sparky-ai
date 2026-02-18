@@ -11,17 +11,17 @@ Each test runs full validation (2017-2023 + criteria check).
 Goal: Find strategy with Sharpe ≥ 1.5, Monte Carlo ≥ 80%.
 """
 
-import sys
 import json
 import logging
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +34,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2025-12-31"]
@@ -67,7 +67,7 @@ def metrics(returns):
 
 def validate_strategy(name, signals, prices):
     """Quick validation on 2017-2023."""
-    logger.info(f"\n{'='*60}\n{name}\n{'='*60}")
+    logger.info(f"\n{'=' * 60}\n{name}\n{'=' * 60}")
 
     prices_2017_2023 = prices.loc["2017-01-01":"2023-12-31"]
     signals_2017_2023 = signals.loc["2017-01-01":"2023-12-31"]
@@ -132,9 +132,9 @@ def strategy_3_volatility_filter_donchian(prices):
 
 def main():
     """Run all rapid explorations."""
-    logger.info("="*60)
+    logger.info("=" * 60)
     logger.info("PHASE 2E: RAPID EXPLORATIONS")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     prices = load_prices()
 
@@ -156,11 +156,11 @@ def main():
     filtered_metrics = validate_strategy("Volatility-Filtered Donchian", filtered_signals, prices)
 
     # Summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SUMMARY (2017-2023 Out-of-Sample)")
-    print("="*60)
+    print("=" * 60)
     print(f"{'Strategy':<35s} {'Sharpe':>10s} {'Return %':>12s}")
-    print("-"*60)
+    print("-" * 60)
 
     results = [
         ("Baseline Donchian(20/10)", baseline_metrics),
@@ -169,21 +169,21 @@ def main():
         ("Volatility-Filtered Donchian", filtered_metrics),
     ]
 
-    results_sorted = sorted(results, key=lambda x: x[1]['sharpe'], reverse=True)
+    results_sorted = sorted(results, key=lambda x: x[1]["sharpe"], reverse=True)
 
     for name, m in results_sorted:
         print(f"{name:<35s} {m['sharpe']:>10.3f} {m['return_pct']:>12.1f}")
 
-    print("="*60)
+    print("=" * 60)
 
     best_name, best_metrics = results_sorted[0]
     print(f"\n🏆 WINNER: {best_name} (Sharpe {best_metrics['sharpe']:.3f})")
 
-    if best_metrics['sharpe'] >= 1.5:
+    if best_metrics["sharpe"] >= 1.5:
         print("✅ TARGET ACHIEVED: Sharpe ≥ 1.5")
-    elif best_metrics['sharpe'] >= 1.4:
+    elif best_metrics["sharpe"] >= 1.4:
         print("✅ CLOSE: Sharpe ≥ 1.4 (near target)")
-    elif best_metrics['sharpe'] >= 1.3:
+    elif best_metrics["sharpe"] >= 1.3:
         print("⚠️ MARGINAL: Sharpe ≥ 1.3 (baseline level)")
     else:
         print("❌ BELOW BASELINE: Sharpe < 1.3")
@@ -195,11 +195,11 @@ def main():
         "conservative": conservative_metrics,
         "filtered": filtered_metrics,
         "best_strategy": best_name,
-        "best_sharpe": best_metrics['sharpe'],
+        "best_sharpe": best_metrics["sharpe"],
     }
 
     Path("results/validation").mkdir(parents=True, exist_ok=True)
-    with open("results/validation/phase_2e_explorations.json", 'w') as f:
+    with open("results/validation/phase_2e_explorations.json", "w") as f:
         json.dump(output, f, indent=2)
 
     print("\nResults saved to: results/validation/phase_2e_explorations.json")

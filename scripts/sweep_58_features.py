@@ -8,22 +8,24 @@ Tests CatBoost and LightGBM on the expanded feature set:
 
 Total: 58 features on 4,795 daily samples from 115K hourly candles
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 # Force unbuffered output
 import os
-os.environ['PYTHONUNBUFFERED'] = '1'
 
-import pandas as pd
-import numpy as np
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import json
 from pathlib import Path
-from datetime import datetime
-from sklearn.metrics import accuracy_score, roc_auc_score
 
+import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
+from sklearn.metrics import accuracy_score, roc_auc_score
 
 from sparky.backtest.costs import TransactionCostModel
 
@@ -37,7 +39,7 @@ def load_data():
 
     # Target is a DataFrame with 'target' column, extract as Series
     if isinstance(target, pd.DataFrame):
-        target = target['target']
+        target = target["target"]
 
     print(f"Features: {features.shape[0]} samples, {features.shape[1]} features", flush=True)
     print(f"Targets: {target.shape[0]} samples", flush=True)
@@ -53,8 +55,8 @@ def validate_config(features, target, model_name, params):
     Note: Data goes back to 2012, so 2020 has 8 years of training data.
     """
     # Filter to in-sample period only (up to 2024-06-01 embargo boundary)
-    features_in = features.loc[:'2024-05-31']
-    target_in = target.loc[:'2024-05-31']
+    features_in = features.loc[:"2024-05-31"]
+    target_in = target.loc[:"2024-05-31"]
 
     years = [2020, 2021, 2022, 2023]
     results = []
@@ -76,7 +78,7 @@ def validate_config(features, target, model_name, params):
             continue
 
         # Train
-        if model_name == 'CatBoost':
+        if model_name == "CatBoost":
             model = CatBoostClassifier(**params, verbose=0, random_state=42)
         else:  # LightGBM
             model = LGBMClassifier(**params, verbose=-1, random_state=42)
@@ -109,7 +111,7 @@ def validate_config(features, target, model_name, params):
         signals = signals.loc[common_idx]
         prices_test = prices_test.loc[common_idx]
 
-        returns = prices_test['close'].pct_change()
+        returns = prices_test["close"].pct_change()
         strategy_returns = signals.shift(1) * returns  # Signal at T trades at T+1
 
         # Apply transaction costs
@@ -124,34 +126,36 @@ def validate_config(features, target, model_name, params):
         else:
             sharpe = 0.0
 
-        results.append({
-            'year': year,
-            'accuracy': acc,
-            'auc': auc,
-            'sharpe': sharpe,
-            'test_samples': len(X_test),
-        })
+        results.append(
+            {
+                "year": year,
+                "accuracy": acc,
+                "auc": auc,
+                "sharpe": sharpe,
+                "test_samples": len(X_test),
+            }
+        )
 
         print(f"    Year {year}: Acc={acc:.3f}, AUC={auc:.3f}, Sharpe={sharpe:.3f}")
 
     # Aggregate
     if len(results) == 0:
         return {
-            'mean_sharpe': 0.0,
-            'mean_accuracy': 0.5,
-            'mean_auc': 0.5,
-            'yearly_results': [],
+            "mean_sharpe": 0.0,
+            "mean_accuracy": 0.5,
+            "mean_auc": 0.5,
+            "yearly_results": [],
         }
 
-    mean_sharpe = np.mean([r['sharpe'] for r in results])
-    mean_acc = np.mean([r['accuracy'] for r in results])
-    mean_auc = np.mean([r['auc'] for r in results])
+    mean_sharpe = np.mean([r["sharpe"] for r in results])
+    mean_acc = np.mean([r["accuracy"] for r in results])
+    mean_auc = np.mean([r["auc"] for r in results])
 
     return {
-        'mean_sharpe': mean_sharpe,
-        'mean_accuracy': mean_acc,
-        'mean_auc': mean_auc,
-        'yearly_results': results,
+        "mean_sharpe": mean_sharpe,
+        "mean_accuracy": mean_acc,
+        "mean_auc": mean_auc,
+        "yearly_results": results,
     }
 
 
@@ -166,35 +170,39 @@ def run_sweep():
     for depth in [3, 4, 5]:
         for lr in [0.01, 0.03, 0.05]:
             for l2 in [1.0, 3.0, 5.0]:
-                configs.append({
-                    'model': 'CatBoost',
-                    'params': {
-                        'iterations': 200,
-                        'depth': depth,
-                        'learning_rate': lr,
-                        'l2_leaf_reg': l2,
-                        'task_type': 'GPU',
-                        'devices': '0',
+                configs.append(
+                    {
+                        "model": "CatBoost",
+                        "params": {
+                            "iterations": 200,
+                            "depth": depth,
+                            "learning_rate": lr,
+                            "l2_leaf_reg": l2,
+                            "task_type": "GPU",
+                            "devices": "0",
+                        },
                     }
-                })
+                )
 
     # LightGBM configs
     for depth in [3, 4, 5]:
         for lr in [0.01, 0.03, 0.05]:
             for l1 in [0.0, 0.5, 1.0]:
-                configs.append({
-                    'model': 'LightGBM',
-                    'params': {
-                        'n_estimators': 200,
-                        'max_depth': depth,
-                        'learning_rate': lr,
-                        'reg_lambda': 1.0,
-                        'reg_alpha': l1,
-                        'device': 'gpu',
-                        'gpu_platform_id': 0,
-                        'gpu_device_id': 0,
+                configs.append(
+                    {
+                        "model": "LightGBM",
+                        "params": {
+                            "n_estimators": 200,
+                            "max_depth": depth,
+                            "learning_rate": lr,
+                            "reg_lambda": 1.0,
+                            "reg_alpha": l1,
+                            "device": "gpu",
+                            "gpu_platform_id": 0,
+                            "gpu_device_id": 0,
+                        },
                     }
-                })
+                )
 
     print(f"\nRunning sweep: {len(configs)} configurations")
     print("=" * 80)
@@ -205,25 +213,27 @@ def run_sweep():
         print(f"\nConfig {i}/{len(configs)}: {config['model']} - {config['params']}", flush=True)
 
         try:
-            result = validate_config(features, target, config['model'], config['params'])
-            result['config'] = config
+            result = validate_config(features, target, config["model"], config["params"])
+            result["config"] = config
             all_results.append(result)
 
             print(f"  RESULT: Sharpe={result['mean_sharpe']:.3f}, Acc={result['mean_accuracy']:.3f}", flush=True)
 
         except Exception as e:
             print(f"  ERROR: {e}")
-            all_results.append({
-                'config': config,
-                'error': str(e),
-                'mean_sharpe': 0.0,
-            })
+            all_results.append(
+                {
+                    "config": config,
+                    "error": str(e),
+                    "mean_sharpe": 0.0,
+                }
+            )
 
     # Save results
     output_path = Path("results/validation/sweep_58_features.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)
 
     print("\n" + "=" * 80)
@@ -231,21 +241,21 @@ def run_sweep():
     print(f"Results saved to {output_path}")
 
     # Report top 10
-    valid_results = [r for r in all_results if 'error' not in r]
-    valid_results.sort(key=lambda x: x['mean_sharpe'], reverse=True)
+    valid_results = [r for r in all_results if "error" not in r]
+    valid_results.sort(key=lambda x: x["mean_sharpe"], reverse=True)
 
     print("\nTOP 10 CONFIGS BY SHARPE:")
     for i, r in enumerate(valid_results[:10], 1):
-        model = r['config']['model']
-        params = r['config']['params']
+        model = r["config"]["model"]
+        params = r["config"]["params"]
         print(f"{i}. {model} - Sharpe={r['mean_sharpe']:.3f}, Acc={r['mean_accuracy']:.3f}")
         print(f"   Params: {params}")
 
     # Compare to baseline
     baseline_sharpe = 1.062  # Multi-TF Donchian (corrected)
-    best_sharpe = valid_results[0]['mean_sharpe'] if valid_results else 0.0
+    best_sharpe = valid_results[0]["mean_sharpe"] if valid_results else 0.0
 
-    print(f"\nBASELINE COMPARISON:")
+    print("\nBASELINE COMPARISON:")
     print(f"  Baseline (Donchian): {baseline_sharpe:.3f}")
     print(f"  Best ML: {best_sharpe:.3f}")
     print(f"  Improvement: {best_sharpe - baseline_sharpe:+.3f} ({100 * (best_sharpe / baseline_sharpe - 1):+.1f}%)")
@@ -258,5 +268,5 @@ def run_sweep():
         print("\n❌ ML does not beat baseline - Consider alternative approaches")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_sweep()
