@@ -282,6 +282,106 @@ class OrchestratorState:
         with open(filepath) as f:
             return cls.from_dict(json.load(f))
 
+    @classmethod
+    def reconstruct_from_wandb(cls, name: str, directive_tags: list[str]) -> Optional["OrchestratorState"]:
+        """Reconstruct state from wandb runs when the state file is missing.
+
+        Queries wandb for all runs matching the directive's tags, groups them
+        by session_NNN tag, and rebuilds session records with best metrics.
+
+        Returns None if no matching runs are found or wandb is unreachable.
+        """
+        try:
+            from sparky.tracking.experiment import ExperimentTracker
+
+            tracker = ExperimentTracker(experiment_name=name)
+            runs = tracker._fetch_runs(filters={"tags": {"$all": directive_tags}} if directive_tags else {})
+            if not runs:
+                return None
+
+            # Group runs by session tag
+            sessions_map: dict[int, dict] = {}
+            for run in runs:
+                session_num = None
+                for tag in run.tags:
+                    if tag.startswith("session_") and tag[8:].isdigit():
+                        session_num = int(tag[8:])
+                        break
+                if session_num is None:
+                    continue
+
+                if session_num not in sessions_map:
+                    sessions_map[session_num] = {
+                        "run_ids": [],
+                        "configs": [],
+                        "best_sharpe": None,
+                        "best_dsr": None,
+                        "created_at": None,
+                    }
+
+                entry = sessions_map[session_num]
+                entry["run_ids"].append(run.id)
+                entry["configs"].append(dict(run.config))
+
+                s = run.summary.get("sharpe") or run.summary.get("best_sharpe")
+                d = run.summary.get("dsr") or run.summary.get("best_dsr")
+                if s is not None and (entry["best_sharpe"] is None or s > entry["best_sharpe"]):
+                    entry["best_sharpe"] = s
+                if d is not None and (entry["best_dsr"] is None or d > entry["best_dsr"]):
+                    entry["best_dsr"] = d
+
+                # Track earliest run creation time for session ordering
+                created = getattr(run, "created_at", None)
+                if created and (entry["created_at"] is None or created < entry["created_at"]):
+                    entry["created_at"] = created
+
+            if not sessions_map:
+                return None
+
+            # Build session records in order
+            session_records = []
+            for num in sorted(sessions_map):
+                entry = sessions_map[num]
+                record = SessionRecord(
+                    session_id=f"reconstructed_{num:03d}",
+                    session_number=num,
+                    start_ts=entry["created_at"] or "",
+                    end_ts="",
+                    best_sharpe=entry["best_sharpe"],
+                    best_dsr=entry["best_dsr"],
+                    wandb_run_ids=entry["run_ids"],
+                    wandb_run_configs=entry["configs"],
+                )
+                session_records.append(record)
+
+            # Find overall best
+            best_result: dict = {}
+            for rec in session_records:
+                s = rec.best_sharpe or 0
+                curr = best_result.get("sharpe", 0) or 0
+                if s > curr:
+                    best_result = {
+                        "sharpe": rec.best_sharpe,
+                        "dsr": rec.best_dsr,
+                        "session_number": rec.session_number,
+                    }
+
+            state = cls(
+                name=name,
+                status="done",
+                session_count=max(sessions_map),
+                best_result=best_result,
+                sessions=session_records,
+            )
+            logger.info(
+                f"Reconstructed state from wandb: {len(session_records)} sessions, "
+                f"best Sharpe={best_result.get('sharpe', 'N/A')}"
+            )
+            return state
+        except Exception as e:
+            logger.warning(f"Failed to reconstruct state from wandb: {e}")
+            return None
+
 
 # ── Jaccard Diversity ─────────────────────────────────────────────────────
 
@@ -502,11 +602,19 @@ class ResearchOrchestrator:
         self._lockfile.unlink(missing_ok=True)
 
     def _load_or_create_state(self) -> OrchestratorState:
-        """Load existing state or create fresh."""
+        """Load existing state, reconstruct from wandb, or create fresh."""
         state = OrchestratorState.load(self.directive.name, self.state_dir)
-        if state is None:
-            state = OrchestratorState(name=self.directive.name)
-        return state
+        if state is not None:
+            return state
+
+        # State file missing — try to reconstruct from wandb
+        state = OrchestratorState.reconstruct_from_wandb(self.directive.name, self.directive.wandb_tags)
+        if state is not None:
+            logger.info("State file missing — reconstructed from wandb runs")
+            state.save(self.state_dir)
+            return state
+
+        return OrchestratorState(name=self.directive.name)
 
     def _check_gate_request(self, state: OrchestratorState) -> bool:
         """Check if the agent wrote GATE_REQUEST.md. Returns True if gate triggered."""
@@ -632,19 +740,9 @@ class ResearchOrchestrator:
         parts = [
             f"You are session {session_number} of research directive '{d.name}'.",
             "",
-            "## Essential Rules (from CLAUDE.md — do NOT re-read the file)",
-            "- Load data: `from sparky.data.loader import load; df = load('dataset', purpose='training')`",
-            "- NEVER use raw `pd.read_parquet()`. The loader enforces holdout boundaries.",
-            "- Annualization: `periods_per_year=365` (daily) or `8760` (hourly). NEVER 252.",
-            "- Experiment tracking: `from sparky.tracking.experiment import ExperimentTracker`",
-            "- Use `log_sweep()` for bulk configs, `log_experiment()` for validated results.",
-            "- Compute metrics: `from sparky.tracking.metrics import compute_all_metrics`",
-            "- DSR > 0.95 = statistically significant. DSR < 0.95 = could be a fluke.",
-            "- Run guardrails: `from sparky.tracking.guardrails import run_pre_checks, run_post_checks`",
-            "- GPU required: XGBoost `device='cuda'`, CatBoost `task_type='GPU'`, LightGBM `device='gpu'`",
-            "- Timeouts: `from sparky.oversight.timeout import with_timeout`",
-            "- Transaction costs: `from sparky.backtest.costs import TransactionCostModel`",
-            "- Python: use `.venv/bin/python`, NOT system python.",
+            "Read RESEARCH_AGENT.md for all API usage, rules, and examples. "
+            "Do NOT read CLAUDE.md or explore source files — everything you need "
+            "is in RESEARCH_AGENT.md and this prompt.",
             "",
             f"## Objective\n{d.objective}",
             "",
@@ -689,26 +787,7 @@ class ResearchOrchestrator:
         )
         parts.append("")
 
-        # Cost standard
-        parts.append(
-            "## Transaction Costs — 50 bps per side\n"
-            "ALL backtests MUST use `transaction_costs_bps: 50` (50 bps per side, "
-            "100 bps round trip). This reflects Coinbase taker fees / Uniswap DEX costs. "
-            "No discounts, no limit orders. The guardrail will BLOCK runs below 50 bps.\n"
-            "Any prior results using lower costs are NOT directly comparable."
-        )
-        parts.append("")
-
-        # Git prohibition
-        parts.append(
-            "## CRITICAL: Do NOT Use Git\n"
-            "You are a research agent. You must NOT create branches, commit, push, "
-            "or run any git commands. Your outputs go to wandb and results/ only.\n"
-            "If you need a platform change (new feature, bug fix, data issue), "
-            "write `GATE_REQUEST.md` to the project root explaining what you need, "
-            "then exit. The orchestrator will pause for oversight."
-        )
-        parts.append("")
+        # Reminder: costs and git rules are in RESEARCH_AGENT.md
 
         # Stuck protocol
         parts.append(
