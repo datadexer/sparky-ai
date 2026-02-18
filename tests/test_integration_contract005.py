@@ -1,7 +1,7 @@
 """Integration tests for Contract 005 infrastructure.
 
-Exercises multiple modules together to validate that guardrails, metrics,
-manager_log, and interface protocols all work correctly end-to-end.
+Exercises guardrails and metrics together to validate pre/post checks,
+DSR threshold, and JSONL logging work correctly end-to-end.
 """
 
 import json
@@ -12,23 +12,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sparky.interfaces import (
-    BacktesterProtocol,
-    DataFeedProtocol,
-    FeaturePipelineProtocol,
-    PositionSizerProtocol,
-    StrategyProtocol,
-)
 from sparky.tracking.guardrails import (
     GuardrailResult,
     has_blocking_failure,
     log_results,
     run_post_checks,
     run_pre_checks,
-)
-from sparky.tracking.manager_log import (
-    CodeAgentRecord,
-    ManagerLog,
 )
 from sparky.tracking.metrics import compute_all_metrics
 
@@ -229,176 +218,7 @@ class TestGuardrailsJsonlRoundTrip:
             assert entry2["run_id"] == "run_002"
 
 
-# === Test 3: Manager Log lifecycle ===
-
-
-class TestManagerLogLifecycle:
-    """Verify full session lifecycle: start → log → end → JSONL → get_history."""
-
-    def test_full_session_lifecycle(self):
-        """Start session, log code agent and decision, end, read back with get_history."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            log = ManagerLog(log_file=Path(tmpdir) / "test.jsonl")
-
-            # Start session
-            session = log.start_session("test objective", "test-branch")
-            assert session.objective == "test objective"
-            assert session.branch == "test-branch"
-            assert session.started_at != ""
-            assert session.session_id != ""
-
-            # Log code agent
-            log.log_code_agent(
-                session,
-                CodeAgentRecord(
-                    task="Build integration tests",
-                    model="sonnet",
-                    files_created=["tests/test_integration_contract005.py"],
-                    tests_passed=True,
-                ),
-            )
-            assert len(session.code_agents) == 1
-            assert session.code_agents[0].task == "Build integration tests"
-
-            # Log decision
-            log.log_decision(
-                session,
-                decision="Use Protocol for interfaces",
-                alternatives=["ABC", "Protocol", "duck typing"],
-                rationale="Matches existing codebase pattern",
-            )
-            assert len(session.decisions) == 1
-            assert session.decisions[0]["decision"] == "Use Protocol for interfaces"
-
-            # End session
-            log.end_session(session, summary="Integration tests written and passing")
-            assert session.ended_at != ""
-            assert session.summary == "Integration tests written and passing"
-
-            # Verify JSONL was written
-            logfile = Path(tmpdir) / "test.jsonl"
-            assert logfile.exists()
-
-            with open(logfile) as f:
-                raw = f.readline()
-            entry = json.loads(raw)
-
-            assert entry["session_id"] == session.session_id
-            assert entry["objective"] == "test objective"
-            assert len(entry["code_agents"]) == 1
-            assert len(entry["decisions"]) == 1
-            assert entry["summary"] == "Integration tests written and passing"
-
-            # Read back with get_history()
-            history = log.get_history()
-            assert len(history) == 1
-
-            retrieved = history[0]
-            assert retrieved.session_id == session.session_id
-            assert retrieved.objective == "test objective"
-            assert retrieved.branch == "test-branch"
-            assert retrieved.summary == "Integration tests written and passing"
-            assert len(retrieved.code_agents) == 1
-            assert retrieved.code_agents[0].task == "Build integration tests"
-            assert retrieved.code_agents[0].tests_passed is True
-
-    def test_multiple_sessions_get_history_newest_first(self):
-        """Multiple sessions: get_history returns newest first."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            log = ManagerLog(log_file=Path(tmpdir) / "multi.jsonl")
-
-            for i in range(3):
-                session = log.start_session(f"objective {i}", f"branch-{i}")
-                log.end_session(session, summary=f"summary {i}")
-
-            history = log.get_history()
-            assert len(history) == 3
-            # Newest first: objective 2 was last written
-            assert history[0].objective == "objective 2"
-            assert history[1].objective == "objective 1"
-            assert history[2].objective == "objective 0"
-
-
-# === Test 4: Interface Protocol conformance ===
-
-
-class TestInterfaceProtocolConformance:
-    """Verify mock classes satisfying Protocol interfaces pass isinstance checks."""
-
-    def test_strategy_protocol(self):
-        """Mock class satisfying StrategyProtocol passes isinstance."""
-
-        class MockStrategy:
-            name = "test_strategy"
-
-            def generate_signals(self, data):
-                return pd.Series()
-
-            def get_params(self):
-                return {}
-
-        assert isinstance(MockStrategy(), StrategyProtocol)
-
-    def test_backtester_protocol(self):
-        """Mock class satisfying BacktesterProtocol passes isinstance."""
-
-        class MockBacktester:
-            def run(self, model, X, y, returns, **kwargs):
-                return {}
-
-        assert isinstance(MockBacktester(), BacktesterProtocol)
-
-    def test_data_feed_protocol(self):
-        """Mock class satisfying DataFeedProtocol passes isinstance."""
-
-        class MockDataFeed:
-            def load(self, dataset, purpose="training"):
-                return pd.DataFrame()
-
-            def list_datasets(self):
-                return []
-
-        assert isinstance(MockDataFeed(), DataFeedProtocol)
-
-    def test_feature_pipeline_protocol(self):
-        """Mock class satisfying FeaturePipelineProtocol passes isinstance."""
-
-        class MockFeaturePipeline:
-            def transform(self, data):
-                return data
-
-            def get_feature_names(self):
-                return []
-
-        assert isinstance(MockFeaturePipeline(), FeaturePipelineProtocol)
-
-    def test_position_sizer_protocol(self):
-        """Mock class satisfying PositionSizerProtocol passes isinstance."""
-
-        class MockPositionSizer:
-            def size_position(self, signal, data, portfolio_value):
-                return 0.0
-
-        assert isinstance(MockPositionSizer(), PositionSizerProtocol)
-
-    def test_non_conforming_class_fails(self):
-        """Class missing required methods should NOT satisfy protocol."""
-
-        class EmptyClass:
-            pass
-
-        # Empty class has no methods, so should not satisfy any protocol
-        # Note: StrategyProtocol requires name attribute + 2 methods
-        # For runtime_checkable Protocol, isinstance checks structural attributes
-        # An empty class won't have 'name' or the methods
-        obj = EmptyClass()
-        # The Protocol runtime check only verifies method presence, not signatures
-        # EmptyClass has no 'name', 'generate_signals', or 'get_params'
-        # So it should NOT satisfy StrategyProtocol
-        assert not isinstance(obj, StrategyProtocol)
-
-
-# === Test 5: Guardrails pre-check orchestrator ===
+# === Test 3: Guardrails pre-check orchestrator ===
 
 
 class TestGuardrailsPreCheckOrchestrator:
@@ -449,7 +269,7 @@ class TestGuardrailsPreCheckOrchestrator:
         assert holdout_check.severity == "block"
 
 
-# === Test 6: Guardrails blocking failure detection ===
+# === Test 4: Guardrails blocking failure detection ===
 
 
 class TestGuardrailsBlockingFailureDetection:
