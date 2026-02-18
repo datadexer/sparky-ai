@@ -28,6 +28,8 @@ from sklearn.model_selection import TimeSeriesSplit
 
 from sparky.backtest.costs import TransactionCostModel
 from sparky.data.loader import load
+from sparky.tracking.guardrails import has_blocking_failure, log_results, run_post_checks, run_pre_checks
+from sparky.tracking.metrics import compute_all_metrics
 
 # Top 5 base models from sweep (selected in Stage 1 screening, evaluated here on
 # walk-forward 2020-2023 for secondary validation only — not primary results).
@@ -134,9 +136,17 @@ def main():
 
     cost_model = TransactionCostModel.for_btc()
 
+    # Pre-experiment guardrail checks
+    config = {"model": "stacking_ensemble", "cost_bps": 10}
+    pre_results = run_pre_checks(features_in, config)
+    if has_blocking_failure(pre_results):
+        print("PRE-CHECK BLOCKED — aborting.")
+        return
+
     # Yearly walk-forward
     years = [2020, 2021, 2022, 2023]
     results = []
+    all_net_returns = []
 
     for year in years:
         print(f"\n--- Year {year} ---")
@@ -190,6 +200,14 @@ def main():
         prices_year = prices_daily.loc[test_start:test_end]
         sharpe = calculate_sharpe(signals, prices_year, cost_model)
 
+        # Collect net returns for DSR computation
+        common_idx = signals.index.intersection(prices_year.index)
+        pos = signals.loc[common_idx].shift(1).fillna(0)
+        rets = prices_year.loc[common_idx].pct_change().fillna(0)
+        pos_chg = pos.diff().abs()
+        year_net_returns = (pos * rets) - pos_chg * cost_model.round_trip_cost
+        all_net_returns.append(year_net_returns)
+
         print(f"Acc={acc:.3f}, AUC={auc:.3f}, Sharpe={sharpe:.3f}")
 
         results.append({"year": year, "accuracy": acc, "auc": auc, "sharpe": sharpe})
@@ -202,6 +220,28 @@ def main():
     print(f"Mean Accuracy: {acc_mean:.3f}")
     print("Baseline to beat: 1.062 (Multi-TF Donchian)")
 
+    # DSR computation with cumulative n_trials (250 prior + this ensemble = 251 configs)
+    net_returns_all = pd.concat(all_net_returns) if all_net_returns else pd.Series(dtype=float)
+    n_trials_cumulative = 251
+    dsr_metrics = (
+        compute_all_metrics(net_returns_all.values, n_trials=n_trials_cumulative)
+        if len(net_returns_all) > 30
+        else {"dsr": 0.0, "psr": 0.0}
+    )
+    print(f"DSR (n_trials={n_trials_cumulative}): {dsr_metrics['dsr']:.3f}")
+
+    # Post-experiment guardrail checks
+    equity_curve = (1 + net_returns_all).cumprod() if len(net_returns_all) > 0 else pd.Series([1.0])
+    running_max = equity_curve.cummax()
+    actual_dd = float(((equity_curve - running_max) / running_max).min()) if len(equity_curve) > 0 else -1.0
+    post_results = run_post_checks(
+        net_returns_all.values,
+        {"sharpe": sharpe_mean, "max_drawdown": actual_dd},
+        config,
+        n_trials=n_trials_cumulative,
+    )
+    log_results(pre_results + post_results, run_id="ensemble_stacking")
+
     # Save results
     output = {
         "timestamp": datetime.now().isoformat(),
@@ -212,6 +252,9 @@ def main():
         "mean_sharpe": sharpe_mean,
         "mean_accuracy": acc_mean,
         "baseline_sharpe": 1.062,
+        "dsr": dsr_metrics["dsr"],
+        "psr": dsr_metrics["psr"],
+        "n_trials": n_trials_cumulative,
     }
 
     outpath = Path("results/validation/ensemble_stacking_58features.json")
