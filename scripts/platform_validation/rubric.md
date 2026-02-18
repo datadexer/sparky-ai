@@ -107,8 +107,11 @@ causes silent failures where the orchestrator shows "N/A" for all metrics.
 - `compute_all_metrics()` result not logged to wandb at all for significant experiments
 
 **MEDIUM severity:**
-- `n_trials` not passed to `run_post_checks()` or `compute_all_metrics()` — disables
-  multiple testing correction and makes DSR ≈ PSR (meaningless)
+- `n_trials` not passed to `compute_all_metrics()` — disables multiple testing correction
+  and makes DSR ≈ PSR (meaningless). Note: `n_trials` is a parameter of
+  `compute_all_metrics()`, NOT `run_post_checks()`. These are different functions with
+  different parameters. `run_post_checks()` takes `n_trades` (trade count for minimum
+  trades check). Do not confuse parameters across different functions.
 - Session tags (`session_NNN`) not included in wandb run tags
 - Directive tags not propagated to wandb runs
 
@@ -146,7 +149,6 @@ wandb run configs should capture all hyperparameters needed to reproduce the exp
 - `log_results()` never called (guardrail outcomes not persisted for audit)
 
 **MEDIUM severity:**
-- `run_post_checks()` called without `n_trials` — DSR correction silently disabled
 - Guardrail results silently ignored (checked but result not acted upon)
 
 ### 4.3 Holdout Guard
@@ -220,3 +222,18 @@ wandb run configs should capture all hyperparameters needed to reproduce the exp
 - pandas vs. polars choice (polars is preferred but not enforced)
 - Comments or docstrings (unless they document incorrect behavior)
 - Test helper code that intentionally uses simplified patterns
+
+### Parameter Name Verification Rule
+
+Before flagging a keyword argument as incorrect, you MUST verify the actual function
+signature. Different functions may use similar-sounding parameter names for different
+purposes. Do NOT assume a parameter name is wrong because a different function uses a
+different name for a related concept.
+
+**Concrete API reference (authoritative):**
+- `compute_all_metrics(returns, n_trials=...)` — `n_trials` = number of configs tested (for DSR correction)
+- `run_post_checks(returns, metrics, config, n_trades=...)` — `n_trades` = number of trades (for minimum trades check)
+- `run_pre_checks(data, config, min_samples=...)` — `min_samples` = minimum row count
+
+These are DIFFERENT parameters for DIFFERENT purposes. `n_trades` passed to
+`run_post_checks()` is correct usage, not a typo for `n_trials`.

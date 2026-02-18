@@ -5,9 +5,7 @@ Runs as a GitHub Action on every PR. Uses Claude Sonnet to review
 changed files against the quantitative finance rubric.
 
 Exits 0 if no HIGH severity issues found.
-Exits 1 if HIGH severity issues found OR if validation was inconclusive
-        (rate limit, API error, non-JSON response). A PR must not go
-        green when validation was skipped due to API failures.
+Exits 1 if HIGH severity issues found or rate-limited after retries.
 Posts findings as PR comment via GitHub API.
 """
 
@@ -21,8 +19,12 @@ from pathlib import Path
 import anthropic
 
 # Retry delays (seconds) on 429 rate-limit errors.
-# Three total attempts: immediate, +30s, +60s.
-_RATE_LIMIT_RETRY_DELAYS = [30, 60]
+# Four total attempts: immediate, +30s, +30s, +30s = 90s of retrying.
+_RATE_LIMIT_RETRY_DELAYS = [30, 30, 30]
+
+# Free tier: 10K input tokens/min ≈ 40K chars. Target well under to avoid 429s.
+# Budget: ~5K tokens for rubric+prompt, ~3K tokens for code context.
+_MAX_CODE_CHARS = 12000  # ~3K tokens for all changed files combined
 
 
 def get_changed_files():
@@ -47,11 +49,33 @@ def get_changed_files():
         changes.append(
             {
                 "filepath": filepath,
-                "diff": diff.stdout[:5000],  # truncate large diffs
-                "full_content": content[:10000],  # truncate large files
+                "diff": diff.stdout,
+                "full_content": content,
             }
         )
     return changes
+
+
+def _budget_changes(changes, max_chars):
+    """Distribute character budget across changed files, prioritizing diffs."""
+    if not changes:
+        return ""
+    n = len(changes)
+    per_file = max(500, max_chars // n)
+    # Give 70% to diff, 30% to content
+    diff_budget = int(per_file * 0.7)
+    content_budget = per_file - diff_budget
+
+    text = ""
+    for c in changes:
+        text += f"\n### File: {c['filepath']}\n"
+        diff = c["diff"][:diff_budget]
+        text += f"#### Diff:\n```\n{diff}\n```\n"
+        if content_budget > 100:
+            content = c["full_content"][:content_budget]
+            text += f"#### Full content (truncated):\n```python\n{content}\n```\n"
+        text += "\n"
+    return text
 
 
 def _create_message_with_retry(client, **kwargs):
@@ -81,12 +105,8 @@ def run_validation(changes):
     rubric_path = Path(__file__).parent / "rubric.md"
     rubric = rubric_path.read_text()
 
-    # Format the changes for review
-    changes_text = ""
-    for c in changes:
-        changes_text += f"\n### File: {c['filepath']}\n"
-        changes_text += f"#### Diff:\n```\n{c['diff']}\n```\n"
-        changes_text += f"#### Full content (truncated):\n```python\n{c['full_content'][:3000]}\n```\n\n"
+    # Budget-aware formatting
+    changes_text = _budget_changes(changes, _MAX_CODE_CHARS)
 
     prompt = (
         "You are a quantitative finance code reviewer for an autonomous "
@@ -103,6 +123,10 @@ def run_validation(changes):
         "IMPORTANT: Be specific and technical. Reference the exact rubric section that "
         "applies. Do not flag speculative concerns — only flag concrete violations you "
         "can identify in the code.\n\n"
+        "CRITICAL: Before flagging a function call's keyword argument as wrong, verify "
+        "the function's actual signature as documented in the rubric. Different functions "
+        "use different parameter names for different purposes (e.g., n_trials vs n_trades "
+        "are parameters of different functions). See Section 6.1.\n\n"
         f"## RUBRIC\n{rubric}\n\n"
         f"## CODE CHANGES TO REVIEW\n{changes_text}\n\n"
         "## OUTPUT FORMAT\n"
@@ -218,7 +242,7 @@ def main():
     try:
         result = run_validation(changes)
     except anthropic.RateLimitError as e:
-        # Rate limit exhausted after all retries — BLOCK the PR, do not pass
+        # Rate limit exhausted after retries (~90s) — block the PR.
         print(f"RATE LIMIT: All retries exhausted: {e}", flush=True)
         result = {
             "summary": "INCONCLUSIVE: Anthropic API rate limit (429) — validation did not execute. Re-trigger CI to retry.",
