@@ -16,12 +16,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 from sparky.tracking.experiment import ExperimentTracker
-from sparky.tracking.metrics import deflated_sharpe_ratio, expected_max_sharpe
+from sparky.tracking.metrics import analytical_dsr, expected_max_sharpe
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ def fetch_contract_004_runs():
                     "dsr": summary.get("dsr"),
                     "max_drawdown": summary.get("max_drawdown"),
                     "n_observations": summary.get("n_observations"),
+                    "skewness": summary.get("skewness"),
+                    "kurtosis": summary.get("kurtosis"),
                     "config": dict(run.config) if hasattr(run, "config") else {},
                     "tags": tags,
                 })
@@ -89,6 +92,21 @@ def analyze_group(group_name, runs):
 
     exp_max_sr = expected_max_sharpe(n_trials, T)
 
+    # Recompute DSR for best run using analytical_dsr (more reliable than stored value)
+    best_skew = best_run.get("skewness")  # None if not logged
+    best_kurt = best_run.get("kurtosis")  # None if not logged (raw, normal=3)
+    best_T = best_run.get("n_observations") or T
+    recomputed_dsr = analytical_dsr(
+        sr=best_sharpe,
+        skewness=best_skew,
+        kurtosis=best_kurt,
+        T=best_T,
+        n_trials=n_trials,
+    )
+    dsr_source = "recomputed"
+    if best_skew is None or best_kurt is None:
+        dsr_source = "recomputed (Gaussian approx)"
+
     return {
         "group": group_name,
         "n_runs": len(runs),
@@ -96,7 +114,9 @@ def analyze_group(group_name, runs):
         "best_sharpe": best_sharpe,
         "best_run_name": best_run["name"],
         "best_run_id": best_run["run_id"],
-        "best_dsr": best_run.get("dsr"),
+        "best_dsr": recomputed_dsr,
+        "best_dsr_source": dsr_source,
+        "stored_dsr": best_run.get("dsr"),
         "best_max_dd": best_run.get("max_drawdown"),
         "expected_max_sharpe": exp_max_sr,
         "sharpe_vs_expected": best_sharpe - exp_max_sr,

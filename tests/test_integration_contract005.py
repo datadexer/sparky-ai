@@ -6,36 +6,31 @@ manager_log, and interface protocols all work correctly end-to-end.
 
 import json
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from sparky.tracking.guardrails import (
-    GuardrailResult,
-    run_pre_checks,
-    run_post_checks,
-    has_blocking_failure,
-    log_results,
-)
-from sparky.tracking.metrics import compute_all_metrics
-from sparky.tracking.manager_log import (
-    ManagerLog,
-    ManagerSession,
-    CodeAgentRecord,
-    ResearchLaunchRecord,
-    ContractDesignRecord,
-)
 from sparky.interfaces import (
-    StrategyProtocol,
     BacktesterProtocol,
     DataFeedProtocol,
     FeaturePipelineProtocol,
     PositionSizerProtocol,
+    StrategyProtocol,
 )
-
+from sparky.tracking.guardrails import (
+    GuardrailResult,
+    has_blocking_failure,
+    log_results,
+    run_post_checks,
+    run_pre_checks,
+)
+from sparky.tracking.manager_log import (
+    CodeAgentRecord,
+    ManagerLog,
+)
+from sparky.tracking.metrics import compute_all_metrics
 
 # === Fixtures ===
 
@@ -90,7 +85,11 @@ class TestGuardrailsMetricsPipeline:
 
         # Run post-checks with these metrics
         config = {"transaction_costs_bps": 10.0}
-        post_results = run_post_checks(synthetic_returns, metrics, config, )
+        post_results = run_post_checks(
+            synthetic_returns,
+            metrics,
+            config,
+        )
 
         # Should have 6 checks
         assert len(post_results) == 6
@@ -112,10 +111,24 @@ class TestGuardrailsMetricsPipeline:
         metrics = compute_all_metrics(synthetic_returns, n_trials=50)
 
         required_keys = [
-            "sharpe", "psr", "dsr", "min_track_record", "n_trials",
-            "sortino", "max_drawdown", "calmar", "cvar_5pct",
-            "rolling_sharpe_std", "profit_factor", "worst_year_sharpe",
-            "n_observations", "win_rate", "mean_return", "total_return",
+            "sharpe",
+            "psr",
+            "dsr",
+            "min_track_record",
+            "n_trials",
+            "skewness",
+            "kurtosis",
+            "sortino",
+            "max_drawdown",
+            "calmar",
+            "cvar_5pct",
+            "rolling_sharpe_std",
+            "profit_factor",
+            "worst_year_sharpe",
+            "n_observations",
+            "win_rate",
+            "mean_return",
+            "total_return",
         ]
         for key in required_keys:
             assert key in metrics, f"Missing key: {key}"
@@ -128,7 +141,11 @@ class TestGuardrailsMetricsPipeline:
         metrics = compute_all_metrics(synthetic_returns, n_trials=50)
 
         config = {"transaction_costs_bps": 10.0}
-        post_results = run_post_checks(synthetic_returns, metrics, config, )
+        post_results = run_post_checks(
+            synthetic_returns,
+            metrics,
+            config,
+        )
 
         # Sharpe sanity check should pass for random returns (Sharpe < 4)
         sharpe_checks = [r for r in post_results if r.check_name == "sharpe_sanity"]
@@ -157,7 +174,11 @@ class TestGuardrailsJsonlRoundTrip:
 
             # Run post-checks
             metrics = compute_all_metrics(synthetic_returns, n_trials=50)
-            post_results = run_post_checks(synthetic_returns, metrics, good_config, )
+            post_results = run_post_checks(
+                synthetic_returns,
+                metrics,
+                good_config,
+            )
             assert len(post_results) == 6
 
             all_results = pre_results + post_results
@@ -192,9 +213,7 @@ class TestGuardrailsJsonlRoundTrip:
         """Logging twice should produce two valid JSONL entries."""
         with tempfile.TemporaryDirectory() as tmpdir:
             logfile = str(Path(tmpdir) / "test.jsonl")
-            results = [
-                GuardrailResult(passed=True, check_name="test_check", message="ok", severity="info")
-            ]
+            results = [GuardrailResult(passed=True, check_name="test_check", message="ok", severity="info")]
 
             log_results(results, run_id="run_001", logfile=logfile)
             log_results(results, run_id="run_002", logfile=logfile)
@@ -307,6 +326,7 @@ class TestInterfaceProtocolConformance:
 
     def test_strategy_protocol(self):
         """Mock class satisfying StrategyProtocol passes isinstance."""
+
         class MockStrategy:
             name = "test_strategy"
 
@@ -320,6 +340,7 @@ class TestInterfaceProtocolConformance:
 
     def test_backtester_protocol(self):
         """Mock class satisfying BacktesterProtocol passes isinstance."""
+
         class MockBacktester:
             def run(self, model, X, y, returns, **kwargs):
                 return {}
@@ -328,6 +349,7 @@ class TestInterfaceProtocolConformance:
 
     def test_data_feed_protocol(self):
         """Mock class satisfying DataFeedProtocol passes isinstance."""
+
         class MockDataFeed:
             def load(self, dataset, purpose="training"):
                 return pd.DataFrame()
@@ -339,6 +361,7 @@ class TestInterfaceProtocolConformance:
 
     def test_feature_pipeline_protocol(self):
         """Mock class satisfying FeaturePipelineProtocol passes isinstance."""
+
         class MockFeaturePipeline:
             def transform(self, data):
                 return data
@@ -350,6 +373,7 @@ class TestInterfaceProtocolConformance:
 
     def test_position_sizer_protocol(self):
         """Mock class satisfying PositionSizerProtocol passes isinstance."""
+
         class MockPositionSizer:
             def size_position(self, signal, data, portfolio_value):
                 return 0.0
@@ -358,6 +382,7 @@ class TestInterfaceProtocolConformance:
 
     def test_non_conforming_class_fails(self):
         """Class missing required methods should NOT satisfy protocol."""
+
         class EmptyClass:
             pass
 
