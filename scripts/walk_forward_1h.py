@@ -139,7 +139,16 @@ def train_catboost(X_train, y_train):
         Trained CatBoost model
     """
     model = CatBoostClassifier(
-        depth=5, learning_rate=0.05, iterations=200, l2_leaf_reg=3.0, random_seed=42, verbose=0, subsample=0.8, rsm=0.8
+        depth=5,
+        learning_rate=0.05,
+        iterations=200,
+        l2_leaf_reg=3.0,
+        random_seed=42,
+        verbose=0,
+        subsample=0.8,
+        rsm=0.8,
+        task_type="GPU",
+        devices="0",
     )
 
     model.fit(X_train, y_train)

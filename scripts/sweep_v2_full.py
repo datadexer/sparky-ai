@@ -80,22 +80,17 @@ def load_data():
     print("LOADING DATA", flush=True)
     print("=" * 80, flush=True)
 
-    # Use loader for holdout enforcement
-    try:
-        from sparky.data.loader import load
+    from sparky.data.loader import load
 
-        features = load("btc_1h_features", purpose="training")
-    except Exception:
-        # Fallback to direct parquet if dataset name doesn't exist
-        features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-        features = features.loc[:"2024-05-31"]
+    # Loader enforces holdout boundary automatically
+    features = load("feature_matrix_btc_hourly", purpose="training")
 
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    target = load("targets_btc_hourly_1d", purpose="training")
     if isinstance(target, pd.DataFrame):
         target = target["target"]
 
     # Load hourly prices, resample to daily
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="analysis")
     prices_daily = prices_hourly.resample("D").last()
     del prices_hourly
 
@@ -103,11 +98,6 @@ def load_data():
     common_idx = features.index.intersection(target.index)
     features = features.loc[common_idx]
     target = target.loc[common_idx]
-
-    # In-sample boundary
-    cutoff = pd.Timestamp("2024-05-31", tz="UTC") if features.index.tz else pd.Timestamp("2024-05-31")
-    features = features.loc[:cutoff]
-    target = target.loc[:cutoff]
 
     # Clean NaN/inf
     features = features.replace([np.inf, -np.inf], np.nan)

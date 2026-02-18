@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
+from sparky.data.loader import load
 from sklearn.metrics import accuracy_score, roc_auc_score
 from xgboost import XGBClassifier
 
@@ -52,8 +53,8 @@ def main():
     print("=" * 80)
 
     # Load from sweep results
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    targets = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    targets = load("targets_btc_hourly_1d", purpose="training")
 
     # Resample to daily
     features_daily = features.resample("D").last().dropna()
@@ -122,7 +123,7 @@ def main():
         signals = pd.Series(2 * ensemble_pred - 1, index=test_dates)
 
         # Load prices for this fold
-        test_prices = pd.read_parquet("data/raw/btc_hourly_okx.parquet")
+        test_prices = load("btc_hourly_okx", purpose="training")
         test_prices = test_prices[test_prices.index.isin(test_dates)]
         returns = test_prices["close"].pct_change()
 

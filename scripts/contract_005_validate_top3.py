@@ -42,7 +42,7 @@ N_TRIALS = 187  # Total contract_004 wandb runs (confirmed by Step 1 audit)
 DONCHIAN_BASELINE_SHARPE = 1.062  # Multi-TF Donchian corrected baseline
 ENTRY_PERIOD = 40
 EXIT_PERIOD = 20
-TRANSACTION_COSTS_BPS = 10.0  # 10 bps round-trip (realistic for BTC futures)
+TRANSACTION_COSTS_BPS = 30.0  # 30 bps per side — standard cost floor per guardrails
 DSR_THRESHOLD = 0.95
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -124,7 +124,7 @@ def donchian_signal(prices: pd.Series, entry: int = 40, exit_p: int = 20) -> pd.
 def compute_strategy_returns(
     daily_returns: pd.Series,
     signals: pd.Series,
-    costs_bps: float = 10.0,
+    costs_bps: float = 30.0,
 ) -> np.ndarray:
     """
     Apply signal to returns with transaction costs.
