@@ -58,7 +58,7 @@ def load_data():
     print("\nLoading data (once)...")
     df_feat = load("feature_matrix_btc_hourly_expanded", purpose="training")
 
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="training")
     prices_daily = prices_hourly["close"].resample("D").last().dropna()
     if prices_daily.index.tz is None:
         prices_daily.index = prices_daily.index.tz_localize("UTC")
