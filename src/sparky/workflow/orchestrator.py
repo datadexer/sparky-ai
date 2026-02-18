@@ -403,7 +403,7 @@ class ContextBuilder:
             )
             results = []
             for run in runs:
-                sharpe = run.summary.get("sharpe")
+                sharpe = run.summary.get("sharpe") or run.summary.get("best_sharpe")
                 if sharpe is None:
                     continue
                 cost_bps = run.config.get("transaction_costs_bps", run.config.get("costs_bps"))
@@ -412,7 +412,7 @@ class ContextBuilder:
                     {
                         "family": run.config.get("strategy_family", run.config.get("model_type", "?")),
                         "sharpe": sharpe,
-                        "dsr": run.summary.get("dsr"),
+                        "dsr": run.summary.get("dsr") or run.summary.get("best_dsr"),
                         "params_summary": self._summarize_params(dict(run.config)),
                         "low_cost_warning": low_cost,
                     }
@@ -607,8 +607,8 @@ class ResearchOrchestrator:
             for run in runs:
                 run_ids.append(run.id)
                 configs.append(dict(run.config))
-                s = run.summary.get("sharpe")
-                d = run.summary.get("dsr")
+                s = run.summary.get("sharpe") or run.summary.get("best_sharpe")
+                d = run.summary.get("dsr") or run.summary.get("best_dsr")
                 if s is not None and (best_sharpe is None or s > best_sharpe):
                     best_sharpe = s
                 if d is not None and (best_dsr is None or d > best_dsr):
@@ -630,7 +630,21 @@ class ResearchOrchestrator:
         session_tag = f"session_{session_number:03d}"
 
         parts = [
-            f"Read CLAUDE.md. You are session {session_number} of research directive '{d.name}'.",
+            f"You are session {session_number} of research directive '{d.name}'.",
+            "",
+            "## Essential Rules (from CLAUDE.md — do NOT re-read the file)",
+            "- Load data: `from sparky.data.loader import load; df = load('dataset', purpose='training')`",
+            "- NEVER use raw `pd.read_parquet()`. The loader enforces holdout boundaries.",
+            "- Annualization: `periods_per_year=365` (daily) or `8760` (hourly). NEVER 252.",
+            "- Experiment tracking: `from sparky.tracking.experiment import ExperimentTracker`",
+            "- Use `log_sweep()` for bulk configs, `log_experiment()` for validated results.",
+            "- Compute metrics: `from sparky.tracking.metrics import compute_all_metrics`",
+            "- DSR > 0.95 = statistically significant. DSR < 0.95 = could be a fluke.",
+            "- Run guardrails: `from sparky.tracking.guardrails import run_pre_checks, run_post_checks`",
+            "- GPU required: XGBoost `device='cuda'`, CatBoost `task_type='GPU'`, LightGBM `device='gpu'`",
+            "- Timeouts: `from sparky.oversight.timeout import with_timeout`",
+            "- Transaction costs: `from sparky.backtest.costs import TransactionCostModel`",
+            "- Python: use `.venv/bin/python`, NOT system python.",
             "",
             f"## Objective\n{d.objective}",
             "",
@@ -667,7 +681,12 @@ class ResearchOrchestrator:
 
         # Wandb tag instructions
         all_tags = d.wandb_tags + [session_tag]
-        parts.append(f"## Tagging\nTag all wandb runs in this session with: {all_tags}")
+        parts.append(
+            f"## Tagging\nTag all wandb runs in this session with: {all_tags}\n\n"
+            "**IMPORTANT:** When logging to wandb, include `sharpe` and `dsr` as top-level "
+            "summary keys (not `best_sharpe`/`best_dsr`). Example:\n"
+            "```python\nwandb.log({'sharpe': best_sharpe, 'dsr': best_dsr, ...})\n```"
+        )
         parts.append("")
 
         # Cost standard
