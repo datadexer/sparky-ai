@@ -13,7 +13,6 @@ API details:
 
 import logging
 import time
-from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -162,10 +161,7 @@ class BlockchainComFetcher:
         for df in dfs[1:]:
             result = result.join(df, how="outer")
 
-        logger.info(
-            f"[DATA] Blockchain.com: {len(result)} rows, "
-            f"{len(result.columns)} metrics"
-        )
+        logger.info(f"[DATA] Blockchain.com: {len(result)} rows, {len(result.columns)} metrics")
         return result
 
     @property

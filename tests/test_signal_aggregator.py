@@ -15,11 +15,13 @@ def hourly_probas():
     # Day 2: mostly bearish (mean ~0.4)
     # Day 3: neutral (mean ~0.5)
     rng = np.random.default_rng(42)
-    values = np.concatenate([
-        rng.normal(0.6, 0.05, 24),
-        rng.normal(0.4, 0.05, 24),
-        rng.normal(0.5, 0.05, 24),
-    ])
+    values = np.concatenate(
+        [
+            rng.normal(0.6, 0.05, 24),
+            rng.normal(0.4, 0.05, 24),
+            rng.normal(0.5, 0.05, 24),
+        ]
+    )
     values = np.clip(values, 0, 1)
     return pd.Series(values, index=dates, name="proba")
 
@@ -29,10 +31,13 @@ def hourly_features(hourly_probas):
     """Generate matching hourly features with volatility column."""
     n = len(hourly_probas)
     rng = np.random.default_rng(42)
-    return pd.DataFrame({
-        "realized_vol_24h": rng.normal(0.02, 0.005, n),
-        "momentum_4h": rng.normal(0, 0.01, n),
-    }, index=hourly_probas.index)
+    return pd.DataFrame(
+        {
+            "realized_vol_24h": rng.normal(0.02, 0.005, n),
+            "momentum_4h": rng.normal(0, 0.01, n),
+        },
+        index=hourly_probas.index,
+    )
 
 
 class TestHourlyToDailyAggregator:

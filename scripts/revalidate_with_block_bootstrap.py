@@ -9,19 +9,19 @@ CRITICAL FIX:
 Expected impact: Monte Carlo win rate drops from 83% to 70-75%
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
-from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.backtest.statistics import BacktestStatistics
+from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -122,9 +122,9 @@ def simple_monte_carlo(strategy_returns, market_returns, n_simulations=1000):
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("REVALIDATION: Block Bootstrap Monte Carlo")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Load data
     prices = load_prices()
@@ -149,9 +149,9 @@ def main():
     market_metrics = metrics(market_returns)
 
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("PERFORMANCE METRICS")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"Strategy Sharpe (rf=0): {strategy_metrics['sharpe']:.3f}")
     logger.info(f"Market Sharpe (rf=0): {market_metrics['sharpe']:.3f}")
     logger.info(f"Strategy Return: {strategy_metrics['return_pct']:.1f}%")
@@ -159,26 +159,26 @@ def main():
 
     # Bootstrap CI
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("BOOTSTRAP CI (1000 resamples)")
-    logger.info("="*70)
+    logger.info("=" * 70)
     boot_ci = bootstrap_ci(strategy_returns, n_resamples=1000)
     logger.info(f"Mean: {boot_ci['mean']:.3f}")
     logger.info(f"95% CI: [{boot_ci['lower']:.3f}, {boot_ci['upper']:.3f}]")
 
     # OLD: Simple Monte Carlo
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("OLD: SIMPLE RESAMPLING MONTE CARLO (1000 simulations)")
-    logger.info("="*70)
+    logger.info("=" * 70)
     simple_mc = simple_monte_carlo(strategy_returns, market_returns, n_simulations=1000)
-    logger.info(f"Win rate: {simple_mc['win_rate']*100:.1f}% ({simple_mc['wins']}/{simple_mc['total']} trials)")
+    logger.info(f"Win rate: {simple_mc['win_rate'] * 100:.1f}% ({simple_mc['wins']}/{simple_mc['total']} trials)")
 
     # NEW: Block Bootstrap Monte Carlo
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("NEW: BLOCK BOOTSTRAP MONTE CARLO (1000 simulations)")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     block_mc = BacktestStatistics.block_bootstrap_monte_carlo(
         strategy_returns=strategy_returns,
@@ -190,24 +190,24 @@ def main():
     )
 
     logger.info(f"Block size: {block_mc['block_size']} days (auto-selected via sqrt(n) rule)")
-    logger.info(f"Win rate: {block_mc['win_rate']*100:.1f}% ({block_mc['wins']}/{block_mc['n_simulations']} trials)")
+    logger.info(f"Win rate: {block_mc['win_rate'] * 100:.1f}% ({block_mc['wins']}/{block_mc['n_simulations']} trials)")
     logger.info(f"Baseline strategy Sharpe: {block_mc['baseline_strategy_sharpe']:.3f}")
     logger.info(f"Baseline market Sharpe: {block_mc['baseline_market_sharpe']:.3f}")
 
     # Comparison
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("COMPARISON: Simple vs Block Bootstrap")
-    logger.info("="*70)
-    logger.info(f"Simple resampling win rate: {simple_mc['win_rate']*100:.1f}%")
-    logger.info(f"Block bootstrap win rate: {block_mc['win_rate']*100:.1f}%")
-    degradation = (simple_mc['win_rate'] - block_mc['win_rate']) * 100
+    logger.info("=" * 70)
+    logger.info(f"Simple resampling win rate: {simple_mc['win_rate'] * 100:.1f}%")
+    logger.info(f"Block bootstrap win rate: {block_mc['win_rate'] * 100:.1f}%")
+    degradation = (simple_mc["win_rate"] - block_mc["win_rate"]) * 100
     logger.info(f"Degradation: {degradation:.1f} percentage points")
 
     if degradation > 0:
-        logger.info(f"✅ Block bootstrap is more conservative (as expected)")
+        logger.info("✅ Block bootstrap is more conservative (as expected)")
     else:
-        logger.info(f"⚠️ Block bootstrap gave HIGHER win rate (unexpected)")
+        logger.info("⚠️ Block bootstrap gave HIGHER win rate (unexpected)")
 
     # Save results
     results = {
@@ -225,24 +225,24 @@ def main():
             "degradation_percentage_points": float(degradation),
         },
         "conclusion": {
-            "sharpe": strategy_metrics['sharpe'],
-            "monte_carlo_win_rate": block_mc['win_rate'],
-            "bootstrap_ci_lower": boot_ci['lower'],
+            "sharpe": strategy_metrics["sharpe"],
+            "monte_carlo_win_rate": block_mc["win_rate"],
+            "bootstrap_ci_lower": boot_ci["lower"],
             "honest_assessment": "Block bootstrap gives more realistic uncertainty estimates",
-        }
+        },
     }
 
     output_path = Path("results/validation/block_bootstrap_revalidation.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info("")
     logger.info(f"Results saved to: {output_path}")
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("REVALIDATION COMPLETE")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

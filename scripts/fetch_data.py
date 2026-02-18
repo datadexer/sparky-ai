@@ -13,19 +13,16 @@ Usage:
 import argparse
 import json
 import logging
-from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
-
-from sparky.data.storage import DataStore
-from sparky.data.price import CCXTPriceFetcher
-from sparky.data.onchain_bgeometrics import BGeometricsFetcher
-from sparky.data.onchain_coinmetrics import CoinMetricsFetcher
-from sparky.data.onchain_blockchain_com import BlockchainComFetcher
 from sparky.data.market_context import CoinGeckoFetcher
-from sparky.data.source_selector import SourceSelector
+from sparky.data.onchain_bgeometrics import BGeometricsFetcher
+from sparky.data.onchain_blockchain_com import BlockchainComFetcher
+from sparky.data.onchain_coinmetrics import CoinMetricsFetcher
+from sparky.data.price import CCXTPriceFetcher
 from sparky.data.quality import DataQualityChecker
+from sparky.data.source_selector import SourceSelector
+from sparky.data.storage import DataStore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,8 +41,10 @@ ETH_START = "2017-07-30"  # ETH had sufficient liquidity by mid-2017
 
 
 def fetch_price_data(
-    store: DataStore, incremental: bool = False,
-    start_date: str | None = None, end_date: str | None = None,
+    store: DataStore,
+    incremental: bool = False,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> dict:
     """Fetch BTC and ETH OHLCV from CCXT/Binance."""
     results = {}
@@ -84,9 +83,7 @@ def fetch_price_data(
     return results
 
 
-def fetch_bgeometrics_data(
-    store: DataStore, incremental: bool = False, token: str | None = None
-) -> dict:
+def fetch_bgeometrics_data(store: DataStore, incremental: bool = False, token: str | None = None) -> dict:
     """Fetch BTC computed on-chain from BGeometrics.
 
     ALWAYS uses incremental mode when existing data is present.
@@ -102,8 +99,7 @@ def fetch_bgeometrics_data(
     if last_ts:
         effective_start = last_ts.strftime("%Y-%m-%d")
         logger.info(
-            f"BGeometrics: existing data through {effective_start}, "
-            "fetching delta only (rate limit conservation)"
+            f"BGeometrics: existing data through {effective_start}, fetching delta only (rate limit conservation)"
         )
 
     try:
@@ -128,7 +124,8 @@ def fetch_bgeometrics_data(
 
 
 def fetch_coinmetrics_data(
-    store: DataStore, incremental: bool = False,
+    store: DataStore,
+    incremental: bool = False,
     start_date: str | None = None,
 ) -> dict:
     """Fetch BTC + ETH raw on-chain from CoinMetrics."""
@@ -243,7 +240,8 @@ def run_source_selection(store: DataStore) -> dict:
     if not unified_btc.empty:
         unified_path = DATA_RAW / "btc" / "onchain_unified.parquet"
         store.save(
-            unified_btc, unified_path,
+            unified_btc,
+            unified_path,
             metadata={"source": "unified", "asset": "btc"},
         )
         results["btc_unified"] = {
@@ -270,7 +268,8 @@ def run_source_selection(store: DataStore) -> dict:
         if not eth_unified.empty:
             eth_unified_path = DATA_RAW / "eth" / "onchain_unified.parquet"
             store.save(
-                eth_unified, eth_unified_path,
+                eth_unified,
+                eth_unified_path,
                 metadata={"source": "coinmetrics", "asset": "eth"},
             )
             results["eth_unified"] = {
@@ -291,7 +290,9 @@ def run_quality_checks(store: DataStore) -> dict:
     if btc_ohlcv_path.exists():
         df = store.load(btc_ohlcv_path)[0]
         report = checker.run_all_checks(
-            df, asset="btc", source="binance",
+            df,
+            asset="btc",
+            source="binance",
             price_range=(0.01, 1_000_000),
         )
         checker.save_report(report, "btc_ohlcv_quality.json")
@@ -302,7 +303,9 @@ def run_quality_checks(store: DataStore) -> dict:
     if eth_ohlcv_path.exists():
         df = store.load(eth_ohlcv_path)[0]
         report = checker.run_all_checks(
-            df, asset="eth", source="binance",
+            df,
+            asset="eth",
+            source="binance",
             price_range=(0.01, 100_000),
         )
         checker.save_report(report, "eth_ohlcv_quality.json")
@@ -347,26 +350,20 @@ def main():
     logger.info("=" * 60)
     logger.info("STEP 1: Fetching price data (CCXT/Binance)")
     logger.info("=" * 60)
-    all_results["price"] = fetch_price_data(
-        store, args.incremental, start_date=args.start_date, end_date=args.end_date
-    )
+    all_results["price"] = fetch_price_data(store, args.incremental, start_date=args.start_date, end_date=args.end_date)
 
     # 2. CoinMetrics (free, no auth, generous rate limit)
     logger.info("=" * 60)
     logger.info("STEP 2: Fetching CoinMetrics on-chain data")
     logger.info("=" * 60)
-    all_results["coinmetrics"] = fetch_coinmetrics_data(
-        store, args.incremental, start_date=args.start_date
-    )
+    all_results["coinmetrics"] = fetch_coinmetrics_data(store, args.incremental, start_date=args.start_date)
 
     # 3. BGeometrics (limited: 8 req/hour, 15 req/day)
     if not args.skip_bgeometrics:
         logger.info("=" * 60)
         logger.info("STEP 3: Fetching BGeometrics on-chain data")
         logger.info("=" * 60)
-        all_results["bgeometrics"] = fetch_bgeometrics_data(
-            store, args.incremental, args.bgeometrics_token
-        )
+        all_results["bgeometrics"] = fetch_bgeometrics_data(store, args.incremental, args.bgeometrics_token)
 
     # 4. Blockchain.com (validation reference)
     if not args.skip_blockchain_com:

@@ -5,7 +5,6 @@ get_history ordering, and session lifecycle.
 """
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -13,7 +12,6 @@ from sparky.tracking.manager_log import (
     CodeAgentRecord,
     ContractDesignRecord,
     ManagerLog,
-    ManagerSession,
     ResearchLaunchRecord,
 )
 
@@ -55,22 +53,27 @@ class TestManagerSessionLifecycle:
         session = manager_log.start_session("Build infrastructure", "manager/test")
 
         # Log a code agent
-        manager_log.log_code_agent(session, CodeAgentRecord(
-            task="Build guardrails",
-            model="sonnet",
-            files_created=["guardrails.py"],
-            tests_passed=True,
-        ))
+        manager_log.log_code_agent(
+            session,
+            CodeAgentRecord(
+                task="Build guardrails",
+                model="sonnet",
+                files_created=["guardrails.py"],
+                tests_passed=True,
+            ),
+        )
 
         # Log a decision
-        manager_log.log_decision(session,
+        manager_log.log_decision(
+            session,
             decision="Use Protocol",
             alternatives=["ABC", "Protocol"],
             rationale="Matches existing pattern",
         )
 
         # Log infrastructure
-        manager_log.log_infrastructure(session,
+        manager_log.log_infrastructure(
+            session,
             module="guardrails",
             purpose="Experiment quality control",
             files=["guardrails.py", "test_guardrails.py"],
@@ -78,20 +81,26 @@ class TestManagerSessionLifecycle:
         )
 
         # Log research launch
-        manager_log.log_research_launch(session, ResearchLaunchRecord(
-            workflow="contract_005",
-            contract="005",
-            branch="manager/test",
-        ))
+        manager_log.log_research_launch(
+            session,
+            ResearchLaunchRecord(
+                workflow="contract_005",
+                contract="005",
+                branch="manager/test",
+            ),
+        )
 
         # Log contract design
-        manager_log.log_contract_design(session, ContractDesignRecord(
-            contract_name="Contract 005",
-            objective="Statistical audit",
-            steps=["audit", "validate", "report"],
-            budget_hours=6.0,
-            success_criteria="DSR computed for all runs",
-        ))
+        manager_log.log_contract_design(
+            session,
+            ContractDesignRecord(
+                contract_name="Contract 005",
+                objective="Statistical audit",
+                steps=["audit", "validate", "report"],
+                budget_hours=6.0,
+                success_criteria="DSR computed for all runs",
+            ),
+        )
 
         manager_log.end_session(session, summary="All infrastructure built")
 
@@ -199,12 +208,16 @@ class TestGetHistory:
 
     def test_roundtrip_with_nested_records(self, manager_log):
         session = manager_log.start_session("Roundtrip test", "branch")
-        manager_log.log_code_agent(session, CodeAgentRecord(
-            task="Test task",
-            files_created=["test.py"],
-            tests_passed=True,
-        ))
-        manager_log.log_decision(session,
+        manager_log.log_code_agent(
+            session,
+            CodeAgentRecord(
+                task="Test task",
+                files_created=["test.py"],
+                tests_passed=True,
+            ),
+        )
+        manager_log.log_decision(
+            session,
             decision="Test decision",
             alternatives=["A", "B"],
             rationale="Because A is better",

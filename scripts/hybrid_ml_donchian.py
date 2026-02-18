@@ -9,14 +9,16 @@ Approach:
 
 Expected: ML improves Donchian by filtering false breakouts
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
 from datetime import datetime
-from sklearn.metrics import accuracy_score, roc_auc_score
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier
 
 from sparky.backtest.costs import TransactionCostModel
@@ -28,7 +30,7 @@ def load_data():
     target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
 
     if isinstance(target, pd.DataFrame):
-        target = target['target']
+        target = target["target"]
 
     return features, target
 
@@ -80,24 +82,24 @@ def main():
     print(f"Features: {features.shape}, Target: {target.shape}\n")
 
     # In-sample only
-    features_in = features.loc[:'2024-05-31']
-    target_in = target.loc[:'2024-05-31']
+    features_in = features.loc[:"2024-05-31"]
+    target_in = target.loc[:"2024-05-31"]
 
     # Load prices
     prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
-    prices_daily = prices_hourly.resample("D").last()['close']
+    prices_daily = prices_hourly.resample("D").last()["close"]
 
     cost_model = TransactionCostModel.for_btc()
 
     # Best CatBoost config from sweep
     ml_params = {
-        'iterations': 200,
-        'depth': 4,
-        'learning_rate': 0.03,
-        'l2_leaf_reg': 1.0,
-        'task_type': 'GPU',
-        'verbose': 0,
-        'random_state': 42
+        "iterations": 200,
+        "depth": 4,
+        "learning_rate": 0.03,
+        "l2_leaf_reg": 1.0,
+        "task_type": "GPU",
+        "verbose": 0,
+        "random_state": 42,
     }
 
     # Yearly walk-forward
@@ -161,42 +163,45 @@ def main():
         print(f"ML Filter (>0.6): Sharpe={sharpe_filter:.3f}")
         print(f"ML Position Sizing: Sharpe={sharpe_sized:.3f}")
 
-        results.append({
-            'year': year,
-            'sharpe_donchian': sharpe_donchian,
-            'sharpe_ml_filter': sharpe_filter,
-            'sharpe_ml_sized': sharpe_sized
-        })
+        results.append(
+            {
+                "year": year,
+                "sharpe_donchian": sharpe_donchian,
+                "sharpe_ml_filter": sharpe_filter,
+                "sharpe_ml_sized": sharpe_sized,
+            }
+        )
 
     # Overall metrics
     print("\n=== Overall Results ===")
-    sharpe_donchian_mean = np.mean([r['sharpe_donchian'] for r in results])
-    sharpe_filter_mean = np.mean([r['sharpe_ml_filter'] for r in results])
-    sharpe_sized_mean = np.mean([r['sharpe_ml_sized'] for r in results])
+    sharpe_donchian_mean = np.mean([r["sharpe_donchian"] for r in results])
+    sharpe_filter_mean = np.mean([r["sharpe_ml_filter"] for r in results])
+    sharpe_sized_mean = np.mean([r["sharpe_ml_sized"] for r in results])
 
     print(f"Donchian baseline: {sharpe_donchian_mean:.3f}")
     print(f"ML Filter: {sharpe_filter_mean:.3f}")
     print(f"ML Position Sizing: {sharpe_sized_mean:.3f}")
-    print(f"\nTarget: 1.062 (Multi-TF Donchian)")
+    print("\nTarget: 1.062 (Multi-TF Donchian)")
 
     # Save results
     output = {
-        'timestamp': datetime.now().isoformat(),
-        'donchian_params': {'window_high': 40, 'window_low': 20},
-        'ml_model': 'CatBoost',
-        'ml_params': ml_params,
-        'yearly_results': results,
-        'mean_sharpe_donchian': sharpe_donchian_mean,
-        'mean_sharpe_ml_filter': sharpe_filter_mean,
-        'mean_sharpe_ml_sized': sharpe_sized_mean,
-        'baseline_sharpe': 1.062
+        "timestamp": datetime.now().isoformat(),
+        "donchian_params": {"window_high": 40, "window_low": 20},
+        "ml_model": "CatBoost",
+        "ml_params": ml_params,
+        "yearly_results": results,
+        "mean_sharpe_donchian": sharpe_donchian_mean,
+        "mean_sharpe_ml_filter": sharpe_filter_mean,
+        "mean_sharpe_ml_sized": sharpe_sized_mean,
+        "baseline_sharpe": 1.062,
     }
 
     outpath = Path("results/validation/hybrid_ml_donchian_58features.json")
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
     import json
-    with open(outpath, 'w') as f:
+
+    with open(outpath, "w") as f:
         json.dump(output, f, indent=2)
 
     print(f"\nResults saved to {outpath}")

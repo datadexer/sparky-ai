@@ -17,22 +17,22 @@ Baseline comparison:
 Target: Find if simple strategies beat Sharpe 0.646
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import (
-    sma_crossover_strategy,
-    donchian_channel_strategy,
-    atr_filtered_momentum_strategy,
-)
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import (
+    atr_filtered_momentum_strategy,
+    donchian_channel_strategy,
+    sma_crossover_strategy,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +57,7 @@ def load_price_data(start_date="2024-01-01", end_date="2025-12-31"):
     prices = pd.read_parquet(price_path)
 
     # Resample hourly to daily (close of day)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
 
     # Remove timezone
     if prices_daily.index.tz is not None:
@@ -173,21 +173,23 @@ def print_comparison_table(results):
     print("PERFORMANCE COMPARISON: Simple Baselines vs ML vs Buy & Hold")
     print("=" * 120)
     print()
-    print(f"{'Strategy':<35s} {'Sharpe':>12s} {'Return (%)':>12s} {'Max DD (%)':>12s} {'Win Rate':>12s} {'Trades':>10s}")
+    print(
+        f"{'Strategy':<35s} {'Sharpe':>12s} {'Return (%)':>12s} {'Max DD (%)':>12s} {'Win Rate':>12s} {'Trades':>10s}"
+    )
     print("-" * 120)
 
     # Sort by Sharpe ratio (best first)
-    sorted_results = sorted(results.items(), key=lambda x: x[1].get('sharpe_ratio', -999), reverse=True)
+    sorted_results = sorted(results.items(), key=lambda x: x[1].get("sharpe_ratio", -999), reverse=True)
 
     for name, metrics in sorted_results:
         if not metrics:
             continue
 
-        sharpe = metrics.get('sharpe_ratio', 0)
-        ret = metrics.get('total_return_pct', 0)
-        dd = metrics.get('max_drawdown_pct', 0)
-        wr = metrics.get('win_rate', 0)
-        trades = metrics.get('n_trades', 0)
+        sharpe = metrics.get("sharpe_ratio", 0)
+        ret = metrics.get("total_return_pct", 0)
+        dd = metrics.get("max_drawdown_pct", 0)
+        wr = metrics.get("win_rate", 0)
+        trades = metrics.get("n_trades", 0)
 
         print(f"{name:<35s} {sharpe:>12.3f} {ret:>12.2f} {dd:>12.2f} {wr:>12.2f} {trades:>10d}")
 
@@ -199,7 +201,7 @@ def save_results(results, output_path):
     """Save results to JSON file."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"Results saved to: {output_path}")
@@ -253,8 +255,22 @@ def main():
         "Donchian(20/10) Breakout": donchian_metrics,
         "ATR-Filtered Momentum": atr_metrics,
         # Add ML baselines for comparison (from previous results)
-        "Static ML (Phase 1)": {"sharpe_ratio": 0.646, "total_return_pct": 42.15, "max_drawdown_pct": 31.42, "win_rate": 0.322, "n_trades": 312, "n_days": 730},
-        "Regime-Aware ML (Phase 2A)": {"sharpe_ratio": 0.158, "total_return_pct": 2.41, "max_drawdown_pct": 19.44, "win_rate": 0.148, "n_trades": 290, "n_days": 730},
+        "Static ML (Phase 1)": {
+            "sharpe_ratio": 0.646,
+            "total_return_pct": 42.15,
+            "max_drawdown_pct": 31.42,
+            "win_rate": 0.322,
+            "n_trades": 312,
+            "n_days": 730,
+        },
+        "Regime-Aware ML (Phase 2A)": {
+            "sharpe_ratio": 0.158,
+            "total_return_pct": 2.41,
+            "max_drawdown_pct": 19.44,
+            "win_rate": 0.148,
+            "n_trades": 290,
+            "n_days": 730,
+        },
     }
 
     # Print comparison
@@ -288,23 +304,23 @@ def main():
     print("SUMMARY")
     print("=" * 80)
     print(f"\nHoldout Period: 2024-01-01 to 2025-12-31 ({len(prices)} days)")
-    print(f"\nBest Strategy: ", end="")
+    print("\nBest Strategy: ", end="")
 
     best_strategy = max(
         [("SMA(200)", sma_metrics), ("Donchian(20/10)", donchian_metrics), ("ATR-Momentum", atr_metrics)],
-        key=lambda x: x[1].get('sharpe_ratio', -999)
+        key=lambda x: x[1].get("sharpe_ratio", -999),
     )
     print(f"{best_strategy[0]} (Sharpe {best_strategy[1]['sharpe_ratio']:.3f})")
 
-    print(f"\nComparison to ML:")
+    print("\nComparison to ML:")
     print(f"  Best Simple vs Static ML: {best_strategy[1]['sharpe_ratio']:.3f} vs 0.646")
     print(f"  Best Simple vs Regime ML: {best_strategy[1]['sharpe_ratio']:.3f} vs 0.158")
 
-    if best_strategy[1]['sharpe_ratio'] > 0.646:
-        print(f"\n✅ SIMPLE STRATEGIES WIN - We were overcomplicating!")
+    if best_strategy[1]["sharpe_ratio"] > 0.646:
+        print("\n✅ SIMPLE STRATEGIES WIN - We were overcomplicating!")
         print(f"   Best simple strategy beats ML by {best_strategy[1]['sharpe_ratio'] - 0.646:+.3f} Sharpe")
     else:
-        print(f"\n⚠️ ML still leads, but simple strategies provide strong baseline")
+        print("\n⚠️ ML still leads, but simple strategies provide strong baseline")
 
     print(f"\nResults saved to: {output_path}")
     print("=" * 80)

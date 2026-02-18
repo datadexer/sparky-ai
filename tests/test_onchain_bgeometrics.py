@@ -1,15 +1,15 @@
 """Tests for BGeometrics on-chain data fetcher."""
 
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, Mock, patch
+from datetime import timezone
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
 
 from sparky.data.onchain_bgeometrics import (
     BASE_URL,
-    BGeometricsFetcher,
     METRIC_ENDPOINTS,
+    BGeometricsFetcher,
 )
 
 
@@ -123,13 +123,9 @@ class TestFetchMetric:
                 "page": 0,
                 "size": 5000,
             }
-            mock_get.assert_called_once_with(
-                expected_url, params=expected_params, timeout=30
-            )
+            mock_get.assert_called_once_with(expected_url, params=expected_params, timeout=30)
 
-    def test_fetch_metric_defaults_to_today_when_no_end_date(
-        self, fetcher, mock_sopr_response
-    ):
+    def test_fetch_metric_defaults_to_today_when_no_end_date(self, fetcher, mock_sopr_response):
         """Test fetch_metric uses current date as default end_date."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
@@ -270,9 +266,7 @@ class TestFetchMetric:
 
 
 class TestFetchAllMetrics:
-    def test_fetch_all_metrics_merges_multiple_metrics(
-        self, fetcher, mock_sopr_response, mock_mvrv_response
-    ):
+    def test_fetch_all_metrics_merges_multiple_metrics(self, fetcher, mock_sopr_response, mock_mvrv_response):
         """Test fetch_all_metrics merges multiple metrics correctly."""
         with patch.object(fetcher.session, "get") as mock_get:
             # Set up responses for two metrics
@@ -286,9 +280,7 @@ class TestFetchAllMetrics:
 
             mock_get.side_effect = [mock_resp1, mock_resp2]
 
-            df = fetcher.fetch_all_metrics(
-                "2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore"]
-            )
+            df = fetcher.fetch_all_metrics("2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore"])
 
             assert len(df.columns) == 2
             assert "sopr" in df.columns
@@ -312,9 +304,7 @@ class TestFetchAllMetrics:
             # Should be called once for each metric in METRIC_ENDPOINTS
             assert mock_fetch.call_count == len(METRIC_ENDPOINTS)
 
-    def test_fetch_all_metrics_handles_outer_join(
-        self, fetcher, mock_sopr_response, mock_nupl_response
-    ):
+    def test_fetch_all_metrics_handles_outer_join(self, fetcher, mock_sopr_response, mock_nupl_response):
         """Test fetch_all_metrics performs outer join for metrics with different dates."""
         with patch.object(fetcher.session, "get") as mock_get:
             # SOPR has 3 days, NUPL has 2 days (different dates)
@@ -344,9 +334,7 @@ class TestFetchAllMetrics:
 
             mock_get.side_effect = [mock_resp1, mock_resp2]
 
-            df = fetcher.fetch_all_metrics(
-                "2024-01-01", "2024-01-04", metrics=["sopr", "nupl"]
-            )
+            df = fetcher.fetch_all_metrics("2024-01-01", "2024-01-04", metrics=["sopr", "nupl"])
 
             # Should have 4 dates (outer join)
             assert len(df) == 4
@@ -375,9 +363,7 @@ class TestFetchAllMetrics:
                 ),
             ]
 
-            df = fetcher.fetch_all_metrics(
-                "2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore", "nupl"]
-            )
+            df = fetcher.fetch_all_metrics("2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore", "nupl"])
 
             # Should have 2 columns (failed metric excluded)
             assert len(df.columns) == 2
@@ -397,9 +383,7 @@ class TestFetchAllMetrics:
                 pd.DataFrame(),  # Empty
             ]
 
-            df = fetcher.fetch_all_metrics(
-                "2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore"]
-            )
+            df = fetcher.fetch_all_metrics("2024-01-01", "2024-01-03", metrics=["sopr", "mvrv_zscore"])
 
             # Should only have sopr column
             assert len(df.columns) == 1
@@ -410,9 +394,7 @@ class TestFetchAllMetrics:
         with patch.object(fetcher, "fetch_metric") as mock_fetch:
             mock_fetch.side_effect = Exception("API error")
 
-            df = fetcher.fetch_all_metrics(
-                "2024-01-01", "2024-01-03", metrics=["sopr"]
-            )
+            df = fetcher.fetch_all_metrics("2024-01-01", "2024-01-03", metrics=["sopr"])
 
             assert isinstance(df, pd.DataFrame)
             assert df.empty

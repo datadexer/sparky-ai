@@ -40,6 +40,7 @@ METRICS_REMINDER = (
 def _get_tracker():
     """Lazy import to avoid wandb init at module load."""
     from sparky.tracking.experiment import ExperimentTracker
+
     return ExperimentTracker(experiment_name="contract_004")
 
 
@@ -84,7 +85,10 @@ def build_workflow() -> Workflow:
                 "5. Use `@with_timeout(seconds=900)` for any training calls\n"
                 "6. Log results to wandb with tags=['contract_004', 'feature_analysis']\n\n"
                 "Output: `results/feature_importance.json` with ranked features and scores."
-                + TAG_REMINDER + NAMING_REMINDER + METRICS_REMINDER + " Step tag: 'feature_analysis'."
+                + TAG_REMINDER
+                + NAMING_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'feature_analysis'."
             ),
             done_when=_feature_analysis_done,
             max_duration_minutes=120,
@@ -124,7 +128,10 @@ def build_workflow() -> Workflow:
                 "Log each batch with `log_sweep()`, tags=['contract_004', 'sweep'].\n"
                 "Log walk-forward validated results with `log_experiment()`, tags=['contract_004', 'sweep'].\n"
                 "Target: at least 20 wandb runs tagged ['contract_004', 'sweep']."
-                + TAG_REMINDER + NAMING_REMINDER + METRICS_REMINDER + " Step tag: 'sweep'."
+                + TAG_REMINDER
+                + NAMING_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'sweep'."
             ),
             done_when=_sweep_done,
             max_duration_minutes=180,
@@ -189,7 +196,10 @@ def build_workflow() -> Workflow:
                 "- Use GPU for all training. Use data loader. Use 15-min timeout per config.\n\n"
                 "Do NOT stop after finding one thing that works. Test ALL 5 approaches. The "
                 "done_when requires 8 runs and you need all 5 approaches represented."
-                + TAG_REMINDER + NAMING_REMINDER + METRICS_REMINDER + " Step tag: 'regime'."
+                + TAG_REMINDER
+                + NAMING_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'regime'."
             ),
             done_when=_regime_done,
             max_duration_minutes=180,
@@ -240,7 +250,10 @@ def build_workflow() -> Workflow:
                 "Use GPU, data loader, 15-min timeout per config.\n"
                 "Log to wandb with tags=['contract_004', 'ensemble'].\n"
                 "Target: at least 30 total wandb runs tagged ['contract_004', 'ensemble']."
-                + TAG_REMINDER + NAMING_REMINDER + METRICS_REMINDER + " Step tag: 'ensemble'."
+                + TAG_REMINDER
+                + NAMING_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'ensemble'."
             ),
             done_when=_ensemble_done,
             skip_if=_skip_ensemble,
@@ -301,7 +314,10 @@ def build_workflow() -> Workflow:
                 "- Final ranked list of deployment candidates\n\n"
                 "Use GPU, data loader, 15-min timeout per config.\n"
                 "Target: at least 15 total wandb runs tagged ['contract_004', 'novel']."
-                + TAG_REMINDER + NAMING_REMINDER + METRICS_REMINDER + " Step tag: 'novel'."
+                + TAG_REMINDER
+                + NAMING_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'novel'."
             ),
             done_when=_novel_done,
             max_duration_minutes=240,

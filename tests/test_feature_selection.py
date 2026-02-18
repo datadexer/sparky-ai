@@ -31,15 +31,17 @@ def synthetic_data():
 
     # Create target that depends on f1 and f3
     y = (f1 > 0).astype(int) + (f3 > 0).astype(int)
-    y = pd.Series(y, name='target')
+    y = pd.Series(y, name="target")
 
-    X = pd.DataFrame({
-        'feature_1': f1,
-        'feature_2': f2,  # Should be dropped due to correlation with f1
-        'feature_3': f3,
-        'feature_4': f4,  # Should be dropped due to low importance
-        'feature_5': f5,
-    })
+    X = pd.DataFrame(
+        {
+            "feature_1": f1,
+            "feature_2": f2,  # Should be dropped due to correlation with f1
+            "feature_3": f3,
+            "feature_4": f4,  # Should be dropped due to low importance
+            "feature_5": f5,
+        }
+    )
 
     return X, y
 
@@ -52,15 +54,11 @@ def many_features_data():
     n_features = 30
 
     # Create features with varying importance
-    X = pd.DataFrame({
-        f'feature_{i}': np.random.randn(n) + i * 0.1
-        for i in range(n_features)
-    })
+    X = pd.DataFrame({f"feature_{i}": np.random.randn(n) + i * 0.1 for i in range(n_features)})
 
     # Target depends on first 5 features
-    y = (X['feature_0'] + X['feature_1'] + X['feature_2'] +
-         X['feature_3'] + X['feature_4'] > 0).astype(int)
-    y = pd.Series(y, name='target')
+    y = (X["feature_0"] + X["feature_1"] + X["feature_2"] + X["feature_3"] + X["feature_4"] > 0).astype(int)
+    y = pd.Series(y, name="target")
 
     return X, y
 
@@ -76,9 +74,9 @@ class TestCorrelationFilter:
         result = selector.select(X, y, model=None)
 
         # feature_2 is highly correlated with feature_1 and should be dropped
-        assert 'feature_2' not in result.selected_features
+        assert "feature_2" not in result.selected_features
         # feature_1 should be kept (higher target correlation)
-        assert 'feature_1' in result.selected_features
+        assert "feature_1" in result.selected_features
 
     def test_keeps_feature_with_higher_target_correlation(self):
         """When features are correlated, keep the one with higher target correlation."""
@@ -91,7 +89,7 @@ class TestCorrelationFilter:
 
         # Target correlates more with f2
         y = pd.Series(f2 + np.random.randn(n) * 0.5 > 0, dtype=int)
-        X = pd.DataFrame({'f1': f1, 'f2': f2})
+        X = pd.DataFrame({"f1": f1, "f2": f2})
 
         selector = FeatureSelector(correlation_threshold=0.85)
         result = selector.select(X, y, model=None)
@@ -112,14 +110,14 @@ class TestCorrelationFilter:
 
     def test_single_feature_no_correlation_filter(self):
         """With single feature, correlation filter is skipped."""
-        X = pd.DataFrame({'f1': np.random.randn(100)})
+        X = pd.DataFrame({"f1": np.random.randn(100)})
         y = pd.Series(np.random.randint(0, 2, 100))
 
         selector = FeatureSelector()
         result = selector.select(X, y, model=None)
 
         assert len(result.selected_features) == 1
-        assert result.selected_features[0] == 'f1'
+        assert result.selected_features[0] == "f1"
 
 
 class TestImportanceFilter:
@@ -136,7 +134,7 @@ class TestImportanceFilter:
         f3 = np.random.randn(n) * 0.001  # Noise feature
 
         y = pd.Series((f1 + f2 > 0).astype(int))
-        X = pd.DataFrame({'important_1': f1, 'important_2': f2, 'noise': f3})
+        X = pd.DataFrame({"important_1": f1, "important_2": f2, "noise": f3})
 
         model = DecisionTreeClassifier(max_depth=3, random_state=42)
         selector = FeatureSelector(importance_threshold=0.01)
@@ -144,8 +142,7 @@ class TestImportanceFilter:
         result = selector.select(X, y, model=model)
 
         # Noise feature should likely be dropped
-        dropped_names = [d['name'] for d in result.dropped_features
-                        if d['reason'] == 'low_importance']
+        dropped_names = [d["name"] for d in result.dropped_features if d["reason"] == "low_importance"]
         assert len(dropped_names) > 0
 
     def test_importance_scores_returned(self, synthetic_data):
@@ -168,8 +165,7 @@ class TestImportanceFilter:
         result = selector.select(X, y, model=None)
 
         assert result.importance_scores is None
-        dropped_importance = [d for d in result.dropped_features
-                             if d['reason'] == 'low_importance']
+        dropped_importance = [d for d in result.dropped_features if d["reason"] == "low_importance"]
         assert len(dropped_importance) == 0
 
 
@@ -187,11 +183,11 @@ class TestStabilityTest:
 
         # Target has different relationship in different parts of data
         y = np.zeros(n, dtype=int)
-        y[:n//2] = (f1[:n//2] > 0).astype(int)
-        y[n//2:] = (f2[n//2:] > 0).astype(int)
+        y[: n // 2] = (f1[: n // 2] > 0).astype(int)
+        y[n // 2 :] = (f2[n // 2 :] > 0).astype(int)
         y = pd.Series(y)
 
-        X = pd.DataFrame({'feature_1': f1, 'feature_2': f2})
+        X = pd.DataFrame({"feature_1": f1, "feature_2": f2})
 
         model = DecisionTreeClassifier(max_depth=3, random_state=42)
         # Use a threshold that's high enough to avoid triggering the buggy logging code
@@ -235,7 +231,7 @@ class TestStabilityTest:
 
     def test_insufficient_data_for_stability(self):
         """With insufficient data, stability test is skipped."""
-        X = pd.DataFrame({'f1': np.random.randn(50)})
+        X = pd.DataFrame({"f1": np.random.randn(50)})
         y = pd.Series(np.random.randint(0, 2, 50))
         model = DecisionTreeClassifier(random_state=42)
 
@@ -280,8 +276,7 @@ class TestMaxFeaturesCap:
         result = selector.select(X, y, model=model)
 
         # Check that dropped features have 'max_features_cap' reason
-        capped = [d for d in result.dropped_features
-                 if d['reason'] == 'max_features_cap']
+        capped = [d for d in result.dropped_features if d["reason"] == "max_features_cap"]
 
         # Should have capped some features if we started with 30
         assert len(result.selected_features) == max_features
@@ -328,20 +323,16 @@ class TestSelectionPipeline:
         result = selector.select(X, y, model=model)
 
         for dropped in result.dropped_features:
-            assert 'name' in dropped
-            assert 'reason' in dropped
-            assert 'detail' in dropped
-            assert dropped['reason'] in [
-                'correlation',
-                'low_importance',
-                'max_features_cap'
-            ]
+            assert "name" in dropped
+            assert "reason" in dropped
+            assert "detail" in dropped
+            assert dropped["reason"] in ["correlation", "low_importance", "max_features_cap"]
 
         # Unstable features go to flagged_features, not dropped_features
         for flagged in result.flagged_features:
-            assert 'name' in flagged
-            assert 'reason' in flagged
-            assert flagged['reason'] == 'unstable_importance'
+            assert "name" in flagged
+            assert "reason" in flagged
+            assert flagged["reason"] == "unstable_importance"
 
     def test_empty_dataframe(self):
         """Handles empty dataframe gracefully."""
@@ -359,10 +350,7 @@ class TestSelectionPipeline:
         n = 100
 
         # Create only noise features
-        X = pd.DataFrame({
-            f'noise_{i}': np.random.randn(n) * 0.0001
-            for i in range(5)
-        })
+        X = pd.DataFrame({f"noise_{i}": np.random.randn(n) * 0.0001 for i in range(5)})
         y = pd.Series(np.random.randint(0, 2, n))
 
         model = DecisionTreeClassifier(random_state=42)
@@ -381,13 +369,10 @@ class TestSelectionResult:
     def test_selection_result_creation(self):
         """SelectionResult can be created with required fields."""
         result = SelectionResult(
-            selected_features=['f1', 'f2'],
-            dropped_features=[
-                {'name': 'f3', 'reason': 'correlation', 'detail': 'test'}
-            ]
+            selected_features=["f1", "f2"], dropped_features=[{"name": "f3", "reason": "correlation", "detail": "test"}]
         )
 
-        assert result.selected_features == ['f1', 'f2']
+        assert result.selected_features == ["f1", "f2"]
         assert len(result.dropped_features) == 1
         assert result.correlation_matrix is None
         assert result.importance_scores is None
@@ -396,11 +381,11 @@ class TestSelectionResult:
     def test_selection_result_with_optional_fields(self):
         """SelectionResult can include optional diagnostic fields."""
         corr_matrix = pd.DataFrame([[1.0, 0.5], [0.5, 1.0]])
-        importance = {'f1': 0.6, 'f2': 0.4}
-        stability = {'f1': 0.1, 'f2': 0.2}
+        importance = {"f1": 0.6, "f2": 0.4}
+        stability = {"f1": 0.1, "f2": 0.2}
 
         result = SelectionResult(
-            selected_features=['f1', 'f2'],
+            selected_features=["f1", "f2"],
             dropped_features=[],
             correlation_matrix=corr_matrix,
             importance_scores=importance,

@@ -12,7 +12,6 @@ Possible causes:
 """
 
 import logging
-from pathlib import Path
 
 import pandas as pd
 
@@ -145,17 +144,17 @@ def main():
     # Append to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## VALIDATION 2: Leakage Re-Audit — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## VALIDATION 2: Leakage Re-Audit — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, n_trials=20
 
 **Results**:
 {chr(10).join(f"- {check.check_name}: {'PASS' if check.passed else 'FAIL'} - {check.detail}" for check in report.checks)}
 
-**Overall**: {'✅ ALL CHECKS PASSED' if report.passed else '❌ LEAKAGE DETECTED'}
+**Overall**: {"✅ ALL CHECKS PASSED" if report.passed else "❌ LEAKAGE DETECTED"}
 
 **Verdict**: [{verdict}]
-{'Holdout failure is due to OVERFITTING, not leakage. Model learned noise in train/test split.' if verdict == 'OVERFITTING' else 'Holdout failure is due to LEAKAGE. Must fix data pipeline.'}
+{"Holdout failure is due to OVERFITTING, not leakage. Model learned noise in train/test split." if verdict == "OVERFITTING" else "Holdout failure is due to LEAKAGE. Must fix data pipeline."}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:

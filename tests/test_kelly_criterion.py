@@ -2,12 +2,11 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from sparky.portfolio.kelly_criterion import (
-    calculate_kelly_parameters,
-    apply_kelly_sizing,
     apply_fixed_sizing,
+    apply_kelly_sizing,
+    calculate_kelly_parameters,
 )
 
 

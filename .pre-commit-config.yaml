@@ -1,0 +1,18 @@
+repos:
+  # Ruff: fast linting + formatting check
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Sparky-specific checks (holdout leaks, guardrail bypasses, cost requirements)
+  - repo: local
+    hooks:
+      - id: sparky-checks
+        name: Sparky-specific checks
+        entry: python scripts/hooks/sparky_checks.py
+        language: python
+        pass_filenames: false
+        always_run: true

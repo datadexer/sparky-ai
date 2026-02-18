@@ -22,25 +22,24 @@ Look-ahead bias prevention:
   starting on day T+1, reflecting real-world publication delays
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import logging
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] [ONCHAIN_FEATURES] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    level=logging.INFO, format="[%(asctime)s] [ONCHAIN_FEATURES] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 
 
 def load_data():
     """Load CoinMetrics and BTC hourly data."""
     logging.info("Loading CoinMetrics daily data...")
-    cm = pd.read_parquet('data/raw/onchain/coinmetrics_btc_daily.parquet')
+    cm = pd.read_parquet("data/raw/onchain/coinmetrics_btc_daily.parquet")
 
     logging.info("Loading BTC hourly OHLCV data...")
-    btc_hourly = pd.read_parquet('data/raw/btc/ohlcv_hourly_max_coverage.parquet')
+    btc_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
 
     logging.info(f"CoinMetrics: {len(cm)} days ({cm.index.min()} to {cm.index.max()})")
     logging.info(f"BTC hourly: {len(btc_hourly)} hours ({btc_hourly.index.min()} to {btc_hourly.index.max()})")
@@ -72,45 +71,45 @@ def compute_daily_features(cm: pd.DataFrame) -> pd.DataFrame:
     features = pd.DataFrame(index=cm.index)
 
     # 1. MVRV ratio (already computed by CoinMetrics)
-    features['mvrv_ratio'] = cm['CapMVRVCur']
+    features["mvrv_ratio"] = cm["CapMVRVCur"]
 
     # 2. MVRV Z-score (365-day rolling window)
     # Z = (MVRV - rolling_mean) / rolling_std
-    mvrv_mean = cm['CapMVRVCur'].rolling(window=365, min_periods=30).mean()
-    mvrv_std = cm['CapMVRVCur'].rolling(window=365, min_periods=30).std()
-    features['mvrv_zscore'] = (cm['CapMVRVCur'] - mvrv_mean) / mvrv_std
+    mvrv_mean = cm["CapMVRVCur"].rolling(window=365, min_periods=30).mean()
+    mvrv_std = cm["CapMVRVCur"].rolling(window=365, min_periods=30).std()
+    features["mvrv_zscore"] = (cm["CapMVRVCur"] - mvrv_mean) / mvrv_std
 
     # 3. Active addresses 7-day percent change
     # pct_change = (current - previous) / previous
-    features['active_addresses_change_7d'] = cm['AdrActCnt'].pct_change(periods=7)
+    features["active_addresses_change_7d"] = cm["AdrActCnt"].pct_change(periods=7)
 
     # 4. Hash rate 30-day percent change
-    features['hash_rate_change_30d'] = cm['HashRate'].pct_change(periods=30)
+    features["hash_rate_change_30d"] = cm["HashRate"].pct_change(periods=30)
 
     # 5. Exchange net flow 7-day rolling sum
     # Net flow = inflow - outflow (positive = net inflow to exchanges)
-    net_flow = cm['FlowInExNtv'] - cm['FlowOutExNtv']
-    features['exchange_net_flow_7d'] = net_flow.rolling(window=7).sum()
+    net_flow = cm["FlowInExNtv"] - cm["FlowOutExNtv"]
+    features["exchange_net_flow_7d"] = net_flow.rolling(window=7).sum()
 
     # 6. Fee ratio 7-day percent change
-    features['fee_ratio_change_7d'] = cm['FeeTotNtv'].pct_change(periods=7)
+    features["fee_ratio_change_7d"] = cm["FeeTotNtv"].pct_change(periods=7)
 
     # 7. Transaction count 7-day percent change
-    features['tx_count_change_7d'] = cm['TxCnt'].pct_change(periods=7)
+    features["tx_count_change_7d"] = cm["TxCnt"].pct_change(periods=7)
 
     # 8. NVT ratio (Network Value to Transactions)
     # NVT = Market Cap / Transaction Volume
     # Transaction Volume ≈ TxCnt * PriceUSD (approximation)
-    tx_volume = cm['TxCnt'] * cm['PriceUSD']
-    features['nvt_ratio'] = cm['CapMrktCurUSD'] / tx_volume
+    tx_volume = cm["TxCnt"] * cm["PriceUSD"]
+    features["nvt_ratio"] = cm["CapMrktCurUSD"] / tx_volume
     # Replace inf/NaN from division by zero
-    features['nvt_ratio'] = features['nvt_ratio'].replace([np.inf, -np.inf], np.nan)
+    features["nvt_ratio"] = features["nvt_ratio"].replace([np.inf, -np.inf], np.nan)
 
     logging.info(f"Computed {len(features.columns)} features")
-    logging.info(f"NaN counts per feature:")
+    logging.info("NaN counts per feature:")
     for col in features.columns:
         nan_count = features[col].isna().sum()
-        logging.info(f"  {col}: {nan_count} ({100*nan_count/len(features):.1f}%)")
+        logging.info(f"  {col}: {nan_count} ({100 * nan_count / len(features):.1f}%)")
 
     return features
 
@@ -142,7 +141,7 @@ def align_to_hourly(daily_features: pd.DataFrame, hourly_index: pd.DatetimeIndex
     # Reindex to hourly frequency with forward-fill
     # Each hour in a day gets the previous day's feature values
     logging.info(f"Reindexing from {len(daily_shifted)} daily rows to {len(hourly_index)} hourly rows...")
-    hourly_features = daily_shifted.reindex(hourly_index, method='ffill')
+    hourly_features = daily_shifted.reindex(hourly_index, method="ffill")
 
     logging.info(f"Hourly features: {hourly_features.shape}")
     logging.info(f"Date range: {hourly_features.index.min()} to {hourly_features.index.max()}")
@@ -151,7 +150,7 @@ def align_to_hourly(daily_features: pd.DataFrame, hourly_index: pd.DatetimeIndex
     logging.info("NaN counts after hourly alignment:")
     for col in hourly_features.columns:
         nan_count = hourly_features[col].isna().sum()
-        logging.info(f"  {col}: {nan_count} ({100*nan_count/len(hourly_features):.1f}%)")
+        logging.info(f"  {col}: {nan_count} ({100 * nan_count / len(hourly_features):.1f}%)")
 
     return hourly_features
 
@@ -168,7 +167,7 @@ def main():
     hourly_features = align_to_hourly(daily_features, btc_hourly.index)
 
     # Save to processed directory
-    output_path = Path('data/processed/onchain_features_hourly.parquet')
+    output_path = Path("data/processed/onchain_features_hourly.parquet")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     logging.info(f"Saving to {output_path}...")
@@ -184,5 +183,5 @@ def main():
     logging.info("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

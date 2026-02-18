@@ -20,19 +20,19 @@ SUCCESS CRITERIA (ALL must pass):
 5. Bootstrap CI lower bound > 0.7
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.regime_indicators import compute_volatility_regime
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +49,7 @@ def load_price_data(start_date, end_date):
         raise FileNotFoundError(f"Price data not found: {price_path}")
 
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
 
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
@@ -103,7 +103,9 @@ def compute_hybrid_position_sizing(
         else:
             position_sizes.iloc[i] = 0.25  # Default defensive
 
-    logger.info(f"Hybrid Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}")
+    logger.info(
+        f"Hybrid Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}"
+    )
 
     return position_sizes
 
@@ -227,9 +229,15 @@ def validate_period(prices, period_name, start_date, end_date):
     donchian_metrics = compute_metrics(donchian_returns, "Donchian")
     market_metrics = compute_metrics(market_returns, "Buy & Hold")
 
-    logger.info(f"Hybrid:     Sharpe={hybrid_metrics['sharpe_ratio']:.3f}, Return={hybrid_metrics['total_return_pct']:.2f}%")
-    logger.info(f"Donchian:   Sharpe={donchian_metrics['sharpe_ratio']:.3f}, Return={donchian_metrics['total_return_pct']:.2f}%")
-    logger.info(f"Buy & Hold: Sharpe={market_metrics['sharpe_ratio']:.3f}, Return={market_metrics['total_return_pct']:.2f}%")
+    logger.info(
+        f"Hybrid:     Sharpe={hybrid_metrics['sharpe_ratio']:.3f}, Return={hybrid_metrics['total_return_pct']:.2f}%"
+    )
+    logger.info(
+        f"Donchian:   Sharpe={donchian_metrics['sharpe_ratio']:.3f}, Return={donchian_metrics['total_return_pct']:.2f}%"
+    )
+    logger.info(
+        f"Buy & Hold: Sharpe={market_metrics['sharpe_ratio']:.3f}, Return={market_metrics['total_return_pct']:.2f}%"
+    )
     logger.info("")
 
     return {
@@ -239,8 +247,8 @@ def validate_period(prices, period_name, start_date, end_date):
         "hybrid": hybrid_metrics,
         "donchian": donchian_metrics,
         "buyhold": market_metrics,
-        "hybrid_vs_donchian": float(hybrid_metrics['sharpe_ratio'] - donchian_metrics['sharpe_ratio']),
-        "hybrid_vs_buyhold": float(hybrid_metrics['sharpe_ratio'] - market_metrics['sharpe_ratio']),
+        "hybrid_vs_donchian": float(hybrid_metrics["sharpe_ratio"] - donchian_metrics["sharpe_ratio"]),
+        "hybrid_vs_buyhold": float(hybrid_metrics["sharpe_ratio"] - market_metrics["sharpe_ratio"]),
     }
 
 
@@ -283,16 +291,22 @@ def main():
     vol_regimes_2017_2023 = compute_volatility_regime(prices_2017_2023, window=30, frequency="1d")
     hybrid_positions_2017_2023 = compute_hybrid_position_sizing(donchian_signals_2017_2023, vol_regimes_2017_2023)
 
-    hybrid_returns_2017_2023 = compute_strategy_returns(donchian_signals_2017_2023, prices_2017_2023, position_sizes=hybrid_positions_2017_2023)
+    hybrid_returns_2017_2023 = compute_strategy_returns(
+        donchian_signals_2017_2023, prices_2017_2023, position_sizes=hybrid_positions_2017_2023
+    )
     market_returns_2017_2023 = prices_2017_2023.pct_change().dropna()
 
     # Bootstrap CI
     bootstrap_result = bootstrap_ci(hybrid_returns_2017_2023, n_resamples=1000)
-    logger.info(f"Bootstrap Sharpe: mean={bootstrap_result['mean']:.3f}, 95% CI=[{bootstrap_result['lower']:.3f}, {bootstrap_result['upper']:.3f}]")
+    logger.info(
+        f"Bootstrap Sharpe: mean={bootstrap_result['mean']:.3f}, 95% CI=[{bootstrap_result['lower']:.3f}, {bootstrap_result['upper']:.3f}]"
+    )
 
     # Monte Carlo
     monte_carlo_result = monte_carlo_vs_buyhold(hybrid_returns_2017_2023, market_returns_2017_2023, n_simulations=1000)
-    logger.info(f"Monte Carlo: Beats Buy & Hold in {monte_carlo_result['wins']}/1000 trials ({monte_carlo_result['win_rate']*100:.1f}%)")
+    logger.info(
+        f"Monte Carlo: Beats Buy & Hold in {monte_carlo_result['wins']}/1000 trials ({monte_carlo_result['win_rate'] * 100:.1f}%)"
+    )
     logger.info("")
 
     # ========================================================================
@@ -304,8 +318,10 @@ def main():
 
     criteria = {
         "1_out_of_sample_sharpe": result_2017_2023["hybrid"]["sharpe_ratio"] >= 1.4,
-        "2_bear_2018_protection": result_2018_bear["hybrid"]["sharpe_ratio"] > result_2018_bear["buyhold"]["sharpe_ratio"],
-        "3_bear_2022_protection": result_2022_bear["hybrid"]["sharpe_ratio"] > result_2022_bear["buyhold"]["sharpe_ratio"],
+        "2_bear_2018_protection": result_2018_bear["hybrid"]["sharpe_ratio"]
+        > result_2018_bear["buyhold"]["sharpe_ratio"],
+        "3_bear_2022_protection": result_2022_bear["hybrid"]["sharpe_ratio"]
+        > result_2022_bear["buyhold"]["sharpe_ratio"],
         "4_sideways_2023_sharpe": result_2023_sideways["hybrid"]["sharpe_ratio"] > 1.5,
         "5_monte_carlo_win_rate": monte_carlo_result["win_rate"] >= 0.75,
         "6_bootstrap_ci_lower": bootstrap_result["lower"] > 0.7,
@@ -316,12 +332,24 @@ def main():
     print("\n" + "=" * 80)
     print("SUCCESS CRITERIA (ALL MUST PASS)")
     print("=" * 80)
-    print(f"1. Out-of-sample Sharpe ≥ 1.4:         {'✅ PASS' if criteria['1_out_of_sample_sharpe'] else '❌ FAIL'} ({result_2017_2023['hybrid']['sharpe_ratio']:.3f})")
-    print(f"2. 2018 Bear > Buy & Hold:             {'✅ PASS' if criteria['2_bear_2018_protection'] else '❌ FAIL'} ({result_2018_bear['hybrid']['sharpe_ratio']:.3f} vs {result_2018_bear['buyhold']['sharpe_ratio']:.3f})")
-    print(f"3. 2022 Bear > Buy & Hold:             {'✅ PASS' if criteria['3_bear_2022_protection'] else '❌ FAIL'} ({result_2022_bear['hybrid']['sharpe_ratio']:.3f} vs {result_2022_bear['buyhold']['sharpe_ratio']:.3f})")
-    print(f"4. 2023 Sideways Sharpe > 1.5:         {'✅ PASS' if criteria['4_sideways_2023_sharpe'] else '❌ FAIL'} ({result_2023_sideways['hybrid']['sharpe_ratio']:.3f})")
-    print(f"5. Monte Carlo win rate ≥ 75%:         {'✅ PASS' if criteria['5_monte_carlo_win_rate'] else '❌ FAIL'} ({monte_carlo_result['win_rate']*100:.1f}%)")
-    print(f"6. Bootstrap CI lower > 0.7:           {'✅ PASS' if criteria['6_bootstrap_ci_lower'] else '❌ FAIL'} ({bootstrap_result['lower']:.3f})")
+    print(
+        f"1. Out-of-sample Sharpe ≥ 1.4:         {'✅ PASS' if criteria['1_out_of_sample_sharpe'] else '❌ FAIL'} ({result_2017_2023['hybrid']['sharpe_ratio']:.3f})"
+    )
+    print(
+        f"2. 2018 Bear > Buy & Hold:             {'✅ PASS' if criteria['2_bear_2018_protection'] else '❌ FAIL'} ({result_2018_bear['hybrid']['sharpe_ratio']:.3f} vs {result_2018_bear['buyhold']['sharpe_ratio']:.3f})"
+    )
+    print(
+        f"3. 2022 Bear > Buy & Hold:             {'✅ PASS' if criteria['3_bear_2022_protection'] else '❌ FAIL'} ({result_2022_bear['hybrid']['sharpe_ratio']:.3f} vs {result_2022_bear['buyhold']['sharpe_ratio']:.3f})"
+    )
+    print(
+        f"4. 2023 Sideways Sharpe > 1.5:         {'✅ PASS' if criteria['4_sideways_2023_sharpe'] else '❌ FAIL'} ({result_2023_sideways['hybrid']['sharpe_ratio']:.3f})"
+    )
+    print(
+        f"5. Monte Carlo win rate ≥ 75%:         {'✅ PASS' if criteria['5_monte_carlo_win_rate'] else '❌ FAIL'} ({monte_carlo_result['win_rate'] * 100:.1f}%)"
+    )
+    print(
+        f"6. Bootstrap CI lower > 0.7:           {'✅ PASS' if criteria['6_bootstrap_ci_lower'] else '❌ FAIL'} ({bootstrap_result['lower']:.3f})"
+    )
     print("=" * 80)
 
     if all_pass:
@@ -350,7 +378,7 @@ def main():
 
     output_path = Path("results/validation/phase_2d_hybrid_validation.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"Results saved to: {output_path}")

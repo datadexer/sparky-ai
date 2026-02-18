@@ -19,8 +19,8 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
 import ccxt
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,12 +42,7 @@ EXCHANGES = [
 ]
 
 
-def fetch_from_exchange(
-    exchange_id: str,
-    symbol: str,
-    start_year: int = 2013,
-    end_year: int = 2025
-) -> pd.DataFrame:
+def fetch_from_exchange(exchange_id: str, symbol: str, start_year: int = 2013, end_year: int = 2025) -> pd.DataFrame:
     """Fetch hourly data from a single exchange.
 
     Args:
@@ -60,9 +55,9 @@ def fetch_from_exchange(
         DataFrame with hourly OHLCV, or empty DataFrame if failed
     """
     try:
-        logger.info(f"\n{'='*60}")
+        logger.info(f"\n{'=' * 60}")
         logger.info(f"Trying {exchange_id} ({symbol})...")
-        logger.info(f"{'='*60}")
+        logger.info(f"{'=' * 60}")
 
         exchange_class = getattr(ccxt, exchange_id)
         exchange = exchange_class({"enableRateLimit": True})
@@ -114,10 +109,7 @@ def fetch_from_exchange(
             return pd.DataFrame()
 
         # Convert to DataFrame
-        df = pd.DataFrame(
-            all_candles,
-            columns=["timestamp", "open", "high", "low", "close", "volume"]
-        )
+        df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
         df = df.set_index("timestamp")
         df = df[~df.index.duplicated(keep="last")]
@@ -154,16 +146,16 @@ def merge_multi_source(dataframes: list[pd.DataFrame]) -> pd.DataFrame:
     combined = combined[~combined.index.duplicated(keep="first")]
     combined = combined.sort_index()
 
-    logger.info(f"\nMerged data:")
+    logger.info("\nMerged data:")
     logger.info(f"  Total candles: {len(combined):,}")
     logger.info(f"  Date range: {combined.index.min().date()} to {combined.index.max().date()}")
     logger.info(f"  Years covered: {(combined.index.max() - combined.index.min()).days / 365.25:.1f}")
 
     # Source distribution
     source_counts = combined["source"].value_counts()
-    logger.info(f"\n  Source distribution:")
+    logger.info("\n  Source distribution:")
     for source, count in source_counts.items():
-        logger.info(f"    {source}: {count:,} candles ({100*count/len(combined):.1f}%)")
+        logger.info(f"    {source}: {count:,} candles ({100 * count / len(combined):.1f}%)")
 
     return combined
 
@@ -174,7 +166,7 @@ def main():
     logger.info("=" * 80)
     logger.info("FETCH MAXIMUM HOURLY BTC COVERAGE (MULTI-EXCHANGE)")
     logger.info("=" * 80)
-    logger.info(f"Target: 2013-2025 (maximum historical coverage)")
+    logger.info("Target: 2013-2025 (maximum historical coverage)")
     logger.info(f"Exchanges: {len(EXCHANGES)} sources")
     logger.info("=" * 80)
 
@@ -182,10 +174,7 @@ def main():
 
     for exchange_config in EXCHANGES:
         df = fetch_from_exchange(
-            exchange_id=exchange_config["id"],
-            symbol=exchange_config["symbol"],
-            start_year=2013,
-            end_year=2025
+            exchange_id=exchange_config["id"], symbol=exchange_config["symbol"], start_year=2013, end_year=2025
         )
 
         if not df.empty:

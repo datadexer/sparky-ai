@@ -23,11 +23,10 @@ Usage:
 """
 
 import logging
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 import psutil
 import yaml
@@ -105,9 +104,7 @@ class ResourceManager:
         # Concurrency adjustments (for graceful degradation)
         self.current_max_concurrent = self.config["concurrency"]["max_concurrent_agents"]
 
-        logger.info(
-            f"ResourceManager initialized. Max concurrent agents: {self.current_max_concurrent}"
-        )
+        logger.info(f"ResourceManager initialized. Max concurrent agents: {self.current_max_concurrent}")
 
     def can_spawn_agent(self, agent_type: str = "general") -> bool:
         """Check if a new agent can be spawned.
@@ -188,9 +185,7 @@ class ResourceManager:
         # Count agents by type
         agents_by_type: Dict[str, int] = {}
         for agent_info in self.active_agents.values():
-            agents_by_type[agent_info.agent_type] = (
-                agents_by_type.get(agent_info.agent_type, 0) + 1
-            )
+            agents_by_type[agent_info.agent_type] = agents_by_type.get(agent_info.agent_type, 0) + 1
 
         # Check for warnings
         warnings = []
@@ -212,15 +207,12 @@ class ResourceManager:
         for agent_info in self.active_agents.values():
             duration = (now - agent_info.started_at).total_seconds()
             if duration > timeout_warning:
-                warnings.append(
-                    f"Agent {agent_info.agent_id} running for {duration/60:.1f} minutes"
-                )
+                warnings.append(f"Agent {agent_info.agent_id} running for {duration / 60:.1f} minutes")
 
         # Determine if under pressure
         pressure = self.config["degradation"]
         under_pressure = (
-            cpu_percent > pressure["pressure_cpu_threshold"]
-            or memory.percent > pressure["pressure_memory_threshold"]
+            cpu_percent > pressure["pressure_cpu_threshold"] or memory.percent > pressure["pressure_memory_threshold"]
         )
 
         return SystemStatus(
@@ -274,33 +266,24 @@ class ResourceManager:
         # Check global concurrent agent limit
         if len(self.active_agents) >= self.current_max_concurrent:
             self._handle_resource_error(
-                f"Cannot spawn agent: at max concurrency "
-                f"({len(self.active_agents)}/{self.current_max_concurrent})"
+                f"Cannot spawn agent: at max concurrency ({len(self.active_agents)}/{self.current_max_concurrent})"
             )
 
         # Check type-specific limits
         if agent_type == "model_training":
-            training_agents = sum(
-                1 for a in self.active_agents.values()
-                if a.agent_type == "model_training"
-            )
+            training_agents = sum(1 for a in self.active_agents.values() if a.agent_type == "model_training")
             max_training = self.config["model_training"]["max_concurrent_training"]
             if training_agents >= max_training:
                 self._handle_resource_error(
-                    f"Cannot spawn training agent: at max training concurrency "
-                    f"({training_agents}/{max_training})"
+                    f"Cannot spawn training agent: at max training concurrency ({training_agents}/{max_training})"
                 )
 
         if agent_type == "data_fetch":
-            fetch_agents = sum(
-                1 for a in self.active_agents.values()
-                if a.agent_type == "data_fetch"
-            )
+            fetch_agents = sum(1 for a in self.active_agents.values() if a.agent_type == "data_fetch")
             max_fetch = self.config["data_fetching"]["max_concurrent_fetches"]
             if fetch_agents >= max_fetch:
                 self._handle_resource_error(
-                    f"Cannot spawn data fetch agent: at max fetch concurrency "
-                    f"({fetch_agents}/{max_fetch})"
+                    f"Cannot spawn data fetch agent: at max fetch concurrency ({fetch_agents}/{max_fetch})"
                 )
 
     def _check_system_resources(self) -> None:
@@ -317,9 +300,7 @@ class ResourceManager:
 
         # Check halt thresholds
         if status.cpu_percent > halt["cpu_percent"]:
-            self._handle_resource_error(
-                f"CPU usage critical: {status.cpu_percent:.1f}% > {halt['cpu_percent']}%"
-            )
+            self._handle_resource_error(f"CPU usage critical: {status.cpu_percent:.1f}% > {halt['cpu_percent']}%")
 
         if status.memory_percent > halt["memory_percent"]:
             self._handle_resource_error(
@@ -343,12 +324,9 @@ class ResourceManager:
         min_concurrent = self.config["degradation"]["min_concurrent_agents"]
         if self.current_max_concurrent > min_concurrent:
             old_max = self.current_max_concurrent
-            self.current_max_concurrent = max(
-                min_concurrent, self.current_max_concurrent - 1
-            )
+            self.current_max_concurrent = max(min_concurrent, self.current_max_concurrent - 1)
             logger.warning(
-                f"System under pressure. Reducing max concurrent agents: "
-                f"{old_max} -> {self.current_max_concurrent}"
+                f"System under pressure. Reducing max concurrent agents: {old_max} -> {self.current_max_concurrent}"
             )
 
     def _handle_resource_error(self, error_msg: str) -> None:
@@ -371,9 +349,7 @@ class ResourceManager:
             if self.consecutive_errors >= max_errors:
                 self.circuit_breaker_open = True
                 self.circuit_breaker_opened_at = datetime.now(timezone.utc)
-                logger.critical(
-                    f"Circuit breaker opened after {self.consecutive_errors} consecutive errors"
-                )
+                logger.critical(f"Circuit breaker opened after {self.consecutive_errors} consecutive errors")
 
         raise ResourceManagerError(error_msg)
 
@@ -395,10 +371,7 @@ class ResourceManager:
         for agent_id, agent_info in list(self.active_agents.items()):
             duration = (now - agent_info.started_at).total_seconds()
             if duration > force_kill_timeout:
-                logger.warning(
-                    f"Force-killing stale agent: {agent_id} "
-                    f"(running {duration/60:.1f} minutes)"
-                )
+                logger.warning(f"Force-killing stale agent: {agent_id} (running {duration / 60:.1f} minutes)")
                 stale_agents.append(agent_id)
                 self.unregister_agent(agent_id)
 

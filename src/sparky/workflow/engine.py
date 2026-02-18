@@ -30,6 +30,7 @@ def _upload_session_to_wandb(telemetry, log_path, step) -> None:
     def _upload():
         try:
             import wandb
+
             run = wandb.init(
                 project="sparky-ai",
                 entity="datadex_ai",
@@ -46,17 +47,19 @@ def _upload_session_to_wandb(telemetry, log_path, step) -> None:
                 reinit=True,
             )
 
-            wandb.log({
-                "duration_minutes": telemetry.duration_minutes,
-                "cost_usd": getattr(telemetry, "cost_usd", 0),
-                "estimated_cost_usd": telemetry.estimated_cost_usd,
-                "tokens_input": telemetry.tokens_input,
-                "tokens_output": telemetry.tokens_output,
-                "tokens_cache_read": getattr(telemetry, "tokens_cache_read", 0),
-                "tokens_cache_creation": getattr(telemetry, "tokens_cache_creation", 0),
-                "tool_calls": telemetry.tool_calls,
-                "num_turns": getattr(telemetry, "num_turns", 0),
-            })
+            wandb.log(
+                {
+                    "duration_minutes": telemetry.duration_minutes,
+                    "cost_usd": getattr(telemetry, "cost_usd", 0),
+                    "estimated_cost_usd": telemetry.estimated_cost_usd,
+                    "tokens_input": telemetry.tokens_input,
+                    "tokens_output": telemetry.tokens_output,
+                    "tokens_cache_read": getattr(telemetry, "tokens_cache_read", 0),
+                    "tokens_cache_creation": getattr(telemetry, "tokens_cache_creation", 0),
+                    "tool_calls": telemetry.tool_calls,
+                    "num_turns": getattr(telemetry, "num_turns", 0),
+                }
+            )
 
             if log_path and Path(log_path).exists():
                 art = wandb.Artifact(
@@ -75,6 +78,8 @@ def _upload_session_to_wandb(telemetry, log_path, step) -> None:
 
     t = threading.Thread(target=_upload, daemon=True)
     t.start()
+
+
 STATE_DIR = PROJECT_ROOT / "workflows" / "state"
 LOG_DIR = PROJECT_ROOT / "logs" / "research_sessions"
 ALERT_SCRIPT = PROJECT_ROOT / "scripts" / "alert.sh"
@@ -174,9 +179,7 @@ class WorkflowState:
             created_at=d.get("created_at", ""),
             updated_at=d.get("updated_at", ""),
         )
-        state.steps = {
-            k: StepState.from_dict(v) for k, v in d.get("steps", {}).items()
-        }
+        state.steps = {k: StepState.from_dict(v) for k, v in d.get("steps", {}).items()}
         state.budget = BudgetState.from_dict(d.get("budget", {}))
         return state
 
@@ -187,9 +190,7 @@ class WorkflowState:
         self.updated_at = datetime.now(timezone.utc).isoformat()
 
         # Atomic write via temp file + os.replace
-        fd, tmp_path = tempfile.mkstemp(
-            dir=str(state_dir), suffix=".tmp", prefix=".state_"
-        )
+        fd, tmp_path = tempfile.mkstemp(dir=str(state_dir), suffix=".tmp", prefix=".state_")
         try:
             with os.fdopen(fd, "w") as f:
                 json.dump(self.to_dict(), f, indent=2)
@@ -301,7 +302,8 @@ class Workflow:
         env = self._clean_env()
         timeout_seconds = max_duration_minutes * 60
 
-        from sparky.tracking.experiment import set_current_session, clear_current_session
+        from sparky.tracking.experiment import clear_current_session, set_current_session
+
         set_current_session(session_id)
 
         with open(log_path, "w") as log_file:
@@ -314,10 +316,14 @@ class Workflow:
             try:
                 proc = subprocess.Popen(
                     [
-                        "claude", "-p", prompt,
-                        "--model", "sonnet",
+                        "claude",
+                        "-p",
+                        prompt,
+                        "--model",
+                        "sonnet",
                         "--verbose",
-                        "--output-format", "stream-json",
+                        "--output-format",
+                        "stream-json",
                         "--dangerously-skip-permissions",
                     ],
                     stdout=subprocess.PIPE,
@@ -344,7 +350,7 @@ class Workflow:
                 if proc.stderr:
                     try:
                         stderr_output = proc.stderr.read()
-                    except Exception:
+                    except Exception:  # noqa: S110
                         pass
 
                 if proc.returncode != 0 and parser.telemetry.exit_reason == "completed":
@@ -484,7 +490,7 @@ class Workflow:
                     # Check budget before waiting
                     wait_hours = wait_m / 60.0
                     if state.budget.hours_used + wait_hours >= state.budget.max_hours:
-                        self._alert("CRITICAL", f"Budget would be exhausted during rate limit wait.")
+                        self._alert("CRITICAL", "Budget would be exhausted during rate limit wait.")
                         return 0
 
                     logger.info(f"Rate limit backoff: waiting {wait_m} minutes (attempt {wait_idx + 1})")
@@ -526,10 +532,7 @@ class Workflow:
             state.save(self.state_dir)
 
             # Budget 80% warning
-            if (
-                state.budget.hours_used / state.budget.max_hours >= 0.8
-                and not state.budget.warned_80_pct
-            ):
+            if state.budget.hours_used / state.budget.max_hours >= 0.8 and not state.budget.warned_80_pct:
                 state.budget.warned_80_pct = True
                 self._alert(
                     "WARN",
@@ -577,6 +580,7 @@ class Workflow:
         """Get a short summary of the best result from wandb."""
         try:
             from sparky.tracking.experiment import ExperimentTracker
+
             tracker = ExperimentTracker()
             best = tracker.get_best_run("sharpe")
             sharpe = best.get("metrics", {}).get("sharpe", "?")

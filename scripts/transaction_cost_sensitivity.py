@@ -9,17 +9,16 @@ Test Multi-Timeframe Ensemble performance across different transaction cost scen
 RBM Decision Gate: Sharpe must remain ≥ 1.4 at 0.5% costs to deploy.
 """
 
-import sys
 import json
 import logging
+import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ logger = logging.getLogger(__name__)
 def load_prices():
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -74,10 +73,10 @@ def metrics(returns):
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("TRANSACTION COST SENSITIVITY ANALYSIS")
     logger.info("Multi-Timeframe Donchian Ensemble (2017-2023)")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     prices = load_prices()
     ensemble_signals = compute_ensemble_signals(prices)
@@ -92,9 +91,9 @@ def main():
     results = {}
 
     for tc, label in tc_scenarios:
-        logger.info(f"\n{'='*70}")
+        logger.info(f"\n{'=' * 70}")
         logger.info(f"Transaction Cost: {label}")
-        logger.info(f"{'='*70}")
+        logger.info(f"{'=' * 70}")
 
         returns = compute_returns(ensemble_signals, prices, tc=tc)
         m = metrics(returns)
@@ -103,53 +102,49 @@ def main():
         logger.info(f"  Sharpe (rf=4.5%): {m['sharpe_rf45']:.3f}")
         logger.info(f"  Return: {m['return_pct']:.2f}%")
         logger.info(f"  Max DD: {m['max_dd_pct']:.2f}%")
-        logger.info(f"  Win Rate: {m['win_rate']*100:.1f}%")
+        logger.info(f"  Win Rate: {m['win_rate'] * 100:.1f}%")
         logger.info(f"  Trades: {m['n_trades']}")
 
-        results[f"tc_{int(tc*10000)}bp"] = {
-            "label": label,
-            "tc_pct": tc * 100,
-            "metrics": m
-        }
+        results[f"tc_{int(tc * 10000)}bp"] = {"label": label, "tc_pct": tc * 100, "metrics": m}
 
     # Summary table
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("SUMMARY: Transaction Cost Sensitivity")
-    print("="*70)
+    print("=" * 70)
     print(f"{'Cost':<30s} {'Sharpe (rf=0)':<15s} {'Sharpe (rf=4.5%)':<15s} {'Return %':<12s}")
-    print("-"*70)
+    print("-" * 70)
 
     for tc, label in tc_scenarios:
-        key = f"tc_{int(tc*10000)}bp"
+        key = f"tc_{int(tc * 10000)}bp"
         m = results[key]["metrics"]
         print(f"{label:<30s} {m['sharpe_rf0']:<15.3f} {m['sharpe_rf45']:<15.3f} {m['return_pct']:<12.1f}")
 
-    print("="*70)
+    print("=" * 70)
 
     # Decision gate
     conservative_sharpe = results["tc_50bp"]["metrics"]["sharpe_rf0"]
     conservative_sharpe_rf45 = results["tc_50bp"]["metrics"]["sharpe_rf45"]
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("RBM DECISION GATE")
-    print("="*70)
-    print(f"Requirement: Sharpe ≥ 1.4 at 0.5% transaction costs")
+    print("=" * 70)
+    print("Requirement: Sharpe ≥ 1.4 at 0.5% transaction costs")
     print(f"Result (rf=0.0%): {conservative_sharpe:.3f}")
     print(f"Result (rf=4.5%): {conservative_sharpe_rf45:.3f}")
 
     if conservative_sharpe >= 1.4:
-        print(f"\n✅ PASS: Strategy remains profitable at conservative costs")
-        print(f"   Sharpe degradation: 1.624 → {conservative_sharpe:.3f} (-{(1.624-conservative_sharpe)*100:.1f}%)")
+        print("\n✅ PASS: Strategy remains profitable at conservative costs")
+        print(f"   Sharpe degradation: 1.624 → {conservative_sharpe:.3f} (-{(1.624 - conservative_sharpe) * 100:.1f}%)")
     else:
-        print(f"\n❌ FAIL: Strategy falls below threshold at conservative costs")
-        print(f"   Sharpe degradation: 1.624 → {conservative_sharpe:.3f} (-{(1.624-conservative_sharpe)*100:.1f}%)")
+        print("\n❌ FAIL: Strategy falls below threshold at conservative costs")
+        print(f"   Sharpe degradation: 1.624 → {conservative_sharpe:.3f} (-{(1.624 - conservative_sharpe) * 100:.1f}%)")
 
-    print("="*70)
+    print("=" * 70)
 
     # Save results
     output_path = Path("results/validation/transaction_cost_sensitivity.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info(f"\nResults saved to: {output_path}")

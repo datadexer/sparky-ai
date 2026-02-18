@@ -24,7 +24,7 @@ Usage:
 
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -38,6 +38,7 @@ DEFAULT_LOG_FILE = DEFAULT_LOG_DIR / "session_log.jsonl"
 @dataclass
 class CodeAgentRecord:
     """Record of a sub-agent (Task tool) invocation."""
+
     task: str
     model: str = "sonnet"
     files_created: list[str] = field(default_factory=list)
@@ -50,6 +51,7 @@ class CodeAgentRecord:
 @dataclass
 class ResearchLaunchRecord:
     """Record of a research agent (systemd/workflow) launch."""
+
     workflow: str
     contract: str
     branch: str
@@ -60,6 +62,7 @@ class ResearchLaunchRecord:
 @dataclass
 class ContractDesignRecord:
     """Record of contract design decisions."""
+
     contract_name: str
     objective: str
     steps: list[str] = field(default_factory=list)
@@ -71,6 +74,7 @@ class ContractDesignRecord:
 @dataclass
 class ManagerSession:
     """A single manager session with events."""
+
     session_id: str
     objective: str
     branch: str
@@ -253,15 +257,9 @@ class ManagerLog:
                     summary=data.get("summary", ""),
                 )
                 # Reconstruct nested records
-                session.code_agents = [
-                    CodeAgentRecord(**r) for r in data.get("code_agents", [])
-                ]
-                session.research_launches = [
-                    ResearchLaunchRecord(**r) for r in data.get("research_launches", [])
-                ]
-                session.contract_designs = [
-                    ContractDesignRecord(**r) for r in data.get("contract_designs", [])
-                ]
+                session.code_agents = [CodeAgentRecord(**r) for r in data.get("code_agents", [])]
+                session.research_launches = [ResearchLaunchRecord(**r) for r in data.get("research_launches", [])]
+                session.contract_designs = [ContractDesignRecord(**r) for r in data.get("contract_designs", [])]
                 session.decisions = data.get("decisions", [])
                 session.infrastructure = data.get("infrastructure", [])
                 sessions.append(session)

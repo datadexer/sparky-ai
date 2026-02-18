@@ -77,9 +77,9 @@ def compute_volatility_regime(
 
     logger.info(
         f"Computed volatility regimes: "
-        f"low={n_low} ({n_low/len(regime)*100:.1f}%), "
-        f"medium={n_medium} ({n_medium/len(regime)*100:.1f}%), "
-        f"high={n_high} ({n_high/len(regime)*100:.1f}%)"
+        f"low={n_low} ({n_low / len(regime) * 100:.1f}%), "
+        f"medium={n_medium} ({n_medium / len(regime) * 100:.1f}%), "
+        f"high={n_high} ({n_high / len(regime) * 100:.1f}%)"
     )
 
     return regime
@@ -167,22 +167,24 @@ def compute_regime_adjusted_signals(
         signal = 1 if prob > threshold else 0
         position_size = position_size_full if signal == 1 else 0.0
 
-        results.append({
-            "timestamp": timestamp,
-            "probability": prob,
-            "regime": regime,
-            "threshold": threshold,
-            "signal": signal,
-            "position_size": position_size,
-        })
+        results.append(
+            {
+                "timestamp": timestamp,
+                "probability": prob,
+                "regime": regime,
+                "threshold": threshold,
+                "signal": signal,
+                "position_size": position_size,
+            }
+        )
 
     df = pd.DataFrame(results).set_index("timestamp")
 
     n_long = (df["signal"] == 1).sum()
     logger.info(
         f"Generated regime-adjusted signals: "
-        f"{n_long} LONG ({n_long/len(df)*100:.1f}%), "
-        f"{len(df) - n_long} FLAT ({(len(df) - n_long)/len(df)*100:.1f}%)"
+        f"{n_long} LONG ({n_long / len(df) * 100:.1f}%), "
+        f"{len(df) - n_long} FLAT ({(len(df) - n_long) / len(df) * 100:.1f}%)"
     )
 
     return df
@@ -226,9 +228,9 @@ def detect_trend(
 
     logger.info(
         f"Detected trends: "
-        f"uptrend={n_up} ({n_up/len(trend)*100:.1f}%), "
-        f"downtrend={n_down} ({n_down/len(trend)*100:.1f}%), "
-        f"sideways={n_side} ({n_side/len(trend)*100:.1f}%)"
+        f"uptrend={n_up} ({n_up / len(trend) * 100:.1f}%), "
+        f"downtrend={n_down} ({n_down / len(trend) * 100:.1f}%), "
+        f"sideways={n_side} ({n_side / len(trend) * 100:.1f}%)"
     )
 
     return trend
@@ -256,7 +258,7 @@ def compute_combined_regime(
 
     logger.info("Combined regime distribution:")
     for regime, count in regime_counts.items():
-        logger.info(f"  {regime}: {count} ({count/len(combined)*100:.1f}%)")
+        logger.info(f"  {regime}: {count} ({count / len(combined) * 100:.1f}%)")
 
     return combined
 
@@ -289,15 +291,15 @@ def get_trend_aware_position_size(
         Position size as fraction (0.25 to 1.25).
     """
     position_sizes = {
-        ("high", "uptrend"): 1.25,      # Capture volatile bull (max exposure)
-        ("high", "downtrend"): 0.25,    # Avoid volatile bear (min exposure)
-        ("high", "sideways"): 0.50,     # Reduce exposure in choppy high vol
-        ("medium", "uptrend"): 1.00,    # Standard bull position
+        ("high", "uptrend"): 1.25,  # Capture volatile bull (max exposure)
+        ("high", "downtrend"): 0.25,  # Avoid volatile bear (min exposure)
+        ("high", "sideways"): 0.50,  # Reduce exposure in choppy high vol
+        ("medium", "uptrend"): 1.00,  # Standard bull position
         ("medium", "downtrend"): 0.50,  # Reduce bear exposure
-        ("medium", "sideways"): 0.75,   # Normal sideways
-        ("low", "uptrend"): 1.00,       # Calm bull (full exposure)
-        ("low", "downtrend"): 0.75,     # Calm bear (some exposure)
-        ("low", "sideways"): 0.75,      # Calm sideways
+        ("medium", "sideways"): 0.75,  # Normal sideways
+        ("low", "uptrend"): 1.00,  # Calm bull (full exposure)
+        ("low", "downtrend"): 0.75,  # Calm bear (some exposure)
+        ("low", "sideways"): 0.75,  # Calm sideways
     }
 
     key = (volatility_regime, trend)
@@ -328,15 +330,15 @@ def get_trend_aware_threshold(
     """
     # Threshold adjustments
     adjustments = {
-        ("high", "uptrend"): -0.02,     # More aggressive in volatile bull (0.48)
-        ("high", "downtrend"): +0.10,   # Very conservative in volatile bear (0.60)
-        ("high", "sideways"): +0.05,    # Conservative in choppy high vol (0.55)
-        ("medium", "uptrend"): 0.00,    # Standard in normal bull (0.50)
-        ("medium", "downtrend"): +0.05, # Somewhat conservative in bear (0.55)
+        ("high", "uptrend"): -0.02,  # More aggressive in volatile bull (0.48)
+        ("high", "downtrend"): +0.10,  # Very conservative in volatile bear (0.60)
+        ("high", "sideways"): +0.05,  # Conservative in choppy high vol (0.55)
+        ("medium", "uptrend"): 0.00,  # Standard in normal bull (0.50)
+        ("medium", "downtrend"): +0.05,  # Somewhat conservative in bear (0.55)
         ("medium", "sideways"): +0.02,  # Slightly conservative sideways (0.52)
-        ("low", "uptrend"): -0.01,      # Slightly aggressive in calm bull (0.49)
-        ("low", "downtrend"): +0.03,    # Conservative in calm bear (0.53)
-        ("low", "sideways"): +0.01,     # Slightly conservative calm sideways (0.51)
+        ("low", "uptrend"): -0.01,  # Slightly aggressive in calm bull (0.49)
+        ("low", "downtrend"): +0.03,  # Conservative in calm bear (0.53)
+        ("low", "sideways"): +0.01,  # Slightly conservative calm sideways (0.51)
     }
 
     key = (volatility_regime, trend)

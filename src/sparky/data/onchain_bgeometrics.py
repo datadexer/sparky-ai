@@ -128,8 +128,7 @@ class BGeometricsFetcher:
         """
         if self._rate_limited:
             raise RuntimeError(
-                "BGeometrics rate limit hit this session. "
-                "Wait for the next hour window before retrying."
+                "BGeometrics rate limit hit this session. Wait for the next hour window before retrying."
             )
 
         self._check_budget()
@@ -213,10 +212,12 @@ class BGeometricsFetcher:
                 value_str = record.get(field)
                 if date_str and value_str is not None:
                     try:
-                        all_records.append({
-                            "date": pd.Timestamp(date_str, tz="UTC"),
-                            metric_name: float(value_str),
-                        })
+                        all_records.append(
+                            {
+                                "date": pd.Timestamp(date_str, tz="UTC"),
+                                metric_name: float(value_str),
+                            }
+                        )
                     except (ValueError, TypeError):
                         continue
 
@@ -263,7 +264,7 @@ class BGeometricsFetcher:
                 df = self.fetch_metric(metric, start_date, end_date)
                 if not df.empty:
                     dfs.append(df)
-            except RuntimeError as e:
+            except RuntimeError:
                 # Rate limit hit — stop fetching entirely, return what we have
                 logger.warning(f"[DATA] Rate limit hit, stopping. Got {len(dfs)} metrics so far.")
                 break

@@ -25,8 +25,9 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
-import wandb
 import yaml
+
+import wandb
 
 logger = logging.getLogger(__name__)
 
@@ -225,9 +226,7 @@ class ExperimentTracker:
             True if this config was already logged.
         """
         try:
-            runs = self._fetch_runs(
-                filters={"config.config_hash": cfg_hash}
-            )
+            runs = self._fetch_runs(filters={"config.config_hash": cfg_hash})
             return len(runs) > 0
         except Exception as e:
             logger.warning(f"[TRACKER] is_duplicate check failed: {e}")
@@ -520,12 +519,14 @@ class ExperimentTracker:
         # Recent 5 (runs are returned newest first by default)
         recent = []
         for r in runs[:5]:
-            recent.append({
-                "run_id": r.id,
-                "name": r.name,
-                "model_type": r.config.get("model_type", "unknown"),
-                "sharpe": r.summary.get("sharpe"),
-            })
+            recent.append(
+                {
+                    "run_id": r.id,
+                    "name": r.name,
+                    "model_type": r.config.get("model_type", "unknown"),
+                    "sharpe": r.summary.get("sharpe"),
+                }
+            )
 
         return {
             "total_runs": total,
@@ -543,11 +544,13 @@ class ExperimentTracker:
         runs = self._fetch_runs()
         result = []
         for r in runs:
-            result.append({
-                "run_id": r.id,
-                "name": r.name,
-                "metrics": dict(r.summary),
-                "params": dict(r.config),
-                "state": r.state,
-            })
+            result.append(
+                {
+                    "run_id": r.id,
+                    "name": r.name,
+                    "metrics": dict(r.summary),
+                    "params": dict(r.config),
+                    "state": r.state,
+                }
+            )
         return result

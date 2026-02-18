@@ -7,9 +7,6 @@ dynamic T from n_observations, and fallback behavior.
 import sys
 from pathlib import Path
 
-import numpy as np
-import pytest
-
 # Add scripts/ to path so we can import audit_contract_004
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 

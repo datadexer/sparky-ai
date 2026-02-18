@@ -82,11 +82,29 @@ Two-stage: (1) Feature selection first, keep top 15-20. (2) Stage 1 screening on
 - **Package manager:** `uv` — `uv venv`, `uv pip install -e ".[dev]"`
 - **Run tests:** `pytest tests/ -v`
 
+## Code Quality Requirements
+All code must pass the quality gate before reaching main.
+
+**Before committing:** pre-commit hooks run automatically on `git commit`.
+If pre-commit fails, fix the issues. Do NOT use `--no-verify`.
+
+**What CI checks (blocking):**
+- Ruff lint (E, F, W, I, S, B — errors, imports, security, bugbear)
+- Ruff format (consistent formatting)
+- Bandit security scan (HIGH severity blocks merge)
+- Sparky-specific checks (holdout leaks, guardrail bypasses, cost requirements)
+- Full test suite (must pass, 120s timeout per test)
+- Guardrail self-test (verifies guardrails catch holdout violations and missing costs)
+- Metrics self-test (verifies compute_all_metrics returns expected keys)
+- Import hygiene (core modules import cleanly)
+
 ## Git Workflow
 - NEVER commit to `main`. Use `phase-N/short-description` branches.
 - Commit frequently: `feat/fix/test/data/docs/chore/refactor/ci/quality`
 - At phase completion: push branch, open PR via `gh pr create`
+- CI runs automatically on PRs to main. Merge only if CI passes.
 - Merge conflicts: see `docs/FULL_GUIDELINES.md`
+- Branch naming: `oversight/`, `contract-NNN/`, `fix/`, `feat/`, `phase-N/`
 
 ## Holdout Data Policy
 See `configs/holdout_policy.yaml` — IMMUTABLE.

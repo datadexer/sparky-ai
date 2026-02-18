@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Two-stage sweep on expanded feature set (88 features)."""
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
-os.environ['PYTHONUNBUFFERED'] = '1'
 
-import pandas as pd
-import numpy as np
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import csv
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
-from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score
+from xgboost import XGBClassifier
 
 from sparky.backtest.costs import TransactionCostModel
 
@@ -25,9 +28,9 @@ PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # Initialize CSV header
 if not PROGRESS_FILE.exists():
-    with open(PROGRESS_FILE, 'w', newline='') as f:
+    with open(PROGRESS_FILE, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(['timestamp', 'stage', 'config_id', 'model', 'sharpe', 'acc', 'params'])
+        writer.writerow(["timestamp", "stage", "config_id", "model", "sharpe", "acc", "params"])
 
 
 def load_expanded():
@@ -39,7 +42,7 @@ def load_expanded():
     features = pd.read_parquet("data/processed/feature_matrix_btc_hourly_expanded.parquet")
     target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
     if isinstance(target, pd.DataFrame):
-        target = target['target']
+        target = target["target"]
 
     prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
     prices_daily = prices_hourly.resample("D").last()
@@ -49,8 +52,8 @@ def load_expanded():
     features = features.loc[common_idx]
     target = target.loc[common_idx]
 
-    features = features.loc[:'2024-05-31']
-    target = target.loc[:'2024-05-31']
+    features = features.loc[:"2024-05-31"]
+    target = target.loc[:"2024-05-31"]
 
     mask = features.notna().all(axis=1) & target.notna()
     features = features.loc[mask]
@@ -72,7 +75,7 @@ def compute_sharpe(signals, prices_daily, cost_model):
     signals = signals.loc[common_idx]
     prices = prices_daily.loc[common_idx]
 
-    returns = prices['close'].pct_change()
+    returns = prices["close"].pct_change()
     strategy_returns = signals.shift(1) * returns
     costs = signals.diff().abs() * cost_model.total_cost_pct
     net_returns = (strategy_returns - costs).dropna()
@@ -84,13 +87,19 @@ def compute_sharpe(signals, prices_daily, cost_model):
 
 def log_progress(stage, config_id, model_name, sharpe, acc, params_str):
     """Append one line to progress CSV."""
-    with open(PROGRESS_FILE, 'a', newline='') as f:
+    with open(PROGRESS_FILE, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
-            stage, config_id, model_name,
-            f"{sharpe:.4f}", f"{acc:.4f}", params_str
-        ])
+        writer.writerow(
+            [
+                datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                stage,
+                config_id,
+                model_name,
+                f"{sharpe:.4f}",
+                f"{acc:.4f}",
+                params_str,
+            ]
+        )
 
 
 def feature_selection(features, target, top_n=25):
@@ -104,9 +113,14 @@ def feature_selection(features, target, top_n=25):
     y_train = target.iloc[:split_idx]
 
     model = XGBClassifier(
-        n_estimators=200, max_depth=4, learning_rate=0.05,
-        tree_method="hist", device="cuda",
-        eval_metric='logloss', random_state=42, verbosity=0,
+        n_estimators=200,
+        max_depth=4,
+        learning_rate=0.05,
+        tree_method="hist",
+        device="cuda",
+        eval_metric="logloss",
+        random_state=42,
+        verbosity=0,
     )
     model.fit(X_train, y_train)
 
@@ -123,12 +137,12 @@ def feature_selection(features, target, top_n=25):
 
 def screen_config(X_train, y_train, X_test, y_test, prices_daily, cost_model, model_name, params):
     """Quick screen: single train/test."""
-    if model_name == 'CatBoost':
+    if model_name == "CatBoost":
         model = CatBoostClassifier(**params, verbose=0, random_state=42)
-    elif model_name == 'LightGBM':
+    elif model_name == "LightGBM":
         model = LGBMClassifier(**params, verbose=-1, random_state=42)
-    elif model_name == 'XGBoost':
-        model = XGBClassifier(**params, eval_metric='logloss', verbosity=0, random_state=42)
+    elif model_name == "XGBoost":
+        model = XGBClassifier(**params, eval_metric="logloss", verbosity=0, random_state=42)
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
@@ -154,13 +168,19 @@ def run_stage1(features, target, prices_daily):
     for depth in [3, 4, 5]:
         for lr in [0.01, 0.03]:
             for l2 in [1.0, 3.0]:
-                configs.append({
-                    'model': 'CatBoost',
-                    'params': {
-                        'iterations': 200, 'depth': depth, 'learning_rate': lr,
-                        'l2_leaf_reg': l2, 'task_type': 'GPU', 'devices': '0'
+                configs.append(
+                    {
+                        "model": "CatBoost",
+                        "params": {
+                            "iterations": 200,
+                            "depth": depth,
+                            "learning_rate": lr,
+                            "l2_leaf_reg": l2,
+                            "task_type": "GPU",
+                            "devices": "0",
+                        },
                     }
-                })
+                )
 
     cost_model = TransactionCostModel.for_btc()
     split_idx = int(len(features) * 0.8)
@@ -178,27 +198,36 @@ def run_stage1(features, target, prices_daily):
     for i, cfg in enumerate(configs, 1):
         try:
             sharpe, acc = screen_config(
-                X_train, y_train, X_test, y_test,
-                prices_daily, cost_model, cfg['model'], cfg['params'],
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+                prices_daily,
+                cost_model,
+                cfg["model"],
+                cfg["params"],
             )
         except Exception as e:
             print(f"  [{i}/{len(configs)}] ERROR: {e}", flush=True)
             sharpe, acc = 0.0, 0.5
 
-        results.append({'config': cfg, 'sharpe': sharpe, 'acc': acc})
+        results.append({"config": cfg, "sharpe": sharpe, "acc": acc})
         beat = " ** BEATS BASELINE **" if sharpe > BASELINE_SHARPE else ""
-        print(f"  [{i}/{len(configs)}] d={cfg['params']['depth']} lr={cfg['params']['learning_rate']}"
-              f" → Sharpe={sharpe:.3f} Acc={acc:.3f}{beat}", flush=True)
+        print(
+            f"  [{i}/{len(configs)}] d={cfg['params']['depth']} lr={cfg['params']['learning_rate']}"
+            f" → Sharpe={sharpe:.3f} Acc={acc:.3f}{beat}",
+            flush=True,
+        )
 
-        log_progress('screen', i, cfg['model'], sharpe, acc, str(cfg['params']))
+        log_progress("screen", i, cfg["model"], sharpe, acc, str(cfg["params"]))
 
     # Top 5
-    results.sort(key=lambda x: x['sharpe'], reverse=True)
+    results.sort(key=lambda x: x["sharpe"], reverse=True)
     print("\n--- STAGE 1 TOP 5 ---", flush=True)
     for i, r in enumerate(results[:5], 1):
         print(f"  {i}. {r['config']['model']} Sharpe={r['sharpe']:.3f} Acc={r['acc']:.3f}", flush=True)
 
-    return [r['config'] for r in results[:5]]
+    return [r["config"] for r in results[:5]]
 
 
 def walk_forward_validate(features, target, prices_daily, config):
@@ -208,7 +237,7 @@ def walk_forward_validate(features, target, prices_daily, config):
     sharpes, accs = [], []
 
     for year in years:
-        train_end = f"{year-1}-12-31"
+        train_end = f"{year - 1}-12-31"
         test_start = f"{year}-01-01"
         test_end = f"{year}-12-31"
 
@@ -221,10 +250,10 @@ def walk_forward_validate(features, target, prices_daily, config):
             continue
 
         try:
-            if config['model'] == 'CatBoost':
-                model = CatBoostClassifier(**config['params'], verbose=0, random_state=42)
-            elif config['model'] == 'XGBoost':
-                model = XGBClassifier(**config['params'], eval_metric='logloss', verbosity=0, random_state=42)
+            if config["model"] == "CatBoost":
+                model = CatBoostClassifier(**config["params"], verbose=0, random_state=42)
+            elif config["model"] == "XGBoost":
+                model = XGBClassifier(**config["params"], eval_metric="logloss", verbosity=0, random_state=42)
             else:
                 raise ValueError(f"Unknown model: {config['model']}")
 
@@ -256,14 +285,17 @@ def run_stage2(features, target, prices_daily, top_configs):
     print("=" * 80, flush=True)
 
     for i, cfg in enumerate(top_configs, 1):
-        print(f"\n  [{i}/{len(top_configs)}] {cfg['model']} d={cfg['params'].get('depth', cfg['params'].get('max_depth'))}"
-              f" lr={cfg['params']['learning_rate']}", flush=True)
+        print(
+            f"\n  [{i}/{len(top_configs)}] {cfg['model']} d={cfg['params'].get('depth', cfg['params'].get('max_depth'))}"
+            f" lr={cfg['params']['learning_rate']}",
+            flush=True,
+        )
 
         mean_sharpe, std_sharpe, mean_acc = walk_forward_validate(features, target, prices_daily, cfg)
 
         print(f"    Mean Sharpe={mean_sharpe:.3f} ± {std_sharpe:.3f}, Acc={mean_acc:.3f}", flush=True)
 
-        log_progress('validate', i, cfg['model'], mean_sharpe, mean_acc, str(cfg['params']))
+        log_progress("validate", i, cfg["model"], mean_sharpe, mean_acc, str(cfg["params"]))
 
 
 def main():

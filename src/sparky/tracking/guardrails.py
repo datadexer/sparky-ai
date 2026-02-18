@@ -20,7 +20,7 @@ Usage:
 
 import json
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -46,6 +46,7 @@ _VALID_SEVERITIES = {"block", "warn", "info"}
 @dataclass
 class GuardrailResult:
     """Result of a single guardrail check."""
+
     passed: bool
     check_name: str
     message: str
@@ -53,9 +54,7 @@ class GuardrailResult:
 
     def __post_init__(self):
         if self.severity not in _VALID_SEVERITIES:
-            raise ValueError(
-                f"Invalid severity {self.severity!r}, must be one of {_VALID_SEVERITIES}"
-            )
+            raise ValueError(f"Invalid severity {self.severity!r}, must be one of {_VALID_SEVERITIES}")
 
 
 # === PRE-EXPERIMENT CHECKS ===
@@ -69,6 +68,7 @@ def check_holdout_boundary(data: pd.DataFrame, asset: str = "btc") -> GuardrailR
     index is not a DatetimeIndex — cannot verify holdout safety.
     """
     from sparky.oversight.holdout_guard import HoldoutGuard
+
     guard = HoldoutGuard()
     max_date = guard.get_max_training_date(asset)
 
@@ -176,11 +176,13 @@ def check_param_data_ratio(config: dict, data: pd.DataFrame, max_ratio: float = 
 
     A high parameter-to-data ratio suggests overfitting risk.
     """
-    n_params = len(config.get("features", [])) + len([
-        k for k in config
-        if k not in ("features", "target", "transaction_costs_bps")
-        and isinstance(config[k], (int, float))
-    ])
+    n_params = len(config.get("features", [])) + len(
+        [
+            k
+            for k in config
+            if k not in ("features", "target", "transaction_costs_bps") and isinstance(config[k], (int, float))
+        ]
+    )
     n_samples = len(data)
     ratio = n_params / n_samples if n_samples > 0 else float("inf")
 

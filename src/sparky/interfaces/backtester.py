@@ -2,7 +2,6 @@
 
 from typing import Any, Protocol, runtime_checkable
 
-import numpy as np
 import pandas as pd
 
 

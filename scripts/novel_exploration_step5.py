@@ -35,33 +35,37 @@ NOVEL IDEAS TESTED (4 minimum):
 Walk-forward validated against 2019-2023. Baseline: ADX(14,30) Sharpe 1.181.
 All runs tagged: contract_004, novel
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+import json
 import time
 import warnings
-import json
+
 warnings.filterwarnings("ignore")
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
-from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
 
 from sparky.data.loader import load
-from sparky.tracking.experiment import ExperimentTracker
-from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.features.returns import annualized_sharpe
 from sparky.oversight.timeout import with_timeout
+from sparky.tracking.experiment import ExperimentTracker
 
 # ─── Constants ─────────────────────────────────────────────────────────────────
 BASELINE_DONCHIAN_SHARPE = 1.062
-BEST_REGIME_SHARPE = 1.181       # ADX(14,30) Donchian, Step 3
-BEST_ML_SHARPE = 1.365           # LightGBM top-10, Step 2
+BEST_REGIME_SHARPE = 1.181  # ADX(14,30) Donchian, Step 3
+BEST_ML_SHARPE = 1.365  # LightGBM top-10, Step 2
 
 ENTRY_PERIOD = 40
 EXIT_PERIOD = 20
@@ -94,9 +98,15 @@ def load_data():
 
     # Top 10 features from Step 2 LightGBM walk-forward best
     top10_cols = [
-        "rsi_divergence_14h_168h", "price_momentum_divergence", "intraday_range",
-        "recovery_from_20h_low", "rsi_volume_interaction", "vwap_deviation_24h",
-        "tick_direction_ratio_24h", "rsi_divergence_4h_24h", "momentum_divergence_72h_336h",
+        "rsi_divergence_14h_168h",
+        "price_momentum_divergence",
+        "intraday_range",
+        "recovery_from_20h_low",
+        "rsi_volume_interaction",
+        "vwap_deviation_24h",
+        "tick_direction_ratio_24h",
+        "rsi_divergence_4h_24h",
+        "momentum_divergence_72h_336h",
         "drawdown_from_20h_high",
     ]
     available10 = [c for c in top10_cols if c in df_daily.columns]
@@ -123,7 +133,9 @@ def load_data():
     df_daily = df_daily[valid].fillna(df_daily.median())
     target_daily = target_daily[valid]
 
-    print(f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})")
+    print(
+        f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})"
+    )
     print(f"  Features top-10: {len(available10)}, top-20: {len(available20)}")
     return prices_daily, daily_returns, df_daily, target_daily, available10, available20
 
@@ -223,7 +235,7 @@ def log_novel_result(tracker, name, config, metrics, group, notes):
     print(f"  Logged: {name}")
     print(f"  Mean WF Sharpe: {metrics['mean_wf_sharpe']:.3f} ± {metrics['std_wf_sharpe']:.3f}")
     print(f"  2022 Sharpe: {metrics.get('sharpe_2022', 'N/A')}")
-    beats = metrics['mean_wf_sharpe'] > BEST_REGIME_SHARPE
+    beats = metrics["mean_wf_sharpe"] > BEST_REGIME_SHARPE
     print(f"  Beats best prior (ADX Sharpe {BEST_REGIME_SHARPE:.3f}): {'YES ✅' if beats else 'NO ❌'}")
 
 
@@ -261,13 +273,20 @@ def run_idea1_asymmetric_regime(prices, daily_returns, tracker):
     for adx_thresh in [25, 30]:
         for dd_thresh in [0.05, 0.08, 0.12]:
             for dd_window in [15, 30]:
-                print(f"\n  ADX>{adx_thresh}, DD exit {dd_thresh*100:.0f}%/{dd_window}d")
+                print(f"\n  ADX>{adx_thresh}, DD exit {dd_thresh * 100:.0f}%/{dd_window}d")
 
                 adx = compute_adx(prices, period=14)
 
-                def signal_fn(prices_p, daily_returns_p, yr,
-                              _adx=adx, _full_don=full_don,
-                              _adx_thresh=adx_thresh, _dd_thresh=dd_thresh, _dd_window=dd_window):
+                def signal_fn(
+                    prices_p,
+                    daily_returns_p,
+                    yr,
+                    _adx=adx,
+                    _full_don=full_don,
+                    _adx_thresh=adx_thresh,
+                    _dd_thresh=dd_thresh,
+                    _dd_window=dd_window,
+                ):
                     """
                     Entry: only if Donchian fires AND ADX > threshold
                     Exit: Donchian exit signal OR rolling DD > threshold
@@ -328,14 +347,16 @@ def run_idea1_asymmetric_regime(prices, daily_returns, tracker):
                 s22 = wf["per_year"].get("2022", 0.0)
                 print(f"    Mean: {wf['mean_sharpe']:.3f} ± {wf['std_sharpe']:.3f} | 2022: {s22:.3f}")
 
-                cfg_key = f"adx{adx_thresh}_dd{int(dd_thresh*100)}pct_{dd_window}d"
-                all_configs.append({
-                    "config_key": cfg_key,
-                    "adx_threshold": adx_thresh,
-                    "dd_threshold": dd_thresh,
-                    "dd_window": dd_window,
-                    **wf
-                })
+                cfg_key = f"adx{adx_thresh}_dd{int(dd_thresh * 100)}pct_{dd_window}d"
+                all_configs.append(
+                    {
+                        "config_key": cfg_key,
+                        "adx_threshold": adx_thresh,
+                        "dd_threshold": dd_thresh,
+                        "dd_window": dd_window,
+                        **wf,
+                    }
+                )
 
                 if wf["mean_sharpe"] > best_sharpe:
                     best_sharpe = wf["mean_sharpe"]
@@ -343,23 +364,26 @@ def run_idea1_asymmetric_regime(prices, daily_returns, tracker):
 
     # Log best config
     cfg_key, wf, adx_thresh, dd_thresh, dd_window = best_result
-    name = f"asym_adx{adx_thresh}_dd{int(dd_thresh*100)}pct_{dd_window}d_S{wf['mean_sharpe']:.2f}"
+    name = f"asym_adx{adx_thresh}_dd{int(dd_thresh * 100)}pct_{dd_window}d_S{wf['mean_sharpe']:.2f}"
     s22 = wf["per_year"].get("2022", 0.0)
 
     notes = (
         f"Asymmetric regime: ADX(14)>{adx_thresh} for entries, "
-        f"{dd_thresh*100:.0f}%/{dd_window}d drawdown filter for exits. "
+        f"{dd_thresh * 100:.0f}%/{dd_window}d drawdown filter for exits. "
         f"Hypothesis: ADX is better at detecting trending market (entry quality) "
         f"while rolling drawdown catches strategy failures earlier (exit quality). "
         f"Mean WF Sharpe {wf['mean_sharpe']:.3f} ± {wf['std_sharpe']:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — asymmetric regime improves over best prior (ADX-only 1.181)."
-           if wf["mean_sharpe"] > BEST_REGIME_SHARPE
-           else f"Result below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
-                f"DD exits may cut winning trades too early, offsetting entry quality gains. "
-                f"The DD filter's 'false positive' exits in trending regimes hurt alpha.")
+        + (
+            "SUCCESS — asymmetric regime improves over best prior (ADX-only 1.181)."
+            if wf["mean_sharpe"] > BEST_REGIME_SHARPE
+            else f"Result below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
+            f"DD exits may cut winning trades too early, offsetting entry quality gains. "
+            f"The DD filter's 'false positive' exits in trending regimes hurt alpha."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "asymmetric_regime",
             "entry_filter": "ADX",
@@ -418,10 +442,10 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
     # Test combinations of (fast params when trending, slow params when choppy)
     param_combos = [
         # (trending_entry, trending_exit, choppy_entry, choppy_exit, adx_thresh)
-        (20, 10, 60, 30, 30),   # tight-fast in trends, wide-slow in chop, ADX=30 threshold
-        (20, 10, 60, 30, 25),   # same but ADX=25 threshold
-        (25, 12, 50, 25, 30),   # moderate adaptation
-        (30, 15, 50, 25, 25),   # less aggressive adaptation
+        (20, 10, 60, 30, 30),  # tight-fast in trends, wide-slow in chop, ADX=30 threshold
+        (20, 10, 60, 30, 25),  # same but ADX=25 threshold
+        (25, 12, 50, 25, 30),  # moderate adaptation
+        (30, 15, 50, 25, 25),  # less aggressive adaptation
     ]
 
     for trend_e, trend_x, chop_e, chop_x, adx_thresh in param_combos:
@@ -431,10 +455,19 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
         don_fast = donchian_signal_stateful(prices, trend_e, trend_x)
         don_slow = donchian_signal_stateful(prices, chop_e, chop_x)
 
-        def signal_fn(prices_p, daily_returns_p, yr,
-                      _adx=adx, _don_fast=don_fast, _don_slow=don_slow,
-                      _adx_thresh=adx_thresh, _trend_e=trend_e, _trend_x=trend_x,
-                      _chop_e=chop_e, _chop_x=chop_x):
+        def signal_fn(
+            prices_p,
+            daily_returns_p,
+            yr,
+            _adx=adx,
+            _don_fast=don_fast,
+            _don_slow=don_slow,
+            _adx_thresh=adx_thresh,
+            _trend_e=trend_e,
+            _trend_x=trend_x,
+            _chop_e=chop_e,
+            _chop_x=chop_x,
+        ):
             """
             Adaptive Donchian: use fast channel in trending regime, slow in choppy.
             The ADX score smoothly selects which signal dominates.
@@ -447,7 +480,7 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
 
             # Hard threshold: ADX > threshold → use fast Donchian, else slow
             signals = pd.Series(0, index=prices_p[test_mask].index, dtype=float)
-            trending = (adx_test > _adx_thresh)
+            trending = adx_test > _adx_thresh
             signals = np.where(trending, don_fast_test, don_slow_test)
             return pd.Series(signals.astype(float), index=prices_p[test_mask].index)
 
@@ -456,22 +489,24 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
         print(f"    Mean: {wf['mean_sharpe']:.3f} ± {wf['std_sharpe']:.3f} | 2022: {s22:.3f}")
 
         cfg_key = f"adaptive_t{trend_e}x{trend_x}_c{chop_e}x{chop_x}_adx{adx_thresh}"
-        all_configs.append({
-            "config_key": cfg_key,
-            "trend_entry": trend_e,
-            "trend_exit": trend_x,
-            "chop_entry": chop_e,
-            "chop_exit": chop_x,
-            "adx_threshold": adx_thresh,
-            **wf
-        })
+        all_configs.append(
+            {
+                "config_key": cfg_key,
+                "trend_entry": trend_e,
+                "trend_exit": trend_x,
+                "chop_entry": chop_e,
+                "chop_exit": chop_x,
+                "adx_threshold": adx_thresh,
+                **wf,
+            }
+        )
 
         if wf["mean_sharpe"] > best_sharpe:
             best_sharpe = wf["mean_sharpe"]
             best_result = (cfg_key, wf, trend_e, trend_x, chop_e, chop_x, adx_thresh)
 
     # Also test a smooth interpolation variant (linear blend by ADX percentile)
-    print(f"\n  Testing smooth interpolation (ADX percentile → continuous blend)...")
+    print("\n  Testing smooth interpolation (ADX percentile → continuous blend)...")
     adx_smooth = adx.copy()
 
     def signal_fn_smooth(prices_p, daily_returns_p, yr, _adx=adx_smooth):
@@ -509,9 +544,11 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
     cfg_smooth = {
         "config_key": "adaptive_smooth_blend",
         "blend_type": "linear_adx_percentile",
-        "fast_entry": 20, "fast_exit": 10,
-        "slow_entry": 60, "slow_exit": 30,
-        **wf_smooth
+        "fast_entry": 20,
+        "fast_exit": 10,
+        "slow_entry": 60,
+        "slow_exit": 30,
+        **wf_smooth,
     }
     all_configs.append(cfg_smooth)
     if wf_smooth["mean_sharpe"] > best_sharpe:
@@ -529,14 +566,17 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
         f"Choppy regime: Don({chop_e}/{chop_x}) — wide channels filter whipsaws. "
         f"Hypothesis: regime should control PARAMETERS not just on/off. "
         f"Mean WF Sharpe {wf['mean_sharpe']:.3f} ± {wf['std_sharpe']:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — adaptive parameters outperform fixed-parameter + regime filter."
-           if wf["mean_sharpe"] > BEST_REGIME_SHARPE
-           else f"Below best prior (ADX-only {BEST_REGIME_SHARPE:.3f}). "
-                f"The 2022 bear sees both fast AND slow channels fire false signals — "
-                f"parameter adaptation alone cannot fix the fundamental trend-following weakness in downtrends.")
+        + (
+            "SUCCESS — adaptive parameters outperform fixed-parameter + regime filter."
+            if wf["mean_sharpe"] > BEST_REGIME_SHARPE
+            else f"Below best prior (ADX-only {BEST_REGIME_SHARPE:.3f}). "
+            f"The 2022 bear sees both fast AND slow channels fire false signals — "
+            f"parameter adaptation alone cannot fix the fundamental trend-following weakness in downtrends."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "adaptive_donchian",
             "regime_indicator": "ADX",
@@ -567,8 +607,7 @@ def run_idea2_adaptive_donchian(prices, daily_returns, tracker):
 # IDEA 3 — ML AS POSITION SIZER (not signal)
 # ════════════════════════════════════════════════════════════════════════════════
 @with_timeout(seconds=1200)
-def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
-                                 top10_cols, tracker):
+def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily, top10_cols, tracker):
     """
     HYPOTHESIS: Previous ML approaches tried to replace or gate the Donchian signal.
     This introduces binary decision failure: if ML is wrong about whether to trade,
@@ -601,10 +640,10 @@ def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
     # Test different sizing schemes
     sizing_schemes = [
         # (name, low_size, mid_size, high_size, low_thresh, high_thresh)
-        ("aggressive", 0.25, 0.5, 1.0, 0.50, 0.60),   # wider bands → more scaling
-        ("moderate",   0.25, 0.5, 1.0, 0.50, 0.65),   # standard
-        ("conservative", 0.5, 0.75, 1.0, 0.50, 0.65), # never go below 0.5x
-        ("binary_soft", 0.0, 0.5, 1.0, 0.50, 0.60),   # can go fully flat
+        ("aggressive", 0.25, 0.5, 1.0, 0.50, 0.60),  # wider bands → more scaling
+        ("moderate", 0.25, 0.5, 1.0, 0.50, 0.65),  # standard
+        ("conservative", 0.5, 0.75, 1.0, 0.50, 0.65),  # never go below 0.5x
+        ("binary_soft", 0.0, 0.5, 1.0, 0.50, 0.60),  # can go fully flat
     ]
 
     avail_cols = [c for c in top10_cols if c in df_daily.columns]
@@ -612,9 +651,15 @@ def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
         avail_cols = df_daily.var().sort_values(ascending=False).head(10).index.tolist()
 
     lgbm_params = {
-        "n_estimators": 300, "max_depth": 5, "learning_rate": 0.05,
-        "reg_lambda": 1.0, "num_leaves": 63, "device": "gpu",
-        "n_jobs": 1, "verbose": -1, "random_state": 42,
+        "n_estimators": 300,
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "reg_lambda": 1.0,
+        "num_leaves": 63,
+        "device": "gpu",
+        "n_jobs": 1,
+        "verbose": -1,
+        "random_state": 42,
     }
 
     for scheme_name, lo, mid, hi, lo_thresh, hi_thresh in sizing_schemes:
@@ -687,14 +732,19 @@ def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
         s22 = per_year.get("2022", 0.0)
         print(f"    → Mean: {mean_sh:.3f} ± {std_sh:.3f} | 2022: {s22:.3f}")
 
-        all_configs.append({
-            "scheme": scheme_name,
-            "lo_size": lo, "mid_size": mid, "hi_size": hi,
-            "lo_thresh": lo_thresh, "hi_thresh": hi_thresh,
-            "mean_sharpe": mean_sh,
-            "std_sharpe": std_sh,
-            "per_year": per_year,
-        })
+        all_configs.append(
+            {
+                "scheme": scheme_name,
+                "lo_size": lo,
+                "mid_size": mid,
+                "hi_size": hi,
+                "lo_thresh": lo_thresh,
+                "hi_thresh": hi_thresh,
+                "mean_sharpe": mean_sh,
+                "std_sharpe": std_sh,
+                "per_year": per_year,
+            }
+        )
 
         if mean_sh > best_sharpe:
             best_sharpe = mean_sh
@@ -710,23 +760,29 @@ def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
         f"Donchian(40/20) decides WHEN to trade. LGBM probability scales HOW MUCH. "
         f"Best scheme: {scheme_name} — lo={lo:.2f}x(<{lo_thresh}), mid={mid:.2f}x, hi={hi:.2f}x(>{hi_thresh}). "
         f"Mean WF Sharpe {mean_sh:.3f} ± {std_sh:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — LGBM confidence as continuous position scaler beats binary gating."
-           if mean_sh > BEST_REGIME_SHARPE
-           else f"Below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
-                f"Position scaling is directionally correct (reduces 2022 damage) but "
-                f"may not fully compensate for 2022 bear market signal confusion in LGBM. "
-                f"The key issue: LGBM's uncertainty in 2022 may not accurately reflect "
-                f"the catastrophic risk — the model is uncertain when it should be confident that it's wrong.")
+        + (
+            "SUCCESS — LGBM confidence as continuous position scaler beats binary gating."
+            if mean_sh > BEST_REGIME_SHARPE
+            else f"Below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
+            f"Position scaling is directionally correct (reduces 2022 damage) but "
+            f"may not fully compensate for 2022 bear market signal confusion in LGBM. "
+            f"The key issue: LGBM's uncertainty in 2022 may not accurately reflect "
+            f"the catastrophic risk — the model is uncertain when it should be confident that it's wrong."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "ml_position_sizer",
             "entry_signal": "Donchian(40/20)",
             "sizing_model": "LGBM-top10",
             "sizing_scheme": scheme_name,
-            "lo_size": lo, "mid_size": mid, "hi_size": hi,
-            "lo_threshold": lo_thresh, "hi_threshold": hi_thresh,
+            "lo_size": lo,
+            "mid_size": mid,
+            "hi_size": hi,
+            "lo_threshold": lo_thresh,
+            "hi_threshold": hi_thresh,
             "lgbm_params": lgbm_params,
             "all_schemes_tested": all_configs,
         },
@@ -749,8 +805,7 @@ def run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily,
 # IDEA 4 — MAJORITY-VOTE REGIME ENSEMBLE
 # ════════════════════════════════════════════════════════════════════════════════
 @with_timeout(seconds=1200)
-def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily,
-                                    top10_cols, tracker):
+def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily, top10_cols, tracker):
     """
     HYPOTHESIS: Each individual regime detector makes mistakes, but they make
     DIFFERENT kinds of mistakes. ADX might miss some bear market phases. Vol-based
@@ -824,15 +879,21 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
     # Test: voting approaches
     voting_configs = [
         # (name, adx_thresh, require_votes)
-        ("vote_2of3_strict", 30, 2),   # strict ADX threshold
-        ("vote_2of3_loose",  25, 2),   # looser ADX threshold
-        ("vote_3of3_all",    30, 3),   # require unanimous consensus
+        ("vote_2of3_strict", 30, 2),  # strict ADX threshold
+        ("vote_2of3_loose", 25, 2),  # looser ADX threshold
+        ("vote_3of3_all", 30, 3),  # require unanimous consensus
     ]
 
     lgbm_regime_params = {
-        "n_estimators": 200, "max_depth": 4, "learning_rate": 0.05,
-        "reg_lambda": 2.0, "num_leaves": 31, "device": "gpu",
-        "n_jobs": 1, "verbose": -1, "random_state": 42,
+        "n_estimators": 200,
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "reg_lambda": 2.0,
+        "num_leaves": 31,
+        "device": "gpu",
+        "n_jobs": 1,
+        "verbose": -1,
+        "random_state": 42,
     }
 
     best_sharpe = -999
@@ -853,9 +914,7 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
 
             # Detector 2: Vol
             vol_regime_yr = get_vol_regime(yr)
-            vol_regime_aligned = vol_regime_yr.reindex(
-                daily_returns.index[test_mask_idx], method="ffill"
-            ).fillna(0)
+            vol_regime_aligned = vol_regime_yr.reindex(daily_returns.index[test_mask_idx], method="ffill").fillna(0)
 
             # Detector 3: ML regime predictor
             if train_mask.sum() < 100:
@@ -873,13 +932,8 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
                 try:
                     ml_regime_model = LGBMClassifier(**lgbm_regime_params)
                     ml_regime_model.fit(X_tr_v, y_tr_v)
-                    ml_pred = pd.Series(
-                        ml_regime_model.predict(X_te).astype(int),
-                        index=X_te.index
-                    )
-                    ml_regime_yr = ml_pred.reindex(
-                        daily_returns.index[test_mask_idx], method="ffill"
-                    ).fillna(0)
+                    ml_pred = pd.Series(ml_regime_model.predict(X_te).astype(int), index=X_te.index)
+                    ml_regime_yr = ml_pred.reindex(daily_returns.index[test_mask_idx], method="ffill").fillna(0)
                 except Exception as e:
                     print(f"    WARN: ML regime year {yr} failed: {e}")
                     ml_regime_yr = adx_regime_yr
@@ -891,7 +945,11 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
             d3 = ml_regime_yr.astype(int)
 
             # Majority vote: need req_votes out of 3
-            vote_sum = d1.values + d2.reindex(test_idx).fillna(0).astype(int).values + d3.reindex(test_idx).fillna(0).astype(int).values
+            vote_sum = (
+                d1.values
+                + d2.reindex(test_idx).fillna(0).astype(int).values
+                + d3.reindex(test_idx).fillna(0).astype(int).values
+            )
             regime_ok = (vote_sum >= req_votes).astype(int)
 
             # Apply to Donchian
@@ -903,8 +961,10 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
             per_year[str(yr)] = round(sh_yr, 3)
 
             vote_frac = float((vote_sum >= req_votes).mean())
-            print(f"    {yr}: Sharpe={sh_yr:.3f}, vote_frac={vote_frac:.1%} "
-                  f"(ADX={d1.mean():.1%}, Vol={d2.reindex(test_idx).fillna(0).mean():.1%}, ML={d3.reindex(test_idx).fillna(0).mean():.1%})")
+            print(
+                f"    {yr}: Sharpe={sh_yr:.3f}, vote_frac={vote_frac:.1%} "
+                f"(ADX={d1.mean():.1%}, Vol={d2.reindex(test_idx).fillna(0).mean():.1%}, ML={d3.reindex(test_idx).fillna(0).mean():.1%})"
+            )
 
         vals = list(per_year.values())
         mean_sh = float(np.mean(vals))
@@ -912,14 +972,16 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
         s22 = per_year.get("2022", 0.0)
         print(f"    → Mean: {mean_sh:.3f} ± {std_sh:.3f} | 2022: {s22:.3f}")
 
-        all_configs_results.append({
-            "config": config_name,
-            "adx_threshold": adx_thresh,
-            "required_votes": req_votes,
-            "mean_sharpe": mean_sh,
-            "std_sharpe": std_sh,
-            "per_year": per_year,
-        })
+        all_configs_results.append(
+            {
+                "config": config_name,
+                "adx_threshold": adx_thresh,
+                "required_votes": req_votes,
+                "mean_sharpe": mean_sh,
+                "std_sharpe": std_sh,
+                "per_year": per_year,
+            }
+        )
 
         if mean_sh > best_sharpe:
             best_sharpe = mean_sh
@@ -936,17 +998,20 @@ def run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily
         f"ML regime detector trained on ADX>30 labels using price-derived features (vol, mom, ADX). "
         f"Hypothesis: uncorrelated errors in 3 detectors → consensus more robust than any individual. "
         f"Mean WF Sharpe {mean_sh:.3f} ± {std_sh:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — consensus regime is more robust than single ADX detector."
-           if mean_sh > BEST_REGIME_SHARPE
-           else f"Below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
-                f"Consensus filtering reduces false positives but also cuts time-in-market "
-                f"in good years. The vol detector and ML detector may be correlated with ADX "
-                f"(all derived from price), so diversity benefits are limited. "
-                f"'Garbage in, garbage out' — if all three detectors use overlapping information, "
-                f"majority vote just averages similar decisions.")
+        + (
+            "SUCCESS — consensus regime is more robust than single ADX detector."
+            if mean_sh > BEST_REGIME_SHARPE
+            else f"Below best prior ADX-only ({BEST_REGIME_SHARPE:.3f}). "
+            f"Consensus filtering reduces false positives but also cuts time-in-market "
+            f"in good years. The vol detector and ML detector may be correlated with ADX "
+            f"(all derived from price), so diversity benefits are limited. "
+            f"'Garbage in, garbage out' — if all three detectors use overlapping information, "
+            f"majority vote just averages similar decisions."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "majority_vote_regime",
             "n_detectors": 3,
@@ -1026,7 +1091,7 @@ def run_idea5_regime_momentum(prices, daily_returns, tracker):
         mom = returns_raw.rolling(lookback).sum()
         for threshold in [0.0, 0.05, 0.10]:
             for regime_name, regime_fn in [
-                ("adx30",       get_adx30_regime),
+                ("adx30", get_adx30_regime),
                 ("vol_adx_AND", get_vol_adx_and_regime),
             ]:
                 per_year = {}
@@ -1052,25 +1117,27 @@ def run_idea5_regime_momentum(prices, daily_returns, tracker):
                 mean_sh = float(np.mean(vals))
                 std_sh = float(np.std(vals))
                 s22 = per_year.get("2022", 0.0)
-                cfg_key = f"mom{lookback}_t{int(threshold*100)}_{regime_name}"
+                cfg_key = f"mom{lookback}_t{int(threshold * 100)}_{regime_name}"
                 print(f"  {cfg_key}: Mean={mean_sh:.3f} ± {std_sh:.3f} | 2022={s22:.3f}")
 
-                all_configs.append({
-                    "config_key": cfg_key,
-                    "lookback": lookback,
-                    "threshold": threshold,
-                    "regime": regime_name,
-                    "mean_sharpe": mean_sh,
-                    "std_sharpe": std_sh,
-                    "per_year": per_year,
-                })
+                all_configs.append(
+                    {
+                        "config_key": cfg_key,
+                        "lookback": lookback,
+                        "threshold": threshold,
+                        "regime": regime_name,
+                        "mean_sharpe": mean_sh,
+                        "std_sharpe": std_sh,
+                        "per_year": per_year,
+                    }
+                )
 
                 if mean_sh > best_sharpe:
                     best_sharpe = mean_sh
                     best_result = (cfg_key, per_year, mean_sh, std_sh, lookback, threshold, regime_name)
 
     cfg_key, per_year, mean_sh, std_sh, lookback, threshold, regime_name = best_result
-    name = f"regime_mom_lb{lookback}_t{int(threshold*100)}_{regime_name}_S{mean_sh:.2f}"
+    name = f"regime_mom_lb{lookback}_t{int(threshold * 100)}_{regime_name}_S{mean_sh:.2f}"
     s22 = per_year.get("2022", 0.0)
 
     notes = (
@@ -1078,15 +1145,18 @@ def run_idea5_regime_momentum(prices, daily_returns, tracker):
         f"Best: {lookback}d lookback, threshold={threshold:.2f}, regime={regime_name}. "
         f"Hypothesis: ADX(14,30) gives 2022=0.000 with Donchian — does it also protect momentum? "
         f"Mean WF Sharpe {mean_sh:.3f} ± {std_sh:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — regime+momentum beats ADX-only Donchian ({BEST_REGIME_SHARPE:.3f})."
-           if mean_sh > BEST_REGIME_SHARPE
-           else f"Below ADX-only Donchian ({BEST_REGIME_SHARPE:.3f}). "
-                f"Donchian breakout is a more precise entry than raw momentum threshold — "
-                f"momentum's 'always long when trending' picks up trend but also reversal noise. "
-                f"ADX protects somewhat but momentum still more vulnerable than Donchian in 2022.")
+        + (
+            "SUCCESS — regime+momentum beats ADX-only Donchian ({BEST_REGIME_SHARPE:.3f})."
+            if mean_sh > BEST_REGIME_SHARPE
+            else f"Below ADX-only Donchian ({BEST_REGIME_SHARPE:.3f}). "
+            f"Donchian breakout is a more precise entry than raw momentum threshold — "
+            f"momentum's 'always long when trending' picks up trend but also reversal noise. "
+            f"ADX protects somewhat but momentum still more vulnerable than Donchian in 2022."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "regime_momentum",
             "base_strategy": "momentum",
@@ -1204,18 +1274,22 @@ def run_idea6_stability_optimized(prices, daily_returns, tracker):
         mean_sh = float(np.mean(vals))
         std_sh = float(np.std(vals))
         s22 = per_year.get("2022", 0.0)
-        print(f"  {cfg_key}: Mean={mean_sh:.3f}, Std={std_sh:.3f} | 2022={s22:.3f} | Sharpe/Std={mean_sh/(std_sh+1e-9):.2f}")
+        print(
+            f"  {cfg_key}: Mean={mean_sh:.3f}, Std={std_sh:.3f} | 2022={s22:.3f} | Sharpe/Std={mean_sh / (std_sh + 1e-9):.2f}"
+        )
 
-        all_configs.append({
-            "config_key": cfg_key,
-            "adx_threshold": adx_thresh,
-            "use_vol": use_vol,
-            "don_entry": don_e,
-            "don_exit": don_x,
-            "mean_sharpe": mean_sh,
-            "std_sharpe": std_sh,
-            "per_year": per_year,
-        })
+        all_configs.append(
+            {
+                "config_key": cfg_key,
+                "adx_threshold": adx_thresh,
+                "use_vol": use_vol,
+                "don_entry": don_e,
+                "don_exit": don_x,
+                "mean_sharpe": mean_sh,
+                "std_sharpe": std_sh,
+                "per_year": per_year,
+            }
+        )
 
         # Track best by std (subject to mean > 0.6)
         if mean_sh > 0.6 and std_sh < best_stability:
@@ -1235,16 +1309,19 @@ def run_idea6_stability_optimized(prices, daily_returns, tracker):
     notes = (
         f"Stability-optimized: direct search minimizing year-to-year Sharpe variance. "
         f"Best stability config: {cfg_key} (ADX>{adx_thresh}, vol={use_vol}, Don({don_e}/{don_x})). "
-        f"Mean WF Sharpe {mean_sh:.3f}, Std {std_sh:.3f} (Sharpe/Std ratio={mean_sh/(std_sh+1e-9):.2f}). "
+        f"Mean WF Sharpe {mean_sh:.3f}, Std {std_sh:.3f} (Sharpe/Std ratio={mean_sh / (std_sh + 1e-9):.2f}). "
         f"2022: {s22:.3f}. "
         f"Benchmark: LGBM+vol_adx_AND had lowest prior std=0.584, mean=0.728. "
-        + ("NEW STABILITY RECORD — lower variance than LGBM+vol_adx_AND (0.584) with better mean."
-           if std_sh < 0.584 and mean_sh > 0.6
-           else f"Stability rank vs best prior (std=0.584): {'improved' if std_sh < 0.584 else 'not improved'}. "
-                f"There may be a fundamental floor on variance given 5 years of data and bear/bull alternation.")
+        + (
+            "NEW STABILITY RECORD — lower variance than LGBM+vol_adx_AND (0.584) with better mean."
+            if std_sh < 0.584 and mean_sh > 0.6
+            else f"Stability rank vs best prior (std=0.584): {'improved' if std_sh < 0.584 else 'not improved'}. "
+            f"There may be a fundamental floor on variance given 5 years of data and bear/bull alternation."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "stability_optimized",
             "objective": "minimize_std_sharpe",
@@ -1305,7 +1382,7 @@ def run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols
     strat_ret = pos_shifted * daily_returns.reindex(full_don.index).fillna(0)
 
     # Rolling 30-day forward Sharpe (look-ahead for label construction only)
-    forward_ret = strat_ret.rolling(30).mean().shift(-30)   # mean of NEXT 30 days
+    forward_ret = strat_ret.rolling(30).mean().shift(-30)  # mean of NEXT 30 days
     forward_std = strat_ret.rolling(30).std().shift(-30)
     forward_sharpe = (forward_ret / (forward_std + 1e-9)) * np.sqrt(252)
 
@@ -1355,10 +1432,7 @@ def run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols
 
             # Build features at entry days for training
             # Use daily features from df_daily + extra_feats
-            feat_all = pd.concat([
-                df_daily[avail_cols].reindex(extra_feats.index),
-                extra_feats
-            ], axis=1).fillna(0)
+            feat_all = pd.concat([df_daily[avail_cols].reindex(extra_feats.index), extra_feats], axis=1).fillna(0)
 
             if train_entry_mask.sum() < 20:
                 # Not enough breakout entries — use unfiltered Donchian for test year
@@ -1435,7 +1509,9 @@ def run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols
 
                 n_entries = test_entry_mask.sum()
                 n_taken = (proba_entries >= prob_threshold).sum()
-                print(f"    {yr}: Sharpe={sh_yr:.3f}, entries={n_entries}, taken={n_taken} ({n_taken/max(n_entries,1)*100:.0f}%)")
+                print(
+                    f"    {yr}: Sharpe={sh_yr:.3f}, entries={n_entries}, taken={n_taken} ({n_taken / max(n_entries, 1) * 100:.0f}%)"
+                )
 
             except Exception as e:
                 print(f"    WARN: year {yr} failed: {e}")
@@ -1447,11 +1523,16 @@ def run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols
         s22 = per_year.get("2022", 0.0)
         print(f"  → Mean: {mean_sh:.3f} ± {std_sh:.3f} | 2022: {s22:.3f}")
 
-        all_configs.append({
-            "depth": depth, "lr": lr, "iterations": iters,
-            "mean_sharpe": mean_sh, "std_sharpe": std_sh,
-            "per_year": per_year,
-        })
+        all_configs.append(
+            {
+                "depth": depth,
+                "lr": lr,
+                "iterations": iters,
+                "mean_sharpe": mean_sh,
+                "std_sharpe": std_sh,
+                "per_year": per_year,
+            }
+        )
         if mean_sh > best_sharpe:
             best_sharpe = mean_sh
             best_result = (f"cb_d{depth}_lr{lr}", per_year, mean_sh, std_sh, depth, lr, iters)
@@ -1466,15 +1547,18 @@ def run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols
         f"Training labels: forward 30-day Sharpe > 0 at entry days only. "
         f"Best config: depth={depth}, lr={lr}, iters={iters}. "
         f"Mean WF Sharpe {mean_sh:.3f} ± {std_sh:.3f}. 2022: {s22:.3f}. "
-        + ("SUCCESS — breakout profitability target beats ADX regime filter."
-           if mean_sh > BEST_REGIME_SHARPE
-           else f"Below ADX-only Donchian ({BEST_REGIME_SHARPE:.3f}). "
-                f"Possible reasons: (a) too few breakout entries per year for robust training, "
-                f"(b) bear-market breakouts look statistically similar to bull-market breakouts "
-                f"at entry time — CatBoost can't distinguish false from real at entry day T.")
+        + (
+            "SUCCESS — breakout profitability target beats ADX regime filter."
+            if mean_sh > BEST_REGIME_SHARPE
+            else f"Below ADX-only Donchian ({BEST_REGIME_SHARPE:.3f}). "
+            f"Possible reasons: (a) too few breakout entries per year for robust training, "
+            f"(b) bear-market breakouts look statistically similar to bull-market breakouts "
+            f"at entry time — CatBoost can't distinguish false from real at entry day T."
+        )
     )
     log_novel_result(
-        tracker, name,
+        tracker,
+        name,
         config={
             "approach": "breakout_profitability",
             "model": "CatBoost",
@@ -1545,9 +1629,7 @@ def main():
     print("RUNNING IDEA 3: ML POSITION SIZER")
     print("=" * 80)
     try:
-        r3 = run_idea3_ml_position_sizer(
-            prices, daily_returns, df_daily, target_daily, top10_cols, tracker
-        )
+        r3 = run_idea3_ml_position_sizer(prices, daily_returns, df_daily, target_daily, top10_cols, tracker)
         all_results["idea3_ml_position_sizer"] = r3
     except Exception as e:
         print(f"ERROR in Idea 3: {e}")
@@ -1558,9 +1640,7 @@ def main():
     print("RUNNING IDEA 4: MAJORITY VOTE REGIME ENSEMBLE")
     print("=" * 80)
     try:
-        r4 = run_idea4_majority_vote_regime(
-            prices, daily_returns, df_daily, target_daily, top10_cols, tracker
-        )
+        r4 = run_idea4_majority_vote_regime(prices, daily_returns, df_daily, target_daily, top10_cols, tracker)
         all_results["idea4_majority_vote"] = r4
     except Exception as e:
         print(f"ERROR in Idea 4: {e}")
@@ -1593,9 +1673,7 @@ def main():
     print("RUNNING IDEA 7: TARGET RE-ENGINEERING (Breakout Profitability)")
     print("=" * 80)
     try:
-        r7 = run_idea7_breakout_profitability(
-            prices, daily_returns, df_daily, top10_cols, tracker
-        )
+        r7 = run_idea7_breakout_profitability(prices, daily_returns, df_daily, top10_cols, tracker)
         all_results["idea7_breakout_profitability"] = r7
     except Exception as e:
         print(f"ERROR in Idea 7: {e}")
@@ -1633,11 +1711,11 @@ def main():
                 beats = mean_sh > BEST_REGIME_SHARPE
                 print(f"  {idea_name:<48} {mean_sh:>8.3f} {std_sh:>8.3f} {s22:>8.3f}  {'✅' if beats else '❌'}")
 
-    print(f"\n  BENCHMARKS:")
+    print("\n  BENCHMARKS:")
     print(f"    Donchian baseline:  {BASELINE_DONCHIAN_SHARPE:.3f}")
     print(f"    Best regime (ADX):  {BEST_REGIME_SHARPE:.3f} (std=0.829, 2022=0.000)")
     print(f"    Best ML (LGBM-10):  {BEST_ML_SHARPE:.3f} (std=1.701, 2022=-0.644)")
-    print(f"\nTotal elapsed: {elapsed/60:.1f} min")
+    print(f"\nTotal elapsed: {elapsed / 60:.1f} min")
 
     # Save results JSON
     results_out = {

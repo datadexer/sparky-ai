@@ -22,8 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from sparky.backtest.costs import TransactionCostModel
 from sparky.features.returns import annualized_sharpe, max_drawdown
-from sparky.models.regime_hmm import hmm_probabilistic_ensemble, HMM_AVAILABLE
-from sparky.models.simple_baselines import donchian_channel_strategy
+from sparky.models.regime_hmm import HMM_AVAILABLE, hmm_probabilistic_ensemble
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -119,9 +118,9 @@ def main():
 
     for n_states in [2, 3]:
         approach_name = f"HMM {n_states}-State"
-        logger.info(f"\n{'='*50}")
+        logger.info(f"\n{'=' * 50}")
         logger.info(f"Testing: {approach_name}")
-        logger.info(f"{'='*50}")
+        logger.info(f"{'=' * 50}")
 
         seed_results = []
         for seed in SEEDS:
@@ -143,7 +142,7 @@ def main():
             median_across_seeds = float(np.median(sharpe_across_seeds))
             min_across_seeds = float(np.min(sharpe_across_seeds))
             max_across_seeds = float(np.max(sharpe_across_seeds))
-            cv = std_across_seeds / mean_across_seeds if mean_across_seeds > 0 else float('inf')
+            cv = std_across_seeds / mean_across_seeds if mean_across_seeds > 0 else float("inf")
             is_stable = std_across_seeds < 0.3 * mean_across_seeds
         else:
             mean_across_seeds = 0.0
@@ -151,7 +150,7 @@ def main():
             median_across_seeds = 0.0
             min_across_seeds = 0.0
             max_across_seeds = 0.0
-            cv = float('inf')
+            cv = float("inf")
             is_stable = False
 
         stability = {
@@ -189,20 +188,19 @@ def main():
     logger.info(f"\nResults saved to: {output_path}")
 
     # Print summary
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info("MULTI-SEED VALIDATION SUMMARY")
-    logger.info(f"{'='*70}")
+    logger.info(f"{'=' * 70}")
 
     for name, stability in results.items():
         verdict = "STABLE" if stability["is_stable"] else "UNSTABLE"
         logger.info(
-            f"  {name}: Median Sharpe {stability['median_sharpe']:.3f} "
-            f"(std {stability['std_sharpe']:.3f}) — {verdict}"
+            f"  {name}: Median Sharpe {stability['median_sharpe']:.3f} (std {stability['std_sharpe']:.3f}) — {verdict}"
         )
 
-    logger.info(f"\nNOTE: Regime-Weighted Ensemble is DETERMINISTIC (no HMM)")
-    logger.info(f"Its Sharpe 2.656 does not change with random seeds.")
-    logger.info(f"Validation for that approach requires parameter sensitivity analysis, not multi-seed.")
+    logger.info("\nNOTE: Regime-Weighted Ensemble is DETERMINISTIC (no HMM)")
+    logger.info("Its Sharpe 2.656 does not change with random seeds.")
+    logger.info("Validation for that approach requires parameter sensitivity analysis, not multi-seed.")
 
 
 if __name__ == "__main__":

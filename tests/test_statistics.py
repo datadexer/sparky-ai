@@ -233,12 +233,8 @@ class TestBacktestStatistics:
         """Test that random_state produces reproducible results."""
         returns = pd.Series(np.random.normal(0.001, 0.02, 100))
 
-        lower1, upper1 = BacktestStatistics.sharpe_confidence_interval(
-            returns, n_bootstrap=1000, random_state=42
-        )
-        lower2, upper2 = BacktestStatistics.sharpe_confidence_interval(
-            returns, n_bootstrap=1000, random_state=42
-        )
+        lower1, upper1 = BacktestStatistics.sharpe_confidence_interval(returns, n_bootstrap=1000, random_state=42)
+        lower2, upper2 = BacktestStatistics.sharpe_confidence_interval(returns, n_bootstrap=1000, random_state=42)
 
         assert lower1 == pytest.approx(lower2)
         assert upper1 == pytest.approx(upper2)

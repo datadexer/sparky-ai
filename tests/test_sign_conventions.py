@@ -14,7 +14,6 @@ Test every scenario:
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from sparky.features.returns import log_returns, simple_returns
 from sparky.features.technical import momentum, rsi
@@ -125,8 +124,7 @@ class TestPredictionCorrectness:
         strategy_returns = predictions * returns
 
         # In a bull market, always predicting up should give positive cumulative return
-        assert strategy_returns.sum() > 0, \
-            "Always-up prediction in bull market must yield positive returns"
+        assert strategy_returns.sum() > 0, "Always-up prediction in bull market must yield positive returns"
 
     def test_always_down_in_bull_market(self):
         """Model that always predicts 'down' in a bull market -> negative returns."""
@@ -136,5 +134,4 @@ class TestPredictionCorrectness:
         predictions = pd.Series([-1] * len(returns))
         strategy_returns = predictions * returns
 
-        assert strategy_returns.sum() < 0, \
-            "Always-down prediction in bull market must yield negative returns"
+        assert strategy_returns.sum() < 0, "Always-down prediction in bull market must yield negative returns"

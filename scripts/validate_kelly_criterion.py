@@ -13,24 +13,23 @@ Validation:
 - Block bootstrap Monte Carlo (≥75% win rate)
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
+from sparky.backtest.costs import TransactionCostModel
+from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.portfolio.kelly_criterion import (
-    apply_kelly_sizing,
     apply_fixed_sizing,
-    calculate_kelly_parameters,
+    apply_kelly_sizing,
 )
-from sparky.features.returns import annualized_sharpe, max_drawdown
-from sparky.backtest.costs import TransactionCostModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ def load_prices():
     """Load BTC daily prices (2017-2023)."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -127,12 +126,12 @@ def yearly_walk_forward_validation(prices: pd.Series) -> dict:
     years = [2018, 2019, 2020, 2021, 2022, 2023]
 
     for year in years:
-        logger.info(f"\n{'='*60}")
+        logger.info(f"\n{'=' * 60}")
         logger.info(f"YEAR {year}")
-        logger.info(f"{'='*60}")
+        logger.info(f"{'=' * 60}")
 
         # Train period: all data before this year
-        train_end = f"{year-1}-12-31"
+        train_end = f"{year - 1}-12-31"
         test_start = f"{year}-01-01"
         test_end = f"{year}-12-31"
 
@@ -158,17 +157,19 @@ def yearly_walk_forward_validation(prices: pd.Series) -> dict:
         position_sizes_fixed = apply_fixed_sizing(signals_test, fixed_size=1.0)
         metrics_fixed = backtest_with_sizing(test_prices, signals_test, position_sizes_fixed, cost_model)
 
-        results["Fixed 100%"]["folds"].append({
-            "year": str(year),
-            "sharpe": float(metrics_fixed["sharpe"]),
-            "return_pct": float(metrics_fixed["total_return"] * 100),
-            "max_drawdown": float(metrics_fixed["max_drawdown"]),
-            "n_trades": int(metrics_fixed["n_trades"]),
-        })
+        results["Fixed 100%"]["folds"].append(
+            {
+                "year": str(year),
+                "sharpe": float(metrics_fixed["sharpe"]),
+                "return_pct": float(metrics_fixed["total_return"] * 100),
+                "max_drawdown": float(metrics_fixed["max_drawdown"]),
+                "n_trades": int(metrics_fixed["n_trades"]),
+            }
+        )
 
         logger.info(
             f"Fixed 100%: Sharpe={metrics_fixed['sharpe']:.3f}, "
-            f"Return={metrics_fixed['total_return']*100:.2f}%, "
+            f"Return={metrics_fixed['total_return'] * 100:.2f}%, "
             f"Trades={metrics_fixed['n_trades']}"
         )
 
@@ -192,19 +193,21 @@ def yearly_walk_forward_validation(prices: pd.Series) -> dict:
 
         metrics_kelly_025 = backtest_with_sizing(test_prices, signals_test, position_sizes_kelly_025, cost_model)
 
-        results["Kelly 0.25x"]["folds"].append({
-            "year": str(year),
-            "sharpe": float(metrics_kelly_025["sharpe"]),
-            "return_pct": float(metrics_kelly_025["total_return"] * 100),
-            "max_drawdown": float(metrics_kelly_025["max_drawdown"]),
-            "n_trades": int(metrics_kelly_025["n_trades"]),
-            "mean_position_size": float(metrics_kelly_025["mean_position_size"]),
-            "max_position_size": float(metrics_kelly_025["max_position_size"]),
-        })
+        results["Kelly 0.25x"]["folds"].append(
+            {
+                "year": str(year),
+                "sharpe": float(metrics_kelly_025["sharpe"]),
+                "return_pct": float(metrics_kelly_025["total_return"] * 100),
+                "max_drawdown": float(metrics_kelly_025["max_drawdown"]),
+                "n_trades": int(metrics_kelly_025["n_trades"]),
+                "mean_position_size": float(metrics_kelly_025["mean_position_size"]),
+                "max_position_size": float(metrics_kelly_025["max_position_size"]),
+            }
+        )
 
         logger.info(
             f"Kelly 0.25x: Sharpe={metrics_kelly_025['sharpe']:.3f}, "
-            f"Return={metrics_kelly_025['total_return']*100:.2f}%, "
+            f"Return={metrics_kelly_025['total_return'] * 100:.2f}%, "
             f"Mean Size={metrics_kelly_025['mean_position_size']:.3f}, "
             f"Trades={metrics_kelly_025['n_trades']}"
         )
@@ -225,19 +228,21 @@ def yearly_walk_forward_validation(prices: pd.Series) -> dict:
 
         metrics_kelly_050 = backtest_with_sizing(test_prices, signals_test, position_sizes_kelly_050, cost_model)
 
-        results["Kelly 0.5x"]["folds"].append({
-            "year": str(year),
-            "sharpe": float(metrics_kelly_050["sharpe"]),
-            "return_pct": float(metrics_kelly_050["total_return"] * 100),
-            "max_drawdown": float(metrics_kelly_050["max_drawdown"]),
-            "n_trades": int(metrics_kelly_050["n_trades"]),
-            "mean_position_size": float(metrics_kelly_050["mean_position_size"]),
-            "max_position_size": float(metrics_kelly_050["max_position_size"]),
-        })
+        results["Kelly 0.5x"]["folds"].append(
+            {
+                "year": str(year),
+                "sharpe": float(metrics_kelly_050["sharpe"]),
+                "return_pct": float(metrics_kelly_050["total_return"] * 100),
+                "max_drawdown": float(metrics_kelly_050["max_drawdown"]),
+                "n_trades": int(metrics_kelly_050["n_trades"]),
+                "mean_position_size": float(metrics_kelly_050["mean_position_size"]),
+                "max_position_size": float(metrics_kelly_050["max_position_size"]),
+            }
+        )
 
         logger.info(
             f"Kelly 0.5x: Sharpe={metrics_kelly_050['sharpe']:.3f}, "
-            f"Return={metrics_kelly_050['total_return']*100:.2f}%, "
+            f"Return={metrics_kelly_050['total_return'] * 100:.2f}%, "
             f"Mean Size={metrics_kelly_050['mean_position_size']:.3f}, "
             f"Trades={metrics_kelly_050['n_trades']}"
         )
@@ -306,7 +311,7 @@ def block_bootstrap_monte_carlo(
             end = start + block_size
             bootstrap_returns.extend(net_returns.iloc[start:end].values)
 
-        bootstrap_returns = pd.Series(bootstrap_returns[:len(net_returns)])
+        bootstrap_returns = pd.Series(bootstrap_returns[: len(net_returns)])
         sharpe_samples.append(annualized_sharpe(bootstrap_returns))
 
     win_rate = sum(1 for s in sharpe_samples if s > 0) / len(sharpe_samples)
@@ -322,9 +327,9 @@ def block_bootstrap_monte_carlo(
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("KELLY CRITERION POSITION SIZING VALIDATION")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Load data
     logger.info("\n1. Loading BTC daily prices (2017-2023)...")
@@ -336,9 +341,9 @@ def main():
     results = yearly_walk_forward_validation(prices)
 
     # Print summary
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("SUMMARY - Yearly Walk-Forward Validation")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     for strategy_name in ["Fixed 100%", "Kelly 0.25x", "Kelly 0.5x"]:
         logger.info(f"\n{strategy_name}:")
@@ -351,14 +356,11 @@ def main():
         logger.info(f"  Mean Return:   {results[strategy_name]['mean_return']:.2f}%")
 
     # Determine best strategy
-    best_strategy = max(
-        ["Fixed 100%", "Kelly 0.25x", "Kelly 0.5x"],
-        key=lambda s: results[s]["mean_sharpe"]
-    )
+    best_strategy = max(["Fixed 100%", "Kelly 0.25x", "Kelly 0.5x"], key=lambda s: results[s]["mean_sharpe"])
 
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info(f"BEST STRATEGY: {best_strategy} (Sharpe {results[best_strategy]['mean_sharpe']:.3f})")
-    logger.info(f"{'='*70}")
+    logger.info(f"{'=' * 70}")
 
     # Monte Carlo on best strategy
     logger.info(f"\n3. Running block bootstrap Monte Carlo on {best_strategy}...")
@@ -382,19 +384,17 @@ def main():
         ).loc["2018-01-01":"2023-12-31"]
 
     cost_model = TransactionCostModel.for_btc()
-    mc_results = block_bootstrap_monte_carlo(
-        test_prices, signals_test, position_sizes, cost_model, n_simulations=1000
-    )
+    mc_results = block_bootstrap_monte_carlo(test_prices, signals_test, position_sizes, cost_model, n_simulations=1000)
 
     logger.info(f"\nMonte Carlo Results ({best_strategy}):")
     logger.info(f"  Mean Sharpe:   {mc_results['mean_sharpe']:.3f}")
     logger.info(f"  95% CI:        [{mc_results['ci_lower']:.3f}, {mc_results['ci_upper']:.3f}]")
-    logger.info(f"  Win Rate:      {mc_results['win_rate']*100:.1f}%")
+    logger.info(f"  Win Rate:      {mc_results['win_rate'] * 100:.1f}%")
 
     # Validation criteria check
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info("VALIDATION CRITERIA CHECK")
-    logger.info(f"{'='*70}")
+    logger.info(f"{'=' * 70}")
 
     target_sharpe = 0.85
     target_mc_win_rate = 0.75
@@ -404,20 +404,26 @@ def main():
     mc_pass = mc_results["win_rate"] >= target_mc_win_rate
     years_pass = results[best_strategy]["positive_count"] >= target_positive_years
 
-    logger.info(f"\n✓ Sharpe ≥{target_sharpe}:     {results[best_strategy]['mean_sharpe']:.3f} {'✓ PASS' if sharpe_pass else '✗ FAIL'}")
-    logger.info(f"✓ Monte Carlo ≥{target_mc_win_rate*100:.0f}%: {mc_results['win_rate']*100:.1f}% {'✓ PASS' if mc_pass else '✗ FAIL'}")
-    logger.info(f"✓ Positive ≥{target_positive_years}/6:      {results[best_strategy]['positive_count']}/6 {'✓ PASS' if years_pass else '✗ FAIL'}")
+    logger.info(
+        f"\n✓ Sharpe ≥{target_sharpe}:     {results[best_strategy]['mean_sharpe']:.3f} {'✓ PASS' if sharpe_pass else '✗ FAIL'}"
+    )
+    logger.info(
+        f"✓ Monte Carlo ≥{target_mc_win_rate * 100:.0f}%: {mc_results['win_rate'] * 100:.1f}% {'✓ PASS' if mc_pass else '✗ FAIL'}"
+    )
+    logger.info(
+        f"✓ Positive ≥{target_positive_years}/6:      {results[best_strategy]['positive_count']}/6 {'✓ PASS' if years_pass else '✗ FAIL'}"
+    )
 
     all_pass = sharpe_pass and mc_pass and years_pass
 
     if all_pass:
-        logger.info(f"\n{'='*70}")
+        logger.info(f"\n{'=' * 70}")
         logger.info("✓ SUCCESS: All validation criteria passed!")
-        logger.info(f"{'='*70}")
+        logger.info(f"{'=' * 70}")
     else:
-        logger.info(f"\n{'='*70}")
+        logger.info(f"\n{'=' * 70}")
         logger.info("✗ FAIL: Some validation criteria not met")
-        logger.info(f"{'='*70}")
+        logger.info(f"{'=' * 70}")
 
     # Save results
     output_path = Path("results/validation/kelly_criterion_validation.json")
@@ -442,10 +448,10 @@ def main():
             "kelly_sharpe": results[best_strategy]["mean_sharpe"],
             "delta_sharpe": results[best_strategy]["mean_sharpe"] - 0.772,
             "pct_improvement": (results[best_strategy]["mean_sharpe"] / 0.772 - 1) * 100,
-        }
+        },
     }
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
 
     logger.info(f"\n✓ Results saved to: {output_path}")
@@ -454,9 +460,9 @@ def main():
     baseline_sharpe = 0.772
     improvement_pct = (results[best_strategy]["mean_sharpe"] / baseline_sharpe - 1) * 100
 
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info("FINAL VERDICT")
-    logger.info(f"{'='*70}")
+    logger.info(f"{'=' * 70}")
     logger.info(f"Baseline (Fixed 100%):     Sharpe {baseline_sharpe:.3f}")
     logger.info(f"Best Kelly Strategy:       Sharpe {results[best_strategy]['mean_sharpe']:.3f} ({best_strategy})")
     logger.info(f"Improvement:               {improvement_pct:+.1f}%")

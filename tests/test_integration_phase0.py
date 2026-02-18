@@ -94,10 +94,9 @@ class TestTechnicalInternalConsistency:
         # Check a specific point
         idx = mom.index[0]
         offset = synthetic_prices.index.get_loc(idx)
-        expected = (
-            (synthetic_prices.iloc[offset] - synthetic_prices.iloc[offset - 30])
-            / synthetic_prices.iloc[offset - 30]
-        )
+        expected = (synthetic_prices.iloc[offset] - synthetic_prices.iloc[offset - 30]) / synthetic_prices.iloc[
+            offset - 30
+        ]
         assert mom.iloc[0] == pytest.approx(expected, rel=1e-10)
 
 

@@ -1,11 +1,11 @@
 """Tests for sparky.data.loader — enforced data access layer."""
 
-import pandas as pd
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 
-from sparky.data.loader import load, list_datasets, _detect_asset, _find_parquet
+import pandas as pd
+import pytest
+
+from sparky.data.loader import _detect_asset, _find_parquet, list_datasets, load
 
 
 @pytest.fixture
@@ -55,10 +55,13 @@ class TestFindParquet:
 
 class TestListDatasets:
     def test_lists_available_datasets(self, tmp_data_dir):
-        with patch("sparky.data.loader.DATA_DIRS", [
-            tmp_data_dir / "data" / "features",
-            tmp_data_dir / "data" / "processed",
-        ]):
+        with patch(
+            "sparky.data.loader.DATA_DIRS",
+            [
+                tmp_data_dir / "data" / "features",
+                tmp_data_dir / "data" / "processed",
+            ],
+        ):
             datasets = list_datasets()
             names = [d["name"] for d in datasets]
             assert "btc_1h_features" in names

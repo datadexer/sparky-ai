@@ -10,29 +10,31 @@ Approach:
 
 Expected: Meta-learner learns optimal combination weights
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
 from datetime import datetime
-from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import KFold
-from sklearn.linear_model import LogisticRegression
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.model_selection import KFold
 
 from sparky.backtest.costs import TransactionCostModel
 
-
 # Top 5 base models from sweep
 BASE_CONFIGS = [
-    ('CatBoost', {'iterations': 200, 'depth': 4, 'learning_rate': 0.03, 'l2_leaf_reg': 1.0, 'task_type': 'GPU'}),
-    ('CatBoost', {'iterations': 200, 'depth': 3, 'learning_rate': 0.03, 'l2_leaf_reg': 3.0, 'task_type': 'GPU'}),
-    ('CatBoost', {'iterations': 200, 'depth': 4, 'learning_rate': 0.01, 'l2_leaf_reg': 1.0, 'task_type': 'GPU'}),
-    ('LightGBM', {'n_estimators': 200, 'max_depth': 4, 'learning_rate': 0.03, 'reg_lambda': 1.0, 'device': 'gpu'}),
-    ('LightGBM', {'n_estimators': 200, 'max_depth': 3, 'learning_rate': 0.03, 'reg_lambda': 3.0, 'device': 'gpu'}),
+    ("CatBoost", {"iterations": 200, "depth": 4, "learning_rate": 0.03, "l2_leaf_reg": 1.0, "task_type": "GPU"}),
+    ("CatBoost", {"iterations": 200, "depth": 3, "learning_rate": 0.03, "l2_leaf_reg": 3.0, "task_type": "GPU"}),
+    ("CatBoost", {"iterations": 200, "depth": 4, "learning_rate": 0.01, "l2_leaf_reg": 1.0, "task_type": "GPU"}),
+    ("LightGBM", {"n_estimators": 200, "max_depth": 4, "learning_rate": 0.03, "reg_lambda": 1.0, "device": "gpu"}),
+    ("LightGBM", {"n_estimators": 200, "max_depth": 3, "learning_rate": 0.03, "reg_lambda": 3.0, "device": "gpu"}),
 ]
 
 
@@ -42,7 +44,7 @@ def load_data():
     target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
 
     if isinstance(target, pd.DataFrame):
-        target = target['target']
+        target = target["target"]
 
     return features, target
 
@@ -52,9 +54,9 @@ def train_base_models(X_train, y_train):
     models = []
 
     for i, (name, params) in enumerate(BASE_CONFIGS):
-        print(f"  Training base model {i+1}/{len(BASE_CONFIGS)}: {name}")
+        print(f"  Training base model {i + 1}/{len(BASE_CONFIGS)}: {name}")
 
-        if name == 'CatBoost':
+        if name == "CatBoost":
             model = CatBoostClassifier(**params, verbose=0, random_state=42)
         else:
             model = LGBMClassifier(**params, verbose=-1, random_state=42)
@@ -79,7 +81,7 @@ def generate_oof_predictions(X_train, y_train, n_folds=5):
         X_fold_val = X_train.iloc[val_idx]
 
         for model_idx, (name, params) in enumerate(BASE_CONFIGS):
-            if name == 'CatBoost':
+            if name == "CatBoost":
                 model = CatBoostClassifier(**params, verbose=0, random_state=42)
             else:
                 model = LGBMClassifier(**params, verbose=-1, random_state=42)
@@ -118,12 +120,12 @@ def main():
     print(f"Features: {features.shape}, Target: {target.shape}\n")
 
     # In-sample only
-    features_in = features.loc[:'2024-05-31']
-    target_in = target.loc[:'2024-05-31']
+    features_in = features.loc[:"2024-05-31"]
+    target_in = target.loc[:"2024-05-31"]
 
     # Load prices
     prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
-    prices_daily = prices_hourly.resample("D").last()['close']
+    prices_daily = prices_hourly.resample("D").last()["close"]
 
     cost_model = TransactionCostModel.for_btc()
 
@@ -185,38 +187,34 @@ def main():
 
         print(f"Acc={acc:.3f}, AUC={auc:.3f}, Sharpe={sharpe:.3f}")
 
-        results.append({
-            'year': year,
-            'accuracy': acc,
-            'auc': auc,
-            'sharpe': sharpe
-        })
+        results.append({"year": year, "accuracy": acc, "auc": auc, "sharpe": sharpe})
 
     # Overall metrics
     print("\n=== Overall Results ===")
-    sharpe_mean = np.mean([r['sharpe'] for r in results])
-    acc_mean = np.mean([r['accuracy'] for r in results])
+    sharpe_mean = np.mean([r["sharpe"] for r in results])
+    acc_mean = np.mean([r["accuracy"] for r in results])
     print(f"Mean Sharpe: {sharpe_mean:.3f}")
     print(f"Mean Accuracy: {acc_mean:.3f}")
-    print(f"Baseline to beat: 1.062 (Multi-TF Donchian)")
+    print("Baseline to beat: 1.062 (Multi-TF Donchian)")
 
     # Save results
     output = {
-        'timestamp': datetime.now().isoformat(),
-        'n_base_models': len(BASE_CONFIGS),
-        'meta_learner': 'LogisticRegression',
-        'n_folds': 5,
-        'yearly_results': results,
-        'mean_sharpe': sharpe_mean,
-        'mean_accuracy': acc_mean,
-        'baseline_sharpe': 1.062
+        "timestamp": datetime.now().isoformat(),
+        "n_base_models": len(BASE_CONFIGS),
+        "meta_learner": "LogisticRegression",
+        "n_folds": 5,
+        "yearly_results": results,
+        "mean_sharpe": sharpe_mean,
+        "mean_accuracy": acc_mean,
+        "baseline_sharpe": 1.062,
     }
 
     outpath = Path("results/validation/ensemble_stacking_58features.json")
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
     import json
-    with open(outpath, 'w') as f:
+
+    with open(outpath, "w") as f:
         json.dump(output, f, indent=2)
 
     print(f"\nResults saved to {outpath}")

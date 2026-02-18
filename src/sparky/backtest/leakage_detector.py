@@ -98,8 +98,7 @@ class LeakageDetector:
         if not all_passed:
             failed = [c for c in checks if not c.passed]
             logger.error(
-                f"LEAKAGE DETECTED — {len(failed)} check(s) failed: "
-                + ", ".join(c.check_name for c in failed)
+                f"LEAKAGE DETECTED — {len(failed)} check(s) failed: " + ", ".join(c.check_name for c in failed)
             )
 
         return LeakageReport(checks=checks, passed=all_passed)
@@ -172,9 +171,7 @@ class LeakageDetector:
 
         Verify that the max training timestamp < min test timestamp.
         """
-        if not isinstance(X_train.index, pd.DatetimeIndex) or not isinstance(
-            X_test.index, pd.DatetimeIndex
-        ):
+        if not isinstance(X_train.index, pd.DatetimeIndex) or not isinstance(X_test.index, pd.DatetimeIndex):
             return LeakageCheckResult(
                 check_name="temporal_boundary",
                 passed=True,
@@ -192,8 +189,7 @@ class LeakageDetector:
             passed=passed,
             detail=(
                 f"Train max: {train_max.date()}, Test min: {test_min.date()}, "
-                f"Gap: {gap_days} days. "
-                + ("PASS" if passed else "FAIL — train/test overlap detected")
+                f"Gap: {gap_days} days. " + ("PASS" if passed else "FAIL — train/test overlap detected")
             ),
             metric_value=float(gap_days),
         )

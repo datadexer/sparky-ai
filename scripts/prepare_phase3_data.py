@@ -15,21 +15,15 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from sparky.data.storage import DataStore
 from sparky.features.onchain import (
     address_momentum,
     hash_ribbon,
-    mvrv_signal,
-    nvt_zscore,
-    nupl_regime,
-    sopr_signal,
     volume_momentum,
 )
 from sparky.features.registry import FeatureDefinition, FeatureRegistry
-from sparky.features.returns import simple_returns
 from sparky.features.technical import ema, momentum, rsi
 
 logging.basicConfig(
@@ -120,9 +114,11 @@ def register_all_features(registry: FeatureRegistry) -> None:
         FeatureDefinition(
             name="hash_ribbon_btc",
             category="onchain_btc",
-            compute_fn=lambda data: hash_ribbon(data["onchain"]["hash_rate"], short=30, long=60)
-            if "onchain" in data and "hash_rate" in data["onchain"].columns
-            else pd.Series(dtype=float),
+            compute_fn=lambda data: (
+                hash_ribbon(data["onchain"]["hash_rate"], short=30, long=60)
+                if "onchain" in data and "hash_rate" in data["onchain"].columns
+                else pd.Series(dtype=float)
+            ),
             input_columns=["hash_rate"],
             lookback=60,
             data_source="blockchain_com",
@@ -136,9 +132,11 @@ def register_all_features(registry: FeatureRegistry) -> None:
         FeatureDefinition(
             name="address_momentum_btc",
             category="onchain_btc",
-            compute_fn=lambda data: address_momentum(data["onchain"]["active_addresses"], period=30)
-            if "onchain" in data and "active_addresses" in data["onchain"].columns
-            else pd.Series(dtype=float),
+            compute_fn=lambda data: (
+                address_momentum(data["onchain"]["active_addresses"], period=30)
+                if "onchain" in data and "active_addresses" in data["onchain"].columns
+                else pd.Series(dtype=float)
+            ),
             input_columns=["active_addresses"],
             lookback=30,
             data_source="blockchain_com",
@@ -152,9 +150,11 @@ def register_all_features(registry: FeatureRegistry) -> None:
         FeatureDefinition(
             name="volume_momentum_btc",
             category="onchain_btc",
-            compute_fn=lambda data: volume_momentum(data["onchain"]["transfer_volume_usd"], period=30)
-            if "onchain" in data and "transfer_volume_usd" in data["onchain"].columns
-            else pd.Series(dtype=float),
+            compute_fn=lambda data: (
+                volume_momentum(data["onchain"]["transfer_volume_usd"], period=30)
+                if "onchain" in data and "transfer_volume_usd" in data["onchain"].columns
+                else pd.Series(dtype=float)
+            ),
             input_columns=["transfer_volume_usd"],
             lookback=30,
             data_source="blockchain_com",
@@ -167,9 +167,7 @@ def register_all_features(registry: FeatureRegistry) -> None:
     logger.info(f"Registered {len(registry.list_features())} features")
 
 
-def generate_targets(
-    prices: pd.Series, horizons: list[int]
-) -> dict[int, pd.Series]:
+def generate_targets(prices: pd.Series, horizons: list[int]) -> dict[int, pd.Series]:
     """Generate target variables for all prediction horizons.
 
     Target timing (CRITICAL from SONNET_HANDOFF.md):
@@ -212,7 +210,7 @@ def generate_targets(
         targets[horizon] = target
         logger.info(
             f"Generated target for {horizon}d horizon: "
-            f"{len(target)} samples, {target.sum()} longs ({target.mean()*100:.1f}%)"
+            f"{len(target)} samples, {target.sum()} longs ({target.mean() * 100:.1f}%)"
         )
 
     return targets
@@ -266,9 +264,7 @@ def main():
     feature_names = registry.list_features(asset="btc")
     logger.info(f"Building {len(feature_names)} features for BTC")
 
-    X_btc = registry.build_feature_matrix(
-        asset="btc", feature_names=feature_names, data=data, drop_na_rows=True
-    )
+    X_btc = registry.build_feature_matrix(asset="btc", feature_names=feature_names, data=data, drop_na_rows=True)
 
     logger.info(f"Feature matrix shape: {X_btc.shape}")
     logger.info(f"Date range: {X_btc.index.min().date()} to {X_btc.index.max().date()}")
@@ -296,7 +292,7 @@ def main():
         logger.info(
             f"  {horizon}d: {len(aligned_targets[horizon])} samples "
             f"(longs: {aligned_targets[horizon].sum()}, "
-            f"{aligned_targets[horizon].mean()*100:.1f}%)"
+            f"{aligned_targets[horizon].mean() * 100:.1f}%)"
         )
 
     # Also align features to smallest common index across all horizons
@@ -337,19 +333,19 @@ def main():
     logger.info("Logging statistics to RESEARCH_LOG.md...")
     log_entry = f"""
 ---
-## Phase 3 Data Preparation — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## Phase 3 Data Preparation — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Data Coverage:**
 - BTC OHLCV: {btc_ohlcv.index.min().date()} to {btc_ohlcv.index.max().date()} ({len(btc_ohlcv)} rows)
-- BTC on-chain: {btc_onchain.index.min().date() if len(btc_onchain) > 0 else 'N/A'} to {btc_onchain.index.max().date() if len(btc_onchain) > 0 else 'N/A'} ({len(btc_onchain) if len(btc_onchain) > 0 else 0} rows)
+- BTC on-chain: {btc_onchain.index.min().date() if len(btc_onchain) > 0 else "N/A"} to {btc_onchain.index.max().date() if len(btc_onchain) > 0 else "N/A"} ({len(btc_onchain) if len(btc_onchain) > 0 else 0} rows)
 
 **Feature Matrix:**
 - Shape: {X_btc_aligned.shape}
 - Date range: {X_btc_aligned.index.min().date()} to {X_btc_aligned.index.max().date()}
-- Features: {len(X_btc_aligned.columns)} ({', '.join(X_btc_aligned.columns.tolist())})
+- Features: {len(X_btc_aligned.columns)} ({", ".join(X_btc_aligned.columns.tolist())})
 
 **Target Distribution:**
-{chr(10).join(f"- {h}d horizon: {aligned_targets[h].loc[common_index].sum()} longs / {len(common_index)} total ({aligned_targets[h].loc[common_index].mean()*100:.1f}%)" for h in HORIZONS)}
+{chr(10).join(f"- {h}d horizon: {aligned_targets[h].loc[common_index].sum()} longs / {len(common_index)} total ({aligned_targets[h].loc[common_index].mean() * 100:.1f}%)" for h in HORIZONS)}
 
 **Data Splits (matching baseline for fair comparison):**
 - In-sample: {len(in_sample)} rows ({IS_START} to {IS_END})

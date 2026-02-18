@@ -115,9 +115,7 @@ class SourceSelector:
             best_score_val = -1.0
 
             for source_name, series in candidates.items():
-                score = self._score_series(
-                    series, source_name, metric, reference, reference_date
-                )
+                score = self._score_series(series, source_name, metric, reference, reference_date)
                 scores.append(score)
 
                 # Composite score: completeness * 0.4 + (1 - freshness_normalized) * 0.3 + agreement * 0.3
@@ -127,11 +125,7 @@ class SourceSelector:
                     agreement = 1.0 - min(score.reference_mape, 1.0)
                 else:
                     agreement = 0.5
-                composite = (
-                    score.completeness * 0.4
-                    + (1.0 - freshness_norm) * 0.3
-                    + agreement * 0.3
-                )
+                composite = score.completeness * 0.4 + (1.0 - freshness_norm) * 0.3 + agreement * 0.3
 
                 if composite > best_score_val:
                     best_score_val = composite
@@ -173,10 +167,7 @@ class SourceSelector:
         result = pd.DataFrame(result_columns)
         result = result.sort_index()
 
-        logger.info(
-            f"[DATA] SourceSelector: {len(result)} rows, "
-            f"{len(result.columns)} metrics selected"
-        )
+        logger.info(f"[DATA] SourceSelector: {len(result)} rows, {len(result.columns)} metrics selected")
         return result, scores
 
     def select_eth_onchain(
@@ -196,8 +187,7 @@ class SourceSelector:
             return pd.DataFrame()
 
         logger.info(
-            f"[DATA] ETH on-chain: {len(coinmetrics_df)} rows, "
-            f"{len(coinmetrics_df.columns)} metrics from CoinMetrics"
+            f"[DATA] ETH on-chain: {len(coinmetrics_df)} rows, {len(coinmetrics_df.columns)} metrics from CoinMetrics"
         )
         return coinmetrics_df
 
@@ -229,8 +219,7 @@ class SourceSelector:
             aligned = pd.DataFrame({"source": series, "reference": reference}).dropna()
             if len(aligned) > 0:
                 mape = np.mean(
-                    np.abs(aligned["source"] - aligned["reference"])
-                    / np.abs(aligned["reference"].replace(0, np.nan))
+                    np.abs(aligned["source"] - aligned["reference"]) / np.abs(aligned["reference"].replace(0, np.nan))
                 )
                 reference_mape = float(mape) if not np.isnan(mape) else None
 

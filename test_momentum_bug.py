@@ -8,10 +8,9 @@ This means we're using close[T] to predict a return that INCLUDES close[T]!
 """
 
 import pandas as pd
-import numpy as np
 
 # Create simple price series
-dates = pd.date_range('2025-01-01', periods=10, freq='D')
+dates = pd.date_range("2025-01-01", periods=10, freq="D")
 prices = pd.Series([100, 110, 105, 115, 120, 118, 125, 130, 128, 135], index=dates)
 
 print("=" * 80)
@@ -48,15 +47,19 @@ print(strategy_returns_buggy)
 print("\n" + "=" * 80)
 print("SPECIFIC EXAMPLE: 2025-01-06")
 print("=" * 80)
-t = pd.Timestamp('2025-01-06')
-print(f"Close on {t-pd.Timedelta(days=3)} (T-3): {prices[t-pd.Timedelta(days=3)]:.2f}")
-print(f"Close on {t-pd.Timedelta(days=1)} (T-1): {prices[t-pd.Timedelta(days=1)]:.2f}")
+t = pd.Timestamp("2025-01-06")
+print(f"Close on {t - pd.Timedelta(days=3)} (T-3): {prices[t - pd.Timedelta(days=3)]:.2f}")
+print(f"Close on {t - pd.Timedelta(days=1)} (T-1): {prices[t - pd.Timedelta(days=1)]:.2f}")
 print(f"Close on {t} (T): {prices[t]:.2f}")
-print(f"\nMomentum at T = (close[T] - close[T-3]) / close[T-3]")
-print(f"             = ({prices[t]:.2f} - {prices[t-pd.Timedelta(days=3)]:.2f}) / {prices[t-pd.Timedelta(days=3)]:.2f}")
+print("\nMomentum at T = (close[T] - close[T-3]) / close[T-3]")
+print(
+    f"             = ({prices[t]:.2f} - {prices[t - pd.Timedelta(days=3)]:.2f}) / {prices[t - pd.Timedelta(days=3)]:.2f}"
+)
 print(f"             = {momentum[t]:.4f}")
-print(f"\nReturns at T = (close[T] - close[T-1]) / close[T-1]")
-print(f"            = ({prices[t]:.2f} - {prices[t-pd.Timedelta(days=1)]:.2f}) / {prices[t-pd.Timedelta(days=1)]:.2f}")
+print("\nReturns at T = (close[T] - close[T-1]) / close[T-1]")
+print(
+    f"            = ({prices[t]:.2f} - {prices[t - pd.Timedelta(days=1)]:.2f}) / {prices[t - pd.Timedelta(days=1)]:.2f}"
+)
 print(f"            = {returns[t]:.4f}")
 print(f"\nSignal at T (momentum > 0.05): {signals_buggy[t]}")
 print(f"Captured return: {strategy_returns_buggy[t]:.4f}")
@@ -81,14 +84,18 @@ print(strategy_returns_correct)
 print("\n" + "=" * 80)
 print("COMPARISON AT 2025-01-06")
 print("=" * 80)
-t = pd.Timestamp('2025-01-06')
+t = pd.Timestamp("2025-01-06")
 print(f"Momentum at T: {momentum[t]:.4f} (uses close[T]={prices[t]:.2f})")
 print(f"Signal at T: {signals_correct[t]}")
-print(f"\nBuggy approach:")
-print(f"  Captures returns[T] = {returns[t]:.4f} (from close[T-1]={prices[t-pd.Timedelta(days=1)]:.2f} to close[T]={prices[t]:.2f})")
+print("\nBuggy approach:")
+print(
+    f"  Captures returns[T] = {returns[t]:.4f} (from close[T-1]={prices[t - pd.Timedelta(days=1)]:.2f} to close[T]={prices[t]:.2f})"
+)
 print(f"  Strategy return: {strategy_returns_buggy[t]:.4f}")
-print(f"\nCorrect approach:")
-print(f"  Captures returns[T+1] = {returns_forward[t]:.4f} (from close[T]={prices[t]:.2f} to close[T+1]={prices[t+pd.Timedelta(days=1)]:.2f})")
+print("\nCorrect approach:")
+print(
+    f"  Captures returns[T+1] = {returns_forward[t]:.4f} (from close[T]={prices[t]:.2f} to close[T+1]={prices[t + pd.Timedelta(days=1)]:.2f})"
+)
 print(f"  Strategy return: {strategy_returns_correct[t]:.4f}")
 print("\n✓ The correct approach uses close[T] to predict the NEXT period's return!")
 

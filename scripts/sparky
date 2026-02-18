@@ -61,7 +61,9 @@ def _get_systemd_status() -> str:
     try:
         result = subprocess.run(
             ["systemctl", "--user", "is-active", SERVICE_NAME],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return result.stdout.strip()
     except Exception:
@@ -72,14 +74,15 @@ def _get_gpu_stats() -> str:
     """Get GPU utilization and memory."""
     try:
         result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total",
-             "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, timeout=5,
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         parts = result.stdout.strip().split(", ")
         if len(parts) == 3:
             util, mem_used, mem_total = parts
-            return f"{util}% util, {float(mem_used)/1024:.1f}GB/{float(mem_total)/1024:.0f}GB"
+            return f"{util}% util, {float(mem_used) / 1024:.1f}GB/{float(mem_total) / 1024:.0f}GB"
     except Exception:
         pass
     return "unavailable"
@@ -90,6 +93,7 @@ def _get_wandb_counts(state: dict) -> str:
     try:
         sys.path.insert(0, str(PROJECT_ROOT / "src"))
         from sparky.tracking.experiment import ExperimentTracker
+
         tracker = ExperimentTracker(experiment_name="contract_004")
         wf_name = state.get("workflow_name", "")
         # Count by common tags
@@ -114,6 +118,7 @@ def _get_best_sharpe(state: dict) -> str:
     try:
         sys.path.insert(0, str(PROJECT_ROOT / "src"))
         from sparky.tracking.experiment import ExperimentTracker
+
         tracker = ExperimentTracker(experiment_name="contract_004")
         best = tracker.best_metric("sharpe")
         if best is not None:
@@ -132,7 +137,9 @@ def _get_latest_log_line() -> str:
         # Read last few lines and find last non-empty one
         result = subprocess.run(
             ["tail", "-5", str(latest)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         lines = [l.strip() for l in result.stdout.strip().split("\n") if l.strip()]
         if lines:
@@ -150,7 +157,9 @@ def _get_recent_alerts() -> str:
     try:
         result = subprocess.run(
             ["tail", "-3", str(ALERTS_LOG)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         lines = [l.strip() for l in result.stdout.strip().split("\n") if l.strip()]
         if lines:
@@ -194,7 +203,9 @@ def cmd_status(_args):
             except Exception:
                 pass
 
-        step_line = f"Step {current_idx + 1}/{total_steps}: {current_step} (attempt {attempts}/{max_retries}{elapsed_str})"
+        step_line = (
+            f"Step {current_idx + 1}/{total_steps}: {current_step} (attempt {attempts}/{max_retries}{elapsed_str})"
+        )
     else:
         step_line = f"All {total_steps} steps completed"
 
@@ -214,7 +225,7 @@ def cmd_status(_args):
     print(f"Wandb: {wandb_counts}")
     print(f"Best: {best}")
     print(f"GPU: {gpu_stats}")
-    print(f"Last log: \"{last_log}\"")
+    print(f'Last log: "{last_log}"')
     print(f"Alerts: {alerts}")
 
 
@@ -240,7 +251,9 @@ def cmd_watch(_args):
             if latest.exists():
                 result = subprocess.run(
                     ["tail", "-10", str(latest)],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 print("--- Latest log ---")
                 print(result.stdout.strip())
@@ -323,7 +336,7 @@ def cmd_inject(args):
     inject_file = STATE_DIR / "inject.md"
     inject_file.write_text(args.message)
     print(f"Guidance written to {inject_file}")
-    print(f"Will be injected into the next Claude session prompt, then deleted.")
+    print("Will be injected into the next Claude session prompt, then deleted.")
 
 
 def cmd_budget(_args):
@@ -335,7 +348,7 @@ def cmd_budget(_args):
     cost = budget.get("estimated_cost_usd", 0)
     runs = budget.get("runs_completed", 0)
 
-    print(f"Budget: {hours_used:.2f} / {max_hours:.1f} hours ({hours_used/max_hours*100:.1f}%)")
+    print(f"Budget: {hours_used:.2f} / {max_hours:.1f} hours ({hours_used / max_hours * 100:.1f}%)")
     print(f"Estimated cost: ${cost:.2f}")
     print(f"Total runs: {runs}")
 
@@ -358,7 +371,7 @@ def cmd_budget(_args):
         if by_step:
             print("\nPer-step breakdown:")
             print(f"  {'Step':<30} {'Runs':>5} {'Hours':>8} {'Cost':>8}")
-            print(f"  {'-'*30} {'-'*5} {'-'*8} {'-'*8}")
+            print(f"  {'-' * 30} {'-' * 5} {'-' * 8} {'-' * 8}")
             for step, info in by_step.items():
                 print(f"  {step:<30} {info['runs']:>5} {info['hours']:>8.2f} ${info['cost']:>7.2f}")
 
@@ -375,7 +388,7 @@ def cmd_history(_args):
     print(f"Created: {state.get('created_at', 'unknown')}")
     print()
     print(f"  {'Step':<30} {'Status':<12} {'Attempts':>8} {'Completed':>24}")
-    print(f"  {'-'*30} {'-'*12} {'-'*8} {'-'*24}")
+    print(f"  {'-' * 30} {'-' * 12} {'-' * 8} {'-' * 24}")
     for name, info in steps.items():
         completed = info.get("completed_at", "") or "-"
         print(f"  {name:<30} {info.get('status', '?'):<12} {info.get('attempts', 0):>8} {completed:>24}")

@@ -5,15 +5,15 @@ Validates BTC data consistency and checks feature engineering for lookahead bias
 """
 
 import sys
-import os
 
 # Add project root to path
-sys.path.insert(0, '/home/akamath/sparky-ai')
+sys.path.insert(0, "/home/akamath/sparky-ai")
 
 try:
-    import pandas as pd
-    import numpy as np
     from pathlib import Path
+
+    import numpy as np
+    import pandas as pd
 except ImportError as e:
     print(f"Error: Missing required packages: {e}")
     print("This script requires pandas, numpy, and pyarrow")
@@ -32,23 +32,23 @@ print("TASK 1: BTC HOURLY DATA CONSISTENCY VALIDATION")
 print("=" * 100)
 
 files = {
-    'ohlcv_hourly_max_coverage': '/home/akamath/sparky-ai/data/raw/btc/ohlcv_hourly_max_coverage.parquet',
-    'ohlcv_hourly': '/home/akamath/sparky-ai/data/raw/btc/ohlcv_hourly.parquet',
-    'ohlcv': '/home/akamath/sparky-ai/data/raw/btc/ohlcv.parquet',
-    'onchain_blockchain_com': '/home/akamath/sparky-ai/data/raw/btc/onchain_blockchain_com.parquet'
+    "ohlcv_hourly_max_coverage": "/home/akamath/sparky-ai/data/raw/btc/ohlcv_hourly_max_coverage.parquet",
+    "ohlcv_hourly": "/home/akamath/sparky-ai/data/raw/btc/ohlcv_hourly.parquet",
+    "ohlcv": "/home/akamath/sparky-ai/data/raw/btc/ohlcv.parquet",
+    "onchain_blockchain_com": "/home/akamath/sparky-ai/data/raw/btc/onchain_blockchain_com.parquet",
 }
 
 data_results = {}
 
 for name, path in files.items():
-    print(f"\n{'-'*80}")
+    print(f"\n{'-' * 80}")
     print(f"FILE: {name}")
     print(f"Path: {path}")
     print("-" * 80)
 
     try:
         if not Path(path).exists():
-            print(f"⚠️  FILE NOT FOUND")
+            print("⚠️  FILE NOT FOUND")
             continue
 
         df = pd.read_parquet(path)
@@ -60,7 +60,7 @@ for name, path in files.items():
         # Find date column
         date_col = None
         for col in df.columns:
-            if col in ['timestamp', 'date', 'datetime', 'time'] or 'time' in col.lower():
+            if col in ["timestamp", "date", "datetime", "time"] or "time" in col.lower():
                 date_col = col
                 break
 
@@ -84,12 +84,12 @@ for name, path in files.items():
 
                 # Count unique intervals
                 unique_intervals = time_diffs.value_counts().head(5)
-                print(f"✓ Top 5 intervals:")
+                print("✓ Top 5 intervals:")
                 for interval, count in unique_intervals.items():
                     pct = 100 * count / len(time_diffs)
                     print(f"    {interval}: {count:,} ({pct:.1f}%)")
         else:
-            print(f"⚠️  No date column found")
+            print("⚠️  No date column found")
             print(f"Sample data:\n{df.head(3)}")
 
         # Store for comparison
@@ -106,11 +106,11 @@ print("\n" + "=" * 100)
 print("HOURLY FILES COMPARISON")
 print("=" * 100)
 
-if 'ohlcv_hourly_max_coverage' in data_results and 'ohlcv_hourly' in data_results:
-    df_max = data_results['ohlcv_hourly_max_coverage']
-    df_std = data_results['ohlcv_hourly']
+if "ohlcv_hourly_max_coverage" in data_results and "ohlcv_hourly" in data_results:
+    df_max = data_results["ohlcv_hourly_max_coverage"]
+    df_std = data_results["ohlcv_hourly"]
 
-    print(f"\n📊 Row Count Comparison:")
+    print("\n📊 Row Count Comparison:")
     print(f"  ohlcv_hourly_max_coverage: {len(df_max):,} rows")
     print(f"  ohlcv_hourly:              {len(df_std):,} rows")
     print(f"  Difference:                {abs(len(df_max) - len(df_std)):,} rows")
@@ -119,7 +119,7 @@ if 'ohlcv_hourly_max_coverage' in data_results and 'ohlcv_hourly' in data_result
     cols_max = set(df_max.columns)
     cols_std = set(df_std.columns)
 
-    print(f"\n📋 Column Comparison:")
+    print("\n📋 Column Comparison:")
     print(f"  Columns in common: {cols_max & cols_std}")
     if cols_max - cols_std:
         print(f"  Only in max_coverage: {cols_max - cols_std}")
@@ -127,7 +127,7 @@ if 'ohlcv_hourly_max_coverage' in data_results and 'ohlcv_hourly' in data_result
         print(f"  Only in hourly: {cols_std - cols_max}")
 
     # Date range comparison
-    for col in ['timestamp', 'date', 'datetime', 'time']:
+    for col in ["timestamp", "date", "datetime", "time"]:
         if col in df_max.columns and col in df_std.columns:
             df_max[col] = pd.to_datetime(df_max[col])
             df_std[col] = pd.to_datetime(df_std[col])
@@ -140,8 +140,8 @@ if 'ohlcv_hourly_max_coverage' in data_results and 'ohlcv_hourly' in data_result
             days_max = (df_max[col].max() - df_max[col].min()).days
             days_std = (df_std[col].max() - df_std[col].min()).days
 
-            print(f"  max_coverage span: {days_max:,} days ({days_max/365.25:.1f} years)")
-            print(f"  hourly span:       {days_std:,} days ({days_std/365.25:.1f} years)")
+            print(f"  max_coverage span: {days_max:,} days ({days_max / 365.25:.1f} years)")
+            print(f"  hourly span:       {days_std:,} days ({days_std / 365.25:.1f} years)")
 
             # Overlap
             overlap_start = max(df_max[col].min(), df_std[col].min())
@@ -150,7 +150,7 @@ if 'ohlcv_hourly_max_coverage' in data_results and 'ohlcv_hourly' in data_result
             print(f"  Overlap period: {overlap_start} to {overlap_end} ({overlap_days:,} days)")
 
             # Expected vs actual rows
-            print(f"\n🔍 Data Density Analysis:")
+            print("\n🔍 Data Density Analysis:")
             rows_per_day_max = len(df_max) / days_max if days_max > 0 else 0
             rows_per_day_std = len(df_std) / days_std if days_std > 0 else 0
             print(f"  max_coverage: {rows_per_day_max:.1f} rows/day (expect ~24 for hourly)")
@@ -170,14 +170,14 @@ print("\n📈 Expected: ~35,000 hourly samples for training (from project specs)
 print("\nActual row counts:")
 
 for name, df in data_results.items():
-    if 'hourly' in name or 'ohlcv' == name:
+    if "hourly" in name or "ohlcv" == name:
         print(f"  {name:35s}: {len(df):,} rows", end="")
 
         # Check if matches expected
         if 30000 <= len(df) <= 40000:
-            print(f"  ✓ MATCHES ~35K expectation!")
+            print("  ✓ MATCHES ~35K expectation!")
         elif 100000 <= len(df) <= 120000:
-            print(f"  (This is the full dataset ~115K hourly candles)")
+            print("  (This is the full dataset ~115K hourly candles)")
         else:
             print()
 
@@ -343,31 +343,31 @@ print("=" * 100)
 print("\n📊 TASK 1 SUMMARY: Data Consistency")
 print("-" * 80)
 
-if 'ohlcv_hourly_max_coverage' in data_results:
-    df_max = data_results['ohlcv_hourly_max_coverage']
-    print(f"✓ Primary dataset: ohlcv_hourly_max_coverage.parquet")
+if "ohlcv_hourly_max_coverage" in data_results:
+    df_max = data_results["ohlcv_hourly_max_coverage"]
+    print("✓ Primary dataset: ohlcv_hourly_max_coverage.parquet")
     print(f"  - {len(df_max):,} hourly candles")
-    print(f"  - This is the FULL historical dataset")
+    print("  - This is the FULL historical dataset")
 
-if 'ohlcv_hourly' in data_results:
-    df_std = data_results['ohlcv_hourly']
-    print(f"\n✓ Secondary dataset: ohlcv_hourly.parquet")
+if "ohlcv_hourly" in data_results:
+    df_std = data_results["ohlcv_hourly"]
+    print("\n✓ Secondary dataset: ohlcv_hourly.parquet")
     print(f"  - {len(df_std):,} hourly candles")
-    print(f"  - Likely a subset or single-exchange version")
+    print("  - Likely a subset or single-exchange version")
 
-print(f"\n💡 EXPLANATION: Why two sizes?")
-print(f"  - max_coverage: Multi-exchange aggregated data (maximum historical coverage)")
-print(f"  - hourly: Single exchange or more recent data")
-print(f"  - The training script uses max_coverage if available (see line 36-45 of prepare_hourly_features.py)")
+print("\n💡 EXPLANATION: Why two sizes?")
+print("  - max_coverage: Multi-exchange aggregated data (maximum historical coverage)")
+print("  - hourly: Single exchange or more recent data")
+print("  - The training script uses max_coverage if available (see line 36-45 of prepare_hourly_features.py)")
 
 print("\n🔢 Training Sample Count:")
-if 'ohlcv_hourly_max_coverage' in data_results:
-    total_hourly = len(data_results['ohlcv_hourly_max_coverage'])
+if "ohlcv_hourly_max_coverage" in data_results:
+    total_hourly = len(data_results["ohlcv_hourly_max_coverage"])
     warmup_loss = 200  # RSI, MAs need warmup
     usable_samples = total_hourly - warmup_loss
     print(f"  - Total hourly candles: {total_hourly:,}")
     print(f"  - After warmup (~200): {usable_samples:,}")
-    print(f"  - Scripts mention '~35K' - this refers to DAILY resampled samples")
+    print("  - Scripts mention '~35K' - this refers to DAILY resampled samples")
     print(f"  - After daily resampling: ~{usable_samples // 24:,} days")
 
 print("\n🎯 TASK 2 SUMMARY: Lookahead Bias Analysis")

@@ -27,9 +27,7 @@ class DataQualityChecker:
         report = checker.run_all_checks(df, asset="btc", source="binance")
     """
 
-    def check_completeness(
-        self, df: pd.DataFrame, max_gap_days: int = 3
-    ) -> dict[str, Any]:
+    def check_completeness(self, df: pd.DataFrame, max_gap_days: int = 3) -> dict[str, Any]:
         """Check for missing data and gaps.
 
         Crypto trades 24/7, so any gap > max_gap_days is a problem.
@@ -68,11 +66,13 @@ class DataQualityChecker:
             large_gaps = diffs[diffs > pd.Timedelta(days=max_gap_days)]
 
             for gap_end, gap_size in large_gaps.items():
-                result["gaps"].append({
-                    "gap_start": str(gap_end - gap_size),
-                    "gap_end": str(gap_end),
-                    "gap_days": gap_size.days,
-                })
+                result["gaps"].append(
+                    {
+                        "gap_start": str(gap_end - gap_size),
+                        "gap_end": str(gap_end),
+                        "gap_days": gap_size.days,
+                    }
+                )
 
         # Fail if >5% null in any column or any large gaps
         max_null_pct = max(result["null_pct"].values()) if result["null_pct"] else 0
@@ -202,10 +202,12 @@ class DataQualityChecker:
             result["error"] = "Required columns not found"
             return result
 
-        aligned = pd.DataFrame({
-            "ccxt": ccxt_df[price_col],
-            "reference": reference_df[reference_col],
-        }).dropna()
+        aligned = pd.DataFrame(
+            {
+                "ccxt": ccxt_df[price_col],
+                "reference": reference_df[reference_col],
+            }
+        ).dropna()
 
         if aligned.empty:
             result["pass"] = False

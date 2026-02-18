@@ -69,6 +69,7 @@ def compute_features(df: pd.DataFrame, asset_name: str) -> pd.DataFrame:
         DataFrame with 58 hourly features
     """
     import sys
+
     sys.path.insert(0, "scripts")
     from prepare_hourly_features import compute_hourly_features
 
@@ -103,10 +104,7 @@ def generate_targets(prices: pd.DataFrame, asset_name: str, horizon_days: int = 
     targets = (future_close > current_close).astype(int)
     targets = targets.dropna()
 
-    logger.info(
-        f"  {asset_name}: Generated {len(targets)} daily targets "
-        f"({targets.mean():.1%} positive)"
-    )
+    logger.info(f"  {asset_name}: Generated {len(targets)} daily targets ({targets.mean():.1%} positive)")
 
     return targets
 
@@ -166,10 +164,7 @@ def main():
         # Add asset_name for reference
         features_aligned["asset_name"] = asset_name
 
-        logger.info(
-            f"  {asset_name}: Aligned {len(features_aligned)} samples "
-            f"(features + targets)"
-        )
+        logger.info(f"  {asset_name}: Aligned {len(features_aligned)} samples (features + targets)")
 
         all_features.append(features_aligned)
         all_targets.append(targets_aligned)
@@ -217,7 +212,7 @@ def main():
     logger.info(f"Features: {features_pooled.shape[1] - 2} (excluding asset_id, asset_name)")
     logger.info(f"Date range: {features_pooled.index.min().date()} to {features_pooled.index.max().date()}")
     logger.info(f"Target balance: {targets_pooled.mean():.1%} positive (long)")
-    logger.info(f"\nNext step: Run scripts/train_cross_asset.py")
+    logger.info("\nNext step: Run scripts/train_cross_asset.py")
 
 
 if __name__ == "__main__":

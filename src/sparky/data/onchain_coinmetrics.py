@@ -68,11 +68,10 @@ class CoinMetricsFetcher:
     def __init__(self):
         try:
             from coinmetrics.api_client import CoinMetricsClient
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
-                "coinmetrics-api-client is required. "
-                "Install with: pip install coinmetrics-api-client"
-            )
+                "coinmetrics-api-client is required. Install with: pip install coinmetrics-api-client"
+            ) from err
         self.client = CoinMetricsClient()
         self._last_request_time = 0.0
         self._request_count = 0
@@ -105,10 +104,7 @@ class CoinMetricsFetcher:
             end_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         metrics_str = ",".join(metrics)
-        logger.info(
-            f"[DATA] Fetching CoinMetrics {asset} [{metrics_str}] "
-            f"({start_date} to {end_date})"
-        )
+        logger.info(f"[DATA] Fetching CoinMetrics {asset} [{metrics_str}] ({start_date} to {end_date})")
 
         self._rate_limit()
 
@@ -151,10 +147,7 @@ class CoinMetricsFetcher:
         df = df.sort_index()
         df = df[~df.index.duplicated(keep="last")]
 
-        logger.info(
-            f"[DATA] Fetched {len(df)} rows for CoinMetrics {asset} "
-            f"({len(df.columns)} metrics)"
-        )
+        logger.info(f"[DATA] Fetched {len(df)} rows for CoinMetrics {asset} ({len(df.columns)} metrics)")
         return df
 
     def fetch_asset_metrics(
@@ -175,9 +168,7 @@ class CoinMetricsFetcher:
         """
         asset_lower = asset.lower()
         if asset_lower not in ASSET_METRICS:
-            raise ValueError(
-                f"Unknown asset '{asset}'. Available: {list(ASSET_METRICS.keys())}"
-            )
+            raise ValueError(f"Unknown asset '{asset}'. Available: {list(ASSET_METRICS.keys())}")
 
         metrics = ASSET_METRICS[asset_lower]
         return self.fetch_metrics(asset_lower, metrics, start_date, end_date)

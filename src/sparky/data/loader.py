@@ -95,11 +95,13 @@ def list_datasets() -> list[dict[str, str]]:
                 continue
             seen.add(path.name)
             name = path.stem
-            datasets.append({
-                "name": name,
-                "path": str(path),
-                "asset": _detect_asset(name),
-            })
+            datasets.append(
+                {
+                    "name": name,
+                    "path": str(path),
+                    "asset": _detect_asset(name),
+                }
+            )
     return datasets
 
 
@@ -167,8 +169,8 @@ def load(
             )
     elif purpose == "analysis":
         logger.warning(
-            f"[LOADER] Loading FULL dataset for analysis (includes holdout period). "
-            f"Do NOT use for training or model evaluation."
+            "[LOADER] Loading FULL dataset for analysis (includes holdout period). "
+            "Do NOT use for training or model evaluation."
         )
 
     logger.info(f"[LOADER] Returning {len(df)} rows for {purpose} ({resolved_asset})")

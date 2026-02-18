@@ -21,13 +21,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from sparky.backtest.engine import WalkForwardBacktester
 from sparky.backtest.costs import TransactionCostModel
 from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.regime_adaptive_lookback import adaptive_lookback_ensemble
+from sparky.models.regime_hmm import HMM_AVAILABLE, hmm_probabilistic_ensemble
 from sparky.models.regime_markov_switching import markov_switching_ensemble
 from sparky.models.regime_volatility_term_structure import volatility_term_structure_ensemble
-from sparky.models.regime_hmm import hmm_probabilistic_ensemble, HMM_AVAILABLE
 from sparky.models.regime_weighted_ensemble import (
     regime_weighted_ensemble,
     regime_weighted_multitimeframe_ensemble,
@@ -63,7 +62,6 @@ def backtest_strategy(
     cost_model: TransactionCostModel,
 ) -> dict:
     """Backtest a strategy on a specific period."""
-    import numpy as np
 
     period_prices = prices.loc[start_date:end_date]
     period_signals = signals.loc[start_date:end_date]
@@ -120,9 +118,9 @@ def validate_approach(
     cost_model: TransactionCostModel,
 ) -> dict:
     """Validate a regime-aware approach on multiple test periods."""
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info(f"Validating: {approach_name}")
-    logger.info(f"{'='*70}")
+    logger.info(f"{'=' * 70}")
 
     # Generate signals (full history)
     try:
@@ -149,12 +147,14 @@ def validate_approach(
             f"Trades: {metrics['n_trades']}"
         )
 
-        results.append({
-            "period": year_label,
-            "start_date": start_date,
-            "end_date": end_date,
-            **metrics,
-        })
+        results.append(
+            {
+                "period": year_label,
+                "start_date": start_date,
+                "end_date": end_date,
+                **metrics,
+            }
+        )
 
     # Compute aggregate statistics
     sharpe_values = [r["sharpe"] for r in results if r["sharpe"] != 0.0]
@@ -170,7 +170,7 @@ def validate_approach(
         max_sharpe = 0.0
         positive_count = 0
 
-    logger.info(f"\nAggregate Statistics:")
+    logger.info("\nAggregate Statistics:")
     logger.info(f"  Mean Sharpe: {mean_sharpe:.3f}")
     logger.info(f"  Min Sharpe: {min_sharpe:.3f}")
     logger.info(f"  Max Sharpe: {max_sharpe:.3f}")
@@ -220,49 +220,67 @@ def main():
     approaches.append(("BASELINE: Multi-TF Donchian (20/40/60)", baseline_multitf))
 
     # Approach 5: Adaptive Lookback Windows
-    approaches.append((
-        "Approach 5: Adaptive Lookback Ensemble",
-        lambda prices: adaptive_lookback_ensemble(prices, vol_window=30),
-    ))
+    approaches.append(
+        (
+            "Approach 5: Adaptive Lookback Ensemble",
+            lambda prices: adaptive_lookback_ensemble(prices, vol_window=30),
+        )
+    )
 
     # Approach 2: Markov-Switching Donchian
-    approaches.append((
-        "Approach 2: Markov-Switching Ensemble",
-        lambda prices: markov_switching_ensemble(prices, vol_window=30),
-    ))
+    approaches.append(
+        (
+            "Approach 2: Markov-Switching Ensemble",
+            lambda prices: markov_switching_ensemble(prices, vol_window=30),
+        )
+    )
 
     # Approach 3: Multi-Horizon Volatility Clustering
-    approaches.append((
-        "Approach 3: Volatility Term Structure Ensemble",
-        lambda prices: volatility_term_structure_ensemble(prices, short_window=7, medium_window=30, long_window=90),
-    ))
+    approaches.append(
+        (
+            "Approach 3: Volatility Term Structure Ensemble",
+            lambda prices: volatility_term_structure_ensemble(prices, short_window=7, medium_window=30, long_window=90),
+        )
+    )
 
     # Approach 1: HMM Regime Detection (if available)
     if HMM_AVAILABLE:
-        approaches.append((
-            "Approach 1: HMM Probabilistic Ensemble (2-state)",
-            lambda prices: hmm_probabilistic_ensemble(prices, n_states=2),
-        ))
-        approaches.append((
-            "Approach 1: HMM Probabilistic Ensemble (3-state)",
-            lambda prices: hmm_probabilistic_ensemble(prices, n_states=3),
-        ))
+        approaches.append(
+            (
+                "Approach 1: HMM Probabilistic Ensemble (2-state)",
+                lambda prices: hmm_probabilistic_ensemble(prices, n_states=2),
+            )
+        )
+        approaches.append(
+            (
+                "Approach 1: HMM Probabilistic Ensemble (3-state)",
+                lambda prices: hmm_probabilistic_ensemble(prices, n_states=3),
+            )
+        )
     else:
         logger.warning("hmmlearn not installed. Skipping HMM approaches.")
 
     # Approach 4: Regime-Weighted Ensemble (IMCA-inspired)
-    approaches.append((
-        "Approach 4: Regime-Weighted Ensemble (aggressive)",
-        lambda prices: regime_weighted_ensemble(prices, regime_detection="combined", weighting_scheme="aggressive"),
-    ))
-    approaches.append((
-        "Approach 4: Regime-Weighted Ensemble (balanced)",
-        lambda prices: regime_weighted_ensemble(prices, regime_detection="combined", weighting_scheme="balanced"),
-    ))
-    approaches.append((
-        "Approach 4: Regime-Weighted Multi-TF Ensemble (aggressive)",
-        lambda prices: regime_weighted_multitimeframe_ensemble(prices, regime_detection="combined", weighting_scheme="aggressive"),
-    ))
+    approaches.append(
+        (
+            "Approach 4: Regime-Weighted Ensemble (aggressive)",
+            lambda prices: regime_weighted_ensemble(prices, regime_detection="combined", weighting_scheme="aggressive"),
+        )
+    )
+    approaches.append(
+        (
+            "Approach 4: Regime-Weighted Ensemble (balanced)",
+            lambda prices: regime_weighted_ensemble(prices, regime_detection="combined", weighting_scheme="balanced"),
+        )
+    )
+    approaches.append(
+        (
+            "Approach 4: Regime-Weighted Multi-TF Ensemble (aggressive)",
+            lambda prices: regime_weighted_multitimeframe_ensemble(
+                prices, regime_detection="combined", weighting_scheme="aggressive"
+            ),
+        )
+    )
 
     # Run validation for all approaches
     all_results = []
@@ -274,13 +292,11 @@ def main():
     all_results_sorted = sorted(all_results, key=lambda x: x.get("mean_sharpe", 0.0), reverse=True)
 
     # Print summary table
-    logger.info(f"\n{'='*70}")
+    logger.info(f"\n{'=' * 70}")
     logger.info("SUMMARY TABLE (sorted by Mean Sharpe)")
-    logger.info(f"{'='*70}")
-    logger.info(
-        f"{'Rank':<5} {'Approach':<50} {'Mean Sharpe':<12} {'Min':<8} {'Max':<8} {'Positive':<10}"
-    )
-    logger.info(f"{'-'*70}")
+    logger.info(f"{'=' * 70}")
+    logger.info(f"{'Rank':<5} {'Approach':<50} {'Mean Sharpe':<12} {'Min':<8} {'Max':<8} {'Positive':<10}")
+    logger.info(f"{'-' * 70}")
 
     for rank, result in enumerate(all_results_sorted, start=1):
         if "error" in result:
@@ -309,7 +325,9 @@ def main():
     best_approach = all_results_sorted[0]
 
     if "error" not in best_approach and best_approach["mean_sharpe"] >= 0.85:
-        logger.info(f"\n🎉 SUCCESS: {best_approach['approach']} achieved Sharpe {best_approach['mean_sharpe']:.3f} (≥0.85 target)")
+        logger.info(
+            f"\n🎉 SUCCESS: {best_approach['approach']} achieved Sharpe {best_approach['mean_sharpe']:.3f} (≥0.85 target)"
+        )
     elif "error" not in best_approach and best_approach["mean_sharpe"] > baseline_sharpe:
         improvement = (best_approach["mean_sharpe"] - baseline_sharpe) / baseline_sharpe * 100
         logger.info(
@@ -317,7 +335,9 @@ def main():
             f"({best_approach['mean_sharpe']:.3f} vs {baseline_sharpe:.3f})"
         )
     else:
-        logger.info(f"\n⚠️  NO IMPROVEMENT: Best approach {best_approach.get('mean_sharpe', 0.0):.3f} ≤ baseline {baseline_sharpe:.3f}")
+        logger.info(
+            f"\n⚠️  NO IMPROVEMENT: Best approach {best_approach.get('mean_sharpe', 0.0):.3f} ≤ baseline {baseline_sharpe:.3f}"
+        )
 
     logger.info("\nValidation complete.")
 

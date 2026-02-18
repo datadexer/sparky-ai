@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from sparky.oversight.timeout import with_timeout, ExperimentTimeout
+from sparky.oversight.timeout import ExperimentTimeout, with_timeout
 
 
 class TestWithTimeout:
@@ -40,6 +40,7 @@ class TestWithTimeout:
 
     def test_restores_signal_handler(self):
         import signal
+
         original = signal.getsignal(signal.SIGALRM)
 
         @with_timeout(seconds=5)

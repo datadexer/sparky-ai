@@ -22,8 +22,6 @@ import numpy as np
 import pandas as pd
 
 from sparky.backtest.costs import TransactionCostModel
-from sparky.backtest.engine import WalkForwardBacktester
-from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.xgboost_model import XGBoostModel
 
@@ -61,6 +59,7 @@ def main():
 
     # Load prices for returns
     from sparky.data.storage import DataStore
+
     store = DataStore()
     prices_df, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
     prices = prices_df["close"].loc[common_index]
@@ -99,14 +98,14 @@ def main():
     logger.info(f"Holdout predictions: {predictions.sum()} longs / {len(predictions)} total ({predictions.mean():.1%})")
 
     # Log prediction distribution with counts
-    predictions_array = predictions.values if hasattr(predictions, 'values') else predictions
+    predictions_array = predictions.values if hasattr(predictions, "values") else predictions
     long_count = int((predictions_array == 1).sum())
     short_count = len(predictions_array) - long_count
     long_pct = long_count / len(predictions_array) * 100
 
-    logger.info(f"\nPrediction Distribution (Holdout Period):")
+    logger.info("\nPrediction Distribution (Holdout Period):")
     logger.info(f"  Long (1):  {long_count:4d} days ({long_pct:5.1f}%)")
-    logger.info(f"  Short (0): {short_count:4d} days ({100-long_pct:5.1f}%)")
+    logger.info(f"  Short (0): {short_count:4d} days ({100 - long_pct:5.1f}%)")
 
     # Compute holdout performance
     logger.info("\nComputing holdout performance...")
@@ -133,7 +132,7 @@ def main():
     baseline_dd = max_drawdown(baseline_equity)
     baseline_total_return = (baseline_equity.iloc[-1] - 1) * 100
 
-    logger.info(f"Baseline (BuyAndHold) on holdout:")
+    logger.info("Baseline (BuyAndHold) on holdout:")
     logger.info(f"  Sharpe: {baseline_sharpe:.4f}")
     logger.info(f"  Max DD: {baseline_dd:.2%}")
     logger.info(f"  Total Return: {baseline_total_return:.2f}%")
@@ -175,7 +174,7 @@ def main():
     logger.info(f"Holdout Sharpe (never seen): {holdout_sharpe:.4f}")
     logger.info(f"Delta: {delta:.4f}")
 
-    logger.info(f"\nCOMPARISON TO BASELINE (BuyAndHold on same holdout period):")
+    logger.info("\nCOMPARISON TO BASELINE (BuyAndHold on same holdout period):")
     logger.info(f"Baseline Sharpe (holdout): {baseline_sharpe:.4f}")
     logger.info(f"Model Sharpe (holdout): {holdout_sharpe:.4f}")
     logger.info(f"Delta: {holdout_sharpe - baseline_sharpe:+.4f}")
@@ -233,10 +232,11 @@ def main():
             "baseline_max_dd": float(baseline_dd),
             "baseline_total_return_pct": float(baseline_total_return),
             "model_vs_baseline_delta": float(holdout_sharpe - baseline_sharpe),
-        }
+        },
     }
 
     import json
+
     output_path = "results/experiments/holdout_validation_1year.json"
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
@@ -245,7 +245,7 @@ def main():
     # Append to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## VALIDATION 1: Holdout Test — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## VALIDATION 1: Holdout Test — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Configuration**: Technical-only (RSI, Momentum, EMA), 30d horizon, seed=0
 
@@ -265,7 +265,7 @@ def main():
 - Delta: {delta:.4f}
 
 **Verdict**: [{verdict}]
-{'✅ Holdout validates Phase 2-3 finding. Result appears GENUINE.' if verdict == 'PASS' else '❌ Holdout FAILS to replicate Phase 2-3. Result is OVERFITTING.' if verdict == 'FAIL' else '⚠️ Holdout shows degradation. Possible lucky split or marginal alpha.'}
+{"✅ Holdout validates Phase 2-3 finding. Result appears GENUINE." if verdict == "PASS" else "❌ Holdout FAILS to replicate Phase 2-3. Result is OVERFITTING." if verdict == "FAIL" else "⚠️ Holdout shows degradation. Possible lucky split or marginal alpha."}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:

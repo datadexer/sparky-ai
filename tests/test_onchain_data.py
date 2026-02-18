@@ -13,8 +13,7 @@ _onchain_dir = Path(__file__).parent.parent / "data" / "raw" / "onchain"
 _has_onchain_data = (_onchain_dir / "coinmetrics_btc_daily.parquet").exists()
 
 pytestmark = pytest.mark.skipif(
-    not _has_onchain_data,
-    reason="On-chain data files not available (requires local data files)"
+    not _has_onchain_data, reason="On-chain data files not available (requires local data files)"
 )
 
 

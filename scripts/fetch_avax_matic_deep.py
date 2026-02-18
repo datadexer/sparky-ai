@@ -6,11 +6,12 @@ Using aggressive pagination with multiple exchanges.
 """
 
 import logging
-from pathlib import Path
-import pandas as pd
-import ccxt
-from datetime import datetime, timezone, timedelta
 import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import ccxt
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,30 +62,31 @@ def try_historical_fetch_backwards(
 
                 if batch % 10 == 0 and all_candles:
                     oldest_date = datetime.fromtimestamp(min(c[0] for c in all_candles) / 1000, tz=timezone.utc)
-                    logger.info(f"  {asset_name}: batch {batch}, {len(all_candles):,} candles, oldest: {oldest_date.date()}")
+                    logger.info(
+                        f"  {asset_name}: batch {batch}, {len(all_candles):,} candles, oldest: {oldest_date.date()}"
+                    )
 
                 # If we keep getting the same data, this exchange doesn't support deep history
                 if batch > 5 and len(all_candles) < 2000:
                     logger.info(f"  {asset_name}: {exchange_id} only provides recent data ({len(all_candles)} candles)")
                     break
 
-                time.sleep(ex.rateLimit / 1000 if hasattr(ex, 'rateLimit') else 1)
+                time.sleep(ex.rateLimit / 1000 if hasattr(ex, "rateLimit") else 1)
 
             except Exception as e:
                 logger.debug(f"  Batch {batch} error: {e}")
                 break
 
         if all_candles:
-            df = pd.DataFrame(
-                all_candles,
-                columns=["timestamp", "open", "high", "low", "close", "volume"]
-            )
+            df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
             df = df.set_index("timestamp")
             df = df[~df.index.duplicated(keep="last")]
             df = df.sort_index()
 
-            logger.info(f"  {asset_name}: {exchange_id}/{symbol} yielded {len(df):,} candles from {df.index.min().date()} to {df.index.max().date()}")
+            logger.info(
+                f"  {asset_name}: {exchange_id}/{symbol} yielded {len(df):,} candles from {df.index.min().date()} to {df.index.max().date()}"
+            )
             return df
 
     except Exception as e:
@@ -135,9 +137,9 @@ def main():
     ]
 
     for asset in assets:
-        logger.info(f"\n{'='*80}")
+        logger.info(f"\n{'=' * 80}")
         logger.info(f"FETCHING {asset['name'].upper()}")
-        logger.info(f"{'='*80}")
+        logger.info(f"{'=' * 80}")
 
         # Try aggressive fetch
         df_new = aggressive_fetch(asset["name"], asset["symbols"], asset["start"])
@@ -162,7 +164,9 @@ def main():
             output_path.parent.mkdir(parents=True, exist_ok=True)
             df_combined.to_parquet(output_path)
 
-            logger.info(f"  FINAL: {len(df_combined):,} rows from {df_combined.index.min().date()} to {df_combined.index.max().date()}")
+            logger.info(
+                f"  FINAL: {len(df_combined):,} rows from {df_combined.index.min().date()} to {df_combined.index.max().date()}"
+            )
             logger.info(f"  Saved to {output_path}")
         else:
             logger.warning(f"  No data available for {asset['name']}")

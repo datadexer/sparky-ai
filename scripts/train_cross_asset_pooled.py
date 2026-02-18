@@ -42,32 +42,32 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import TimeSeriesSplit
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from sparky.features.technical import rsi, ema, macd, momentum
-from sparky.features.returns import simple_returns
 from sparky.features.advanced import (
+    atr,
     bollinger_bandwidth,
     bollinger_position,
-    atr,
-    intraday_range,
-    volume_momentum,
-    volume_ma_ratio,
-    vwap_deviation,
-    higher_highs_lower_lows,
-    volatility_clustering,
-    price_distance_from_sma,
-    momentum_quality,
-    session_hour,
     day_of_week,
+    higher_highs_lower_lows,
+    intraday_range,
+    momentum_quality,
     price_acceleration,
+    price_distance_from_sma,
+    session_hour,
+    volatility_clustering,
+    volume_ma_ratio,
+    volume_momentum,
+    vwap_deviation,
 )
+from sparky.features.returns import simple_returns
+from sparky.features.technical import ema, macd, momentum, rsi
 
-warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -303,11 +303,11 @@ def create_splits(X: pd.DataFrame, y: pd.Series):
 
     # Asset distribution per split
     logger.info("\nTrain asset distribution:")
-    logger.info(splits['X_train']['asset_id'].value_counts().to_string())
+    logger.info(splits["X_train"]["asset_id"].value_counts().to_string())
     logger.info("\nValidation asset distribution:")
-    logger.info(splits['X_val']['asset_id'].value_counts().to_string())
+    logger.info(splits["X_val"]["asset_id"].value_counts().to_string())
     logger.info("\nTest asset distribution:")
-    logger.info(splits['X_test']['asset_id'].value_counts().to_string())
+    logger.info(splits["X_test"]["asset_id"].value_counts().to_string())
 
     return splits
 
@@ -342,7 +342,7 @@ def train_model(X_train, y_train, seed=42):
         rsm=0.8,  # colsample_bylevel
         l2_leaf_reg=3.0,  # Updated from multiseed experiments
         random_seed=seed,
-        cat_features=['asset_id'],  # Categorical feature
+        cat_features=["asset_id"],  # Categorical feature
         verbose=0,
         task_type="GPU",
         devices="0",
@@ -425,12 +425,14 @@ def multiseed_validation(X_train, y_train, X_val, y_val, X_test, y_test, X_holdo
         test_metrics, _ = evaluate_model(model, X_test, y_test, f"test_seed{seed}")
         holdout_metrics, _ = evaluate_model(model, X_holdout, y_holdout, f"holdout_seed{seed}")
 
-        results.append({
-            "seed": seed,
-            "val_auc": val_metrics[f"val_seed{seed}_roc_auc"],
-            "test_auc": test_metrics[f"test_seed{seed}_roc_auc"],
-            "holdout_auc": holdout_metrics[f"holdout_seed{seed}_roc_auc"],
-        })
+        results.append(
+            {
+                "seed": seed,
+                "val_auc": val_metrics[f"val_seed{seed}_roc_auc"],
+                "test_auc": test_metrics[f"test_seed{seed}_roc_auc"],
+                "holdout_auc": holdout_metrics[f"holdout_seed{seed}_roc_auc"],
+            }
+        )
 
     # Compute statistics
     val_aucs = [r["val_auc"] for r in results]
@@ -454,7 +456,9 @@ def multiseed_validation(X_train, y_train, X_val, y_val, X_test, y_test, X_holdo
     logger.info(f"Validation AUC: {stats['val_auc_mean']:.4f} ± {stats['val_auc_std']:.4f}")
     logger.info(f"Test AUC: {stats['test_auc_mean']:.4f} ± {stats['test_auc_std']:.4f}")
     logger.info(f"Holdout AUC: {stats['holdout_auc_mean']:.4f} ± {stats['holdout_auc_std']:.4f}")
-    logger.info(f"Stability check: std(holdout_auc) = {stats['holdout_auc_std']:.4f} {'PASS' if stats['holdout_auc_std'] < 0.01 else 'FAIL'} (threshold < 0.01)")
+    logger.info(
+        f"Stability check: std(holdout_auc) = {stats['holdout_auc_std']:.4f} {'PASS' if stats['holdout_auc_std'] < 0.01 else 'FAIL'} (threshold < 0.01)"
+    )
 
     return stats
 
@@ -504,14 +508,16 @@ def walk_forward_validation(X, y):
         # Evaluate
         test_metrics, _ = evaluate_model(model, X_test_fold, y_test_fold, f"fold{fold_idx}")
 
-        fold_results.append({
-            "fold": fold_idx,
-            "train_start": X_train_fold.index.min().strftime("%Y-%m-%d"),
-            "train_end": X_train_fold.index.max().strftime("%Y-%m-%d"),
-            "test_start": X_test_fold.index.min().strftime("%Y-%m-%d"),
-            "test_end": X_test_fold.index.max().strftime("%Y-%m-%d"),
-            "test_auc": test_metrics[f"fold{fold_idx}_roc_auc"],
-        })
+        fold_results.append(
+            {
+                "fold": fold_idx,
+                "train_start": X_train_fold.index.min().strftime("%Y-%m-%d"),
+                "train_end": X_train_fold.index.max().strftime("%Y-%m-%d"),
+                "test_start": X_test_fold.index.min().strftime("%Y-%m-%d"),
+                "test_end": X_test_fold.index.max().strftime("%Y-%m-%d"),
+                "test_auc": test_metrics[f"fold{fold_idx}_roc_auc"],
+            }
+        )
 
     # Compute statistics
     test_aucs = [r["test_auc"] for r in fold_results]
@@ -608,7 +614,7 @@ def save_results(all_results: dict):
 
     results_path = results_dir / "phase1_results.json"
 
-    with open(results_path, 'w') as f:
+    with open(results_path, "w") as f:
         json.dump(all_results, f, indent=2)
 
     logger.info(f"\nResults saved to {results_path}")
@@ -633,23 +639,27 @@ def print_final_summary(all_results: dict):
 
     delta_auc = holdout_auc - baseline_auc
 
-    logger.info(f"\nBASELINE (BTC-only CatBoost):")
+    logger.info("\nBASELINE (BTC-only CatBoost):")
     logger.info(f"  Holdout AUC: {baseline_auc:.4f}")
 
-    logger.info(f"\nCROSS-ASSET POOLED (6 assets):")
+    logger.info("\nCROSS-ASSET POOLED (6 assets):")
     logger.info(f"  Training samples: {all_results['training_samples']:,}")
-    logger.info(f"  Validation AUC: {all_results['multiseed']['val_auc_mean']:.4f} ± {all_results['multiseed']['val_auc_std']:.4f}")
-    logger.info(f"  Test AUC: {all_results['multiseed']['test_auc_mean']:.4f} ± {all_results['multiseed']['test_auc_std']:.4f}")
+    logger.info(
+        f"  Validation AUC: {all_results['multiseed']['val_auc_mean']:.4f} ± {all_results['multiseed']['val_auc_std']:.4f}"
+    )
+    logger.info(
+        f"  Test AUC: {all_results['multiseed']['test_auc_mean']:.4f} ± {all_results['multiseed']['test_auc_std']:.4f}"
+    )
     logger.info(f"  Holdout AUC: {holdout_auc:.4f} ± {holdout_std:.4f}")
     logger.info(f"  Delta from baseline: {delta_auc:+.4f} ({delta_auc / baseline_auc * 100:+.2f}%)")
 
-    logger.info(f"\nVALIDATION CHECKS:")
+    logger.info("\nVALIDATION CHECKS:")
     logger.info(f"  Multi-seed stability: {holdout_std:.4f} {'PASS' if holdout_std < 0.01 else 'FAIL'} (std < 0.01)")
     logger.info(f"  Walk-forward mean AUC: {all_results['walk_forward']['mean_auc']:.4f}")
     logger.info(f"  Leakage check: {'PASS' if not all_results['leakage_check']['leakage_detected'] else 'FAIL'}")
 
-    logger.info(f"\nFEATURE IMPORTANCE:")
-    top_5 = list(all_results['feature_importances'].items())[:5]
+    logger.info("\nFEATURE IMPORTANCE:")
+    top_5 = list(all_results["feature_importances"].items())[:5]
     for idx, (feat, imp) in enumerate(top_5, 1):
         logger.info(f"  {idx}. {feat}: {imp:.4f}")
 
@@ -692,10 +702,14 @@ def main():
 
     # 3. Multi-seed stability validation
     multiseed_results = multiseed_validation(
-        splits["X_train"], splits["y_train"],
-        splits["X_val"], splits["y_val"],
-        splits["X_test"], splits["y_test"],
-        splits["X_holdout"], splits["y_holdout"],
+        splits["X_train"],
+        splits["y_train"],
+        splits["X_val"],
+        splits["y_val"],
+        splits["X_test"],
+        splits["y_test"],
+        splits["X_holdout"],
+        splits["y_holdout"],
     )
 
     # 4. Walk-forward validation

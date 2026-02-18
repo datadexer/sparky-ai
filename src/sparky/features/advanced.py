@@ -169,9 +169,7 @@ def volume_ma_ratio(volume: pd.Series, period: int = 20) -> pd.Series:
     return volume / vol_ma
 
 
-def vwap_deviation(
-    high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, period: int = 24
-) -> pd.Series:
+def vwap_deviation(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, period: int = 24) -> pd.Series:
     """Compute price deviation from VWAP (Volume Weighted Average Price).
 
     Formula:
@@ -434,7 +432,10 @@ def money_flow_index(
 
 
 def vwap_multi_period(
-    high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series,
+    high: pd.Series,
+    low: pd.Series,
+    close: pd.Series,
+    volume: pd.Series,
     periods: list[int] | None = None,
 ) -> pd.DataFrame:
     """Compute VWAP deviation at multiple periods.
@@ -458,9 +459,7 @@ def vwap_multi_period(
 # === CROSS-TIMEFRAME AGGREGATION FEATURES ===
 
 
-def cross_timeframe_features(
-    close: pd.Series, volume: pd.Series, windows: list[int] | None = None
-) -> pd.DataFrame:
+def cross_timeframe_features(close: pd.Series, volume: pd.Series, windows: list[int] | None = None) -> pd.DataFrame:
     """Compute features aggregated at multiple timeframe windows.
 
     Generates rolling mean return, volatility, and volume ratio for each window.
@@ -497,9 +496,7 @@ def cross_timeframe_features(
 # === LAG FEATURES ===
 
 
-def lag_features(
-    close: pd.Series, lags: list[int] | None = None
-) -> pd.DataFrame:
+def lag_features(close: pd.Series, lags: list[int] | None = None) -> pd.DataFrame:
     """Compute lagged return features at multiple horizons.
 
     Each lag captures return over [t-lag, t], providing the model with
@@ -521,9 +518,7 @@ def lag_features(
     return result
 
 
-def lag_features_daily(
-    close_daily: pd.Series, lags: list[int] | None = None
-) -> pd.DataFrame:
+def lag_features_daily(close_daily: pd.Series, lags: list[int] | None = None) -> pd.DataFrame:
     """Compute lagged return features on daily data.
 
     Args:
@@ -538,7 +533,5 @@ def lag_features_daily(
 
     result = pd.DataFrame(index=close_daily.index)
     for lag in lags:
-        result[f"daily_ret_lag_{lag}d"] = (
-            (close_daily - close_daily.shift(lag)) / close_daily.shift(lag)
-        )
+        result[f"daily_ret_lag_{lag}d"] = (close_daily - close_daily.shift(lag)) / close_daily.shift(lag)
     return result

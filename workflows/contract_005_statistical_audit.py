@@ -98,7 +98,9 @@ def build_workflow() -> Workflow:
                 "- Write the augmented findings to `results/contract_005_audit.md`\n\n"
                 "The file `results/contract_005_audit.md` MUST exist when this step completes.\n"
                 "Log this audit run to wandb with tags=['contract_005', 'audit']."
-                + TAG_REMINDER + METRICS_REMINDER + " Step tag: 'audit'."
+                + TAG_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'audit'."
             ),
             done_when=_audit_done,
             max_duration_minutes=60,
@@ -172,7 +174,9 @@ def build_workflow() -> Workflow:
                 "Log validation results to wandb with tags=['contract_005', 'validation'].\n"
                 "Use `tracker.log_experiment()` for each validated config.\n"
                 "The file `results/contract_005_validation.md` MUST exist when this step completes."
-                + TAG_REMINDER + METRICS_REMINDER + " Step tag: 'validation'."
+                + TAG_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'validation'."
             ),
             done_when=_validation_done,
             max_duration_minutes=90,
@@ -227,7 +231,9 @@ def build_workflow() -> Workflow:
                 "- 'PIVOT STRATEGY: [new approach] because [reason]'\n\n"
                 "Log the summary to wandb with tags=['contract_005', 'summary'].\n"
                 "The file `results/contract_005_summary.md` MUST exist when this step completes."
-                + TAG_REMINDER + METRICS_REMINDER + " Step tag: 'summary'."
+                + TAG_REMINDER
+                + METRICS_REMINDER
+                + " Step tag: 'summary'."
             ),
             done_when=_summary_done,
             max_duration_minutes=30,

@@ -25,20 +25,19 @@ Target:
 """
 
 import logging
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 try:
     from hmmlearn import hmm as hmmlearn_hmm
+
     HMM_AVAILABLE = True
 except ImportError:
     HMM_AVAILABLE = False
-    logger.warning(
-        "hmmlearn not installed. HMM regime detection unavailable. "
-        "Install with: pip install hmmlearn"
-    )
+    logger.warning("hmmlearn not installed. HMM regime detection unavailable. Install with: pip install hmmlearn")
 
 
 def train_hmm_regime_model(
@@ -63,9 +62,7 @@ def train_hmm_regime_model(
         - state_probs: DataFrame with P(state_i) for each state
     """
     if not HMM_AVAILABLE:
-        raise ImportError(
-            "hmmlearn not installed. Install with: pip install hmmlearn"
-        )
+        raise ImportError("hmmlearn not installed. Install with: pip install hmmlearn")
 
     # Compute features: returns and realized volatility
     returns = prices.pct_change()
@@ -106,10 +103,13 @@ def train_hmm_regime_model(
     state_probs.loc[valid_mask, :] = state_probs_clean
 
     # Create features DataFrame
-    features_df = pd.DataFrame({
-        "returns": returns,
-        "realized_vol": realized_vol,
-    }, index=prices.index)
+    features_df = pd.DataFrame(
+        {
+            "returns": returns,
+            "realized_vol": realized_vol,
+        },
+        index=prices.index,
+    )
 
     # Log model statistics
     logger.info(f"Trained {n_states}-state HMM with {n_iter} iterations")
@@ -118,15 +118,12 @@ def train_hmm_regime_model(
 
     # Analyze state characteristics
     for state in range(n_states):
-        state_mask = (hidden_states == state)
+        state_mask = hidden_states == state
         n_days = state_mask.sum()
         pct_days = n_days / len(hidden_states) * 100
         mean_vol = realized_vol[state_mask].mean()
 
-        logger.info(
-            f"State {state}: {n_days} days ({pct_days:.1f}%), "
-            f"mean vol={mean_vol:.3f}"
-        )
+        logger.info(f"State {state}: {n_days} days ({pct_days:.1f}%), mean vol={mean_vol:.3f}")
 
     # Log transition probabilities
     logger.info("Transition probabilities (rows=current, cols=next):")
@@ -194,12 +191,12 @@ def hmm_regime_donchian(
 
         # Compute Donchian channels with regime-specific periods
         if i >= entry_period:
-            upper_channel = prices.iloc[i - entry_period:i].max()
+            upper_channel = prices.iloc[i - entry_period : i].max()
         else:
             upper_channel = prices.iloc[:i].max()
 
         if i >= exit_period:
-            lower_channel = prices.iloc[i - exit_period:i].min()
+            lower_channel = prices.iloc[i - exit_period : i].min()
         else:
             lower_channel = prices.iloc[:i].min()
 
@@ -224,8 +221,8 @@ def hmm_regime_donchian(
     n_total = len(signals)
 
     logger.info(
-        f"HMM Regime Donchian ({n_states}-state): {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"HMM Regime Donchian ({n_states}-state): {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return signals
@@ -269,10 +266,7 @@ def hmm_probabilistic_ensemble(
         prob_low_vol = state_probs["P(state_0)"]
         prob_high_vol = state_probs["P(state_1)"]
 
-        weighted_signal = (
-            prob_low_vol * signals_aggressive +
-            prob_high_vol * signals_conservative
-        )
+        weighted_signal = prob_low_vol * signals_aggressive + prob_high_vol * signals_conservative
 
     elif n_states == 3:
         # 3-state: add standard strategy (state 1)
@@ -283,9 +277,9 @@ def hmm_probabilistic_ensemble(
         prob_high_vol = state_probs["P(state_2)"]
 
         weighted_signal = (
-            prob_low_vol * signals_aggressive +
-            prob_medium_vol * signals_standard +
-            prob_high_vol * signals_conservative
+            prob_low_vol * signals_aggressive
+            + prob_medium_vol * signals_standard
+            + prob_high_vol * signals_conservative
         )
 
     else:
@@ -298,8 +292,8 @@ def hmm_probabilistic_ensemble(
     n_total = len(final_signals)
 
     logger.info(
-        f"HMM Probabilistic Ensemble ({n_states}-state): {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"HMM Probabilistic Ensemble ({n_states}-state): {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return final_signals
@@ -326,14 +320,14 @@ def visualize_hmm_regimes(
     fig, ax = plt.subplots(figsize=(14, 6))
 
     # Plot prices
-    ax.plot(prices.index, prices.values, color='black', linewidth=1, label='BTC Price')
+    ax.plot(prices.index, prices.values, color="black", linewidth=1, label="BTC Price")
 
     # Color background by regime
     unique_states = sorted(hidden_states.unique())
-    colors = ['lightgreen', 'yellow', 'lightcoral']  # LOW, MEDIUM, HIGH
+    colors = ["lightgreen", "yellow", "lightcoral"]  # LOW, MEDIUM, HIGH
 
     for state in unique_states:
-        state_mask = (hidden_states == state)
+        state_mask = hidden_states == state
         ax.fill_between(
             prices.index,
             prices.min(),
@@ -341,17 +335,17 @@ def visualize_hmm_regimes(
             where=state_mask,
             color=colors[state],
             alpha=0.3,
-            label=f'State {state}',
+            label=f"State {state}",
         )
 
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Price (USD)')
-    ax.set_title('HMM-Detected Regimes Overlaid on BTC Price')
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price (USD)")
+    ax.set_title("HMM-Detected Regimes Overlaid on BTC Price")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved HMM regime visualization to {output_path}")
 
     plt.show()

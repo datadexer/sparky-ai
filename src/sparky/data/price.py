@@ -5,7 +5,6 @@ Handles pagination, validation, and rate limiting.
 """
 
 import logging
-import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -55,25 +54,14 @@ class CCXTPriceFetcher:
             DataFrame with DatetimeIndex (UTC) and columns:
             open, high, low, close, volume, quote_volume.
         """
-        start_ts = int(
-            datetime.strptime(start_date, "%Y-%m-%d")
-            .replace(tzinfo=timezone.utc)
-            .timestamp()
-            * 1000
-        )
+        start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
         if end_date:
-            end_ts = int(
-                datetime.strptime(end_date, "%Y-%m-%d")
-                .replace(tzinfo=timezone.utc)
-                .timestamp()
-                * 1000
-            )
+            end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
         else:
             end_ts = int(datetime.now(timezone.utc).timestamp() * 1000)
 
         logger.info(
-            f"[DATA] Fetching {symbol} daily OHLCV from {self.exchange_id} "
-            f"({start_date} to {end_date or 'now'})"
+            f"[DATA] Fetching {symbol} daily OHLCV from {self.exchange_id} ({start_date} to {end_date or 'now'})"
         )
 
         all_candles = self._fetch_with_failover(symbol, start_ts, end_ts)
@@ -86,14 +74,11 @@ class CCXTPriceFetcher:
         df = self._validate(df, symbol)
 
         logger.info(
-            f"[DATA] Fetched {len(df)} daily candles for {symbol} "
-            f"({df.index.min().date()} to {df.index.max().date()})"
+            f"[DATA] Fetched {len(df)} daily candles for {symbol} ({df.index.min().date()} to {df.index.max().date()})"
         )
         return df
 
-    def _fetch_with_failover(
-        self, symbol: str, start_ts: int, end_ts: int
-    ) -> list:
+    def _fetch_with_failover(self, symbol: str, start_ts: int, end_ts: int) -> list:
         """Fetch candles, falling back to alternative exchanges on failure."""
         exchanges = [self.exchange_id] + self.FAILOVER_EXCHANGES
         original_exchange = self.exchange
@@ -118,17 +103,13 @@ class CCXTPriceFetcher:
         logger.error(f"[DATA] All exchanges failed for {symbol}")
         return []
 
-    def _paginated_fetch(
-        self, symbol: str, start_ts: int, end_ts: int
-    ) -> list:
+    def _paginated_fetch(self, symbol: str, start_ts: int, end_ts: int) -> list:
         """Fetch all candles via pagination (CCXT limit per request)."""
         all_candles = []
         since = start_ts
 
         while since < end_ts:
-            candles = self.exchange.fetch_ohlcv(
-                symbol, "1d", since=since, limit=MAX_CANDLES_PER_REQUEST
-            )
+            candles = self.exchange.fetch_ohlcv(symbol, "1d", since=since, limit=MAX_CANDLES_PER_REQUEST)
 
             if not candles:
                 break
@@ -148,9 +129,7 @@ class CCXTPriceFetcher:
 
         CCXT format: [timestamp_ms, open, high, low, close, volume]
         """
-        df = pd.DataFrame(
-            candles, columns=["timestamp", "open", "high", "low", "close", "volume"]
-        )
+        df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
         df = df.set_index("timestamp")
         df = df[~df.index.duplicated(keep="last")]
@@ -166,26 +145,20 @@ class CCXTPriceFetcher:
         before = len(df)
         df = df[~df.index.duplicated(keep="last")]
         if len(df) < before:
-            logger.warning(
-                f"[DATA] Removed {before - len(df)} duplicate timestamps for {symbol}"
-            )
+            logger.warning(f"[DATA] Removed {before - len(df)} duplicate timestamps for {symbol}")
 
         # Validate prices
         price_cols = ["open", "high", "low", "close"]
         for col in price_cols:
             invalid = df[col] <= 0
             if invalid.any():
-                logger.warning(
-                    f"[DATA] {invalid.sum()} non-positive {col} values for {symbol}"
-                )
+                logger.warning(f"[DATA] {invalid.sum()} non-positive {col} values for {symbol}")
                 df = df[~invalid]
 
         # Validate volume
         invalid_vol = df["volume"] < 0
         if invalid_vol.any():
-            logger.warning(
-                f"[DATA] {invalid_vol.sum()} negative volume values for {symbol}"
-            )
+            logger.warning(f"[DATA] {invalid_vol.sum()} negative volume values for {symbol}")
             df = df[~invalid_vol]
 
         return df

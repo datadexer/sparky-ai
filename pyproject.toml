@@ -20,14 +20,19 @@ dependencies = [
     "pyyaml>=6.0",
     "optuna>=4.0",
     "psutil>=6.0",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-timeout>=2.0",
     "ruff>=0.4",
     "pyright>=1.1",
+    "pre-commit>=3.0",
+    "bandit>=1.7",
+    "bandit[toml]>=1.7",
 ]
 
 [build-system]
@@ -40,3 +45,36 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "S",    # bandit security rules
+    "B",    # bugbear (common bugs)
+]
+ignore = [
+    "E501",   # line length (let formatter handle)
+    "S101",   # assert usage (OK in non-test code too for guardrails)
+    "S311",   # random (OK for non-crypto randomness in research)
+    "S603",   # subprocess call - check for untrusted input (too noisy)
+    "S607",   # start process with partial path (too noisy)
+    "B905",   # zip() without strict= (too noisy for research code)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S106", "S105", "E402", "F841", "B007", "B023"]
+"scripts/*" = ["S101", "E402", "S105", "S106", "F841", "B007", "B023", "S110", "S112", "S324", "E702", "I001", "E741"]
+"scripts/sparky" = ["S101", "E402", "S105", "S106", "S605", "S606", "E741"]
+"scripts/sweep_two_stage.py" = ["F811", "F541"]
+"validate_*.py" = ["F401", "F841", "E402", "S101"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]

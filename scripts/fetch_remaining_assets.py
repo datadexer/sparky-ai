@@ -9,11 +9,12 @@ This script tries multiple approaches to get complete data for:
 """
 
 import logging
-from pathlib import Path
-import pandas as pd
-import ccxt
-from datetime import datetime, timezone
 import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import ccxt
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,18 +57,8 @@ def fetch_recent_data(
 ) -> pd.DataFrame:
     """Fetch recent data using Kraken-first strategy (last 720 candles)."""
 
-    start_ts = int(
-        datetime.strptime(start_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    end_ts = int(
-        datetime.strptime(end_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
+    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+    end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     # For recent data, Kraken is reliable (no 'since' but gives last 720 hours)
     for ex_id in exchanges:
@@ -86,12 +77,11 @@ def fetch_recent_data(
                 if candles and len(candles) > 100:
                     first_date = datetime.fromtimestamp(candles[0][0] / 1000, tz=timezone.utc)
                     last_date = datetime.fromtimestamp(candles[-1][0] / 1000, tz=timezone.utc)
-                    logger.info(f"  {asset_name}: SUCCESS with {ex_id}/{sym} - {len(candles)} candles from {first_date.date()} to {last_date.date()}")
-
-                    df = pd.DataFrame(
-                        candles,
-                        columns=["timestamp", "open", "high", "low", "close", "volume"]
+                    logger.info(
+                        f"  {asset_name}: SUCCESS with {ex_id}/{sym} - {len(candles)} candles from {first_date.date()} to {last_date.date()}"
                     )
+
+                    df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
                     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
                     df = df.set_index("timestamp")
                     df = df[~df.index.duplicated(keep="last")]
@@ -115,18 +105,8 @@ def fetch_full_history(
 ) -> pd.DataFrame:
     """Fetch full historical data with pagination."""
 
-    start_ts = int(
-        datetime.strptime(start_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
-    end_ts = int(
-        datetime.strptime(end_date, "%Y-%m-%d")
-        .replace(tzinfo=timezone.utc)
-        .timestamp()
-        * 1000
-    )
+    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+    end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     # Try exchanges that support 'since' parameter
     for ex_id in exchanges:
@@ -174,7 +154,9 @@ def fetch_full_history(
 
                             if batch_num % 20 == 0:
                                 current_date = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
-                                logger.info(f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles (current: {current_date.date()})")
+                                logger.info(
+                                    f"  {asset_name}: batch {batch_num}, {len(all_candles):,} candles (current: {current_date.date()})"
+                                )
 
                             last_ts = candles[-1][0]
                             if last_ts <= since:
@@ -190,10 +172,7 @@ def fetch_full_history(
                     if all_candles:
                         logger.info(f"  {asset_name}: SUCCESS with {ex_id}/{sym} - {len(all_candles)} candles")
 
-                        df = pd.DataFrame(
-                            all_candles,
-                            columns=["timestamp", "open", "high", "low", "close", "volume"]
-                        )
+                        df = pd.DataFrame(all_candles, columns=["timestamp", "open", "high", "low", "close", "volume"])
                         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
                         df = df.set_index("timestamp")
                         df = df[~df.index.duplicated(keep="last")]
@@ -218,9 +197,9 @@ def main():
     results = []
 
     for asset_name, config in EXCHANGE_CONFIGS.items():
-        logger.info(f"\n{'='*80}")
+        logger.info(f"\n{'=' * 80}")
         logger.info(f"FETCHING {asset_name.upper()}")
-        logger.info(f"{'='*80}")
+        logger.info(f"{'=' * 80}")
 
         symbols = config["symbols"]
         start_date = config["start"]
@@ -231,7 +210,9 @@ def main():
         existing_df = None
         if existing_path.exists():
             existing_df = pd.read_parquet(existing_path)
-            logger.info(f"  Existing data: {len(existing_df)} rows from {existing_df.index.min().date()} to {existing_df.index.max().date()}")
+            logger.info(
+                f"  Existing data: {len(existing_df)} rows from {existing_df.index.min().date()} to {existing_df.index.max().date()}"
+            )
 
         # Strategy 1: Try full historical fetch
         df_historical = fetch_full_history(asset_name, symbols, exchanges, start_date)
@@ -265,7 +246,9 @@ def main():
                 logger.warning(f"  {asset_name}: {invalid.sum()} invalid {col} values (removing)")
                 df_final = df_final[~invalid]
 
-        logger.info(f"  {asset_name}: Final dataset: {len(df_final):,} rows from {df_final.index.min().date()} to {df_final.index.max().date()}")
+        logger.info(
+            f"  {asset_name}: Final dataset: {len(df_final):,} rows from {df_final.index.min().date()} to {df_final.index.max().date()}"
+        )
 
         # Save
         output_path = Path(f"data/raw/{asset_name}/ohlcv_hourly.parquet")
@@ -273,13 +256,15 @@ def main():
         df_final.to_parquet(output_path)
         logger.info(f"  Saved to {output_path}")
 
-        results.append({
-            "asset": asset_name,
-            "rows": len(df_final),
-            "start_date": df_final.index.min(),
-            "end_date": df_final.index.max(),
-            "path": str(output_path),
-        })
+        results.append(
+            {
+                "asset": asset_name,
+                "rows": len(df_final),
+                "start_date": df_final.index.min(),
+                "end_date": df_final.index.max(),
+                "path": str(output_path),
+            }
+        )
 
         time.sleep(5)  # Rate limit between assets
 

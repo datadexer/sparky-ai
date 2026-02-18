@@ -27,10 +27,9 @@ Target:
 """
 
 import logging
-import pandas as pd
-import numpy as np
 
-from sparky.models.simple_baselines import donchian_channel_strategy
+import pandas as pd
+
 from sparky.features.regime_indicators import compute_volatility_regime
 
 logger = logging.getLogger(__name__)
@@ -89,12 +88,12 @@ def markov_switching_donchian(
 
         # Compute Donchian channels with regime-specific periods
         if i >= entry_period:
-            upper_channel = prices.iloc[i - entry_period:i].max()
+            upper_channel = prices.iloc[i - entry_period : i].max()
         else:
             upper_channel = prices.iloc[:i].max()
 
         if i >= exit_period:
-            lower_channel = prices.iloc[i - exit_period:i].min()
+            lower_channel = prices.iloc[i - exit_period : i].min()
         else:
             lower_channel = prices.iloc[:i].min()
 
@@ -125,14 +124,14 @@ def markov_switching_donchian(
     n_high = (regime == "high").sum()
 
     logger.info(
-        f"Markov-Switching Donchian: {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Markov-Switching Donchian: {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
     logger.info(
         f"Regime distribution: "
-        f"LOW={n_low} ({n_low/n_total*100:.1f}%, params={aggressive_params}), "
-        f"MEDIUM={n_medium} ({n_medium/n_total*100:.1f}%, params={standard_params}), "
-        f"HIGH={n_high} ({n_high/n_total*100:.1f}%, params={conservative_params})"
+        f"LOW={n_low} ({n_low / n_total * 100:.1f}%, params={aggressive_params}), "
+        f"MEDIUM={n_medium} ({n_medium / n_total * 100:.1f}%, params={standard_params}), "
+        f"HIGH={n_high} ({n_high / n_total * 100:.1f}%, params={conservative_params})"
     )
 
     return signals
@@ -201,8 +200,8 @@ def markov_switching_ensemble(
 
         # Short timeframe
         if i >= short_entry:
-            upper_short = prices.iloc[i - short_entry:i].max()
-            lower_short = prices.iloc[i - short_exit:i].min() if i >= short_exit else prices.iloc[:i].min()
+            upper_short = prices.iloc[i - short_entry : i].max()
+            lower_short = prices.iloc[i - short_exit : i].min() if i >= short_exit else prices.iloc[:i].min()
 
             if not in_position_short:
                 if i > 0 and current_price >= upper_short:
@@ -219,8 +218,8 @@ def markov_switching_ensemble(
 
         # Medium timeframe
         if i >= medium_entry:
-            upper_medium = prices.iloc[i - medium_entry:i].max()
-            lower_medium = prices.iloc[i - medium_exit:i].min() if i >= medium_exit else prices.iloc[:i].min()
+            upper_medium = prices.iloc[i - medium_entry : i].max()
+            lower_medium = prices.iloc[i - medium_exit : i].min() if i >= medium_exit else prices.iloc[:i].min()
 
             if not in_position_medium:
                 if i > 0 and current_price >= upper_medium:
@@ -237,8 +236,8 @@ def markov_switching_ensemble(
 
         # Long timeframe
         if i >= long_entry:
-            upper_long = prices.iloc[i - long_entry:i].max()
-            lower_long = prices.iloc[i - long_exit:i].min() if i >= long_exit else prices.iloc[:i].min()
+            upper_long = prices.iloc[i - long_entry : i].max()
+            lower_long = prices.iloc[i - long_exit : i].min() if i >= long_exit else prices.iloc[:i].min()
 
             if not in_position_long:
                 if i > 0 and current_price >= upper_long:
@@ -261,8 +260,8 @@ def markov_switching_ensemble(
     n_total = len(ensemble)
 
     logger.info(
-        f"Markov-Switching Ensemble: {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Markov-Switching Ensemble: {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return ensemble
@@ -289,9 +288,15 @@ def regime_transition_probability(
     """
     # Count transitions
     transitions = {
-        ("low", "low"): 0, ("low", "medium"): 0, ("low", "high"): 0,
-        ("medium", "low"): 0, ("medium", "medium"): 0, ("medium", "high"): 0,
-        ("high", "low"): 0, ("high", "medium"): 0, ("high", "high"): 0,
+        ("low", "low"): 0,
+        ("low", "medium"): 0,
+        ("low", "high"): 0,
+        ("medium", "low"): 0,
+        ("medium", "medium"): 0,
+        ("medium", "high"): 0,
+        ("high", "low"): 0,
+        ("high", "medium"): 0,
+        ("high", "high"): 0,
     }
 
     for i in range(len(regime_history) - 1):
@@ -315,7 +320,7 @@ def regime_transition_probability(
                 transition_matrix.loc[current_state, next_state] = transitions[(current_state, next_state)] / total
         else:
             # No transitions observed, assume uniform
-            transition_matrix.loc[current_state, :] = 1/3
+            transition_matrix.loc[current_state, :] = 1 / 3
 
     logger.info("Markov Transition Probabilities:")
     logger.info(f"\n{transition_matrix}")

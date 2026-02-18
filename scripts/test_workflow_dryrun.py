@@ -14,20 +14,18 @@ import json
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from sparky.workflow.engine import Workflow, WorkflowState
+from sparky.workflow.engine import WorkflowState
 from sparky.workflow.telemetry import SessionTelemetry
 
 
 def load_contract_005_module():
     """Load the real contract 005 workflow module (for patching _RESULTS_DIR)."""
-    spec = importlib.util.spec_from_file_location(
-        "c005", "workflows/contract_005_statistical_audit.py"
-    )
+    spec = importlib.util.spec_from_file_location("c005", "workflows/contract_005_statistical_audit.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -157,8 +155,7 @@ def test_step_advancement():
             (results_dir / "contract_005_summary.md").write_text("# Summary\n")
 
             # Mock _alert and _get_best_result_summary to avoid side effects
-            with patch.object(wf, '_alert'), \
-                 patch.object(wf, '_get_best_result_summary', return_value="Best: N/A"):
+            with patch.object(wf, "_alert"), patch.object(wf, "_get_best_result_summary", return_value="Best: N/A"):
                 exit_code = wf.run()
 
             assert exit_code == 0, f"Workflow should complete with exit 0, got {exit_code}"
@@ -169,7 +166,9 @@ def test_step_advancement():
             assert state.current_step_index == 3, f"Should be at step 3, got {state.current_step_index}"
 
             for step_name, step_state in state.steps.items():
-                assert step_state.status == "completed", f"Step {step_name} should be completed, got {step_state.status}"
+                assert step_state.status == "completed", (
+                    f"Step {step_name} should be completed, got {step_state.status}"
+                )
 
             print("PASS: step advancement with pre-satisfied done_when")
         finally:

@@ -21,44 +21,46 @@ THIS SCRIPT PRIORITIES:
 
 Target: 15+ wandb runs tagged ['contract_004', 'novel']
 """
+
 import sys
+
 sys.path.insert(0, "src")
 
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+import json
 import time
 import warnings
-import json
+
 warnings.filterwarnings("ignore")
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from itertools import product
-
-from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
 
 from sparky.data.loader import load
+from sparky.features.returns import annualized_sharpe
 from sparky.tracking.experiment import ExperimentTracker
-from sparky.features.returns import annualized_sharpe, max_drawdown
-from sparky.oversight.timeout import with_timeout
 
 # ─── Constants ─────────────────────────────────────────────────────────────────
-BASELINE_SHARPE     = 1.062   # Donchian Multi-TF baseline
-BEST_REGIME_SHARPE  = 1.181   # ADX(14,30) Donchian, Step 3
-BEST_NOVEL_SHARPE   = 1.326   # regime_cond ADX(25/15), Step 4v3
-BEST_STABLE_SHARPE  = 1.032   # stability_opt triple gate
+BASELINE_SHARPE = 1.062  # Donchian Multi-TF baseline
+BEST_REGIME_SHARPE = 1.181  # ADX(14,30) Donchian, Step 3
+BEST_NOVEL_SHARPE = 1.326  # regime_cond ADX(25/15), Step 4v3
+BEST_STABLE_SHARPE = 1.032  # stability_opt triple gate
 
 ENTRY_PERIOD = 40
-EXIT_PERIOD  = 20
+EXIT_PERIOD = 20
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-TAGS     = ["contract_004", "novel"]
+TAGS = ["contract_004", "novel"]
 JOB_TYPE = "novel"
 
 
@@ -83,9 +85,15 @@ def load_data():
 
     # Top 10 features from Step 2 LightGBM walk-forward best
     top10_cols = [
-        "rsi_divergence_14h_168h", "price_momentum_divergence", "intraday_range",
-        "recovery_from_20h_low", "rsi_volume_interaction", "vwap_deviation_24h",
-        "tick_direction_ratio_24h", "rsi_divergence_4h_24h", "momentum_divergence_72h_336h",
+        "rsi_divergence_14h_168h",
+        "price_momentum_divergence",
+        "intraday_range",
+        "recovery_from_20h_low",
+        "rsi_volume_interaction",
+        "vwap_deviation_24h",
+        "tick_direction_ratio_24h",
+        "rsi_divergence_4h_24h",
+        "momentum_divergence_72h_336h",
         "drawdown_from_20h_high",
     ]
     available10 = [c for c in top10_cols if c in df_daily.columns]
@@ -101,18 +109,20 @@ def load_data():
 
     # Align
     common_idx = prices_daily.index.intersection(df_daily.index).intersection(target_daily.index)
-    prices_daily  = prices_daily.loc[common_idx]
-    daily_returns  = daily_returns.reindex(common_idx).fillna(0)
-    df_daily       = df_daily.loc[common_idx]
-    target_daily   = target_daily.loc[common_idx]
+    prices_daily = prices_daily.loc[common_idx]
+    daily_returns = daily_returns.reindex(common_idx).fillna(0)
+    df_daily = df_daily.loc[common_idx]
+    target_daily = target_daily.loc[common_idx]
 
     valid = target_daily.notna()
-    prices_daily  = prices_daily[valid]
-    daily_returns  = daily_returns[valid]
-    df_daily       = df_daily[valid].fillna(df_daily.median())
-    target_daily   = target_daily[valid]
+    prices_daily = prices_daily[valid]
+    daily_returns = daily_returns[valid]
+    df_daily = df_daily[valid].fillna(df_daily.median())
+    target_daily = target_daily[valid]
 
-    print(f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})")
+    print(
+        f"  Daily prices: {len(prices_daily)} rows ({prices_daily.index[0].date()} - {prices_daily.index[-1].date()})"
+    )
     print(f"  Features top-10: {len(available10)}, top-20: {len(available20)}")
     return prices_daily, daily_returns, df_daily, target_daily, available10, available20
 
@@ -143,11 +153,11 @@ def donchian_signal(prices: pd.Series, entry: int = 40, exit_p: int = 20) -> pd.
 def compute_adx(prices: pd.Series, period: int = 14) -> pd.Series:
     """Approximate ADX from close prices (Wilder EWM smoothing)."""
     delta = prices.diff()
-    plus_dm  = delta.clip(lower=0)
+    plus_dm = delta.clip(lower=0)
     minus_dm = (-delta).clip(lower=0)
-    plus_di  = plus_dm.ewm(span=period, adjust=False).mean()
+    plus_di = plus_dm.ewm(span=period, adjust=False).mean()
     minus_di = minus_dm.ewm(span=period, adjust=False).mean()
-    dx  = (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-9) * 100
+    dx = (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-9) * 100
     return dx.ewm(span=period, adjust=False).mean()
 
 
@@ -186,11 +196,11 @@ def run_walk_forward(prices, daily_returns, signal_fn, years=None):
 
     vals = list(per_year.values())
     return {
-        "mean_sharpe":  round(float(np.mean(vals)), 3),
-        "std_sharpe":   round(float(np.std(vals)), 3),
-        "min_sharpe":   round(float(min(vals)), 3),
-        "max_sharpe":   round(float(max(vals)), 3),
-        "per_year":     per_year,
+        "mean_sharpe": round(float(np.mean(vals)), 3),
+        "std_sharpe": round(float(np.std(vals)), 3),
+        "min_sharpe": round(float(min(vals)), 3),
+        "max_sharpe": round(float(max(vals)), 3),
+        "per_year": per_year,
     }
 
 
@@ -212,9 +222,11 @@ def log_run(tracker, name, config, metrics, group, notes=""):
         group=group,
     )
     beats = "✅" if metrics.get("mean_sharpe", 0) > BEST_REGIME_SHARPE else "❌"
-    print(f"  Logged: {name} | Sharpe={metrics.get('mean_sharpe', 0):.3f} "
-          f"std={metrics.get('std_sharpe', 0):.3f} "
-          f"2022={metrics.get('sharpe_2022', 0):.3f} {beats}")
+    print(
+        f"  Logged: {name} | Sharpe={metrics.get('mean_sharpe', 0):.3f} "
+        f"std={metrics.get('std_sharpe', 0):.3f} "
+        f"2022={metrics.get('sharpe_2022', 0):.3f} {beats}"
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -241,23 +253,23 @@ def p1_momentum_regime_sweep(prices, daily_returns, tracker):
     configs = [
         # (mom_lb, mom_thresh, vol_window, adx_period, adx_thresh)
         # Row 1: ADX(21) variations — known to smooth regime dramatically
-        (40,  0.00, 20, 21, 25),  # ADX(21,25) — relax threshold
-        (40,  0.00, 20, 21, 20),  # ADX(21,20) — more permissive
-        (60,  0.00, 20, 21, 30),  # lb=60 + ADX(21) — combine insights
-        (40,  0.02, 20, 21, 30),  # lb=40, t=2%, ADX(21)
+        (40, 0.00, 20, 21, 25),  # ADX(21,25) — relax threshold
+        (40, 0.00, 20, 21, 20),  # ADX(21,20) — more permissive
+        (60, 0.00, 20, 21, 30),  # lb=60 + ADX(21) — combine insights
+        (40, 0.02, 20, 21, 30),  # lb=40, t=2%, ADX(21)
         # Row 2: vol window exploration
-        (40,  0.00, 30, 14, 30),  # vol30 — slower vol filter
-        (40,  0.00, 50, 14, 30),  # vol50 — very slow vol filter
-        (40,  0.00, 20, 14, 25),  # ADX threshold=25 (known from v3: 1.218 Sharpe)
+        (40, 0.00, 30, 14, 30),  # vol30 — slower vol filter
+        (40, 0.00, 50, 14, 30),  # vol50 — very slow vol filter
+        (40, 0.00, 20, 14, 25),  # ADX threshold=25 (known from v3: 1.218 Sharpe)
         # Row 3: lookback variations
-        (30,  0.00, 20, 21, 30),  # lb=30 + ADX(21)
-        (60,  0.00, 20, 21, 25),  # lb=60 + ADX(21,25)
+        (30, 0.00, 20, 21, 30),  # lb=30 + ADX(21)
+        (60, 0.00, 20, 21, 25),  # lb=60 + ADX(21,25)
         (40, -0.02, 20, 21, 30),  # Negative threshold (allow weak negative mom to still trade)
     ]
 
     results = []
     for lb, thresh, vol_w, adx_p, adx_t in configs:
-        cfg_name = f"mom_OR_lb{lb}_t{int(thresh*100)}_adx{adx_p}t{adx_t}_v{vol_w}"
+        cfg_name = f"mom_OR_lb{lb}_t{int(thresh * 100)}_adx{adx_p}t{adx_t}_v{vol_w}"
         print(f"\n  Running: {cfg_name}")
 
         def make_fn(lb_, thresh_, vol_w_, adx_p_, adx_t_):
@@ -278,10 +290,11 @@ def p1_momentum_regime_sweep(prices, daily_returns, tracker):
                 # OR combination
                 combined_regime = ((vol_reg == 1) | (adx_reg == 1)).astype(int)
                 # Momentum + regime
-                final_sig = (mom_sig * combined_regime)
+                final_sig = mom_sig * combined_regime
                 # Return test year slice
                 mask = prices_.index.year == yr
                 return final_sig[mask]
+
             return signal_fn
 
         fn = make_fn(lb, thresh, vol_w, adx_p, adx_t)
@@ -290,21 +303,31 @@ def p1_momentum_regime_sweep(prices, daily_returns, tracker):
 
         metrics = {
             "mean_sharpe": wf["mean_sharpe"],
-            "std_sharpe":  wf["std_sharpe"],
-            "min_sharpe":  wf["min_sharpe"],
-            "max_sharpe":  wf["max_sharpe"],
+            "std_sharpe": wf["std_sharpe"],
+            "min_sharpe": wf["min_sharpe"],
+            "max_sharpe": wf["max_sharpe"],
             "sharpe_2022": sharpe_2022,
             **{f"sharpe_{yr}": wf["per_year"].get(str(yr), 0.0) for yr in range(2019, 2024)},
         }
         config = {
-            "mom_lookback": lb, "mom_threshold": thresh, "vol_window": vol_w,
-            "adx_period": adx_p, "adx_threshold": adx_t, "combo": "vol_OR_adx",
+            "mom_lookback": lb,
+            "mom_threshold": thresh,
+            "vol_window": vol_w,
+            "adx_period": adx_p,
+            "adx_threshold": adx_t,
+            "combo": "vol_OR_adx",
             "strategy": "momentum_regime",
         }
 
-        run_name = f"mom_OR_lb{lb}_t{int(thresh*100)}_adx{adx_p}t{adx_t}_v{vol_w}_S{wf['mean_sharpe']:.2f}"
-        log_run(tracker, run_name, config, metrics, group="mom_regime_sweep",
-                notes=f"P1: momentum+vol_OR_adx sweep; lb={lb},t={thresh},adx{adx_p}>{adx_t},vol{vol_w}")
+        run_name = f"mom_OR_lb{lb}_t{int(thresh * 100)}_adx{adx_p}t{adx_t}_v{vol_w}_S{wf['mean_sharpe']:.2f}"
+        log_run(
+            tracker,
+            run_name,
+            config,
+            metrics,
+            group="mom_regime_sweep",
+            notes=f"P1: momentum+vol_OR_adx sweep; lb={lb},t={thresh},adx{adx_p}>{adx_t},vol{vol_w}",
+        )
         results.append((cfg_name, wf["mean_sharpe"], wf["std_sharpe"], sharpe_2022))
 
     print("\n  P1 Summary (top by Sharpe):")
@@ -352,7 +375,7 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
                 loc = daily_returns_aligned.index.get_loc(entry_date)
                 if loc + fwd_window >= len(daily_returns_aligned):
                     continue
-                fwd_returns = daily_returns_aligned.iloc[loc:loc + fwd_window]
+                fwd_returns = daily_returns_aligned.iloc[loc : loc + fwd_window]
                 cum_ret = (1 + fwd_returns).prod() - 1
                 profitable.append((entry_date, int(cum_ret > 0)))
             except Exception:
@@ -364,7 +387,9 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
 
         entry_dates = [p[0] for p in profitable]
         labels = [p[1] for p in profitable]
-        print(f"\n  fwd_window={fwd_window}: {len(labels)} breakouts, {sum(labels)}/{len(labels)} profitable ({100*sum(labels)/len(labels):.0f}%)")
+        print(
+            f"\n  fwd_window={fwd_window}: {len(labels)} breakouts, {sum(labels)}/{len(labels)} profitable ({100 * sum(labels) / len(labels):.0f}%)"
+        )
 
         # Build feature matrix at entry dates
         # Base features + regime features
@@ -373,15 +398,38 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
         vol_feat = prices.pct_change().rolling(20).std() * np.sqrt(252)
 
         for model_name, model_cls, model_kwargs in [
-            ("xgb",  XGBClassifier,  dict(n_estimators=100, max_depth=3, learning_rate=0.05,
-                                          tree_method="hist", device="cuda",
-                                          eval_metric="logloss", verbosity=0,
-                                          use_label_encoder=False)),
-            ("lgbm", LGBMClassifier, dict(n_estimators=100, max_depth=3, learning_rate=0.05,
-                                          device="gpu", verbose=-1, random_state=42)),
-            ("cat",  CatBoostClassifier, dict(iterations=100, depth=3, learning_rate=0.05,
-                                              task_type="GPU", devices="0",
-                                              verbose=0, random_state=42)),
+            (
+                "xgb",
+                XGBClassifier,
+                dict(
+                    n_estimators=100,
+                    max_depth=3,
+                    learning_rate=0.05,
+                    tree_method="hist",
+                    device="cuda",
+                    eval_metric="logloss",
+                    verbosity=0,
+                    use_label_encoder=False,
+                ),
+            ),
+            (
+                "lgbm",
+                LGBMClassifier,
+                dict(n_estimators=100, max_depth=3, learning_rate=0.05, device="gpu", verbose=-1, random_state=42),
+            ),
+            (
+                "cat",
+                CatBoostClassifier,
+                dict(
+                    iterations=100,
+                    depth=3,
+                    learning_rate=0.05,
+                    task_type="GPU",
+                    devices="0",
+                    verbose=0,
+                    random_state=42,
+                ),
+            ),
         ]:
             cfg_name = f"breakout_{model_name}_fwd{fwd_window}"
             print(f"    Training {cfg_name}...")
@@ -391,7 +439,7 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
             for yr in range(2019, 2024):
                 # Filter breakouts for training (before test year)
                 train_entries = [i for i, d in enumerate(entry_dates) if d.year < yr]
-                test_entries  = [i for i, d in enumerate(entry_dates) if d.year == yr]
+                test_entries = [i for i, d in enumerate(entry_dates) if d.year == yr]
 
                 if len(train_entries) < 8 or len(test_entries) < 1:
                     per_year_sharpe[str(yr)] = 0.0
@@ -403,7 +451,11 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
                     for i in idxs:
                         d = entry_dates[i]
                         try:
-                            feat_row = df_daily.loc[d, base_feats].values.tolist() if d in df_daily.index else [0.0] * len(base_feats)
+                            feat_row = (
+                                df_daily.loc[d, base_feats].values.tolist()
+                                if d in df_daily.index
+                                else [0.0] * len(base_feats)
+                            )
                             adx_val = float(adx_feat.get(d, 0.0))
                             vol_val = float(vol_feat.get(d, 0.0))
                             rows.append(feat_row + [adx_val, vol_val])
@@ -413,9 +465,9 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
 
                 X_train = build_X(train_entries)
                 y_train = np.array([labels[i] for i in train_entries])
-                X_test  = build_X(test_entries)
+                X_test = build_X(test_entries)
                 test_labels = [labels[i] for i in test_entries]
-                test_dates  = [entry_dates[i] for i in test_entries]
+                test_dates = [entry_dates[i] for i in test_entries]
 
                 # Handle degenerate training set
                 if len(np.unique(y_train)) < 2:
@@ -458,15 +510,15 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
 
             vals = list(per_year_sharpe.values())
             wf_sharpe = np.mean(vals)
-            wf_std    = np.std(vals)
+            wf_std = np.std(vals)
             sharpe_2022 = per_year_sharpe.get("2022", 0.0)
 
             metrics = {
                 "mean_sharpe": round(float(wf_sharpe), 3),
-                "std_sharpe":  round(float(wf_std), 3),
+                "std_sharpe": round(float(wf_std), 3),
                 "sharpe_2022": round(float(sharpe_2022), 3),
-                "min_sharpe":  round(float(min(vals)), 3),
-                "max_sharpe":  round(float(max(vals)), 3),
+                "min_sharpe": round(float(min(vals)), 3),
+                "max_sharpe": round(float(max(vals)), 3),
                 **{f"sharpe_{yr}": per_year_sharpe.get(str(yr), 0.0) for yr in range(2019, 2024)},
             }
             config = {
@@ -477,8 +529,14 @@ def p2_target_reengineering(prices, daily_returns, df_daily, tracker, feature_co
                 "features": "top10+adx+vol",
             }
             run_name = f"breakout_{model_name}_fwd{fwd_window}_S{wf_sharpe:.2f}"
-            log_run(tracker, run_name, config, metrics, group="target_reengineering",
-                    notes=f"P2: {model_name} predicts profitable breakout over {fwd_window}d horizon")
+            log_run(
+                tracker,
+                run_name,
+                config,
+                metrics,
+                group="target_reengineering",
+                notes=f"P2: {model_name} predicts profitable breakout over {fwd_window}d horizon",
+            )
             results.append((cfg_name, wf_sharpe, wf_std, sharpe_2022))
 
     return results
@@ -520,7 +578,7 @@ def p3_stability_optimization(prices, daily_returns, tracker):
 
     for i, cfg_tuple in enumerate(stability_configs):
         adx_p_out, adx_t_out, vol_w, adx_p_in, adx_t_in, cfg_name = cfg_tuple
-        add_mom = ("plus_mom" in cfg_name)
+        add_mom = "plus_mom" in cfg_name
         print(f"\n  Running: {cfg_name}")
 
         def make_fn(adx_po, adx_to, vol_w_, adx_pi, adx_ti, use_mom):
@@ -549,6 +607,7 @@ def p3_stability_optimization(prices, daily_returns, tracker):
                 mask = prices_.index.year == yr
                 final = (don_all[mask] * triple.reindex(prices_[mask].index).fillna(0)).clip(0, 1).astype(int)
                 return final
+
             return signal_fn
 
         fn = make_fn(adx_p_out, adx_t_out, vol_w, adx_p_in, adx_t_in, add_mom)
@@ -559,23 +618,32 @@ def p3_stability_optimization(prices, daily_returns, tracker):
         sharpe_per_std = round(wf["mean_sharpe"] / max(wf["std_sharpe"], 0.001), 3)
 
         metrics = {
-            "mean_sharpe":   wf["mean_sharpe"],
-            "std_sharpe":    wf["std_sharpe"],
-            "min_sharpe":    wf["min_sharpe"],
-            "max_sharpe":    wf["max_sharpe"],
-            "sharpe_2022":   sharpe_2022,
+            "mean_sharpe": wf["mean_sharpe"],
+            "std_sharpe": wf["std_sharpe"],
+            "min_sharpe": wf["min_sharpe"],
+            "max_sharpe": wf["max_sharpe"],
+            "sharpe_2022": sharpe_2022,
             "sharpe_per_std": sharpe_per_std,
             **{f"sharpe_{yr}": wf["per_year"].get(str(yr), 0.0) for yr in range(2019, 2024)},
         }
         config = {
             "strategy": "stability_optimized",
-            "adx_period_outer": adx_p_out, "adx_thresh_outer": adx_t_out,
-            "vol_window": vol_w, "adx_period_inner": adx_p_in,
-            "adx_thresh_inner": adx_t_in, "add_momentum": add_mom,
+            "adx_period_outer": adx_p_out,
+            "adx_thresh_outer": adx_t_out,
+            "vol_window": vol_w,
+            "adx_period_inner": adx_p_in,
+            "adx_thresh_inner": adx_t_in,
+            "add_momentum": add_mom,
         }
         run_name = f"stability_{cfg_name}_S{wf['mean_sharpe']:.2f}_std{wf['std_sharpe']:.2f}"
-        log_run(tracker, run_name, config, metrics, group="stability_optimized",
-                notes=f"P3: triple-gate stability opt; {cfg_name}; sharpe/std={sharpe_per_std}")
+        log_run(
+            tracker,
+            run_name,
+            config,
+            metrics,
+            group="stability_optimized",
+            notes=f"P3: triple-gate stability opt; {cfg_name}; sharpe/std={sharpe_per_std}",
+        )
         results.append((cfg_name, wf["mean_sharpe"], wf["std_sharpe"], sharpe_2022, sharpe_per_std))
 
     print("\n  P3 Summary (by Sharpe/Std ratio):")
@@ -616,8 +684,8 @@ def p4_robustness_testing(prices, daily_returns, tracker):
         (32, 11, 24, 16, "-20pct"),
         (40, 14, 27, 20, "adx_t-10pct"),  # just threshold down
         (40, 14, 33, 20, "adx_t+10pct"),  # just threshold up
-        (36, 14, 30, 18, "lb_vol-10pct"), # lb and vol down
-        (44, 14, 30, 22, "lb_vol+10pct"), # lb and vol up
+        (36, 14, 30, 18, "lb_vol-10pct"),  # lb and vol down
+        (44, 14, 30, 22, "lb_vol+10pct"),  # lb and vol up
     ]
     for lb, adx_p, adx_t, vol_w, label in mom_perturb_configs:
         cfg_name = f"mom_OR_robust_{label}"
@@ -636,9 +704,10 @@ def p4_robustness_testing(prices, daily_returns, tracker):
                 adx = compute_adx(prices_, period=adx_p_)
                 adx_reg = (adx > adx_t_).astype(int)
                 combined = ((vol_reg == 1) | (adx_reg == 1)).astype(int)
-                final = (mom_sig * combined)
+                final = mom_sig * combined
                 mask = prices_.index.year == yr
                 return final[mask]
+
             return signal_fn
 
         fn = make_mom_fn(lb, adx_p, adx_t, vol_w)
@@ -648,20 +717,29 @@ def p4_robustness_testing(prices, daily_returns, tracker):
 
         metrics = {
             "mean_sharpe": wf["mean_sharpe"],
-            "std_sharpe":  wf["std_sharpe"],
-            "min_sharpe":  wf["min_sharpe"],
+            "std_sharpe": wf["std_sharpe"],
+            "min_sharpe": wf["min_sharpe"],
             "sharpe_2022": sharpe_2022,
             "is_robust": int(wf["mean_sharpe"] > 1.0),
             **{f"sharpe_{yr}": wf["per_year"].get(str(yr), 0.0) for yr in range(2019, 2024)},
         }
         config = {
             "strategy": "mom_vol_adx_OR_robustness",
-            "perturbation": label, "mom_lookback": lb,
-            "adx_period": adx_p, "adx_threshold": adx_t, "vol_window": vol_w,
+            "perturbation": label,
+            "mom_lookback": lb,
+            "adx_period": adx_p,
+            "adx_threshold": adx_t,
+            "vol_window": vol_w,
         }
         run_name = f"robust_mom_OR_{label}_S{wf['mean_sharpe']:.2f}"
-        log_run(tracker, run_name, config, metrics, group="robustness_testing",
-                notes=f"P4: robustness test mom_vol_adx_OR; {label}; {robust}")
+        log_run(
+            tracker,
+            run_name,
+            config,
+            metrics,
+            group="robustness_testing",
+            notes=f"P4: robustness test mom_vol_adx_OR; {label}; {robust}",
+        )
         results.append((cfg_name, wf["mean_sharpe"], wf["std_sharpe"], robust))
 
     # ── 4B: ADX(14,30) Donchian perturbation ───────────────────────────────────
@@ -674,8 +752,8 @@ def p4_robustness_testing(prices, daily_returns, tracker):
         (11, 24, 32, 16, "-20pct_all"),
         (14, 30, 48, 24, "don_only+20"),  # only Donchian params
         (14, 30, 32, 16, "don_only-20"),
-        (17, 30, 40, 20, "adx_p+20"),    # only ADX period
-        (14, 36, 40, 20, "adx_t+20"),    # only ADX threshold
+        (17, 30, 40, 20, "adx_p+20"),  # only ADX period
+        (14, 36, 40, 20, "adx_t+20"),  # only ADX threshold
     ]
     for adx_p, adx_t, entry, exit_p, label in don_perturb_configs:
         cfg_name = f"don_adx_robust_{label}"
@@ -689,6 +767,7 @@ def p4_robustness_testing(prices, daily_returns, tracker):
                 mask = prices_.index.year == yr
                 final = (don[mask] * adx_reg.reindex(prices_[mask].index).fillna(0)).clip(0, 1).astype(int)
                 return final
+
             return signal_fn
 
         fn = make_don_fn(adx_p, adx_t, entry, exit_p)
@@ -698,20 +777,29 @@ def p4_robustness_testing(prices, daily_returns, tracker):
 
         metrics = {
             "mean_sharpe": wf["mean_sharpe"],
-            "std_sharpe":  wf["std_sharpe"],
-            "min_sharpe":  wf["min_sharpe"],
+            "std_sharpe": wf["std_sharpe"],
+            "min_sharpe": wf["min_sharpe"],
             "sharpe_2022": sharpe_2022,
             "is_robust": int(wf["mean_sharpe"] > 1.0),
             **{f"sharpe_{yr}": wf["per_year"].get(str(yr), 0.0) for yr in range(2019, 2024)},
         }
         config = {
             "strategy": "donchian_adx_robustness",
-            "perturbation": label, "adx_period": adx_p, "adx_threshold": adx_t,
-            "entry_period": entry, "exit_period": exit_p,
+            "perturbation": label,
+            "adx_period": adx_p,
+            "adx_threshold": adx_t,
+            "entry_period": entry,
+            "exit_period": exit_p,
         }
         run_name = f"robust_don_adx_{label}_S{wf['mean_sharpe']:.2f}"
-        log_run(tracker, run_name, config, metrics, group="robustness_testing",
-                notes=f"P4: robustness test ADX(14,30) Donchian; {label}; {robust}")
+        log_run(
+            tracker,
+            run_name,
+            config,
+            metrics,
+            group="robustness_testing",
+            notes=f"P4: robustness test ADX(14,30) Donchian; {label}; {robust}",
+        )
         results.append((cfg_name, wf["mean_sharpe"], wf["std_sharpe"], robust))
 
     # Summary
@@ -737,9 +825,9 @@ def main():
 
     # Initialize tracker
     tracker = ExperimentTracker(experiment_name="contract_004_novel_v2")
-    print(f"\n  W&B project: datadex_ai/sparky-ai")
+    print("\n  W&B project: datadex_ai/sparky-ai")
     print(f"  Tags: {TAGS}")
-    print(f"  Target: 15+ runs")
+    print("  Target: 15+ runs")
     print()
 
     all_results = {}
@@ -771,8 +859,12 @@ def main():
     final_summary = {
         "elapsed_seconds": elapsed,
         "p1_best": sorted(p1_results, key=lambda x: -x[1])[:3] if p1_results else [],
-        "p2_best": sorted([(n, sh, std, s22) for n, sh, std, s22 in p2_results], key=lambda x: -x[1])[:3] if p2_results else [],
-        "p3_best": sorted([(n, sh, std, s22, sps) for n, sh, std, s22, sps in p3_results], key=lambda x: -x[4])[:3] if p3_results else [],
+        "p2_best": sorted([(n, sh, std, s22) for n, sh, std, s22 in p2_results], key=lambda x: -x[1])[:3]
+        if p2_results
+        else [],
+        "p3_best": sorted([(n, sh, std, s22, sps) for n, sh, std, s22, sps in p3_results], key=lambda x: -x[4])[:3]
+        if p3_results
+        else [],
         "p4_robust_count": sum(1 for _, sh, _, r in p4_results if r == "ROBUST") if p4_results else 0,
     }
 
@@ -788,7 +880,9 @@ def main():
     for item in final_summary["p3_best"]:
         print(f"  {item[0]}: Sharpe={item[1]:.3f}, std={item[2]:.3f}, Sharpe/Std={item[4]:.3f}")
 
-    print(f"\nP4 — Robustness: {final_summary['p4_robust_count']}/{len(p4_results)} configs passed Sharpe > 1.0 threshold")
+    print(
+        f"\nP4 — Robustness: {final_summary['p4_robust_count']}/{len(p4_results)} configs passed Sharpe > 1.0 threshold"
+    )
 
     # Save to JSON
     out_path = RESULTS_DIR / "novel_v2_results.json"

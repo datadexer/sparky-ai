@@ -1,7 +1,6 @@
 """Tests for Parquet storage layer."""
 
 import json
-from pathlib import Path
 
 import pandas as pd
 import pytest

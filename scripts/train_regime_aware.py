@@ -11,7 +11,6 @@ Usage:
     PYTHONPATH=. python3 scripts/train_regime_aware.py
 """
 
-import json
 import logging
 import sys
 import time
@@ -23,8 +22,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sparky.data.loader import load
-from sparky.tracking.experiment import ExperimentTracker, config_hash
 from sparky.oversight.timeout import with_timeout
+from sparky.tracking.experiment import ExperimentTracker, config_hash
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)

@@ -14,23 +14,21 @@ Enhancements:
 Target: Sharpe ≥ 1.5
 """
 
-import sys
-import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.features.regime_indicators import (
     compute_volatility_regime,
     detect_trend,
     get_trend_aware_position_size,
 )
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +49,7 @@ def load_price_data(start_date="2024-01-01", end_date="2025-12-31"):
     prices = pd.read_parquet(price_path)
 
     # Resample to daily
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
 
     # Remove timezone
     if prices_daily.index.tz is not None:
@@ -104,7 +102,9 @@ def compute_atr_position_sizing(
     # Fill initial NaN
     position_sizes = position_sizes.fillna(1.0)
 
-    logger.info(f"ATR Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}")
+    logger.info(
+        f"ATR Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}"
+    )
 
     return position_sizes
 
@@ -149,7 +149,9 @@ def compute_trend_aware_position_sizing(
 
         position_sizes.iloc[i] = get_trend_aware_position_size(vol_reg, tr)
 
-    logger.info(f"Trend-Aware Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}")
+    logger.info(
+        f"Trend-Aware Position Sizing: mean={position_sizes.mean():.2f}, min={position_sizes.min():.2f}, max={position_sizes.max():.2f}"
+    )
 
     return position_sizes
 
@@ -234,16 +236,16 @@ def print_comparison_table(results):
     print(f"{'Strategy':<40s} {'Sharpe':>12s} {'Return (%)':>12s} {'Max DD (%)':>12s} {'Trades':>10s}")
     print("-" * 100)
 
-    sorted_results = sorted(results.items(), key=lambda x: x[1].get('sharpe_ratio', -999), reverse=True)
+    sorted_results = sorted(results.items(), key=lambda x: x[1].get("sharpe_ratio", -999), reverse=True)
 
     for name, metrics in sorted_results:
         if not metrics:
             continue
 
-        sharpe = metrics.get('sharpe_ratio', 0)
-        ret = metrics.get('total_return_pct', 0)
-        dd = metrics.get('max_drawdown_pct', 0)
-        trades = metrics.get('n_trades', 0)
+        sharpe = metrics.get("sharpe_ratio", 0)
+        ret = metrics.get("total_return_pct", 0)
+        dd = metrics.get("max_drawdown_pct", 0)
+        trades = metrics.get("n_trades", 0)
 
         print(f"{name:<40s} {sharpe:>12.3f} {ret:>12.2f} {dd:>12.2f} {trades:>10d}")
 
@@ -312,19 +314,19 @@ def main():
             ("ATR", donchian_atr_metrics),
             ("Trend-Aware", donchian_trend_metrics),
         ],
-        key=lambda x: x[1].get('sharpe_ratio', -999)
+        key=lambda x: x[1].get("sharpe_ratio", -999),
     )
 
     print(f"\nBest Enhancement: {best[0]} (Sharpe {best[1]['sharpe_ratio']:.3f})")
     print(f"Baseline Donchian: Sharpe {donchian_metrics['sharpe_ratio']:.3f}")
     print(f"Improvement: {best[1]['sharpe_ratio'] - donchian_metrics['sharpe_ratio']:+.3f} Sharpe")
 
-    if best[1]['sharpe_ratio'] >= 1.5:
-        print(f"\n✅ TARGET ACHIEVED: Sharpe ≥ 1.5")
-    elif best[1]['sharpe_ratio'] >= donchian_metrics['sharpe_ratio']:
-        print(f"\n✅ ENHANCEMENT WORKS: Improved over baseline")
+    if best[1]["sharpe_ratio"] >= 1.5:
+        print("\n✅ TARGET ACHIEVED: Sharpe ≥ 1.5")
+    elif best[1]["sharpe_ratio"] >= donchian_metrics["sharpe_ratio"]:
+        print("\n✅ ENHANCEMENT WORKS: Improved over baseline")
     else:
-        print(f"\n⚠️ BASELINE WINS: Keep simple Donchian(20/10)")
+        print("\n⚠️ BASELINE WINS: Keep simple Donchian(20/10)")
 
     print("=" * 80)
 

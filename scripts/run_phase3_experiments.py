@@ -29,7 +29,6 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from sparky.backtest.costs import TransactionCostModel
@@ -95,15 +94,17 @@ def load_data(horizon: int = 7) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     # Compute returns for backtesting
     # Load price data to compute returns
     from sparky.data.storage import DataStore
+
     store = DataStore()
     prices_df, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
     prices = prices_df["close"].loc[common_index]
 
     from sparky.features.returns import simple_returns
+
     returns = simple_returns(prices).loc[common_index]
 
     logger.info(f"Data loaded: {len(X)} samples, {X.shape[1]} features")
-    logger.info(f"Target balance: {y.sum()} longs ({y.mean()*100:.1f}%)")
+    logger.info(f"Target balance: {y.sum()} longs ({y.mean() * 100:.1f}%)")
 
     return X, y, returns
 
@@ -164,9 +165,7 @@ def run_backtest_with_leakage_check(
     y_train_check = y.loc[X_train_check.index]
     y_test_check = y.loc[X_test_check.index]
 
-    leakage_report = detector.run_all_checks(
-        model, X_train_check, y_train_check, X_test_check, y_test_check
-    )
+    leakage_report = detector.run_all_checks(model, X_train_check, y_train_check, X_test_check, y_test_check)
     leakage_passed = leakage_report.passed
 
     if not leakage_passed:
@@ -201,8 +200,7 @@ def run_backtest_with_leakage_check(
     )
 
     logger.info(
-        f"{model_name} results: Sharpe={sharpe:.4f}, MaxDD={max_dd:.2%}, "
-        f"DeltaSharpe={delta_sharpe:.4f}, RunID={run_id}"
+        f"{model_name} results: Sharpe={sharpe:.4f}, MaxDD={max_dd:.2%}, DeltaSharpe={delta_sharpe:.4f}, RunID={run_id}"
     )
 
     return sharpe, max_dd, total_return, run_id, leakage_passed
@@ -225,16 +223,22 @@ def feature_ablation_experiment():
     logger.info("\n--- Full feature set ---")
     model = XGBoostModel(random_state=42)
     sharpe, max_dd, total_ret, run_id, passed = run_backtest_with_leakage_check(
-        model, X, y, returns, "XGBoost_AllFeatures",
+        model,
+        X,
+        y,
+        returns,
+        "XGBoost_AllFeatures",
         tracker,
         {"model": "XGBoost", "feature_set": "all", "horizon": 7, "seed": 42},
     )
-    results.append({
-        "feature_set": "all",
-        "sharpe": sharpe,
-        "max_dd": max_dd,
-        "run_id": run_id,
-    })
+    results.append(
+        {
+            "feature_set": "all",
+            "sharpe": sharpe,
+            "max_dd": max_dd,
+            "run_id": run_id,
+        }
+    )
 
     # Get feature importances
     importances = model.get_feature_importances()
@@ -263,7 +267,11 @@ def feature_ablation_experiment():
 
         model = XGBoostModel(random_state=42)
         sharpe, max_dd, total_ret, run_id, passed = run_backtest_with_leakage_check(
-            model, X_ablated, y, returns, f"XGBoost_Without_{group}",
+            model,
+            X_ablated,
+            y,
+            returns,
+            f"XGBoost_Without_{group}",
             tracker,
             {"model": "XGBoost", "feature_set": f"without_{group}", "horizon": 7, "seed": 42},
         )
@@ -271,13 +279,15 @@ def feature_ablation_experiment():
         delta_vs_full = sharpe - results[0]["sharpe"]
         logger.info(f"Delta vs full features: {delta_vs_full:.4f}")
 
-        results.append({
-            "feature_set": f"without_{group}",
-            "sharpe": sharpe,
-            "max_dd": max_dd,
-            "delta_vs_full": delta_vs_full,
-            "run_id": run_id,
-        })
+        results.append(
+            {
+                "feature_set": f"without_{group}",
+                "sharpe": sharpe,
+                "max_dd": max_dd,
+                "delta_vs_full": delta_vs_full,
+                "run_id": run_id,
+            }
+        )
 
         # Log to activity logger
         activity_logger.log_experiment(
@@ -299,14 +309,14 @@ def feature_ablation_experiment():
     # Write to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## Feature Ablation Experiment — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## Feature Ablation Experiment — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Hypothesis**: On-chain features add >0.1 Sharpe vs technical-only (Priority 1 strategic goal)
 
 **Results**:
 {chr(10).join(f"- {r['feature_set']}: Sharpe={r['sharpe']:.4f}, MaxDD={r['max_dd']:.2%}, Delta={r.get('delta_vs_full', 0):.4f}" for r in results)}
 
-**Finding**: {'[VALIDATED] On-chain features add significant alpha' if any(r.get('delta_vs_full', 0) < -0.1 for r in results if 'onchain' in r['feature_set']) else '[PRELIMINARY] On-chain impact unclear, need multi-seed validation'}
+**Finding**: {"[VALIDATED] On-chain features add significant alpha" if any(r.get("delta_vs_full", 0) < -0.1 for r in results if "onchain" in r["feature_set"]) else "[PRELIMINARY] On-chain impact unclear, need multi-seed validation"}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:
@@ -333,17 +343,23 @@ def horizon_experiment():
 
         model = XGBoostModel(random_state=42)
         sharpe, max_dd, total_ret, run_id, passed = run_backtest_with_leakage_check(
-            model, X, y, returns, f"XGBoost_{horizon}d",
+            model,
+            X,
+            y,
+            returns,
+            f"XGBoost_{horizon}d",
             tracker,
             {"model": "XGBoost", "horizon": horizon, "seed": 42, "feature_set": "all"},
         )
 
-        results.append({
-            "horizon": horizon,
-            "sharpe": sharpe,
-            "max_dd": max_dd,
-            "run_id": run_id,
-        })
+        results.append(
+            {
+                "horizon": horizon,
+                "sharpe": sharpe,
+                "max_dd": max_dd,
+                "run_id": run_id,
+            }
+        )
 
         activity_logger.log_experiment(
             task="horizon_experiments",
@@ -367,14 +383,14 @@ def horizon_experiment():
     # Write to RESEARCH_LOG.md
     log_entry = f"""
 ---
-## Horizon Sensitivity Experiment — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## Horizon Sensitivity Experiment — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Hypothesis**: Identify optimal prediction horizon (1d-30d) for maximum Sharpe (Priority 2 strategic goal)
 
 **Results**:
 {chr(10).join(f"- {r['horizon']}d: Sharpe={r['sharpe']:.4f}, MaxDD={r['max_dd']:.2%}" for r in results)}
 
-**Finding**: [PRELIMINARY] Optimal horizon appears to be {best_horizon['horizon']}d (Sharpe={best_horizon['sharpe']:.4f})
+**Finding**: [PRELIMINARY] Optimal horizon appears to be {best_horizon["horizon"]}d (Sharpe={best_horizon["sharpe"]:.4f})
 Needs multi-seed validation for [VALIDATED] status.
 """
 
@@ -399,7 +415,11 @@ def model_comparison_experiment():
     logger.info("\n--- XGBoost ---")
     xgb_model = XGBoostModel(random_state=42)
     xgb_sharpe, xgb_dd, xgb_ret, xgb_run_id, _ = run_backtest_with_leakage_check(
-        xgb_model, X, y, returns, "XGBoost_7d",
+        xgb_model,
+        X,
+        y,
+        returns,
+        "XGBoost_7d",
         tracker,
         {"model": "XGBoost", "horizon": 7, "seed": 42},
     )
@@ -408,7 +428,11 @@ def model_comparison_experiment():
     logger.info("\n--- LSTM ---")
     lstm_model = LSTMModel(window_length=10, max_epochs=50, random_state=42)
     lstm_sharpe, lstm_dd, lstm_ret, lstm_run_id, _ = run_backtest_with_leakage_check(
-        lstm_model, X, y, returns, "LSTM_7d",
+        lstm_model,
+        X,
+        y,
+        returns,
+        "LSTM_7d",
         tracker,
         {"model": "LSTM", "horizon": 7, "seed": 42, "window_length": 10, "max_epochs": 50},
     )
@@ -419,7 +443,7 @@ def model_comparison_experiment():
 
     log_entry = f"""
 ---
-## Model Comparison Experiment — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## Model Comparison Experiment — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Results**:
 - XGBoost: Sharpe={xgb_sharpe:.4f}, MaxDD={xgb_dd:.2%}, RunID={xgb_run_id}

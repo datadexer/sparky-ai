@@ -8,7 +8,6 @@ Validates:
 """
 
 import json
-import tempfile
 import threading
 from pathlib import Path
 
@@ -68,7 +67,9 @@ class TestActivityLoggerBasic:
     def test_log_task_completed(self, logger, tmp_log_dir):
         """task_completed entries have files_changed and git_commit."""
         logger.log_task_completed(
-            "phase_0", "returns_calculations", "Done",
+            "phase_0",
+            "returns_calculations",
+            "Done",
             files_changed=["src/sparky/features/returns.py"],
             git_commit="abc123",
         )
@@ -175,10 +176,7 @@ class TestActivityLoggerConcurrency:
             for i in range(n_entries_per_logger):
                 log.log_task_started("p0", f"task_{i}", f"desc_{i}")
 
-        threads = [
-            threading.Thread(target=write_entries, args=(f"agent_{i}",))
-            for i in range(n_loggers)
-        ]
+        threads = [threading.Thread(target=write_entries, args=(f"agent_{i}",)) for i in range(n_loggers)]
         for t in threads:
             t.start()
         for t in threads:

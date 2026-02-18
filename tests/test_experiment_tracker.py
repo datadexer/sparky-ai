@@ -1,15 +1,13 @@
 """Tests for W&B experiment tracker."""
 
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from sparky.tracking.experiment import (
     ExperimentTracker,
-    config_hash,
     clear_current_session,
+    config_hash,
     get_current_session,
     set_current_session,
 )

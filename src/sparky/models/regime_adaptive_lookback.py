@@ -20,10 +20,9 @@ Target:
 """
 
 import logging
-import pandas as pd
-import numpy as np
 
-from sparky.models.simple_baselines import donchian_channel_strategy
+import pandas as pd
+
 from sparky.features.regime_indicators import compute_volatility_regime
 
 logger = logging.getLogger(__name__)
@@ -76,12 +75,12 @@ def adaptive_lookback_donchian(
 
         # Compute Donchian channels with adaptive periods
         if i >= current_entry_period:
-            upper_channel = prices.iloc[i - current_entry_period:i].max()
+            upper_channel = prices.iloc[i - current_entry_period : i].max()
         else:
             upper_channel = prices.iloc[:i].max()
 
         if i >= current_exit_period:
-            lower_channel = prices.iloc[i - current_exit_period:i].min()
+            lower_channel = prices.iloc[i - current_exit_period : i].min()
         else:
             lower_channel = prices.iloc[:i].min()
 
@@ -107,8 +106,8 @@ def adaptive_lookback_donchian(
     n_total = len(signals)
 
     logger.info(
-        f"Adaptive Lookback Donchian: {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Adaptive Lookback Donchian: {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return signals
@@ -174,8 +173,8 @@ def adaptive_lookback_ensemble(
 
         # Short timeframe
         if i >= short_entry:
-            upper_short = prices.iloc[i - short_entry:i].max()
-            lower_short = prices.iloc[i - short_exit:i].min() if i >= short_exit else prices.iloc[:i].min()
+            upper_short = prices.iloc[i - short_entry : i].max()
+            lower_short = prices.iloc[i - short_exit : i].min() if i >= short_exit else prices.iloc[:i].min()
 
             if not in_position_short:
                 if i > 0 and current_price >= upper_short:
@@ -192,8 +191,8 @@ def adaptive_lookback_ensemble(
 
         # Medium timeframe
         if i >= medium_entry:
-            upper_medium = prices.iloc[i - medium_entry:i].max()
-            lower_medium = prices.iloc[i - medium_exit:i].min() if i >= medium_exit else prices.iloc[:i].min()
+            upper_medium = prices.iloc[i - medium_entry : i].max()
+            lower_medium = prices.iloc[i - medium_exit : i].min() if i >= medium_exit else prices.iloc[:i].min()
 
             if not in_position_medium:
                 if i > 0 and current_price >= upper_medium:
@@ -210,8 +209,8 @@ def adaptive_lookback_ensemble(
 
         # Long timeframe
         if i >= long_entry:
-            upper_long = prices.iloc[i - long_entry:i].max()
-            lower_long = prices.iloc[i - long_exit:i].min() if i >= long_exit else prices.iloc[:i].min()
+            upper_long = prices.iloc[i - long_entry : i].max()
+            lower_long = prices.iloc[i - long_exit : i].min() if i >= long_exit else prices.iloc[:i].min()
 
             if not in_position_long:
                 if i > 0 and current_price >= upper_long:
@@ -234,8 +233,8 @@ def adaptive_lookback_ensemble(
     n_total = len(ensemble)
 
     logger.info(
-        f"Adaptive Lookback Ensemble: {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Adaptive Lookback Ensemble: {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return ensemble

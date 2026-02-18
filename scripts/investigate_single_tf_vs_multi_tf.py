@@ -45,7 +45,13 @@ def backtest_strategy(prices, signals, start_date, end_date, cost_model):
     period_signals = signals.loc[start_date:end_date]
 
     if len(period_prices) == 0:
-        return {"sharpe": 0.0, "total_return": 0.0, "max_drawdown": 0.0, "n_trades": 0, "returns": pd.Series(dtype=float)}
+        return {
+            "sharpe": 0.0,
+            "total_return": 0.0,
+            "max_drawdown": 0.0,
+            "n_trades": 0,
+            "returns": pd.Series(dtype=float),
+        }
 
     price_returns = period_prices.pct_change()
     actual_positions = period_signals.shift(1).fillna(0)
@@ -119,23 +125,25 @@ def analyze_trades(positions, prices):
     entry_price = None
 
     for i in range(1, len(positions)):
-        if positions.iloc[i] == 1 and positions.iloc[i-1] == 0:
+        if positions.iloc[i] == 1 and positions.iloc[i - 1] == 0:
             # Entry
             in_trade = True
             entry_date = positions.index[i]
             entry_price = prices.loc[entry_date] if entry_date in prices.index else None
-        elif positions.iloc[i] == 0 and positions.iloc[i-1] == 1:
+        elif positions.iloc[i] == 0 and positions.iloc[i - 1] == 1:
             # Exit
             if in_trade and entry_price is not None:
                 exit_date = positions.index[i]
                 exit_price = prices.loc[exit_date] if exit_date in prices.index else None
                 if exit_price is not None:
-                    trades.append({
-                        "entry_date": str(entry_date.date()),
-                        "exit_date": str(exit_date.date()),
-                        "holding_days": (exit_date - entry_date).days,
-                        "return_pct": (exit_price / entry_price - 1) * 100,
-                    })
+                    trades.append(
+                        {
+                            "entry_date": str(entry_date.date()),
+                            "exit_date": str(exit_date.date()),
+                            "holding_days": (exit_date - entry_date).days,
+                            "return_pct": (exit_price / entry_price - 1) * 100,
+                        }
+                    )
             in_trade = False
 
     if not trades:
@@ -197,9 +205,9 @@ def main():
     # ============================================
     # TEST 1: Yearly Walk-Forward
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 1: YEARLY WALK-FORWARD COMPARISON")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     all_results = {}
     all_returns = {}
@@ -234,29 +242,29 @@ def main():
 
         logger.info(f"\n{strat_name}:")
         for year, r in results.items():
-            logger.info(f"  {year}: Sharpe={r['sharpe']:.3f}, Return={r['total_return']:.1f}%, MaxDD={r['max_drawdown']:.1f}%, Trades={r['n_trades']}")
+            logger.info(
+                f"  {year}: Sharpe={r['sharpe']:.3f}, Return={r['total_return']:.1f}%, MaxDD={r['max_drawdown']:.1f}%, Trades={r['n_trades']}"
+            )
         logger.info(f"  MEAN: {mean_sharpe:.3f} (std: {std_sharpe:.3f})")
 
     # ============================================
     # TEST 2: Bootstrap 95% CI
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 2: BOOTSTRAP 95% CONFIDENCE INTERVALS")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     for strat_name, returns in all_returns.items():
         mean_s, lower, upper = bootstrap_sharpe_ci(returns)
         logger.info(f"{strat_name}: Sharpe={mean_s:.3f} [{lower:.3f}, {upper:.3f}]")
-        all_results[strat_name]["bootstrap_ci"] = {
-            "mean": mean_s, "lower_95": lower, "upper_95": upper
-        }
+        all_results[strat_name]["bootstrap_ci"] = {"mean": mean_s, "lower_95": lower, "upper_95": upper}
 
     # ============================================
     # TEST 3: Paired Bootstrap (Head-to-Head)
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 3: PAIRED BOOTSTRAP (HEAD-TO-HEAD)")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     single_returns = all_returns["Single-TF (40/20)"]
     multi_returns = all_returns["Multi-TF (20/40/60)"]
@@ -279,9 +287,9 @@ def main():
     # ============================================
     # TEST 4: Trade Analysis (Full In-Sample Period)
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 4: TRADE ANALYSIS (2019-2023)")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     full_start, full_end = "2019-01-01", "2023-12-31"
 
@@ -290,10 +298,14 @@ def main():
         trade_analysis = analyze_trades(r["positions"], prices.loc[full_start:full_end])
         logger.info(f"\n{strat_name}:")
         logger.info(f"  Trades: {trade_analysis['n_trades']}")
-        logger.info(f"  Avg holding: {trade_analysis['avg_holding_days']:.0f} days (median: {trade_analysis.get('median_holding_days', 0):.0f})")
+        logger.info(
+            f"  Avg holding: {trade_analysis['avg_holding_days']:.0f} days (median: {trade_analysis.get('median_holding_days', 0):.0f})"
+        )
         logger.info(f"  Win rate: {trade_analysis['win_rate']:.1f}%")
         logger.info(f"  Avg return per trade: {trade_analysis['avg_return']:.1f}%")
-        logger.info(f"  Best/Worst trade: {trade_analysis.get('best_trade', 0):.1f}% / {trade_analysis.get('worst_trade', 0):.1f}%")
+        logger.info(
+            f"  Best/Worst trade: {trade_analysis.get('best_trade', 0):.1f}% / {trade_analysis.get('worst_trade', 0):.1f}%"
+        )
 
         # Don't include full trade list in JSON
         trade_summary = {k: v for k, v in trade_analysis.items() if k != "trades"}
@@ -302,9 +314,9 @@ def main():
     # ============================================
     # TEST 5: Signal Overlap Analysis
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 5: SIGNAL OVERLAP ANALYSIS")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     is_period = (prices.index >= "2019-01-01") & (prices.index <= "2023-12-31")
     single_sig = signals_single[is_period]
@@ -332,14 +344,14 @@ def main():
     if single_only_mask.sum() > 0:
         single_only_returns = price_returns.loc[is_period_idx][single_only_mask.values]
         logger.info(f"\nWhen ONLY Single-TF is LONG ({single_only_mask.sum()} days):")
-        logger.info(f"  Mean daily return: {single_only_returns.mean()*100:.3f}%")
-        logger.info(f"  Annualized: {single_only_returns.mean()*252*100:.1f}%")
+        logger.info(f"  Mean daily return: {single_only_returns.mean() * 100:.3f}%")
+        logger.info(f"  Annualized: {single_only_returns.mean() * 252 * 100:.1f}%")
 
     if multi_only_mask.sum() > 0:
         multi_only_returns = price_returns.loc[is_period_idx][multi_only_mask.values]
         logger.info(f"\nWhen ONLY Multi-TF is LONG ({multi_only_mask.sum()} days):")
-        logger.info(f"  Mean daily return: {multi_only_returns.mean()*100:.3f}%")
-        logger.info(f"  Annualized: {multi_only_returns.mean()*252*100:.1f}%")
+        logger.info(f"  Mean daily return: {multi_only_returns.mean() * 100:.3f}%")
+        logger.info(f"  Annualized: {multi_only_returns.mean() * 252 * 100:.1f}%")
 
     all_results["signal_overlap"] = {
         "agreement_pct": agreement,
@@ -352,13 +364,15 @@ def main():
     # ============================================
     # TEST 6: Full-Period (2019-2023) Comparison
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 6: FULL PERIOD BACKTEST (2019-2023)")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     for strat_name, strat_signals in strategies.items():
         r = backtest_strategy(prices, strat_signals, full_start, full_end, cost_model)
-        logger.info(f"{strat_name}: Sharpe={r['sharpe']:.3f}, Return={r['total_return']:.1f}%, MaxDD={r['max_drawdown']:.1f}%, Trades={r['n_trades']}")
+        logger.info(
+            f"{strat_name}: Sharpe={r['sharpe']:.3f}, Return={r['total_return']:.1f}%, MaxDD={r['max_drawdown']:.1f}%, Trades={r['n_trades']}"
+        )
         all_results[strat_name]["full_period"] = {
             "sharpe": r["sharpe"],
             "total_return": r["total_return"],
@@ -369,15 +383,15 @@ def main():
     # ============================================
     # VERDICT
     # ============================================
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("VERDICT")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     single_mean = all_results["Single-TF (40/20)"]["mean_sharpe"]
     multi_mean = all_results["Multi-TF (20/40/60)"]["mean_sharpe"]
     multi_best_mean = all_results["Multi-TF (20/30/40)"]["mean_sharpe"]
 
-    logger.info(f"\nMean Sharpe (yearly folds):")
+    logger.info("\nMean Sharpe (yearly folds):")
     logger.info(f"  Single-TF (40/20):   {single_mean:.3f}")
     logger.info(f"  Multi-TF (20/40/60): {multi_mean:.3f}")
     logger.info(f"  Multi-TF (20/30/40): {multi_best_mean:.3f}")

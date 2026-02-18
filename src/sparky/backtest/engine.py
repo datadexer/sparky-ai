@@ -28,7 +28,7 @@ from typing import Protocol
 import numpy as np
 import pandas as pd
 
-from sparky.features.returns import annualized_sharpe, max_drawdown, realized_volatility
+from sparky.features.returns import annualized_sharpe
 
 
 class ModelProtocol(Protocol):
@@ -183,7 +183,10 @@ class WalkForwardBacktester:
 
             # Compute fold equity curve (for sharpe/return calculation)
             fold_equity = self._compute_equity_curve(
-                fold_returns, position_series, cost_model=None, asset=asset  # No costs for fold metrics
+                fold_returns,
+                position_series,
+                cost_model=None,
+                asset=asset,  # No costs for fold metrics
             )
             fold_total_return = fold_equity.iloc[-1] - 1.0
             fold_pnl_returns = fold_equity.pct_change().dropna()
@@ -193,24 +196,24 @@ class WalkForwardBacktester:
             position_changes = position_series.diff().fillna(position_series.iloc[0])
             num_trades = (position_changes != 0).sum()
 
-            per_fold_metrics.append({
-                "fold": fold_idx,
-                "train_start": train_idx[0],
-                "train_end": train_idx[-1],
-                "test_start": test_idx[0],
-                "test_end": test_idx[-1],
-                "sharpe": fold_sharpe,
-                "total_return": fold_total_return,
-                "accuracy": accuracy,
-                "num_trades": int(num_trades),
-            })
+            per_fold_metrics.append(
+                {
+                    "fold": fold_idx,
+                    "train_start": train_idx[0],
+                    "train_end": train_idx[-1],
+                    "test_start": test_idx[0],
+                    "test_end": test_idx[-1],
+                    "sharpe": fold_sharpe,
+                    "total_return": fold_total_return,
+                    "accuracy": accuracy,
+                    "num_trades": int(num_trades),
+                }
+            )
 
         # Compute overall equity curve with costs
         test_dates = all_predictions.dropna().index
         position_series = pd.Series(all_predictions.loc[test_dates], index=test_dates)
-        equity_curve = self._compute_equity_curve(
-            returns.loc[test_dates], position_series, cost_model, asset=asset
-        )
+        equity_curve = self._compute_equity_curve(returns.loc[test_dates], position_series, cost_model, asset=asset)
 
         # Generate trade log
         all_trades = self._generate_trade_log(position_series)
@@ -301,11 +304,11 @@ class WalkForwardBacktester:
                     position_change=abs(current_position - prev_position),
                     asset=asset,
                 )
-                current_equity *= (1 - cost)
+                current_equity *= 1 - cost
 
             # Apply return if in position
             if current_position == 1:
-                current_equity *= (1 + daily_return)
+                current_equity *= 1 + daily_return
 
             equity_values.append(current_equity)
             dates.append(date)
@@ -328,12 +331,14 @@ class WalkForwardBacktester:
         for date, signal in positions.items():
             current_position = int(signal)
             if current_position != prev_position:
-                trades.append({
-                    "date": date,
-                    "signal": current_position,
-                    "position_before": prev_position,
-                    "position_after": current_position,
-                })
+                trades.append(
+                    {
+                        "date": date,
+                        "signal": current_position,
+                        "position_before": prev_position,
+                        "position_after": current_position,
+                    }
+                )
             prev_position = current_position
 
         return trades

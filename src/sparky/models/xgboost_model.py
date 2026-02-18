@@ -102,8 +102,7 @@ class XGBoostModel:
         nan_fraction = X.isna().sum().sum() / (X.shape[0] * X.shape[1])
         if nan_fraction > 0.3:
             logger.warning(
-                f"High NaN fraction in features: {nan_fraction:.1%}. "
-                "XGBoost will handle this, but consider imputation."
+                f"High NaN fraction in features: {nan_fraction:.1%}. XGBoost will handle this, but consider imputation."
             )
 
         # Fit model
@@ -142,9 +141,15 @@ class XGBoostModel:
         if not hasattr(self.model, "feature_importances_"):
             raise ValueError("Model not trained yet — call fit() first")
 
-        importances = pd.DataFrame({
-            "feature": self.model.feature_names_in_,
-            "importance": self.model.feature_importances_,
-        }).sort_values("importance", ascending=False).reset_index(drop=True)
+        importances = (
+            pd.DataFrame(
+                {
+                    "feature": self.model.feature_names_in_,
+                    "importance": self.model.feature_importances_,
+                }
+            )
+            .sort_values("importance", ascending=False)
+            .reset_index(drop=True)
+        )
 
         return importances

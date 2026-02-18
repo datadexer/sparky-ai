@@ -13,8 +13,6 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
-
 
 def load_activity_log(log_path: Path) -> list[dict]:
     """Load activity log from JSONL."""
@@ -77,7 +75,7 @@ def main():
     events = load_activity_log(log_path)
 
     if not events:
-        print(f"❌ Activity log is empty")
+        print("❌ Activity log is empty")
         return
 
     # Analyze progress
@@ -88,7 +86,7 @@ def main():
     last_event = datetime.fromisoformat(events[-1]["timestamp"])
     total_duration = last_event - first_event
 
-    print(f"📅 SESSION INFO")
+    print("📅 SESSION INFO")
     print(f"{'─' * 80}")
     print(f"Started: {first_event.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print(f"Last activity: {last_event.strftime('%Y-%m-%d %H:%M:%S UTC')}")
@@ -97,7 +95,7 @@ def main():
     print()
 
     # Task summary
-    print(f"📋 TASK SUMMARY")
+    print("📋 TASK SUMMARY")
     print(f"{'─' * 80}")
 
     completed_tasks = [t for t, info in tasks.items() if info["completed"] is not None]
@@ -108,7 +106,7 @@ def main():
     print()
 
     # Detailed task breakdown
-    print(f"🔍 TASK DETAILS")
+    print("🔍 TASK DETAILS")
     print(f"{'─' * 80}")
 
     for task_name, info in sorted(tasks.items(), key=lambda x: x[1]["started"] or datetime.min):
@@ -133,7 +131,7 @@ def main():
     all_experiments = [e for e in events if e["action_type"] == "experiment_completed"]
 
     if all_experiments:
-        print(f"🔬 EXPERIMENT SUMMARY")
+        print("🔬 EXPERIMENT SUMMARY")
         print(f"{'─' * 80}")
         print(f"Total experiments: {len(all_experiments)}")
         print()
@@ -161,7 +159,7 @@ def main():
             print()
 
     # Phase 3 checklist
-    print(f"📝 PHASE 3 CHECKLIST")
+    print("📝 PHASE 3 CHECKLIST")
     print(f"{'─' * 80}")
 
     checklist = {
@@ -188,7 +186,7 @@ def main():
     print()
 
     # Key findings
-    print(f"🎯 KEY FINDINGS")
+    print("🎯 KEY FINDINGS")
     print(f"{'─' * 80}")
 
     if "feature_ablation_experiments" in completed_tasks:

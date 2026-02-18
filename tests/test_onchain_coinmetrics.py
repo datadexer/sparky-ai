@@ -8,8 +8,8 @@ import pytest
 
 from sparky.data.onchain_coinmetrics import (
     ASSET_METRICS,
-    CoinMetricsFetcher,
     REQUEST_INTERVAL,
+    CoinMetricsFetcher,
 )
 
 
@@ -283,7 +283,6 @@ class TestRateLimiting:
             mock_rate_limit.assert_called_once()
 
     def test_rate_limit_sleeps_when_too_fast(self, fetcher):
-        import time
 
         with patch("sparky.data.onchain_coinmetrics.time") as mock_time:
             mock_time.time.return_value = 1.0
@@ -297,7 +296,6 @@ class TestRateLimiting:
             mock_time.sleep.assert_called_once_with(expected_sleep)
 
     def test_rate_limit_no_sleep_when_enough_time_passed(self, fetcher):
-        import time
 
         with patch("sparky.data.onchain_coinmetrics.time") as mock_time:
             mock_time.time.return_value = 10.0

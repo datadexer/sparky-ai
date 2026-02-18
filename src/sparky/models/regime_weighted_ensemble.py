@@ -30,11 +30,11 @@ Target:
 """
 
 import logging
-import pandas as pd
-import numpy as np
 
-from sparky.models.simple_baselines import donchian_channel_strategy
+import pandas as pd
+
 from sparky.features.regime_indicators import compute_volatility_regime, detect_trend
+from sparky.models.simple_baselines import donchian_channel_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +78,7 @@ def train_regime_specific_strategies(
     }
 
     for regime, config in regime_strategies.items():
-        logger.info(
-            f"Strategy for {regime.upper()} regime: {config['description']}, "
-            f"params={config['params']}"
-        )
+        logger.info(f"Strategy for {regime.upper()} regime: {config['description']}, params={config['params']}")
 
     return regime_strategies
 
@@ -150,9 +147,9 @@ def detect_market_regime(
 
     logger.info(
         f"Market regime detected ({method}): "
-        f"BULL={n_bull} ({n_bull/len(regime)*100:.1f}%), "
-        f"BEAR={n_bear} ({n_bear/len(regime)*100:.1f}%), "
-        f"SIDEWAYS={n_sideways} ({n_sideways/len(regime)*100:.1f}%)"
+        f"BULL={n_bull} ({n_bull / len(regime) * 100:.1f}%), "
+        f"BEAR={n_bear} ({n_bear / len(regime) * 100:.1f}%), "
+        f"SIDEWAYS={n_sideways} ({n_sideways / len(regime) * 100:.1f}%)"
     )
 
     return regime
@@ -258,9 +255,9 @@ def regime_weighted_ensemble(
         weights = compute_regime_weights(current_regime, weighting_scheme=weighting_scheme)
 
         weighted_signal.iloc[i] = (
-            weights["bull"] * signals_bull.iloc[i] +
-            weights["bear"] * signals_bear.iloc[i] +
-            weights["sideways"] * signals_sideways.iloc[i]
+            weights["bull"] * signals_bull.iloc[i]
+            + weights["bear"] * signals_bear.iloc[i]
+            + weights["sideways"] * signals_sideways.iloc[i]
         )
 
     # Threshold weighted signal at 0.5 (LONG if weighted signal > 0.5)
@@ -270,8 +267,8 @@ def regime_weighted_ensemble(
     n_total = len(final_signals)
 
     logger.info(
-        f"Regime-Weighted Ensemble ({weighting_scheme}): {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Regime-Weighted Ensemble ({weighting_scheme}): {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return final_signals
@@ -333,9 +330,9 @@ def regime_weighted_multitimeframe_ensemble(
         weights = compute_regime_weights(current_regime, weighting_scheme=weighting_scheme)
 
         weighted_signal.iloc[i] = (
-            weights["bull"] * signals_bull.iloc[i] +
-            weights["bear"] * signals_bear.iloc[i] +
-            weights["sideways"] * signals_sideways.iloc[i]
+            weights["bull"] * signals_bull.iloc[i]
+            + weights["bear"] * signals_bear.iloc[i]
+            + weights["sideways"] * signals_sideways.iloc[i]
         )
 
     # Threshold weighted signal at 0.5
@@ -345,8 +342,8 @@ def regime_weighted_multitimeframe_ensemble(
     n_total = len(final_signals)
 
     logger.info(
-        f"Regime-Weighted Multi-TF Ensemble ({weighting_scheme}): {n_long} LONG ({n_long/n_total*100:.1f}%), "
-        f"{n_total - n_long} FLAT ({(n_total - n_long)/n_total*100:.1f}%)"
+        f"Regime-Weighted Multi-TF Ensemble ({weighting_scheme}): {n_long} LONG ({n_long / n_total * 100:.1f}%), "
+        f"{n_total - n_long} FLAT ({(n_total - n_long) / n_total * 100:.1f}%)"
     )
 
     return final_signals

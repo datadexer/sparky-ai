@@ -22,6 +22,7 @@ OOS_LOG_PATH = Path("results/oos_evaluations.jsonl")
 
 class HoldoutViolation(Exception):
     """Raised when code attempts to use holdout data without authorization."""
+
     pass
 
 
@@ -52,9 +53,7 @@ class HoldoutGuard:
 
     def get_oos_boundary(self, asset: str) -> tuple[str, int]:
         """Get OOS start date and embargo days for an asset."""
-        asset_policy = self.policy["holdout_periods"].get(
-            asset, self.policy["holdout_periods"]["cross_asset"]
-        )
+        asset_policy = self.policy["holdout_periods"].get(asset, self.policy["holdout_periods"]["cross_asset"])
         return asset_policy["oos_start"], asset_policy["embargo_days"]
 
     def get_max_training_date(self, asset: str) -> pd.Timestamp:
@@ -64,11 +63,7 @@ class HoldoutGuard:
         return oos_ts - pd.Timedelta(days=embargo_days)
 
     def check_data_boundaries(
-        self,
-        df: pd.DataFrame,
-        asset: str,
-        oos_authorized: bool = False,
-        purpose: str = "training"
+        self, df: pd.DataFrame, asset: str, oos_authorized: bool = False, purpose: str = "training"
     ) -> None:
         """Check that data respects holdout boundaries.
 
@@ -89,7 +84,7 @@ class HoldoutGuard:
         embargo_ts = oos_ts - pd.Timedelta(days=embargo_days)
 
         data_max = df.index.max()
-        if hasattr(data_max, 'tz') and data_max.tz is None:
+        if hasattr(data_max, "tz") and data_max.tz is None:
             data_max = data_max.tz_localize("UTC")
 
         if purpose in ("training", "validation"):
@@ -108,8 +103,8 @@ class HoldoutGuard:
                 )
             if self._oos_authorization is None:
                 raise HoldoutViolation(
-                    f"HOLDOUT VIOLATION: OOS evaluation requested but no "
-                    f"authorization record. Call authorize_oos_evaluation() first."
+                    "HOLDOUT VIOLATION: OOS evaluation requested but no "
+                    "authorization record. Call authorize_oos_evaluation() first."
                 )
 
         logger.info(
@@ -128,10 +123,7 @@ class HoldoutGuard:
         """Record OOS evaluation authorization."""
         valid_approvers = self.policy["policy"]["approvers"]
         if approved_by not in valid_approvers:
-            raise HoldoutViolation(
-                f"OOS evaluation can only be approved by {valid_approvers}, "
-                f"not '{approved_by}'"
-            )
+            raise HoldoutViolation(f"OOS evaluation can only be approved by {valid_approvers}, not '{approved_by}'")
 
         self._oos_authorization = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -140,10 +132,7 @@ class HoldoutGuard:
             "approved_by": approved_by,
             "in_sample_sharpe": in_sample_sharpe,
         }
-        logger.info(
-            f"[HOLDOUT GUARD] OOS evaluation authorized for {model_name} "
-            f"by {approved_by}"
-        )
+        logger.info(f"[HOLDOUT GUARD] OOS evaluation authorized for {model_name} by {approved_by}")
 
     def log_oos_result(self, oos_sharpe: float, verdict: str) -> None:
         """Log OOS evaluation result to append-only log."""
@@ -160,8 +149,5 @@ class HoldoutGuard:
         with open(OOS_LOG_PATH, "a") as f:
             f.write(json.dumps(entry) + "\n")
 
-        logger.info(
-            f"[HOLDOUT GUARD] OOS result logged: {entry['model_name']} "
-            f"Sharpe={oos_sharpe}, verdict={verdict}"
-        )
+        logger.info(f"[HOLDOUT GUARD] OOS result logged: {entry['model_name']} Sharpe={oos_sharpe}, verdict={verdict}")
         self._oos_authorization = None  # One evaluation per authorization

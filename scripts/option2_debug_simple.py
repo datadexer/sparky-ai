@@ -74,6 +74,7 @@ def main():
     X = pd.read_parquet("data/processed/feature_matrix_btc.parquet")
 
     from sparky.data.storage import DataStore
+
     store = DataStore()
     prices_df, _ = store.load(Path("data/raw/btc/ohlcv.parquet"))
 
@@ -121,7 +122,9 @@ def main():
     logger.info("-" * 90)
 
     model = XGBoostModel(random_state=0)  # Default params
-    results.append(run_experiment("1. Original XGBoost (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30))
+    results.append(
+        run_experiment("1. Original XGBoost (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30)
+    )
 
     # 2. Shallow XGBoost
     model = XGBoostModel(
@@ -135,7 +138,9 @@ def main():
         reg_alpha=5.0,
         reg_lambda=10.0,
     )
-    results.append(run_experiment("2. Shallow XGBoost (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30))
+    results.append(
+        run_experiment("2. Shallow XGBoost (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30)
+    )
 
     # 3. Logistic Regression
     class LogisticModel:
@@ -153,7 +158,9 @@ def main():
             return self.model.predict(X_scaled).astype(int)
 
     model = LogisticModel(C=0.01)
-    results.append(run_experiment("3. Logistic Regression (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30))
+    results.append(
+        run_experiment("3. Logistic Regression (30d)", model, X_train_30, y_train_30, X_hold_30, y_hold_30, ret_hold_30)
+    )
 
     # =========================================================================
     # Test on 7d horizon
@@ -193,7 +200,9 @@ def main():
 
     # 4. Original XGBoost on 7d
     model = XGBoostModel(random_state=0)
-    results.append(run_experiment("4. Original XGBoost (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7))
+    results.append(
+        run_experiment("4. Original XGBoost (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7)
+    )
 
     # 5. Shallow XGBoost on 7d
     model = XGBoostModel(
@@ -207,11 +216,15 @@ def main():
         reg_alpha=5.0,
         reg_lambda=10.0,
     )
-    results.append(run_experiment("5. Shallow XGBoost (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7))
+    results.append(
+        run_experiment("5. Shallow XGBoost (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7)
+    )
 
     # 6. Logistic on 7d
     model = LogisticModel(C=0.01)
-    results.append(run_experiment("6. Logistic Regression (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7))
+    results.append(
+        run_experiment("6. Logistic Regression (7d)", model, X_train_7, y_train_7, X_hold_7, y_hold_7, ret_hold_7)
+    )
 
     # =========================================================================
     # Test on 1d horizon (shortest)
@@ -261,7 +274,9 @@ def main():
         reg_alpha=5.0,
         reg_lambda=10.0,
     )
-    results.append(run_experiment("7. Shallow XGBoost (1d)", model, X_train_1, y_train_1, X_hold_1, y_hold_1, ret_hold_1))
+    results.append(
+        run_experiment("7. Shallow XGBoost (1d)", model, X_train_1, y_train_1, X_hold_1, y_hold_1, ret_hold_1)
+    )
 
     # =========================================================================
     # SUMMARY
@@ -296,6 +311,7 @@ def main():
 
     # Save
     import json
+
     output = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "verdict": verdict,
@@ -309,24 +325,24 @@ def main():
     # Log to RESEARCH_LOG
     log_entry = f"""
 ---
-## OPTION 2: Debug Overfitting — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC
+## OPTION 2: Debug Overfitting — {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")} UTC
 
 **Configurations Tested**: {len(results)}
 
-**Best**: {best['name']}
-- Sharpe: {best['sharpe']:.4f}
-- Return: {best['return_pct']:.2f}%
-- Trades: {best['num_trades']}
+**Best**: {best["name"]}
+- Sharpe: {best["sharpe"]:.4f}
+- Return: {best["return_pct"]:.2f}%
+- Trades: {best["num_trades"]}
 
 **Verdict**: [{verdict}]
 
-**Next**: {'Validate with multi-seed' if verdict == 'SUCCESS' else 'Proceed to OPTION 3 (strategic pivot)'}
+**Next**: {"Validate with multi-seed" if verdict == "SUCCESS" else "Proceed to OPTION 3 (strategic pivot)"}
 """
 
     with open("roadmap/RESEARCH_LOG.md", "a") as f:
         f.write(log_entry)
 
-    logger.info(f"\nResults saved to results/experiments/option2_debug_results.json")
+    logger.info("\nResults saved to results/experiments/option2_debug_results.json")
 
     return output
 

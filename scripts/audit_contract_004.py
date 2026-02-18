@@ -44,25 +44,29 @@ def fetch_contract_004_runs():
         summary = run.summary or {}
         for step in STEPS:
             if step in tags:
-                grouped[step].append({
+                grouped[step].append(
+                    {
+                        "run_id": run.id,
+                        "name": run.name,
+                        "sharpe": summary.get("sharpe"),
+                        "dsr": summary.get("dsr"),
+                        "max_drawdown": summary.get("max_drawdown"),
+                        "n_observations": summary.get("n_observations"),
+                        "skewness": summary.get("skewness"),
+                        "kurtosis": summary.get("kurtosis"),
+                        "config": dict(run.config) if hasattr(run, "config") else {},
+                        "tags": tags,
+                    }
+                )
+                break
+        else:
+            grouped["untagged"].append(
+                {
                     "run_id": run.id,
                     "name": run.name,
                     "sharpe": summary.get("sharpe"),
-                    "dsr": summary.get("dsr"),
-                    "max_drawdown": summary.get("max_drawdown"),
-                    "n_observations": summary.get("n_observations"),
-                    "skewness": summary.get("skewness"),
-                    "kurtosis": summary.get("kurtosis"),
-                    "config": dict(run.config) if hasattr(run, "config") else {},
-                    "tags": tags,
-                })
-                break
-        else:
-            grouped["untagged"].append({
-                "run_id": run.id,
-                "name": run.name,
-                "sharpe": summary.get("sharpe"),
-            })
+                }
+            )
 
     return grouped
 
@@ -164,19 +168,23 @@ def generate_report(analyses, total_runs):
     for a in analyses:
         if a is None:
             continue
-        lines.extend([
-            f"### {a['group'].title()}",
-            "",
-            f"- **Runs with Sharpe data:** {a['n_with_sharpe']}",
-            f"- **Best Sharpe:** {a['best_sharpe']:.3f} ({a['best_run_name']})",
-            f"- **Expected Max Sharpe (from noise alone with {a['n_with_sharpe']} trials, T={a.get('T', 'N/A')} [{a.get('T_source', 'N/A')}]):** {a['expected_max_sharpe']:.3f}",
-            f"- **Best DSR:** {a['best_dsr']:.3f}" if a.get("best_dsr") is not None else "- **Best DSR:** N/A",
-            f"- **Best Max Drawdown:** {a['best_max_dd']:.1%}" if a.get("best_max_dd") is not None else "- **Best Max Drawdown:** N/A",
-            f"- **Mean Sharpe:** {a['mean_sharpe']:.3f}",
-            f"- **Median Sharpe:** {a['median_sharpe']:.3f}",
-            f"- **Std Sharpe:** {a['std_sharpe']:.3f}",
-            "",
-        ])
+        lines.extend(
+            [
+                f"### {a['group'].title()}",
+                "",
+                f"- **Runs with Sharpe data:** {a['n_with_sharpe']}",
+                f"- **Best Sharpe:** {a['best_sharpe']:.3f} ({a['best_run_name']})",
+                f"- **Expected Max Sharpe (from noise alone with {a['n_with_sharpe']} trials, T={a.get('T', 'N/A')} [{a.get('T_source', 'N/A')}]):** {a['expected_max_sharpe']:.3f}",
+                f"- **Best DSR:** {a['best_dsr']:.3f}" if a.get("best_dsr") is not None else "- **Best DSR:** N/A",
+                f"- **Best Max Drawdown:** {a['best_max_dd']:.1%}"
+                if a.get("best_max_dd") is not None
+                else "- **Best Max Drawdown:** N/A",
+                f"- **Mean Sharpe:** {a['mean_sharpe']:.3f}",
+                f"- **Median Sharpe:** {a['median_sharpe']:.3f}",
+                f"- **Std Sharpe:** {a['std_sharpe']:.3f}",
+                "",
+            ]
+        )
 
     # Overall verdict
     all_sharpes = []
@@ -188,20 +196,24 @@ def generate_report(analyses, total_runs):
     overall_exp_max = expected_max_sharpe(max(total_trials, 2), 8760 * 5) if total_trials > 0 else 0
     overall_best = max(all_sharpes) if all_sharpes else 0
 
-    lines.extend([
-        "## Overall Verdict",
-        "",
-        f"- **Total configs tested across all steps:** {total_trials}",
-        f"- **Overall expected max Sharpe (noise with {total_trials} trials):** {overall_exp_max:.3f}",
-        f"- **Actual best Sharpe:** {overall_best:.3f}",
-        f"- **Best vs Expected:** {overall_best - overall_exp_max:+.3f}",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Overall Verdict",
+            "",
+            f"- **Total configs tested across all steps:** {total_trials}",
+            f"- **Overall expected max Sharpe (noise with {total_trials} trials):** {overall_exp_max:.3f}",
+            f"- **Actual best Sharpe:** {overall_best:.3f}",
+            f"- **Best vs Expected:** {overall_best - overall_exp_max:+.3f}",
+            "",
+        ]
+    )
 
     if overall_best > overall_exp_max:
         lines.append("**Conclusion:** Best result exceeds noise threshold. Further DSR validation recommended.")
     else:
-        lines.append("**Conclusion:** Best result does NOT convincingly exceed noise. Consider more diverse strategies.")
+        lines.append(
+            "**Conclusion:** Best result does NOT convincingly exceed noise. Consider more diverse strategies."
+        )
 
     lines.extend(["", "---", "", "*Generated by `scripts/audit_contract_004.py`*", ""])
 
@@ -271,8 +283,7 @@ def main():
             analyses.append(analysis)
             if analysis:
                 logger.info(
-                    f"  {step}: best={analysis['best_sharpe']:.3f}, "
-                    f"expected_max={analysis['expected_max_sharpe']:.3f}"
+                    f"  {step}: best={analysis['best_sharpe']:.3f}, expected_max={analysis['expected_max_sharpe']:.3f}"
                 )
         else:
             logger.info(f"  {step}: no runs found")
@@ -289,11 +300,7 @@ def main():
     generate_histogram(analyses)
 
     # Also save raw analysis as JSON for programmatic access
-    json_data = {
-        a["group"]: {k: v for k, v in a.items() if k != "all_sharpes"}
-        for a in analyses
-        if a
-    }
+    json_data = {a["group"]: {k: v for k, v in a.items() if k != "all_sharpes"} for a in analyses if a}
     json_path = OUTPUT_DIR / "contract_004_dsr_analysis.json"
     json_path.write_text(json.dumps(json_data, indent=2, default=str))
     logger.info(f"JSON analysis saved to {json_path}")

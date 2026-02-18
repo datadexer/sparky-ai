@@ -42,9 +42,7 @@ def backtest_data():
     ema_20 = ema(price_series, 20)
     ema_ratio = price_series / ema_20 - 1  # Price relative to EMA
 
-    X = pd.DataFrame(
-        {"momentum": mom, "rsi": rsi_14, "ema_ratio": ema_ratio}, index=dates
-    )
+    X = pd.DataFrame({"momentum": mom, "rsi": rsi_14, "ema_ratio": ema_ratio}, index=dates)
     # Drop NaN rows from lookback
     X = X.dropna()
 
@@ -68,12 +66,8 @@ class TestBacktesterWithRealCostModel:
         cost_model = TransactionCostModel.for_btc()
         backtester = WalkForwardBacktester(train_min_length=252)
 
-        result_with_costs = backtester.run(
-            model, X, y, returns, cost_model=cost_model, asset="BTC"
-        )
-        result_without_costs = backtester.run(
-            model, X, y, returns, cost_model=None, asset="BTC"
-        )
+        result_with_costs = backtester.run(model, X, y, returns, cost_model=cost_model, asset="BTC")
+        result_without_costs = backtester.run(model, X, y, returns, cost_model=None, asset="BTC")
 
         # With costs should be lower
         final_with = result_with_costs.equity_curve.iloc[-1]
@@ -110,7 +104,10 @@ class TestBacktesterWithAllBaselines:
         # SimpleMomentum uses the "momentum" column in X
         result = backtester.run(
             SimpleMomentum(momentum_col="momentum"),
-            X, y, returns, cost_model=cost_model,
+            X,
+            y,
+            returns,
+            cost_model=cost_model,
         )
 
         assert isinstance(result, BacktestResult)
@@ -138,9 +135,7 @@ class TestLeakageDetectorPreservesModelState:
         n = 400
         dates = pd.date_range("2020-01-01", periods=n, freq="D")
 
-        X = pd.DataFrame(
-            {"f1": np.random.randn(n), "f2": np.random.randn(n)}, index=dates
-        )
+        X = pd.DataFrame({"f1": np.random.randn(n), "f2": np.random.randn(n)}, index=dates)
         y = pd.Series((X["f1"] > 0).astype(int).values, index=dates)
 
         # Split with temporal gap
@@ -190,54 +185,62 @@ class TestFeatureRegistryToSelectionPipeline:
 
         # Register real features
         registry = FeatureRegistry()
-        registry.register(FeatureDefinition(
-            name="rsi_14",
-            category="technical",
-            compute_fn=lambda d: rsi(d["price"]["close"], 14),
-            input_columns=["close"],
-            lookback=14,
-            asset="btc",
-        ))
-        registry.register(FeatureDefinition(
-            name="momentum_30",
-            category="technical",
-            compute_fn=lambda d: momentum(d["price"]["close"], 30),
-            input_columns=["close"],
-            lookback=30,
-            asset="btc",
-        ))
-        registry.register(FeatureDefinition(
-            name="ema_ratio_20",
-            category="technical",
-            compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 20) - 1,
-            input_columns=["close"],
-            lookback=20,
-            asset="btc",
-        ))
-        registry.register(FeatureDefinition(
-            name="ema_ratio_50",
-            category="technical",
-            compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 50) - 1,
-            input_columns=["close"],
-            lookback=50,
-            asset="btc",
-        ))
-        registry.register(FeatureDefinition(
-            name="volatility_proxy",
-            category="technical",
-            compute_fn=lambda d: d["price"]["close"].rolling(20).std() / d["price"]["close"],
-            input_columns=["close"],
-            lookback=20,
-            asset="btc",
-        ))
+        registry.register(
+            FeatureDefinition(
+                name="rsi_14",
+                category="technical",
+                compute_fn=lambda d: rsi(d["price"]["close"], 14),
+                input_columns=["close"],
+                lookback=14,
+                asset="btc",
+            )
+        )
+        registry.register(
+            FeatureDefinition(
+                name="momentum_30",
+                category="technical",
+                compute_fn=lambda d: momentum(d["price"]["close"], 30),
+                input_columns=["close"],
+                lookback=30,
+                asset="btc",
+            )
+        )
+        registry.register(
+            FeatureDefinition(
+                name="ema_ratio_20",
+                category="technical",
+                compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 20) - 1,
+                input_columns=["close"],
+                lookback=20,
+                asset="btc",
+            )
+        )
+        registry.register(
+            FeatureDefinition(
+                name="ema_ratio_50",
+                category="technical",
+                compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 50) - 1,
+                input_columns=["close"],
+                lookback=50,
+                asset="btc",
+            )
+        )
+        registry.register(
+            FeatureDefinition(
+                name="volatility_proxy",
+                category="technical",
+                compute_fn=lambda d: d["price"]["close"].rolling(20).std() / d["price"]["close"],
+                input_columns=["close"],
+                lookback=20,
+                asset="btc",
+            )
+        )
 
         # Build feature matrix
         feature_names = registry.list_features(asset="btc")
         assert len(feature_names) == 5
 
-        matrix = registry.build_feature_matrix(
-            asset="btc", feature_names=feature_names, data=data
-        )
+        matrix = registry.build_feature_matrix(asset="btc", feature_names=feature_names, data=data)
         assert not matrix.empty
         assert matrix.shape[1] == 5
 
@@ -265,7 +268,7 @@ class TestExperimentTrackerLogsRealBacktest:
 
     def test_backtest_metrics_logged_correctly(self, backtest_data, tmp_path):
         """Metrics from a real backtest are correctly passed to W&B."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         X, y, returns = backtest_data
         model = BuyAndHold()
@@ -328,8 +331,11 @@ class TestBootstrapCIScaleMatchesFoldSharpe:
 
         # Compute bootstrap CI (annualized by default)
         lower, upper = BacktestStatistics.sharpe_confidence_interval(
-            equity_returns, n_bootstrap=2000, ci=0.95,
-            annualize=True, random_state=42,
+            equity_returns,
+            n_bootstrap=2000,
+            ci=0.95,
+            annualize=True,
+            random_state=42,
         )
 
         # Both should be on the same scale (annualized)
@@ -342,18 +348,19 @@ class TestBootstrapCIScaleMatchesFoldSharpe:
         ci_mid = (lower + upper) / 2
         # Both are annualized — difference should be small relative to CI width
         assert abs(point_sharpe - ci_mid) < ci_width * 3, (
-            f"Point estimate {point_sharpe:.3f} too far from CI "
-            f"[{lower:.3f}, {upper:.3f}] (mid={ci_mid:.3f})"
+            f"Point estimate {point_sharpe:.3f} too far from CI [{lower:.3f}, {upper:.3f}] (mid={ci_mid:.3f})"
         )
 
         # Verify daily (non-annualized) CI is sqrt(252)x smaller
         lower_daily, upper_daily = BacktestStatistics.sharpe_confidence_interval(
-            equity_returns, n_bootstrap=2000, ci=0.95,
-            annualize=False, random_state=42,
+            equity_returns,
+            n_bootstrap=2000,
+            ci=0.95,
+            annualize=False,
+            random_state=42,
         )
         daily_width = upper_daily - lower_daily
         scale_ratio = ci_width / daily_width if daily_width > 0 else float("inf")
         assert abs(scale_ratio - np.sqrt(252)) < 1.0, (
-            f"Annualized/daily CI width ratio {scale_ratio:.2f} "
-            f"should be ~{np.sqrt(252):.2f}"
+            f"Annualized/daily CI width ratio {scale_ratio:.2f} should be ~{np.sqrt(252):.2f}"
         )

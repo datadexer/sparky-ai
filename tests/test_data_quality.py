@@ -1,7 +1,6 @@
 """Tests for data quality checks."""
 
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -264,7 +263,9 @@ class TestCrossValidatePrice:
         )
 
         result = checker.cross_validate_price(
-            ccxt_df, reference_df, max_pct_diff=0.02  # 2% threshold
+            ccxt_df,
+            reference_df,
+            max_pct_diff=0.02,  # 2% threshold
         )
 
         assert result["check"] == "cross_validate_price"
@@ -287,7 +288,9 @@ class TestCrossValidatePrice:
         )
 
         result = checker.cross_validate_price(
-            ccxt_df, reference_df, max_pct_diff=0.02  # 2% threshold
+            ccxt_df,
+            reference_df,
+            max_pct_diff=0.02,  # 2% threshold
         )
 
         assert result["check"] == "cross_validate_price"
@@ -298,9 +301,7 @@ class TestCrossValidatePrice:
 
     def test_missing_columns(self, checker, clean_df):
         """Test cross_validate_price with missing columns."""
-        result = checker.cross_validate_price(
-            clean_df, clean_df, price_col="nonexistent"
-        )
+        result = checker.cross_validate_price(clean_df, clean_df, price_col="nonexistent")
 
         assert result["pass"] is False
         assert "error" in result
@@ -324,9 +325,7 @@ class TestCrossValidatePrice:
         df1 = pd.DataFrame({"price": [100.0, 110.0, 105.0, 115.0, 108.0]}, index=dates)
         df2 = pd.DataFrame({"value": [100.5, 110.5, 105.5, 115.5, 108.5]}, index=dates)
 
-        result = checker.cross_validate_price(
-            df1, df2, price_col="price", reference_col="value", max_pct_diff=0.01
-        )
+        result = checker.cross_validate_price(df1, df2, price_col="price", reference_col="value", max_pct_diff=0.01)
 
         assert result["dates_compared"] == 5
         assert result["pass"] is True
@@ -335,9 +334,7 @@ class TestCrossValidatePrice:
 class TestRunAllChecks:
     def test_returns_complete_report(self, checker, clean_df):
         """Test that run_all_checks returns a complete report."""
-        report = checker.run_all_checks(
-            clean_df, asset="btc", source="binance", price_range=(50.0, 200.0)
-        )
+        report = checker.run_all_checks(clean_df, asset="btc", source="binance", price_range=(50.0, 200.0))
 
         assert report["asset"] == "btc"
         assert report["source"] == "binance"
@@ -366,9 +363,7 @@ class TestRunAllChecks:
 
     def test_price_range_included_when_specified(self, checker, df_out_of_range):
         """Test that price range check is included when specified."""
-        report = checker.run_all_checks(
-            df_out_of_range, asset="btc", source="binance", price_range=(0.0, 10000.0)
-        )
+        report = checker.run_all_checks(df_out_of_range, asset="btc", source="binance", price_range=(0.0, 10000.0))
 
         assert "price_range" in report["checks"]
         assert report["checks"]["price_range"]["pass"] is False
@@ -409,6 +404,7 @@ class TestSaveReport:
 
         # Better verification: reload and compare
         import json
+
         with open(saved_path) as f:
             loaded = json.load(f)
 
@@ -433,14 +429,13 @@ class TestSaveReport:
         monkeypatch.setattr("sparky.data.quality.QUALITY_REPORTS_DIR", tmp_path)
 
         # Run actual checks to get a real report
-        report = checker.run_all_checks(
-            clean_df, asset="btc", source="binance", price_range=(50.0, 200.0)
-        )
+        report = checker.run_all_checks(clean_df, asset="btc", source="binance", price_range=(50.0, 200.0))
 
         saved_path = checker.save_report(report, "full_report.json")
 
         # Load and verify
         import json
+
         with open(saved_path) as f:
             loaded = json.load(f)
 

@@ -15,18 +15,18 @@ Target:
 - 2022 performance improved
 """
 
-import sys
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, "src")
-from sparky.models.regime_filtered_donchian import regime_filtered_ensemble
 from sparky.features.returns import annualized_sharpe, max_drawdown
+from sparky.models.regime_filtered_donchian import regime_filtered_ensemble
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def load_prices():
     """Load BTC daily prices."""
     price_path = Path("data/raw/btc/ohlcv_hourly.parquet")
     prices = pd.read_parquet(price_path)
-    prices_daily = prices['close'].resample('D').last()
+    prices_daily = prices["close"].resample("D").last()
     if prices_daily.index.tz is not None:
         prices_daily.index = prices_daily.index.tz_localize(None)
     return prices_daily.loc["2017-01-01":"2023-12-31"]
@@ -93,9 +93,9 @@ def compute_fold_metrics(returns, buyhold_returns):
 
 
 def main():
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("VALIDATION: Regime-Filtered Donchian Ensemble")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     # Load data
     prices = load_prices()
@@ -140,17 +140,12 @@ def main():
         logger.info(f"Fold: {fold['name']} ({fold['test_start']} to {fold['test_end']})")
 
         fold_returns, buyhold_returns = compute_fold_returns(
-            signals, prices, fold['test_start'], fold['test_end'], tc=0.0026
+            signals, prices, fold["test_start"], fold["test_end"], tc=0.0026
         )
 
         metrics = compute_fold_metrics(fold_returns, buyhold_returns)
 
-        result = {
-            "fold": fold['name'],
-            "test_start": fold['test_start'],
-            "test_end": fold['test_end'],
-            **metrics
-        }
+        result = {"fold": fold["name"], "test_start": fold["test_start"], "test_end": fold["test_end"], **metrics}
 
         fold_results.append(result)
 
@@ -159,7 +154,7 @@ def main():
         logger.info("")
 
     # Aggregate statistics
-    sharpes = [r['sharpe'] for r in fold_results]
+    sharpes = [r["sharpe"] for r in fold_results]
     mean_sharpe = np.mean(sharpes)
     std_sharpe = np.std(sharpes, ddof=1)
     min_sharpe = np.min(sharpes)
@@ -168,9 +163,9 @@ def main():
     positive_sharpe_count = sum(1 for s in sharpes if s > 0)
     high_sharpe_count = sum(1 for s in sharpes if s > 0.8)
 
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("AGGREGATE STATISTICS")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(f"Mean Sharpe: {mean_sharpe:.3f}")
     logger.info(f"Std Sharpe: {std_sharpe:.3f}")
     logger.info(f"Min Sharpe: {min_sharpe:.3f}")
@@ -180,19 +175,19 @@ def main():
 
     # Comparison to unfiltered
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("COMPARISON TO UNFILTERED")
-    logger.info("="*70)
-    logger.info(f"Unfiltered mean Sharpe: 0.365")
+    logger.info("=" * 70)
+    logger.info("Unfiltered mean Sharpe: 0.365")
     logger.info(f"Filtered mean Sharpe: {mean_sharpe:.3f}")
     improvement = mean_sharpe - 0.365
-    logger.info(f"Improvement: {improvement:+.3f} ({improvement/0.365*100:+.1f}%)")
+    logger.info(f"Improvement: {improvement:+.3f} ({improvement / 0.365 * 100:+.1f}%)")
 
     # Success criteria
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("SUCCESS CRITERIA")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     criteria = []
 
@@ -211,9 +206,9 @@ def main():
         criteria.append(False)
 
     # Check 2022 improvement
-    fold_2022 = next((r for r in fold_results if r['fold'] == '2022'), None)
+    fold_2022 = next((r for r in fold_results if r["fold"] == "2022"), None)
     if fold_2022:
-        sharpe_2022 = fold_2022['sharpe']
+        sharpe_2022 = fold_2022["sharpe"]
         if sharpe_2022 > -1.902:
             logger.info(f"✅ 2022 improved: {sharpe_2022:.3f} (vs unfiltered -1.902)")
             criteria.append(True)
@@ -267,15 +262,15 @@ def main():
 
     output_path = Path("results/validation/regime_filtered_validation.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 
     logger.info("")
     logger.info(f"Results saved to: {output_path}")
     logger.info("")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("REGIME-FILTERED VALIDATION COMPLETE")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

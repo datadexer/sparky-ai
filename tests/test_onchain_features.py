@@ -2,28 +2,26 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from sparky.features.onchain import (
-    # BTC features
-    hash_ribbon,
-    nvt_zscore,
-    mvrv_signal,
-    sopr_signal,
     address_momentum,
-    volume_momentum,
-    nupl_regime,
-    puell_signal,
-    supply_in_profit_extreme,
+    eth_address_momentum,
+    eth_btc_correlation_regime,
+    eth_btc_ratio_momentum,
+    eth_nvt_signal,
+    eth_transfer_value_zscore,
     # ETH features
     gas_fee_zscore,
-    eth_address_momentum,
-    eth_transfer_value_zscore,
-    eth_nvt_signal,
-    eth_btc_ratio_momentum,
-    eth_btc_correlation_regime,
+    # BTC features
+    hash_ribbon,
+    mvrv_signal,
+    nupl_regime,
+    nvt_zscore,
+    puell_signal,
+    sopr_signal,
+    supply_in_profit_extreme,
+    volume_momentum,
 )
-
 
 # =============================================================================
 # BTC Feature Tests
@@ -169,7 +167,7 @@ def test_address_momentum_positive():
     # pct_change with period=1: [NaN, 0.10, 0.0909..., 0.0833...]
     assert pd.isna(result.iloc[0])
     assert np.isclose(result.iloc[1], 0.10)
-    assert np.isclose(result.iloc[2], 120.0/110.0 - 1)
+    assert np.isclose(result.iloc[2], 120.0 / 110.0 - 1)
 
 
 def test_address_momentum_longer_period():
@@ -327,7 +325,7 @@ def test_eth_address_momentum_positive():
 
     assert pd.isna(result.iloc[0])
     assert np.isclose(result.iloc[1], 0.10)
-    assert np.isclose(result.iloc[2], 600_000.0/550_000.0 - 1)
+    assert np.isclose(result.iloc[2], 600_000.0 / 550_000.0 - 1)
 
 
 def test_eth_address_momentum_negative():
@@ -525,7 +523,7 @@ def test_all_functions_handle_empty_series():
 
 def test_all_functions_preserve_index():
     """Test that all functions preserve the input index."""
-    index = pd.date_range('2024-01-01', periods=100, freq='D')
+    index = pd.date_range("2024-01-01", periods=100, freq="D")
     data = pd.Series(range(100), index=index, dtype=float)
 
     # Test a few representative functions

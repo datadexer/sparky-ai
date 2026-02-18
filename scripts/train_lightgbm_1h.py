@@ -26,7 +26,7 @@ from pathlib import Path
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,16 +42,10 @@ def load_data():
     targets_path = Path("data/processed/targets_hourly_1h.parquet")
 
     if not features_path.exists():
-        raise FileNotFoundError(
-            f"Features not found: {features_path}\n"
-            "Run scripts/prepare_hourly_features.py first"
-        )
+        raise FileNotFoundError(f"Features not found: {features_path}\nRun scripts/prepare_hourly_features.py first")
 
     if not targets_path.exists():
-        raise FileNotFoundError(
-            f"Targets not found: {targets_path}\n"
-            "Run scripts/prepare_hourly_features.py first"
-        )
+        raise FileNotFoundError(f"Targets not found: {targets_path}\nRun scripts/prepare_hourly_features.py first")
 
     logger.info(f"Loading features from {features_path}")
     X = pd.read_parquet(features_path)
@@ -77,7 +71,7 @@ def load_data():
 
     dropped = len(X) - len(X_clean)
     if dropped > 0:
-        logger.info(f"Dropped {dropped:,} rows with NaN/inf ({dropped/len(X)*100:.1f}%)")
+        logger.info(f"Dropped {dropped:,} rows with NaN/inf ({dropped / len(X) * 100:.1f}%)")
 
     return X_clean, y_clean
 
@@ -136,19 +130,19 @@ def train_lightgbm(X_train, y_train):
     logger.info("Training LightGBM...")
 
     params = {
-        'objective': 'binary',
-        'metric': 'auc',
-        'max_depth': 5,
-        'learning_rate': 0.05,
-        'n_estimators': 200,
-        'subsample': 0.8,
-        'colsample_bytree': 0.8,
-        'min_child_weight': 5,
-        'reg_alpha': 0.5,  # L1 regularization
-        'reg_lambda': 2.0,  # L2 regularization
-        'random_state': 42,
-        'verbose': -1,
-        'device': 'gpu',
+        "objective": "binary",
+        "metric": "auc",
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 5,
+        "reg_alpha": 0.5,  # L1 regularization
+        "reg_lambda": 2.0,  # L2 regularization
+        "random_state": 42,
+        "verbose": -1,
+        "device": "gpu",
     }
 
     model = lgb.LGBMClassifier(**params)
@@ -186,22 +180,23 @@ def evaluate_model(model, X, y, split_name: str):
 def get_feature_importances(model, feature_names, top_n=10):
     """Extract top N feature importances."""
     importances = model.feature_importances_
-    importance_df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': importances
-    }).sort_values('importance', ascending=False).head(top_n)
+    importance_df = (
+        pd.DataFrame({"feature": feature_names, "importance": importances})
+        .sort_values("importance", ascending=False)
+        .head(top_n)
+    )
 
     logger.info(f"\nTop {top_n} features:")
     for _, row in importance_df.iterrows():
         logger.info(f"  {row['feature']}: {row['importance']:.4f}")
 
-    return importance_df.to_dict('records')
+    return importance_df.to_dict("records")
 
 
 def save_results(results: dict, output_path: Path):
     """Save results to JSON."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
     logger.info(f"Results saved to {output_path}")
 
@@ -210,10 +205,10 @@ def print_comparison_table(lgb_metrics):
     """Print comparison table between XGBoost and LightGBM."""
     # XGBoost baseline from the task description
     xgb_metrics = {
-        'val_accuracy': 0.5416,
-        'val_roc_auc': 0.5549,
-        'test_accuracy': 0.5357,
-        'test_roc_auc': 0.5521,
+        "val_accuracy": 0.5416,
+        "val_roc_auc": 0.5549,
+        "test_accuracy": 0.5357,
+        "test_roc_auc": 0.5521,
     }
 
     print("\n" + "=" * 80)
@@ -223,10 +218,10 @@ def print_comparison_table(lgb_metrics):
     print("-" * 80)
 
     metrics_to_compare = [
-        ('Val Accuracy', 'val_accuracy'),
-        ('Val ROC-AUC', 'val_roc_auc'),
-        ('Test Accuracy', 'test_accuracy'),
-        ('Test ROC-AUC', 'test_roc_auc'),
+        ("Val Accuracy", "val_accuracy"),
+        ("Val ROC-AUC", "val_roc_auc"),
+        ("Test Accuracy", "test_accuracy"),
+        ("Test ROC-AUC", "test_roc_auc"),
     ]
 
     for label, key in metrics_to_compare:
@@ -284,7 +279,7 @@ def main():
             "val_roc_auc": 0.5549,
             "test_accuracy": 0.5357,
             "test_roc_auc": 0.5521,
-        }
+        },
     }
 
     # Save results
@@ -299,11 +294,11 @@ def main():
     logger.info("SUMMARY")
     logger.info("=" * 80)
     logger.info(f"LightGBM Val ROC-AUC: {val_metrics['val_roc_auc']:.4f}")
-    logger.info(f"XGBoost Val ROC-AUC:  0.5549")
+    logger.info("XGBoost Val ROC-AUC:  0.5549")
     logger.info(f"Delta: {val_metrics['val_roc_auc'] - 0.5549:+.4f}")
     logger.info("")
     logger.info(f"LightGBM Test ROC-AUC: {test_metrics['test_roc_auc']:.4f}")
-    logger.info(f"XGBoost Test ROC-AUC:  0.5521")
+    logger.info("XGBoost Test ROC-AUC:  0.5521")
     logger.info(f"Delta: {test_metrics['test_roc_auc'] - 0.5521:+.4f}")
 
 
