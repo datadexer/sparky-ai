@@ -79,7 +79,7 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
     prices_in = prices.loc[:"2023"]
 
     # Pre-experiment guardrail checks
-    config = {"model": model_name, "params": params, "cost_bps": 10}
+    config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
     pre_results = run_pre_checks(features_in, config)
     if has_blocking_failure(pre_results):
         print(f"    PRE-CHECK BLOCKED: {[r for r in pre_results if r.get('level') == 'BLOCK']}")
@@ -156,7 +156,7 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
     running_max = equity_curve.cummax()
     actual_drawdown = float(((equity_curve - running_max) / running_max).min()) if len(equity_curve) > 0 else -1.0
     metrics_dict = {"sharpe": float(np.mean(sharpes)), "max_drawdown": actual_drawdown}
-    post_results = run_post_checks(net_returns.values, metrics_dict, config, n_trials=n_trials)
+    post_results = run_post_checks(net_returns.values, metrics_dict, config, n_trades=None)
     log_results(pre_results + post_results, run_id=f"{model_name}_{params.get('depth', params.get('max_depth'))}")
 
     return {

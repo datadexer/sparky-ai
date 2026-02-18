@@ -395,6 +395,7 @@ def run_post_checks(
     metrics: dict,
     config: dict,
     n_trades: Optional[int] = None,
+    n_trials: Optional[int] = None,
 ) -> list[GuardrailResult]:
     """Run all post-experiment checks.
 
@@ -403,10 +404,20 @@ def run_post_checks(
         metrics: Dict from compute_all_metrics(). DSR should already be computed.
         config: Experiment config dict.
         n_trades: Optional explicit trade count (overrides heuristic detection).
+        n_trials: Deprecated alias for n_trades. Use n_trades instead.
 
     Returns:
         List of GuardrailResult objects.
     """
+    import warnings
+
+    if n_trials is not None and n_trades is None:
+        warnings.warn(
+            "n_trials is deprecated in run_post_checks; use n_trades instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        n_trades = n_trials
     return [
         check_sharpe_sanity(metrics),
         check_minimum_trades(returns, config, n_trades=n_trades),

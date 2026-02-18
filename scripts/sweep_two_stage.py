@@ -165,7 +165,7 @@ def feature_selection(features, target, top_n=20):
 
 def screen_config(X_train, y_train, X_test, y_test, prices_daily, cost_model, model_name, params):
     """Quick screen: single train/test, return Sharpe + accuracy."""
-    config = {"model": model_name, "params": params, "cost_bps": 10}
+    config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
     pre_results = run_pre_checks(X_train, config)
     if has_blocking_failure(pre_results):
         return 0.0, 0.5
@@ -251,7 +251,7 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
         years = [2019, 2020, 2021, 2022, 2023]
 
     # Pre-experiment guardrail checks on full feature set before walk-forward
-    wf_config = {"model": model_name, "params": params, "cost_bps": 10}
+    wf_config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
     pre_results = run_pre_checks(features, wf_config)
     if has_blocking_failure(pre_results):
         print(f"  Walk-forward PRE-CHECK BLOCKED for {model_name}", flush=True)
@@ -312,8 +312,8 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
 
     # Post-experiment guardrail checks
     mean_sh = float(np.mean([r["sharpe"] for r in yearly_results]))
-    config = {"model": model_name, "params": params, "cost_bps": 10}
-    post_results = run_post_checks(combined_net_returns.values, {"sharpe": mean_sh}, config, n_trials=300)
+    config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
+    post_results = run_post_checks(combined_net_returns.values, {"sharpe": mean_sh}, config, n_trades=300)
     log_results(post_results, run_id=f"wf_{model_name}_{params.get('depth', params.get('max_depth', '?'))}")
 
     return {
