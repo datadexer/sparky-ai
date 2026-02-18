@@ -33,6 +33,8 @@ PROTECTED_SCRIPTS = {
     "scripts/alert.sh",
     "scripts/ceo_runner.sh",
 }
+# Note: scripts/infra/ files are automatically blocked because the sandbox
+# only allows scripts/[^/]+\.py$ (no subdirectories).
 
 # Absolute temp dirs always allowed
 ALLOWED_ABSOLUTE_PREFIXES = [

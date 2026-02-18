@@ -3,6 +3,20 @@
 This file contains everything a research agent needs. Do NOT read CLAUDE.md
 or explore source files — all required APIs and rules are here.
 
+## Coding Standards
+
+Terse code, minimal comments — only where logic is genuinely non-obvious.
+No docstrings on experiment scripts. Use numpy, polars, pandas, scipy,
+sklearn, xgboost directly. JAX, PyTorch, CUDA encouraged where they help.
+If another language would help (R, Julia), create a GATE_REQUEST.
+
+Do not write "clean code" — write code that runs fast and produces correct
+results. Session time is limited. Spend it on experiments, not formatting.
+
+Prefer polars over pandas for new data processing. Use pandas when
+interfacing with sklearn, XGBoost/LightGBM/CatBoost, or existing code.
+Convert at boundaries: `df.to_pandas()` or `pl.from_pandas(df)`.
+
 ## Data Loading
 
 ```python
@@ -195,6 +209,10 @@ When you have completed your experiments and logged results to wandb:
 Your sandbox enforces these restrictions. If you attempt to write outside
 `results/`, `scratch/`, or `scripts/*.py`, the write will be BLOCKED.
 
+Files in `scripts/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
+`sweep_two_stage.py`). You cannot edit them. To request changes, write a
+`GATE_REQUEST.md` explaining what you need.
+
 If you find yourself repeating "session is done" or similar phrases,
 the orchestrator will detect the idle loop and kill your process.
 
@@ -228,6 +246,25 @@ The orchestrator will install approved packages in an oversight session.
 ## Python Environment
 
 Always use `.venv/bin/python`, NOT system `python` or `python3`.
+
+## Sub-Period Validation (MANDATORY)
+
+Every config that beats the baseline MUST report sub-period metrics alongside
+full-period results. Sub-periods: **2017+** (removes early low-liquidity era)
+and **2020+** (post-COVID, includes 2022 bear).
+
+For each period: Sharpe, MaxDD, annual return, n_trades, win rate, and
+buy-and-hold Sharpe for comparison.
+
+```python
+from sweep_utils import subperiod_analysis
+sp = subperiod_analysis(prices, positions, cost_frac)
+# Returns: {"full": {...}, "2017+": {...}, "2020+": {...}}
+```
+
+A strategy with Sharpe 1.98 on 2013-2023 but Sharpe 0.4 on 2020-2023 is NOT
+deployment-worthy. Do not declare any result as "beating baseline" without
+sub-period confirmation.
 
 ## Success Tiers
 

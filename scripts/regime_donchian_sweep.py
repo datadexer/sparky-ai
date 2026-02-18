@@ -4,7 +4,12 @@ Tests vol_filtered, HMM regime, and regime_weighted_ensemble against Donchian ba
 BTC daily, IS only, 30 bps.
 """
 
-from sweep_utils import (
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent / "infra"))
+
+from sweep_utils import (  # noqa: E402
     baseline_donchian,
     evaluate,
     load_daily,

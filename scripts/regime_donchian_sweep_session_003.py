@@ -6,10 +6,15 @@ Tests: fine-grained sizing, combined sizing+trend, vol-of-vol, trend-aware 2D, w
 BTC daily, IS only.
 """
 
+import sys
+from pathlib import Path
 from itertools import product
-import numpy as np
-import pandas as pd
-from sweep_utils import (
+
+sys.path.insert(0, str(Path(__file__).parent / "infra"))
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from sweep_utils import (  # noqa: E402
     baseline_donchian,
     donchian_channel_strategy,
     evaluate,

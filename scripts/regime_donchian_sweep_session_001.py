@@ -6,11 +6,16 @@ Prior work (directive_002, 2370 configs): best DSR 0.710 at 50 bps.
 V3 uses 30 bps standard, continuous sizing, soft probability, parameter switching.
 """
 
+import sys
+from pathlib import Path
 from itertools import product
-import numpy as np
-import pandas as pd
-from sparky.tracking.metrics import compute_all_metrics
-from sweep_utils import (
+
+sys.path.insert(0, str(Path(__file__).parent / "infra"))
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from sparky.tracking.metrics import compute_all_metrics  # noqa: E402
+from sweep_utils import (  # noqa: E402
     PERIODS_PER_YEAR,
     baseline_donchian,
     evaluate,

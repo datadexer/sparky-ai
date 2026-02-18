@@ -1,4 +1,9 @@
-"""Shared utilities for regime Donchian sweep scripts."""
+"""Shared utilities for regime Donchian sweep scripts.
+
+PROTECTED FILE — research agents cannot edit this file directly.
+To request changes, write a GATE_REQUEST.md in the project root describing
+what you need and why. An oversight session will review and apply the change.
+"""
 
 import json
 import logging
@@ -11,7 +16,7 @@ import numpy as np
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.WARNING)
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from sparky.data.loader import load  # noqa: E402
@@ -87,6 +92,36 @@ def yearly_sharpes(prices, positions, cf):
             out[yr] = round(compute_all_metrics(r, n_trials=1, periods_per_year=PERIODS_PER_YEAR)["sharpe"], 3)
         except Exception:
             out[yr] = float("nan")
+    return out
+
+
+SUB_PERIODS = [
+    ("full", None, None),
+    ("2017+", "2017-01-01", None),
+    ("2020+", "2020-01-01", None),
+]
+
+
+def subperiod_analysis(prices, positions, cf, periods_per_year=PERIODS_PER_YEAR):
+    ret = net_ret(prices, positions, cf)
+    bh_ret = prices.pct_change().dropna()
+    out = {}
+    for label, start, end in SUB_PERIODS:
+        r = ret if start is None else ret[ret.index >= start]
+        b = bh_ret if start is None else bh_ret[bh_ret.index >= start]
+        if len(r) < 30:
+            continue
+        m = compute_all_metrics(r, n_trials=1, periods_per_year=periods_per_year)
+        bh_m = compute_all_metrics(b, n_trials=1, periods_per_year=periods_per_year)
+        p_slice = positions[positions.index >= start] if start else positions
+        out[label] = {
+            "sharpe": round(m["sharpe"], 4),
+            "max_drawdown": round(m["max_drawdown"], 4),
+            "annual_return": round(m["mean_return"] * periods_per_year, 4),
+            "n_trades": int((p_slice.diff().abs().fillna(0) > 0.01).sum()),
+            "win_rate": round(m["win_rate"], 4),
+            "bh_sharpe": round(bh_m["sharpe"], 4),
+        }
     return out
 
 

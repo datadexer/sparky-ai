@@ -1,0 +1,208 @@
+name: meta_labeling_donchian_20260218
+objective: |
+  Determine whether a meta-labeling secondary model can improve
+  regime-conditioned Donchian by filtering losing trades. Primary model
+  (Donchian breakout) determines SIDE. Secondary ML model determines
+  whether to TAKE each trade.
+
+  Baseline to beat: raw 4h Donchian(30,20) Sharpe 1.682 at 30 bps (DSR 0.997@N=123).
+  This directive's n_trials counter resets to 1 (new research program).
+
+  KEY CAVEAT: Meta-labeling adds value when it brings NEW information
+  the primary model lacks. It cannot improve an already-optimized ML
+  model (QuantConnect negative result, confirmed by Joubert). Our
+  Donchian is rule-based — correct setup. But meta-model features MUST
+  be genuinely different from what drives Donchian (price breakouts).
+  Good: volatility, regime state, serial correlation, trend quality.
+  Bad: more price channel variants (same info Donchian already uses).
+
+  EXPECTATIONS: Published OOS results are modest. Hudson & Thames on
+  S&P 500 futures: accuracy 48%→55%, precision 0.48→0.54 for SMA
+  crossover. A crypto practitioner showed BTC Bollinger strategy going
+  from -44% to +53% cumulative with meta-labeling. Expect 5-10pp
+  accuracy gains, not miracles. The oft-cited "37%→56%" was validation
+  set, not OOS.
+
+  SESSION 1 COMPLETE: Raw 4h Donchian(30,20) baseline = 1.682 (DSR 0.997).
+  Best meta-labeled = 1.787 (DSR 0.998). See roadmap/02_RESEARCH_LOG.md.
+
+  Approach (de Prado, Advances in Financial Machine Learning):
+  1. Generate primary signals via donchian_channel_strategy(prices, 30, 20)
+  2. Label each signal with triple-barrier outcomes (profit/loss/timeout)
+  3. Engineer features that predict which signals are profitable
+  4. Train meta-classifier: P(primary signal is profitable)
+  5. Filter: take trade only if meta-model confidence > threshold
+
+  Triple-barrier labeling (implement in experiment scripts, ~30 lines):
+  - Upper barrier: take-profit at +X * ATR (1.5-3.0x)
+  - Lower barrier: stop-loss at -Y * ATR (1.0-2.0x)
+  - Vertical barrier: time expiration at N bars (5-30 days)
+  - Label: 1 if upper hit first, 0 if lower hit first or timeout at loss
+  - CRITICAL: barriers use ATR computed BEFORE signal bar only
+  - CRITICAL: set min_ret >= 0.006 (round-trip cost at 30bps/side).
+    Only label trades profitable if they exceed transaction costs.
+    This is the most common mistake (Hudson & Thames warning) — do NOT
+    lower min_ret to get more observations.
+
+  LABEL CONCURRENCY WARNING: Multiple trades' barrier windows overlap,
+  violating IID assumptions. You MUST implement uniqueness weighting:
+  sample_weight = 1 / (avg number of concurrent active labels).
+  One implementation showed 7.5% accuracy boost from this alone.
+  Do NOT use return-attributed sample weighting — documented to cause
+  model collapse (always predicts majority class, P/R/F1 → 0).
+
+  Data considerations:
+  - BTC daily: load("btc_daily", purpose="training") → 1797 bars, OHLCV.
+    Donchian(30,20) produces only ~18 entry signals. UNVIABLE for any ML.
+    Skip families 1 and 2 entirely. Do NOT attempt daily meta-labeling.
+  - BTC hourly OHLCV: load("ohlcv_hourly", purpose="training") → 32,161
+    bars. Resample to 4h: df.resample("4h").agg({"open":"first",
+    "high":"max", "low":"min", "close":"last", "volume":"sum"}) →
+    ~8,040 bars. Use periods_per_year=2190 for 4h bars.
+  - 4h signal counts (entry signals): (10,5)=342, (15,10)=193,
+    (20,10)=166, (20,15)=143, (30,15)=113, (30,20)=102.
+    Start with family 3 (4h). Shorter Donchian params give more signals.
+
+  Secondary features to consider (must differ from Donchian's inputs):
+  - Rolling volatility at signal time (20d, 60d windows)
+  - HMM regime probabilities (train_hmm_regime_model)
+  - Serial correlation of recent returns (autocorrelation lag 1-5)
+  - Primary model rolling hit rate (last 10, 20, 50 signals)
+  - Choppiness index, trend strength (ADX proxy)
+  - Fractionally differenced price series (d < 0.2, retains >90%
+    correlation with price while achieving stationarity). Implement
+    fixed-width window approximation (~15 lines numpy, see de Prado
+    ch. 5). Do not depend on fracdiff package.
+  - Volume momentum, breakout proximity
+  - Distance from SMA at signal time
+
+  ML approach:
+  - Logistic regression FIRST (always viable with small N)
+  - XGBoost: max_depth=2-3, min_child_weight>=10, heavy regularization
+  - Purged CV: remove training obs whose barrier windows overlap test.
+    Embargo = max_vertical_barrier duration (no extra padding).
+  - Calibration: CalibratedClassifierCV(method='sigmoid') — Platt
+    scaling only. Isotonic overfits at 200-400 samples (2 params vs
+    many). Isotonic only viable if pivoting to 4h with 2000+ signals.
+  - Calibration finding (JFDS): calibration improves fixed position
+    sizing (threshold, linear scaling) but does NOT improve empirical
+    CDF or sigmoid optimal sizing. Prioritize calibration for Kelly
+    sizing path, less critical for pure trade/no-trade filtering.
+
+  STRATEGY SPACE NOTE: Daily data has too few signals (~18) for any ML.
+  Start directly with family 3 (4h data). Vary Donchian entry/exit
+  params across [10,15,20,30]/[5,10,15,30] plus barrier and meta-model
+  params. Shorter Donchian periods give more signals (342 at 10/5).
+
+  Existing code:
+  - sparky.models.simple_baselines.donchian_channel_strategy(prices, entry_period, exit_period)
+  - sparky.models.regime_hmm.train_hmm_regime_model(prices, n_states)
+  - sparky.features.regime (volatility_regime, choppiness_index)
+  - sparky.features.regime_indicators (detect_trend, compute_combined_regime)
+  - sparky.features.technical (rsi, macd, momentum, ema)
+  - sparky.features.advanced (atr, bollinger_bands, volume_momentum)
+  - sparky.backtest.engine.WalkForwardBacktester
+  - sparky.backtest.costs.TransactionCostModel.standard() / .stress_test()
+  - sparky.tracking.metrics.compute_all_metrics(returns, n_trials, periods_per_year)
+
+  Success = meta-labeled Donchian Sharpe > 1.682 with DSR > 0.95.
+  A well-documented negative result is also valid output.
+
+constraints:
+  asset: btc
+  timeframe: daily
+  dataset: btc_daily
+  gpu_required: true
+  transaction_costs_bps: 30
+  annualization: 365
+
+strategy_space:
+  - family: meta_label_logreg
+    description: "Logistic regression meta-labeler. Max 5 features. Fix Donchian at 30/20. Run FIRST."
+    priority: 1
+    parameter_ranges:
+      tp_atr_mult: [1.5, 2.0, 3.0]
+      sl_atr_mult: [1.0, 1.5, 2.0]
+      vertical_bars: [5, 10, 20, 30]
+      confidence_threshold: [0.50, 0.55, 0.60]
+      n_features: [3, 5]
+
+  - family: meta_label_xgb_daily
+    description: "XGBoost on daily. max_depth 2-3, max 4 features. Only if logreg shows signal AND daily signals >= 200."
+    priority: 2
+    parameter_ranges:
+      tp_atr_mult: [1.5, 2.0, 3.0]
+      sl_atr_mult: [1.0, 1.5, 2.0]
+      vertical_bars: [10, 20]
+      max_depth: [2, 3]
+      min_child_weight: [10, 20]
+      n_estimators: [50, 100]
+      confidence_threshold: [0.50, 0.55, 0.60]
+
+  - family: meta_label_4h
+    description: "Meta-labeling on 4h resampled data. ~2000+ signals. Use periods_per_year=2190. Jump here if daily signals < 200."
+    priority: 3
+    parameter_ranges:
+      primary_entry_4h: [10, 15, 20, 30]
+      primary_exit_4h: [5, 10, 15]
+      tp_atr_mult: [1.5, 2.0, 3.0]
+      sl_atr_mult: [1.0, 1.5, 2.0]
+      vertical_bars_4h: [12, 30, 60]
+      model_type: [logreg, xgboost]
+      max_depth: [2, 3]
+      n_features: [3, 5, 8]
+
+  - family: meta_label_calibrated_sizing
+    description: "Best config + Platt calibration + fractional Kelly sizing. Sigmoid only for daily. Only after promising base config."
+    priority: 4
+    parameter_ranges:
+      calibration_method: [sigmoid]
+      kelly_fraction: [0.25, 0.5]
+      min_confidence: [0.55, 0.60, 0.65]
+
+stopping_criteria:
+  success:
+    min_sharpe: 1.85
+    min_dsr: 0.95
+  budget:
+    max_sessions: 10
+    max_hours: 12
+    max_cost_usd: 60
+    digest_every: 3
+  stall:
+    sessions_without_improvement: 3
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+
+session_limits:
+  max_session_minutes: 90
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [meta_labeling, donchian, 20260218]
+
+gates:
+  - trigger: success_criteria_met
+    action: pause_and_alert
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
+  - "Always include transaction costs (30 bps standard, 50 bps stress) — report both"
+  - "Compare every result against raw 4h Donchian(30,20) baseline (Sharpe 1.682 at 30 bps, DSR 0.997)"
+  - "n_trials resets to 1 for this directive (new research program)"
+  - "Session 1 complete — baseline 1.682, best meta 1.787. Future sessions continue from R9 best config."
+  - "Triple-barrier labels must use only data available BEFORE signal time"
+  - "Triple-barrier min_ret >= 0.006 (round-trip cost at 30bps/side). Do NOT lower min_ret to get more observations."
+  - "Purged CV mandatory: remove training obs whose barrier windows overlap test. Embargo = max_vertical_barrier duration."
+  - "Use uniqueness weighting (sample_weight = 1/avg concurrent active labels). Do NOT use return-attributed sample weighting."
+  - "Feature count hard ceiling: 2-4 features for XGBoost, up to 5 for logistic regression (50-100 samples per feature)"
+  - "Daily Donchian produces ~18 entry signals — unviable for any ML. Skip families 1 and 2 entirely. Start with family 3 (4h data, 100-342 entry signals depending on params)."
+  - "Implement fractional differentiation as fixed-width window numpy approximation. Do not depend on fracdiff package."
+  - "Implement triple barriers directly (~30 lines numpy) — do NOT use mlfinpy/quantreo/finmlkit"
+  - "Do NOT install packages (pip blocked). Use sklearn, xgboost, numpy, scipy, polars, pandas"

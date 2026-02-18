@@ -61,6 +61,15 @@ class TestPathValidation:
         allowed, _ = research_sandbox.is_path_allowed("scripts/ceo_runner.sh", PROJECT_ROOT)
         assert not allowed
 
+    def test_infra_sweep_utils_blocked(self):
+        """scripts/infra/ subdirectory is blocked by the subdir rule."""
+        allowed, _ = research_sandbox.is_path_allowed("scripts/infra/sweep_utils.py", PROJECT_ROOT)
+        assert not allowed
+
+    def test_infra_sweep_two_stage_blocked(self):
+        allowed, _ = research_sandbox.is_path_allowed("scripts/infra/sweep_two_stage.py", PROJECT_ROOT)
+        assert not allowed
+
     def test_src_blocked(self):
         allowed, _ = research_sandbox.is_path_allowed("src/sparky/backtest/engine.py", PROJECT_ROOT)
         assert not allowed

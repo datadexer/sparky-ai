@@ -26,6 +26,15 @@ NAMING_REMINDER = (
     "group='regime_adx' for ADX runs). Runs sharing a group collapse into one row."
 )
 
+SUBPERIOD_REMINDER = (
+    "\n\nSUB-PERIOD VALIDATION (MANDATORY): Every config that beats the baseline MUST "
+    "report sub-period metrics. Use `from sweep_utils import subperiod_analysis` and call "
+    "`subperiod_analysis(prices, positions, cost_frac)`. This returns metrics for full period, "
+    "2017+ (removes early low-liquidity era), and 2020+ (post-COVID, includes 2022 bear). "
+    "Each sub-period includes Sharpe, MaxDD, annual return, n_trades, win rate, and buy-and-hold "
+    "Sharpe. Report all sub-periods for any result claimed as beating baseline."
+)
+
 METRICS_REMINDER = (
     "\n\nMETRICS (MANDATORY): When logging results, always use:\n"
     "```python\n"
@@ -88,6 +97,7 @@ def build_workflow() -> Workflow:
                 + TAG_REMINDER
                 + NAMING_REMINDER
                 + METRICS_REMINDER
+                + SUBPERIOD_REMINDER
                 + " Step tag: 'feature_analysis'."
             ),
             done_when=_feature_analysis_done,
@@ -131,6 +141,7 @@ def build_workflow() -> Workflow:
                 + TAG_REMINDER
                 + NAMING_REMINDER
                 + METRICS_REMINDER
+                + SUBPERIOD_REMINDER
                 + " Step tag: 'sweep'."
             ),
             done_when=_sweep_done,
@@ -199,6 +210,7 @@ def build_workflow() -> Workflow:
                 + TAG_REMINDER
                 + NAMING_REMINDER
                 + METRICS_REMINDER
+                + SUBPERIOD_REMINDER
                 + " Step tag: 'regime'."
             ),
             done_when=_regime_done,
@@ -253,6 +265,7 @@ def build_workflow() -> Workflow:
                 + TAG_REMINDER
                 + NAMING_REMINDER
                 + METRICS_REMINDER
+                + SUBPERIOD_REMINDER
                 + " Step tag: 'ensemble'."
             ),
             done_when=_ensemble_done,
@@ -317,6 +330,7 @@ def build_workflow() -> Workflow:
                 + TAG_REMINDER
                 + NAMING_REMINDER
                 + METRICS_REMINDER
+                + SUBPERIOD_REMINDER
                 + " Step tag: 'novel'."
             ),
             done_when=_novel_done,

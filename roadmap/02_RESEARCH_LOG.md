@@ -4,6 +4,67 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## meta_labeling_donchian_20260218 — Session 1 — 2026-02-18
+
+**DIRECTIVE**: meta_labeling_donchian_20260218
+**STATUS**: SUCCESS gate hit — Sharpe 1.787, DSR 0.998 at N=123 (independently verified)
+**DATA**: ohlcv_hourly_max_coverage (95,689 hourly bars, 2013-2023), resampled to 4h (23,923 bars)
+**COSTS**: 30 bps standard, 50 bps stress test
+**ARTIFACTS**: results/meta_labeling_donchian_20260218/
+
+### Attribution (ordered by impact)
+
+| Config | Sharpe | Delta vs prev | DSR@123 | Source |
+|--------|--------|---------------|---------|--------|
+| 4h Donchian(30,20) WITH binary HMM regime filter (no meta) | 0.593 | baseline | 0.402 | primary_4h_baselines.json |
+| 4h Donchian(30,20) + meta, WITH regime filter (R1-R4 best) | 0.786 | +0.193 | 0.672 | round1-4 |
+| **4h Donchian(30,20) NO regime filter (no meta)** | **1.682** | **+1.089** | **0.997** | primary_4h_noregimedfilter.json |
+| 4h meta-labeled, no regime, tight barriers (R5, tp=1.5/sl=1.0/vert=12) | 1.596 | **-0.086** | 0.996 | round5_results.json |
+| **4h meta-labeled, no regime, wide barriers (R9, tp=3.0/sl=1.5/vert=30)** | **1.787** | **+0.105** | **0.998** | session1_comprehensive_final.json |
+
+**Largest gain**: removing binary regime filter (+1.089 Sharpe). Meta-labeling itself: barrier-dependent.
+Tight barriers hurt (-0.086), wide barriers help (+0.105). Only 13/117 configs (11.1%) beat raw primary.
+
+### Best config
+
+- Donchian(30, 20) on 4h BTC, tp=3.0×ATR, sl=1.5×ATR, vert=30 bars
+- LogReg (C=0.1, balanced): trend_r2, regime_proba_3s (3-state HMM), adx_proxy
+- Threshold 0.5, Accuracy 53.3% OOF purged CV, 172 trades / 271 signals (36% filtered)
+- Stress (50bps): Sharpe 1.641, DSR 0.995
+
+### Independent verification
+
+- Reproduced best config from scratch: Sharpe=1.7865, DSR=0.9984 at n_trials=123
+- Raw 4h primary (no meta): Sharpe=1.6824, DSR=0.9970 at n_trials=123
+- Buy-and-hold BTC (same 4h data, 2013-2023): Sharpe=1.2882
+- DSR remains >0.95 even at n_trials=500
+
+### MaxDD
+
+- Best config: -0.580 (fails <25% deployment criterion)
+- Range across 123 configs: -0.486 to -0.637
+- Needs Layer 4 (sizing) — 0.25x Kelly → ~-0.29 estimated
+
+### Caveats
+
+- 2013-2023 is overwhelmingly favorable for long BTC — any long-biased strategy looks good
+- B&H Sharpe 1.288 on same data confirms the tailwind
+- The DSR at n_trials=123 (0.998) is the primary validity measure, not raw Sharpe
+- Daily Donchian reproduced at 1.330, not 1.777. The 1.777 was inverse_vol_sizing on
+  daily data — a different strategy entirely, with DSR=0.730 (NOT statistically significant)
+- Correct baseline for 4h meta-labeling comparison: raw 4h primary = 1.682
+
+### Key findings
+
+1. Binary HMM regime filter destroys 4h performance (0.593 → 1.682 by removing it)
+2. Meta-labeling is barrier-param-sensitive: tight barriers hurt, wide barriers help
+3. 3-state HMM probability as continuous feature > binary 2-state filter
+4. 3 features beat 5-8 features (N=271 signals, overfitting risk)
+5. LogReg dominates XGBoost at this sample size
+6. Calibration + Kelly sizing does NOT improve at this N
+
+---
+
 ## regime_donchian_v3 — NEGATIVE RESULT — 2026-02-18
 
 **DIRECTIVE**: regime_donchian_v3

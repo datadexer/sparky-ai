@@ -102,7 +102,7 @@ def _create_message_with_retry(client, **kwargs):
 def get_codebase_context():
     """Gather lightweight codebase context for shared utility functions."""
     context_files = [
-        "scripts/sweep_utils.py",
+        "scripts/infra/sweep_utils.py",
     ]
     context = {}
     for path in context_files:
@@ -174,20 +174,27 @@ def run_validation(changes):
         "passed should be false if ANY HIGH severity issues exist."
     )
 
+    # Use assistant prefill to force JSON output
     response = _create_message_with_retry(
         client,
         model="claude-sonnet-4-20250514",
         max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": "{"},
+        ],
     )
 
-    # Parse response — handle both clean JSON and markdown-wrapped JSON
-    text = response.content[0].text.strip()
+    # Reconstruct JSON (we prefilled "{", model continues from there)
+    text = "{" + response.content[0].text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
 
     try:
-        result = json.loads(text)
+        # Use raw_decode to stop at end of first JSON object — model may
+        # append prose explanation after the closing brace.
+        decoder = json.JSONDecoder()
+        result, _ = decoder.raw_decode(text)
     except json.JSONDecodeError as exc:
         # Non-JSON response is inconclusive — do NOT treat as pass
         raise ValueError(f"Validation agent returned non-JSON response (len={len(text)}): {text[:300]}") from exc
