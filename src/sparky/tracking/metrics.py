@@ -5,6 +5,13 @@ from scipy.stats import norm
 
 
 def sharpe_ratio(returns, risk_free=0.0):
+    """Per-period (non-annualized) Sharpe ratio.
+
+    Returns raw mean/std — callers must multiply by sqrt(periods_per_year) to
+    annualize (e.g. sqrt(365) for daily crypto). Used internally by PSR/DSR
+    which require the per-period form. Do not compare directly against
+    annualized benchmarks without applying the annualization factor.
+    """
     excess = returns - risk_free
     return float(np.mean(excess) / np.std(excess, ddof=1)) if np.std(excess) > 0 else 0.0
 

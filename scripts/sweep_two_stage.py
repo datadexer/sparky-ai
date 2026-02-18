@@ -30,6 +30,8 @@ from xgboost import XGBClassifier
 
 from sparky.backtest.costs import TransactionCostModel
 from sparky.data.loader import load
+from sparky.tracking.experiment import ExperimentTracker
+from sparky.tracking.guardrails import has_blocking_failure, log_results, run_post_checks, run_pre_checks
 from sparky.tracking.metrics import compute_all_metrics
 
 BASELINE_SHARPE = 1.062
@@ -163,6 +165,11 @@ def feature_selection(features, target, top_n=20):
 
 def screen_config(X_train, y_train, X_test, y_test, prices_daily, cost_model, model_name, params):
     """Quick screen: single train/test, return Sharpe + accuracy."""
+    config = {"model": model_name, "params": params, "cost_bps": 10}
+    pre_results = run_pre_checks(X_train, config)
+    if has_blocking_failure(pre_results):
+        return 0.0, 0.5
+
     if model_name == "CatBoost":
         model = CatBoostClassifier(**params, verbose=0, random_state=42)
     elif model_name == "LightGBM":
@@ -295,6 +302,12 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
         return {"mean_sharpe": 0.0, "mean_acc": 0.5, "yearly": [], "net_returns": pd.Series(dtype=float)}
 
     combined_net_returns = pd.concat(all_net_returns) if all_net_returns else pd.Series(dtype=float)
+
+    # Post-experiment guardrail checks
+    mean_sh = float(np.mean([r["sharpe"] for r in yearly_results]))
+    config = {"model": model_name, "params": params, "cost_bps": 10}
+    post_results = run_post_checks(combined_net_returns.values, {"sharpe": mean_sh}, config, n_trials=300)
+    log_results(post_results, run_id=f"wf_{model_name}_{params.get('depth', params.get('max_depth', '?'))}")
 
     return {
         "mean_sharpe": np.mean([r["sharpe"] for r in yearly_results]),
@@ -461,7 +474,10 @@ def main():
     print(f"Baseline (Donchian): Sharpe {BASELINE_SHARPE:.3f}", flush=True)
     print(flush=True)
 
-    n_total_configs = len(configs)
+    # n_trials must reflect ALL configs tested in this research program, not just
+    # the current sweep. Prior sweeps (contract 004, smart_hyperparam_sweep) tested
+    # ~250+ configs. Use cumulative total to avoid underestimating DSR penalty.
+    n_total_configs = max(len(configs) + 250, len(configs))  # cumulative program total
     for i, v in enumerate(validated, 1):
         cfg = v["config"]
         beat = "BEATS BASELINE" if v["mean_sharpe"] > BASELINE_SHARPE else "below baseline"
@@ -490,6 +506,32 @@ def main():
     else:
         sharpe_val = best["mean_sharpe"] if best else 0.0
         print(f"\n❌ ML does not beat baseline: {sharpe_val:.3f} vs {BASELINE_SHARPE:.3f}", flush=True)
+
+    # Log sweep results to W&B
+    tracker = ExperimentTracker(experiment_name="sweep_two_stage")
+    wb_results = []
+    for v in validated:
+        net_rets = v.get("net_returns", pd.Series(dtype=float))
+        dsr = 0.0
+        if len(net_rets) > 30:
+            m = compute_all_metrics(net_rets.values, n_trials=n_total_configs, periods_per_year=365)
+            dsr = m.get("dsr", 0.0)
+        wb_results.append(
+            {
+                "config": v["config"],
+                "metrics": {"sharpe": v["mean_sharpe"], "dsr": dsr, "std_sharpe": v.get("std_sharpe", 0)},
+            }
+        )
+    tracker.log_sweep(
+        "two_stage_validated",
+        wb_results,
+        summary_metrics={
+            "best_sharpe": validated[0]["mean_sharpe"] if validated else 0.0,
+            "n_screened": len(screen_results),
+            "n_validated": len(validated),
+        },
+        tags=["contract_004", "sweep", "walk_forward"],
+    )
 
     # Save full results
     output_path = Path("results/validation/sweep_two_stage.json")

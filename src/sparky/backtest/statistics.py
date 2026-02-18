@@ -196,7 +196,11 @@ class BacktestStatistics:
             # Concatenate blocks and trim to original length
             strategy_resampled = np.concatenate(strategy_blocks)[:n]
 
-            # Resample blocks for market (independent resampling)
+            # Resample blocks for market (independent resampling).
+            # Note: strategy and market are resampled independently, which breaks
+            # their temporal pairing and may slightly overestimate variance of the
+            # Sharpe difference. Paired resampling would be more precise but this
+            # is conservative (errs toward not declaring significance).
             market_blocks = []
             for _ in range(n_blocks):
                 start_idx = np.random.randint(0, n - block_size + 1)
