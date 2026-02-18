@@ -151,8 +151,11 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
     sharpes = [r["sharpe"] for r in results]
     net_returns = pd.concat(all_net_returns) if all_net_returns else pd.Series(dtype=float)
 
-    # Post-experiment guardrail checks
-    metrics_dict = {"sharpe": float(np.mean(sharpes)), "max_drawdown": -0.5}  # conservative drawdown
+    # Post-experiment guardrail checks — compute actual drawdown from net returns
+    equity_curve = (1 + net_returns).cumprod()
+    running_max = equity_curve.cummax()
+    actual_drawdown = float(((equity_curve - running_max) / running_max).min()) if len(equity_curve) > 0 else -1.0
+    metrics_dict = {"sharpe": float(np.mean(sharpes)), "max_drawdown": actual_drawdown}
     post_results = run_post_checks(net_returns.values, metrics_dict, config, n_trials=n_trials)
     log_results(pre_results + post_results, run_id=f"{model_name}_{params.get('depth', params.get('max_depth'))}")
 

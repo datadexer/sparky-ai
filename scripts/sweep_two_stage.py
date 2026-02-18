@@ -250,6 +250,13 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
     if years is None:
         years = [2019, 2020, 2021, 2022, 2023]
 
+    # Pre-experiment guardrail checks on full feature set before walk-forward
+    wf_config = {"model": model_name, "params": params, "cost_bps": 10}
+    pre_results = run_pre_checks(features, wf_config)
+    if has_blocking_failure(pre_results):
+        print(f"  Walk-forward PRE-CHECK BLOCKED for {model_name}", flush=True)
+        return {"mean_sharpe": 0.0, "mean_acc": 0.5, "yearly": [], "net_returns": pd.Series(dtype=float)}
+
     cost_model = TransactionCostModel.for_btc()
     yearly_results = []
     all_net_returns = []

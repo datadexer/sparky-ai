@@ -74,6 +74,7 @@ def positive_skew_returns():
 class TestComputeAllMetrics:
     EXPECTED_KEYS = {
         "sharpe",
+        "sharpe_per_period",
         "psr",
         "dsr",
         "min_track_record",
@@ -564,9 +565,10 @@ class TestAnalyticalDSR:
         assert 2.0 < metrics["kurtosis"] < 4.0, f"Kurtosis {metrics['kurtosis']} looks wrong for Gaussian"
         assert -1.0 < metrics["skewness"] < 1.0, f"Skewness {metrics['skewness']} looks wrong for Gaussian"
 
-        # Verify we can round-trip through analytical_dsr
+        # Verify we can round-trip through analytical_dsr using per-period Sharpe
+        # (PSR/DSR formulas require per-period SR, not annualized SR)
         dsr_roundtrip = analytical_dsr(
-            sr=metrics["sharpe"],
+            sr=metrics["sharpe_per_period"],
             skewness=metrics["skewness"],
             kurtosis=metrics["kurtosis"],
             T=metrics["n_observations"],

@@ -29,7 +29,9 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 from sparky.backtest.costs import TransactionCostModel
 from sparky.data.loader import load
 
-# Top 5 configs from sweep (update after sweep completes)
+# Top 5 configs from sweep (selected in Stage 1 screening, evaluated here on
+# walk-forward 2020-2023 for secondary validation only — not primary results).
+# This is a legacy exploration script; sweep_two_stage.py is the canonical tool.
 TOP_CONFIGS = [
     ("CatBoost", {"iterations": 200, "depth": 4, "learning_rate": 0.03, "l2_leaf_reg": 1.0, "task_type": "GPU"}),
     ("CatBoost", {"iterations": 200, "depth": 3, "learning_rate": 0.03, "l2_leaf_reg": 3.0, "task_type": "GPU"}),

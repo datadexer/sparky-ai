@@ -240,9 +240,15 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         _skewness = 0.0
         _kurtosis = 3.0
 
+    sr_per_period = sharpe_ratio(returns, risk_free)
+    sr_annualized = sr_per_period * np.sqrt(periods_per_year)
+
     return {
         # Statistical significance
-        "sharpe": sharpe_ratio(returns, risk_free),
+        # sharpe_per_period: raw mean/std (no annualization) — used by PSR/DSR formulas
+        # sharpe: annualized (multiply per-period by sqrt(periods_per_year)) — compare to benchmarks
+        "sharpe": sr_annualized,
+        "sharpe_per_period": sr_per_period,
         "psr": probabilistic_sharpe_ratio(returns),
         "dsr": deflated_sharpe_ratio(returns, n_trials),
         "min_track_record": minimum_track_record_length(returns),

@@ -82,8 +82,14 @@ def max_drawdown(prices: pd.Series) -> float:
         prices: Series of prices or equity values.
 
     Returns:
-        Maximum drawdown as a positive fraction (e.g., 0.333 for 33.3% drawdown).
+        Maximum drawdown as a **positive** fraction (e.g., 0.333 for 33.3% drawdown).
         Returns 0.0 if prices are empty or monotonically increasing.
+
+    Note:
+        This function takes a price series and returns a positive value.
+        ``sparky.tracking.metrics.max_drawdown`` takes a returns series and returns
+        a negative value (matching the rubric convention). Use consistently — do not
+        compare the two outputs directly without accounting for the sign difference.
     """
     prices = prices.dropna()
     if len(prices) < 2:

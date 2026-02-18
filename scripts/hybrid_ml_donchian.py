@@ -94,7 +94,9 @@ def main():
 
     cost_model = TransactionCostModel.for_btc()
 
-    # Best CatBoost config from sweep
+    # Best CatBoost config selected in Stage 1 screening from the prior sweep.
+    # Validated here on walk-forward 2020-2023 as secondary exploration only.
+    # This is a legacy exploration script; sweep_two_stage.py is the canonical tool.
     ml_params = {
         "iterations": 200,
         "depth": 4,
