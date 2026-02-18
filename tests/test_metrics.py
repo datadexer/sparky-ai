@@ -74,6 +74,7 @@ def positive_skew_returns():
 class TestComputeAllMetrics:
     EXPECTED_KEYS = {
         "sharpe",
+        "sharpe_per_period",
         "psr",
         "dsr",
         "min_track_record",
@@ -269,13 +270,18 @@ class TestSortinoVsSharpe:
         assert so > sr, f"Expected Sortino ({so:.4f}) > Sharpe ({sr:.4f}) for positively skewed returns."
 
     def test_sortino_equals_sharpe_for_symmetric_returns(self):
-        """For perfectly symmetric (normal) returns, Sortino ≈ Sharpe * sqrt(2)."""
+        """For symmetric (normal) returns, Sortino ≈ Sharpe * sqrt(2).
+
+        With RMS downside deviation over the full series, for a symmetric
+        distribution half the values are zero and half are negative, so
+        downside_dev ≈ std / sqrt(2), giving Sortino ≈ Sharpe * sqrt(2).
+        """
         rng = np.random.default_rng(0)
         returns = rng.normal(0.001, 0.02, 10000)
         sr = sharpe_ratio(returns)
         so = sortino_ratio(returns)
-        # For normal returns, Sortino ≈ Sharpe * sqrt(2) (not equal, but Sortino > Sharpe)
         assert so > sr
+        assert so == pytest.approx(sr * np.sqrt(2), rel=0.15)
 
     def test_sortino_is_finite_for_normal_returns(self, profitable_returns):
         so = sortino_ratio(profitable_returns)
@@ -559,9 +565,10 @@ class TestAnalyticalDSR:
         assert 2.0 < metrics["kurtosis"] < 4.0, f"Kurtosis {metrics['kurtosis']} looks wrong for Gaussian"
         assert -1.0 < metrics["skewness"] < 1.0, f"Skewness {metrics['skewness']} looks wrong for Gaussian"
 
-        # Verify we can round-trip through analytical_dsr
+        # Verify we can round-trip through analytical_dsr using per-period Sharpe
+        # (PSR/DSR formulas require per-period SR, not annualized SR)
         dsr_roundtrip = analytical_dsr(
-            sr=metrics["sharpe"],
+            sr=metrics["sharpe_per_period"],
             skewness=metrics["skewness"],
             kurtosis=metrics["kurtosis"],
             T=metrics["n_observations"],

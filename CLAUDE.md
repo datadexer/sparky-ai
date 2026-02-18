@@ -17,6 +17,11 @@ df = load("btc_1h_features", purpose="analysis")    # full data, warning logged
 ```
 NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout boundaries.
 
+## Annualization Convention
+- Default `periods_per_year=365` (daily crypto, 24/7 markets)
+- For hourly data, ALWAYS pass `periods_per_year=8760`
+- Never use 252 (equity trading days) — crypto trades 24/7
+
 ## Experiment Tracking (MANDATORY — W&B)
 ```python
 from sparky.tracking.experiment import ExperimentTracker, config_hash

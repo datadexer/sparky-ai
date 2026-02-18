@@ -12,8 +12,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
-import numpy as np
 import pandas as pd
+from sklearn.model_selection import TimeSeriesSplit
 
 logger = logging.getLogger(__name__)
 
@@ -214,27 +214,34 @@ class FeatureSelector:
         y: pd.Series,
         model,
     ) -> tuple[dict[str, float], list[dict]]:
-        """Test feature importance stability across k-fold splits.
+        """Test feature importance stability across expanding-window splits.
+
+        Uses TimeSeriesSplit (expanding window) with a gap (embargo) to avoid
+        training on future data and prevent information leakage at fold
+        boundaries. Each fold trains only on past data with a gap before
+        the test set.
 
         Returns variance of importance per feature. Flags features with
         variance > threshold (unstable — importance depends heavily on data split).
         """
         n = len(X)
-        fold_size = n // self.n_stability_folds
-        if fold_size < 10:
+        if n < self.n_stability_folds * 10:
             logger.warning("Not enough data for stability test")
             return {}, []
 
         importance_matrix = []
 
-        for fold in range(self.n_stability_folds):
-            start = fold * fold_size
-            end = start + fold_size
-            # Train on everything except this fold
-            mask = np.ones(n, dtype=bool)
-            mask[start:end] = False
-            X_train = X.iloc[mask]
-            y_train = y.iloc[mask]
+        # Purged/embargo cross-validation: TimeSeriesSplit with gap parameter
+        # implements an embargo period between train and test sets, preventing
+        # information leakage at fold boundaries. For hourly data predicting
+        # 1-day returns, embargo_periods=24 covers the full prediction horizon.
+        # Scales down for small datasets to avoid ValueError from sklearn.
+        fold_size = n // (self.n_stability_folds + 1)
+        embargo_periods = min(24, fold_size // 3)
+        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=embargo_periods)
+        for train_idx, _test_idx in tscv.split(X):
+            X_train = X.iloc[train_idx]  # only past data
+            y_train = y.iloc[train_idx]
 
             model.fit(X_train, y_train)
             importance_matrix.append(dict(zip(X.columns, model.feature_importances_)))

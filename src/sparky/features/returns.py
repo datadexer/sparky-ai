@@ -45,18 +45,19 @@ def log_returns(prices: pd.Series) -> pd.Series:
 def annualized_sharpe(
     returns: pd.Series,
     risk_free_rate: float = 0.0,
-    periods_per_year: int = 252,
+    periods_per_year: int = 365,
 ) -> float:
     """Compute annualized Sharpe ratio.
 
     Formula: Sharpe = (mean(r) - rf) / std(r) * sqrt(N)
 
-    where N = periods_per_year (252 for daily, 52 for weekly, 12 for monthly).
+    where N = periods_per_year (365 for daily crypto, 8760 for hourly crypto,
+    252 for equity).
 
     Args:
         returns: Series of period returns (not prices).
         risk_free_rate: Per-period risk-free rate (default 0).
-        periods_per_year: Annualization factor (252 for daily).
+        periods_per_year: Annualization factor (365 for daily crypto).
 
     Returns:
         Annualized Sharpe ratio. Returns 0.0 if std is zero or insufficient data.
@@ -81,8 +82,14 @@ def max_drawdown(prices: pd.Series) -> float:
         prices: Series of prices or equity values.
 
     Returns:
-        Maximum drawdown as a positive fraction (e.g., 0.333 for 33.3% drawdown).
+        Maximum drawdown as a **positive** fraction (e.g., 0.333 for 33.3% drawdown).
         Returns 0.0 if prices are empty or monotonically increasing.
+
+    Note:
+        This function takes a price series and returns a positive value.
+        ``sparky.tracking.metrics.max_drawdown`` takes a returns series and returns
+        a negative value (matching the rubric convention). Use consistently — do not
+        compare the two outputs directly without accounting for the sign difference.
     """
     prices = prices.dropna()
     if len(prices) < 2:
@@ -95,17 +102,18 @@ def max_drawdown(prices: pd.Series) -> float:
 
 def realized_volatility(
     returns: pd.Series,
-    periods_per_year: int = 252,
+    periods_per_year: int = 365,
 ) -> float:
     """Compute annualized realized volatility.
 
     Formula: vol = std(r) * sqrt(N)
 
-    where N = periods_per_year.
+    where N = periods_per_year (365 for daily crypto, 8760 for hourly crypto,
+    252 for equity).
 
     Args:
         returns: Series of period returns (not prices).
-        periods_per_year: Annualization factor (252 for daily).
+        periods_per_year: Annualization factor (365 for daily crypto).
 
     Returns:
         Annualized volatility. Returns 0.0 if insufficient data.

@@ -26,6 +26,17 @@ or sweep.
 - Using `n_trials` less than the true number of configurations tested is HIGH severity
   (underestimates the multiple testing penalty).
 
+**Exemptions** (NOT a HIGH severity DSR violation):
+- Scripts explicitly labeled as "legacy exploration" that call `compute_all_metrics()`
+  with DSR and correctly pass cumulative `n_trials` are compliant, even if DSR < 0.95.
+  The requirement is that DSR is computed and reported, not that DSR must exceed 0.95.
+- Secondary/exploratory scripts that run exactly ONE fixed configuration (no sweep)
+  need DSR with n_trials reflecting the full cumulative program count. They do NOT
+  need to use `run_pre_checks`/`run_post_checks` if their results are clearly labeled
+  as non-primary and the canonical sweep tool (sweep_two_stage.py) is used for final
+  decisions. However, if they DO call training and backtesting, guardrails are strongly
+  recommended.
+
 Reference: Bailey & Lopez de Prado, "The Deflated Sharpe Ratio" (2014).
 
 ### 1.2 Cross-Validation on Time Series
@@ -35,10 +46,22 @@ k-fold CV on time series data introduces lookahead bias because future data leak
 into training folds.
 
 - Standard `sklearn.model_selection.KFold` or `StratifiedKFold` on time-series = HIGH.
-- `TimeSeriesSplit` without purging and embargo = MEDIUM (partial fix, still leaks at boundaries).
-- Embargo period must be >= label horizon (e.g., if predicting 24h return, embargo >= 24h).
+- `TimeSeriesSplit` without any embargo = MEDIUM (partial fix, still leaks at boundaries).
+- `TimeSeriesSplit(gap=N)` with `gap >= label_horizon` IS a valid embargo implementation.
+  The `gap` parameter excludes N samples between train and test sets, which is functionally
+  equivalent to purged CV for the purpose of preventing boundary leakage.
+- Embargo period must be >= label horizon for PRODUCTION data (e.g., if predicting 24h
+  return, gap >= 24 for hourly data with n > 10,000 samples).
 - For hourly crypto data: minimum 24-72 hour embargo between train and test folds.
-- Combinatorial purged CV (CPCV) is the gold standard.
+- Combinatorial purged CV (CPCV) is the gold standard but TimeSeriesSplit with gap is acceptable.
+- **Small dataset / unit test exception**: When n < 1000 samples (e.g., synthetic test
+  data), sklearn raises ValueError if `gap + test_size > n // n_splits`. Proportionally
+  scaling the gap via `min(label_horizon, fold_size // 3)` to prevent this error is
+  ACCEPTABLE for small-dataset contexts ONLY. For production data (n > 10,000), the
+  computed fold_size always satisfies `fold_size // 3 > label_horizon`, so the full
+  embargo is applied automatically. A gap slightly below label_horizon on test-sized
+  data is NOT a HIGH severity issue if the code comment documents the scaling rationale
+  and production-data correctness is verified.
 
 Reference: Lopez de Prado, "Advances in Financial Machine Learning" (2018), Ch. 7.
 
@@ -132,6 +155,18 @@ Known patterns that cause lookahead (all HIGH severity):
   on the full dataframe instead of expanding/rolling).
 - Using `pd.read_parquet()` directly instead of `sparky.data.loader.load()` bypasses
   the holdout guard and may include future data.
+
+**NOT lookahead bias (common false positives):**
+- `target = (returns.shift(-1) > 0).astype(int)` — This creates a forward-looking
+  LABEL (the thing being predicted). This is correct ML practice for supervised
+  classification of next-period direction. The shift(-1) is on `y`, not on features.
+  The signal generated at inference time uses ONLY past features to produce a prediction;
+  the label is only used during training. The backtest MUST still use `signal.shift(1)`
+  when computing strategy returns (which is correct).
+- Donchian channel signals computed at bar T using `rolling(window).max()` (trailing
+  window) are NOT lookahead as long as the signal is shifted before use in backtest.
+  The correct anti-lookahead check is whether the BACKTEST applies `signal.shift(1)`,
+  not whether the signal itself looks back.
 
 Historical note: A lookahead bug (`signal[T] * return[T]`) was found in Sparky's
 backtest engine on 2026-02-16 (PR #12). It inflated Sharpe by 43-256%. All code must

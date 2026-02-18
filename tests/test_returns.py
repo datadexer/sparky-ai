@@ -6,9 +6,9 @@ to catch bugs like the v1 sign inversion.
 Test cases from CODEBASE_PLAN.md:
 - Simple returns: prices [100, 110, 99, 110] -> [NaN, 0.1, -0.1, 0.11111...]
 - Log returns: same prices -> [NaN, ln(1.1), ln(0.9), ln(110/99)]
-- Sharpe: known return series, verify sqrt(252) annualization
+- Sharpe: known return series, verify sqrt(365) annualization (crypto 24/7)
 - Max drawdown: prices [100, 120, 90, 110, 80] -> MDD = (120-80)/120 = 33.33%
-- Realized vol: returns with std=0.02 -> annualized = 0.02*sqrt(252) = 31.75%
+- Realized vol: returns with std=0.02 -> annualized = 0.02*sqrt(365)
 """
 
 import numpy as np
@@ -92,12 +92,12 @@ class TestAnnualizedSharpe:
         assert annualized_sharpe(returns) == 0.0
 
     def test_annualization_factor(self):
-        """Verify sqrt(252) annualization factor."""
+        """Verify sqrt(365) annualization factor (crypto 24/7)."""
         np.random.seed(42)
         returns = pd.Series(np.random.normal(0.001, 0.01, 1000))
         daily_sharpe = returns.mean() / returns.std(ddof=1)
         annual_sharpe = annualized_sharpe(returns)
-        assert annual_sharpe == pytest.approx(daily_sharpe * np.sqrt(252), rel=0.01)
+        assert annual_sharpe == pytest.approx(daily_sharpe * np.sqrt(365), rel=0.01)
 
     def test_empty_returns(self):
         """Empty series should return 0."""
@@ -137,11 +137,11 @@ class TestRealizedVolatility:
     """Test annualized realized volatility."""
 
     def test_known_volatility(self):
-        """Returns with std=0.02 -> annualized = 0.02*sqrt(252) ~ 31.75%"""
+        """Returns with std=0.02 -> annualized = 0.02*sqrt(365) (crypto 24/7)."""
         np.random.seed(42)
         returns = pd.Series(np.random.normal(0.0, 0.02, 10000))
         vol = realized_volatility(returns)
-        expected = 0.02 * np.sqrt(252)
+        expected = 0.02 * np.sqrt(365)
         assert vol == pytest.approx(expected, rel=0.05)  # 5% tolerance for sampling
 
     def test_zero_volatility(self):

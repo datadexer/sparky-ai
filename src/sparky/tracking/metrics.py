@@ -5,6 +5,13 @@ from scipy.stats import norm
 
 
 def sharpe_ratio(returns, risk_free=0.0):
+    """Per-period (non-annualized) Sharpe ratio.
+
+    Returns raw mean/std — callers must multiply by sqrt(periods_per_year) to
+    annualize (e.g. sqrt(365) for daily crypto). Used internally by PSR/DSR
+    which require the per-period form. Do not compare directly against
+    annualized benchmarks without applying the annualization factor.
+    """
     excess = returns - risk_free
     return float(np.mean(excess) / np.std(excess, ddof=1)) if np.std(excess) > 0 else 0.0
 
@@ -139,11 +146,15 @@ def minimum_track_record_length(returns, sr_benchmark=0.0, confidence=0.95):
 
 
 def sortino_ratio(returns, risk_free=0.0):
-    """Like Sharpe but only penalizes downside volatility."""
+    """Like Sharpe but only penalizes downside volatility.
+
+    Uses full-series downside deviation: sqrt(mean(min(excess, 0)^2)),
+    which includes zeros for positive returns (correct RMS formulation).
+    """
     excess = returns - risk_free
-    downside = excess[excess < 0]
-    downside_std = np.std(downside, ddof=1) if len(downside) > 1 else np.std(excess, ddof=1)
-    return float(np.mean(excess) / downside_std) if downside_std > 0 else 0.0
+    downside = np.minimum(excess, 0.0)  # zeros for positive returns
+    downside_dev = np.sqrt(np.mean(downside**2))  # RMS over full series
+    return float(np.mean(excess) / downside_dev) if downside_dev > 0 else 0.0
 
 
 def max_drawdown(returns):
@@ -154,7 +165,7 @@ def max_drawdown(returns):
     return float(np.min(drawdowns))
 
 
-def calmar_ratio(returns, periods_per_year=252):
+def calmar_ratio(returns, periods_per_year=365):
     """Annualized return / max drawdown."""
     mdd = max_drawdown(returns)
     if mdd == 0:
@@ -190,7 +201,7 @@ def profit_factor(returns):
     return float(gains / losses) if losses > 0 else float("inf")
 
 
-def worst_year_sharpe(returns, periods_per_year=252):
+def worst_year_sharpe(returns, periods_per_year=365):
     """Sharpe of the worst calendar year."""
     n_years = len(returns) // periods_per_year
     if n_years < 2:
@@ -205,7 +216,7 @@ def worst_year_sharpe(returns, periods_per_year=252):
 # === COMBINED ===
 
 
-def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=252):
+def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365):
     """Compute comprehensive strategy metrics from a returns series.
 
     Args:
@@ -229,9 +240,15 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=252
         _skewness = 0.0
         _kurtosis = 3.0
 
+    sr_per_period = sharpe_ratio(returns, risk_free)
+    sr_annualized = sr_per_period * np.sqrt(periods_per_year)
+
     return {
         # Statistical significance
-        "sharpe": sharpe_ratio(returns, risk_free),
+        # sharpe_per_period: raw mean/std (no annualization) — used by PSR/DSR formulas
+        # sharpe: annualized (multiply per-period by sqrt(periods_per_year)) — compare to benchmarks
+        "sharpe": sr_annualized,
+        "sharpe_per_period": sr_per_period,
         "psr": probabilistic_sharpe_ratio(returns),
         "dsr": deflated_sharpe_ratio(returns, n_trials),
         "min_track_record": minimum_track_record_length(returns),

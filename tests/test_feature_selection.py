@@ -241,6 +241,44 @@ class TestStabilityTest:
         # Should handle small dataset gracefully
         assert isinstance(result, SelectionResult)
 
+    def test_stability_uses_expanding_window(self):
+        """Verify training sets grow monotonically (no future data leakage).
+
+        Uses a spy model that records training set sizes to confirm
+        TimeSeriesSplit expanding-window behavior.
+        """
+        np.random.seed(42)
+        n = 500
+
+        X = pd.DataFrame({"f1": np.random.randn(n), "f2": np.random.randn(n)})
+        y = pd.Series((X["f1"] > 0).astype(int))
+
+        # Spy model that records training sizes
+        class SpyModel:
+            def __init__(self):
+                self.train_sizes = []
+                self.feature_importances_ = np.array([0.5, 0.5])
+
+            def fit(self, X, y):
+                self.train_sizes.append(len(X))
+
+        spy = SpyModel()
+        selector = FeatureSelector(
+            n_stability_folds=5,
+            correlation_threshold=1.0,  # Disable correlation filter
+            importance_threshold=0.0,  # Disable importance filter
+        )
+        selector.select(X, y, model=spy)
+
+        # SpyModel gets fit once for importance filter + 5 times for stability
+        stability_sizes = spy.train_sizes[1:]  # first fit is importance filter
+        assert len(stability_sizes) == 5
+        # Training sizes must be strictly increasing (expanding window)
+        for i in range(len(stability_sizes) - 1):
+            assert stability_sizes[i] < stability_sizes[i + 1], (
+                f"Training sizes not monotonically increasing: {stability_sizes}"
+            )
+
 
 class TestMaxFeaturesCap:
     """Tests for maximum features limit."""

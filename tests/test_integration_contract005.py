@@ -112,6 +112,7 @@ class TestGuardrailsMetricsPipeline:
 
         required_keys = [
             "sharpe",
+            "sharpe_per_period",
             "psr",
             "dsr",
             "min_track_record",

@@ -21,6 +21,7 @@ dependencies = [
     "optuna>=4.0",
     "psutil>=6.0",
     "matplotlib>=3.8",
+    "hmmlearn>=0.3",
 ]
 
 [project.optional-dependencies]
