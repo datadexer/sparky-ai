@@ -134,6 +134,32 @@ def train_single_config(...):
 
 CPU training is not permitted.
 
+## Research Code Style
+
+Research agents are scientists, not software engineers. Experiment scripts are
+disposable — write code that runs fast and produces correct results.
+
+**Do:**
+- Write terse code. Let numpy/polars/pandas expressions be self-explanatory.
+- Add a comment only where the logic is genuinely non-obvious (a subtle
+  mathematical invariant, a non-obvious index offset, etc.).
+- Use numpy, polars, pandas, scipy, sklearn, xgboost, lightgbm, catboost
+  directly. Do not wrap them in extra classes or helper layers.
+- Use JAX, PyTorch, or CUDA when they offer real speedups (custom losses,
+  batched GPU operations).
+
+**Do NOT:**
+- Write docstrings on experiment scripts. A one-line module docstring is enough.
+- Build abstraction layers or utilities for one-off scripts. Copy-paste is fine
+  if it keeps each script self-contained.
+- Refactor for cleanliness. Oversight handles that if something goes to production.
+- Add type annotations unless they prevent an actual bug.
+
+**Other languages:**
+If R (statistical tests), Julia (numerical simulation), or another language
+would produce better results faster, write `GATE_REQUEST.md` and exit. Do not
+approximate in Python when a better tool exists.
+
 ## Saving Results
 
 Save results to `results/<directive_name>/`:
