@@ -35,10 +35,13 @@ k-fold CV on time series data introduces lookahead bias because future data leak
 into training folds.
 
 - Standard `sklearn.model_selection.KFold` or `StratifiedKFold` on time-series = HIGH.
-- `TimeSeriesSplit` without purging and embargo = MEDIUM (partial fix, still leaks at boundaries).
-- Embargo period must be >= label horizon (e.g., if predicting 24h return, embargo >= 24h).
+- `TimeSeriesSplit` without any embargo = MEDIUM (partial fix, still leaks at boundaries).
+- `TimeSeriesSplit(gap=N)` with `gap >= label_horizon` IS a valid embargo implementation.
+  The `gap` parameter excludes N samples between train and test sets, which is functionally
+  equivalent to purged CV for the purpose of preventing boundary leakage.
+- Embargo period must be >= label horizon (e.g., if predicting 24h return, gap >= 24).
 - For hourly crypto data: minimum 24-72 hour embargo between train and test folds.
-- Combinatorial purged CV (CPCV) is the gold standard.
+- Combinatorial purged CV (CPCV) is the gold standard but TimeSeriesSplit with gap is acceptable.
 
 Reference: Lopez de Prado, "Advances in Financial Machine Learning" (2018), Ch. 7.
 
