@@ -42,7 +42,7 @@ N_TRIALS = 187  # Total contract_004 wandb runs (confirmed by Step 1 audit)
 DONCHIAN_BASELINE_SHARPE = 1.062  # Multi-TF Donchian corrected baseline
 ENTRY_PERIOD = 40
 EXIT_PERIOD = 20
-TRANSACTION_COSTS_BPS = 30.0  # 30 bps per side — standard cost floor per guardrails
+TRANSACTION_COSTS_BPS = 30.0  # 30 bps per side; applied on EACH position change (entry OR exit)
 DSR_THRESHOLD = 0.95
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -129,6 +129,9 @@ def compute_strategy_returns(
     """
     Apply signal to returns with transaction costs.
 
+    costs_bps: cost per SIDE in basis points (30 bps per entry, 30 bps per exit = 60 bps round-trip).
+    Matches the project standard: TransactionCostModel.standard() = 30 bps per side.
+
     CRITICAL: signals are ALREADY computed at T using data through T-1
     (donchian uses upper.iloc[i-1]; momentum is computed on prior returns).
     However, since the signal at time T uses close[T] for the rolling max
@@ -138,12 +141,12 @@ def compute_strategy_returns(
     """
     pos = signals.reindex(daily_returns.index).fillna(0).shift(1).fillna(0)
 
-    # Apply transaction costs on position changes
+    # Apply per-side transaction cost on each position change (entry or exit)
     pos_changes = pos.diff().abs()
     pos_changes.iloc[0] = pos.iloc[0]  # First entry
 
-    cost_per_trade = costs_bps / 10000.0  # Convert bps to fractional
-    cost_series = pos_changes * cost_per_trade
+    cost_per_side = costs_bps / 10000.0  # Convert bps to fractional (per-side, not round-trip)
+    cost_series = pos_changes * cost_per_side
 
     strat_ret = pos * daily_returns - cost_series
     return strat_ret.values

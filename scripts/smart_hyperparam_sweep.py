@@ -88,6 +88,7 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
     years = [2020, 2021, 2022, 2023]  # Skip 2019 (no prior training data)
     results = []
     all_net_returns = []
+    total_trades = 0  # accumulate actual trade count across all folds
     cost_model = TransactionCostModel.for_btc()
 
     for year in years:
@@ -132,6 +133,7 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
         # Strategy returns with costs (no look-ahead: shift(1))
         strategy_returns = daily_signals.shift(1) * daily_returns
         trades = daily_signals.diff().abs()
+        total_trades += int(trades.sum())
         costs = trades * cost_model.round_trip_cost
         strategy_returns = (strategy_returns - costs).dropna()
         all_net_returns.append(strategy_returns)
@@ -156,7 +158,7 @@ def validate_config(features, target, prices, model_name, params, n_trials=1):
     running_max = equity_curve.cummax()
     actual_drawdown = float(((equity_curve - running_max) / running_max).min()) if len(equity_curve) > 0 else -1.0
     metrics_dict = {"sharpe": float(np.mean(sharpes)), "max_drawdown": actual_drawdown}
-    post_results = run_post_checks(net_returns.values, metrics_dict, config, n_trades=None)
+    post_results = run_post_checks(net_returns.values, metrics_dict, config, n_trades=total_trades)
     log_results(pre_results + post_results, run_id=f"{model_name}_{params.get('depth', params.get('max_depth'))}")
 
     return {
