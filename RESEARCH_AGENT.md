@@ -68,8 +68,8 @@ pre_results = run_pre_checks(data, config)
 if has_blocking_failure(pre_results):
     raise RuntimeError("Pre-checks failed")
 
-# After backtest
-post_results = run_post_checks(returns, metrics, config)
+# After backtest — N = cumulative configs tested this session (for DSR correction)
+post_results = run_post_checks(returns, metrics, config, n_trials=N)
 log_results(pre_results + post_results, run_id="my_run")
 ```
 
