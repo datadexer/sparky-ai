@@ -215,7 +215,7 @@ class TestBacktestStatistics:
         np.random.seed(42)
         returns = pd.Series(np.random.normal(0.001, 0.02, 252))
 
-        # Annualized (default)
+        # Annualized (default, periods_per_year=365 for crypto)
         lower_ann, upper_ann = BacktestStatistics.sharpe_confidence_interval(
             returns, n_bootstrap=1000, random_state=42, annualize=True
         )
@@ -224,8 +224,8 @@ class TestBacktestStatistics:
             returns, n_bootstrap=1000, random_state=42, annualize=False
         )
 
-        # Annualized CI should be sqrt(252) times wider than daily
-        scale = np.sqrt(252)
+        # Annualized CI should be sqrt(365) times wider than daily
+        scale = np.sqrt(365)
         assert abs(lower_ann - lower_daily * scale) < 0.5  # Allow some bootstrap noise
         assert abs(upper_ann - upper_daily * scale) < 0.5
 

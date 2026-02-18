@@ -18,19 +18,21 @@ class BacktestStatistics:
         n_bootstrap: int = 10000,
         ci: float = 0.95,
         annualize: bool = True,
+        periods_per_year: int = 365,
         random_state: int | None = None,
     ) -> tuple[float, float]:
         """Calculate confidence interval for annualized Sharpe ratio using bootstrap.
 
         Uses bootstrap resampling to estimate the distribution of the Sharpe ratio
         and compute confidence intervals. By default, the Sharpe is annualized
-        (multiplied by sqrt(252)) to be comparable with annualized_sharpe().
+        (multiplied by sqrt(periods_per_year)) to be comparable with annualized_sharpe().
 
         Args:
             returns: Series of daily returns.
             n_bootstrap: Number of bootstrap samples to generate.
             ci: Confidence interval level (e.g., 0.95 for 95% CI).
-            annualize: If True (default), multiply Sharpe by sqrt(252).
+            annualize: If True (default), multiply Sharpe by sqrt(periods_per_year).
+            periods_per_year: Trading periods per year (365 for daily crypto, 252 for equity).
             random_state: Optional seed for reproducibility.
 
         Returns:
@@ -42,7 +44,7 @@ class BacktestStatistics:
         returns_array = returns.values
         n = len(returns_array)
         rng = np.random.RandomState(random_state)
-        annualization_factor = np.sqrt(252) if annualize else 1.0
+        annualization_factor = np.sqrt(periods_per_year) if annualize else 1.0
 
         # Generate bootstrap samples and calculate Sharpe ratio for each
         sharpe_ratios = np.zeros(n_bootstrap)
@@ -124,7 +126,7 @@ class BacktestStatistics:
         n_simulations: int = 1000,
         block_size: int | None = None,
         risk_free_rate: float = 0.0,
-        periods_per_year: int = 252,
+        periods_per_year: int = 365,
     ) -> dict:
         """Monte Carlo simulation using block bootstrap to preserve autocorrelation.
 

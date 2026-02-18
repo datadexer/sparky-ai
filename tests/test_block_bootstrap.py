@@ -31,7 +31,7 @@ def test_block_bootstrap_basic():
         n_simulations=100,
         block_size=10,
         risk_free_rate=0.0,
-        periods_per_year=252,
+        periods_per_year=365,
     )
 
     # Verify structure
@@ -115,8 +115,8 @@ def test_block_bootstrap_vs_simple_resampling():
         strategy_sample = np.random.choice(strategy_returns.values, size=n, replace=True)
         market_sample = np.random.choice(market_returns.values, size=n, replace=True)
 
-        strategy_sharpe = (np.mean(strategy_sample) / np.std(strategy_sample, ddof=1)) * np.sqrt(252)
-        market_sharpe = (np.mean(market_sample) / np.std(market_sample, ddof=1)) * np.sqrt(252)
+        strategy_sharpe = (np.mean(strategy_sample) / np.std(strategy_sample, ddof=1)) * np.sqrt(365)
+        market_sharpe = (np.mean(market_sample) / np.std(market_sample, ddof=1)) * np.sqrt(365)
 
         if strategy_sharpe > market_sharpe:
             wins_simple += 1
@@ -130,7 +130,7 @@ def test_block_bootstrap_vs_simple_resampling():
         n_simulations=100,
         block_size=20,
         risk_free_rate=0.0,
-        periods_per_year=252,
+        periods_per_year=365,
     )
     win_rate_block = result_block["win_rate"]
 
@@ -158,7 +158,7 @@ def test_block_bootstrap_auto_block_size():
         n_simulations=50,
         block_size=None,  # Auto-select
         risk_free_rate=0.0,
-        periods_per_year=252,
+        periods_per_year=365,
     )
 
     # sqrt(729) = 27

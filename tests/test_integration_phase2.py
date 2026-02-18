@@ -361,6 +361,6 @@ class TestBootstrapCIScaleMatchesFoldSharpe:
         )
         daily_width = upper_daily - lower_daily
         scale_ratio = ci_width / daily_width if daily_width > 0 else float("inf")
-        assert abs(scale_ratio - np.sqrt(252)) < 1.0, (
-            f"Annualized/daily CI width ratio {scale_ratio:.2f} should be ~{np.sqrt(252):.2f}"
+        assert abs(scale_ratio - np.sqrt(365)) < 1.0, (
+            f"Annualized/daily CI width ratio {scale_ratio:.2f} should be ~{np.sqrt(365):.2f}"
         )

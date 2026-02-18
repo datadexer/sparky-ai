@@ -38,7 +38,7 @@ class TestReturnsInternalConsistency:
         # Manual calculation
         mean_r = rets.mean()
         std_r = rets.std(ddof=1)
-        manual_sharpe = (mean_r / std_r) * np.sqrt(252)
+        manual_sharpe = (mean_r / std_r) * np.sqrt(365)
 
         computed_sharpe = annualized_sharpe(rets)
 
@@ -48,7 +48,7 @@ class TestReturnsInternalConsistency:
         """realized_volatility equals std(returns) * sqrt(252)."""
         rets = simple_returns(synthetic_prices).dropna()
 
-        manual_vol = float(rets.std(ddof=1) * np.sqrt(252))
+        manual_vol = float(rets.std(ddof=1) * np.sqrt(365))
         computed_vol = realized_volatility(rets)
 
         assert computed_vol == pytest.approx(manual_vol, rel=1e-10)

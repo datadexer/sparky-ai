@@ -158,7 +158,7 @@ def max_drawdown(returns):
     return float(np.min(drawdowns))
 
 
-def calmar_ratio(returns, periods_per_year=252):
+def calmar_ratio(returns, periods_per_year=365):
     """Annualized return / max drawdown."""
     mdd = max_drawdown(returns)
     if mdd == 0:
@@ -194,7 +194,7 @@ def profit_factor(returns):
     return float(gains / losses) if losses > 0 else float("inf")
 
 
-def worst_year_sharpe(returns, periods_per_year=252):
+def worst_year_sharpe(returns, periods_per_year=365):
     """Sharpe of the worst calendar year."""
     n_years = len(returns) // periods_per_year
     if n_years < 2:
@@ -209,7 +209,7 @@ def worst_year_sharpe(returns, periods_per_year=252):
 # === COMBINED ===
 
 
-def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=252):
+def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365):
     """Compute comprehensive strategy metrics from a returns series.
 
     Args:
