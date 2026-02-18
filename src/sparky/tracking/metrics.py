@@ -139,11 +139,15 @@ def minimum_track_record_length(returns, sr_benchmark=0.0, confidence=0.95):
 
 
 def sortino_ratio(returns, risk_free=0.0):
-    """Like Sharpe but only penalizes downside volatility."""
+    """Like Sharpe but only penalizes downside volatility.
+
+    Uses full-series downside deviation: sqrt(mean(min(excess, 0)^2)),
+    which includes zeros for positive returns (correct RMS formulation).
+    """
     excess = returns - risk_free
-    downside = excess[excess < 0]
-    downside_std = np.std(downside, ddof=1) if len(downside) > 1 else np.std(excess, ddof=1)
-    return float(np.mean(excess) / downside_std) if downside_std > 0 else 0.0
+    downside = np.minimum(excess, 0.0)  # zeros for positive returns
+    downside_dev = np.sqrt(np.mean(downside**2))  # RMS over full series
+    return float(np.mean(excess) / downside_dev) if downside_dev > 0 else 0.0
 
 
 def max_drawdown(returns):

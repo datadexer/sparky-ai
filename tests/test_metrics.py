@@ -269,13 +269,18 @@ class TestSortinoVsSharpe:
         assert so > sr, f"Expected Sortino ({so:.4f}) > Sharpe ({sr:.4f}) for positively skewed returns."
 
     def test_sortino_equals_sharpe_for_symmetric_returns(self):
-        """For perfectly symmetric (normal) returns, Sortino ≈ Sharpe * sqrt(2)."""
+        """For symmetric (normal) returns, Sortino ≈ Sharpe * sqrt(2).
+
+        With RMS downside deviation over the full series, for a symmetric
+        distribution half the values are zero and half are negative, so
+        downside_dev ≈ std / sqrt(2), giving Sortino ≈ Sharpe * sqrt(2).
+        """
         rng = np.random.default_rng(0)
         returns = rng.normal(0.001, 0.02, 10000)
         sr = sharpe_ratio(returns)
         so = sortino_ratio(returns)
-        # For normal returns, Sortino ≈ Sharpe * sqrt(2) (not equal, but Sortino > Sharpe)
         assert so > sr
+        assert so == pytest.approx(sr * np.sqrt(2), rel=0.15)
 
     def test_sortino_is_finite_for_normal_returns(self, profitable_returns):
         so = sortino_ratio(profitable_returns)
