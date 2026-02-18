@@ -8,19 +8,19 @@
 
 holdout_periods:
   btc:
-    oos_start: "2024-07-01"
+    oos_start: "2024-01-01"
     oos_end: null  # through present
     embargo_days: 30  # gap between training end and OOS start
-    description: "Final 18+ months reserved for true OOS evaluation"
+    description: "Final 24+ months reserved for true OOS evaluation"
 
   eth:
-    oos_start: "2024-07-01"
+    oos_start: "2024-01-01"
     oos_end: null
     embargo_days: 30
-    description: "Final 18+ months reserved for true OOS evaluation"
+    description: "Final 24+ months reserved for true OOS evaluation"
 
   cross_asset:
-    oos_start: "2024-07-01"
+    oos_start: "2024-01-01"
     oos_end: null
     embargo_days: 30
     description: "Same OOS boundary for all cross-asset data"
@@ -59,3 +59,4 @@ policy:
     - in_sample_sharpe
     - oos_sharpe
     - verdict
+# test tamper

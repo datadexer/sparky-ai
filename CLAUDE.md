@@ -9,6 +9,25 @@ You are running inside a workflow step. The workflow runner controls sequencing.
 Execute your current step thoroughly, then exit. Do not try to advance the workflow.
 Do not present option menus or ask for decisions — just work.
 
+## DataFrame Library Preference
+Prefer **polars** over pandas for new data processing code where performance matters.
+- Use polars for: feature engineering pipelines, large data transforms, aggregations, joins
+- Use pandas when: interfacing with `pandas_ta`, scikit-learn, XGBoost/LightGBM/CatBoost (they expect numpy/pandas), or calling existing code that returns `pd.DataFrame`
+- At model boundaries, convert: `df.to_pandas()` (polars → pandas) or `pl.from_pandas(df)` (pandas → polars)
+- Existing pandas code is fine — no need to rewrite it. Write new code in polars.
+
+```python
+import polars as pl
+
+# Loading raw parquet → polars (bypass loader for analysis-only scripts)
+df = pl.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
+
+# Or convert from the loader's pandas output
+import pandas as pd
+from sparky.data.loader import load
+df = pl.from_pandas(load("btc_1h_features", purpose="training"))
+```
+
 ## Data Loading (MANDATORY)
 ```python
 from sparky.data.loader import load, list_datasets
@@ -124,12 +143,12 @@ a HIGH finding is a false positive, explain why in the PR comments.
 - Branch naming: `oversight/`, `contract-NNN/`, `fix/`, `feat/`, `phase-N/`
 
 ## Holdout Data Policy
-See `configs/holdout_policy.yaml` — IMMUTABLE.
-- All data after 2024-07-01 is OUT-OF-SAMPLE. You may NOT train on it.
-- 30-day embargo buffer before OOS boundary.
+See `configs/holdout_policy.yaml` — IMMUTABLE. Do NOT hardcode OOS dates anywhere.
+- The OOS boundary and embargo days are defined in that config file. Read them dynamically.
+- The data loader (`sparky.data.loader`) reads the boundary dynamically and enforces it for `purpose="training"`.
 - OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human).
 - Each model gets exactly ONE OOS evaluation. No repeated peeking.
-- The data loader (`sparky.data.loader`) enforces this automatically for `purpose="training"`.
+- You may NOT modify `configs/holdout_policy.yaml`. The pre-commit hook and orchestrator will block this.
 
 ## Graduated Success Thresholds
 
