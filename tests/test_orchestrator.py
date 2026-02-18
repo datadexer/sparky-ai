@@ -471,12 +471,15 @@ class TestLockfile:
 
 
 class TestSessionPrompt:
-    def test_stuck_protocol_present(self):
+    def test_exit_protocol_and_duration_present(self):
         directive = _make_directive()
         orch = ResearchOrchestrator(directive)
         prompt = orch._build_session_prompt(1, "")
         assert "GATE_REQUEST.md" in prompt
-        assert "Stuck Protocol" in prompt
+        assert "When to Exit" in prompt
+        assert "Session Duration" in prompt
+        assert "Do NOT exit after running one sweep" in prompt
+        assert "RESEARCH_AGENT.md" in prompt
 
     def test_session_tag_injected(self):
         directive = _make_directive(wandb_tags=["my_tag"])

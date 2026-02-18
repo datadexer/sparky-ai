@@ -737,12 +737,25 @@ class ResearchOrchestrator:
         d = self.directive
         session_tag = f"session_{session_number:03d}"
 
+        sl = self.directive.session_limits
         parts = [
             f"You are session {session_number} of research directive '{d.name}'.",
             "",
             "Read RESEARCH_AGENT.md for all API usage, rules, and examples. "
             "Do NOT read CLAUDE.md or explore source files — everything you need "
             "is in RESEARCH_AGENT.md and this prompt.",
+            "",
+            f"## Session Duration — you have up to {sl.max_session_minutes} minutes",
+            "Do NOT exit after running one sweep. Treat this session like a workday:",
+            "1. Design your first experiment batch, run it, analyze results.",
+            "2. Based on what you learned, design the NEXT batch. Run that too.",
+            "3. Keep iterating: run → analyze → design next → run → analyze → ...",
+            "4. Only stop when you have genuinely exhausted productive ideas OR you've "
+            "found a result that meets the success criteria.",
+            "",
+            "A good session runs 3-5 experiment rounds, each informed by the last. "
+            "A bad session runs 1 sweep and exits. Log results to wandb after EACH round "
+            "so progress is captured even if the session is interrupted.",
             "",
             f"## Objective\n{d.objective}",
             "",
@@ -791,11 +804,14 @@ class ResearchOrchestrator:
 
         # Stuck protocol
         parts.append(
-            "## Stuck Protocol\n"
-            "If you are stuck (no meaningful new configs to test, blocked by data, "
-            "or need strategic input), write `GATE_REQUEST.md` to the project root "
-            "with a brief explanation and exit. Do NOT re-run configs already in the "
-            "top results table above."
+            "## When to Exit\n"
+            "Do NOT exit just because one sweep finished. Exit ONLY when:\n"
+            "- You have genuinely exhausted all productive ideas (tried 3+ distinct approaches)\n"
+            "- A result meets the success criteria and you've validated it\n"
+            "- You hit a platform blocker (write `GATE_REQUEST.md` and exit)\n\n"
+            "If your first sweep fails, that's INFORMATION — use it to design a better "
+            "second sweep. Try different parameter ranges, different strategy families, "
+            "or different feature combinations. Negative results narrow the search space."
         )
 
         return "\n".join(parts)
