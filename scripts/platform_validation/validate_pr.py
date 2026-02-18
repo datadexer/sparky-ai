@@ -10,9 +10,7 @@ data access patterns, wandb parameter flow, cost model usage, guardrails,
 and testing coverage.
 
 Exits 0 if no HIGH severity issues found.
-Exits 1 if HIGH severity issues found OR if validation was inconclusive
-        (rate limit, API error, non-JSON response). A PR must not go
-        green when validation was skipped due to API failures.
+Exits 1 if HIGH severity issues found or rate-limited after retries.
 Posts findings as PR comment via GitHub API.
 """
 
@@ -26,8 +24,13 @@ from pathlib import Path
 import anthropic
 
 # Retry delays (seconds) on 429 rate-limit errors.
-# Three total attempts: immediate, +30s, +60s.
-_RATE_LIMIT_RETRY_DELAYS = [30, 60]
+# Four total attempts: immediate, +30s, +30s, +30s = 90s of retrying.
+_RATE_LIMIT_RETRY_DELAYS = [30, 30, 30]
+
+# Free tier: 10K input tokens/min ≈ 40K chars. Target well under to avoid 429s.
+# Budget: ~6K tokens for rubric+prompt, ~3K tokens for code context.
+_MAX_CODE_CHARS = 12000  # ~3K tokens for all changed files combined
+_MAX_CONTEXT_CHARS = 4000  # reference files budget
 
 
 def get_changed_files():
@@ -50,7 +53,7 @@ def get_changed_files():
     ]
 
     changes = []
-    for filepath in reviewable[:18]:  # limit to 18 files
+    for filepath in reviewable[:15]:  # limit to 15 files
         diff = subprocess.run(
             ["git", "diff", "origin/main...HEAD", "--", filepath],
             capture_output=True,
@@ -60,8 +63,8 @@ def get_changed_files():
         changes.append(
             {
                 "filepath": filepath,
-                "diff": diff.stdout[:5000],
-                "full_content": content[:8000],
+                "diff": diff.stdout,
+                "full_content": content,
             }
         )
     return changes
@@ -102,6 +105,28 @@ def _create_message_with_retry(client, **kwargs):
                 raise  # All retries exhausted — propagate to caller
 
 
+def _budget_changes(changes, max_chars):
+    """Distribute character budget across changed files, prioritizing diffs."""
+    if not changes:
+        return ""
+    n = len(changes)
+    per_file = max(500, max_chars // n)
+    # Give 70% to diff, 30% to content
+    diff_budget = int(per_file * 0.7)
+    content_budget = per_file - diff_budget
+
+    text = ""
+    for c in changes:
+        text += f"\n### File: {c['filepath']}\n"
+        diff = c["diff"][:diff_budget]
+        text += f"#### Diff:\n```\n{diff}\n```\n"
+        if content_budget > 100:
+            content = c["full_content"][:content_budget]
+            text += f"#### Full content (truncated):\n```\n{content}\n```\n"
+        text += "\n"
+    return text
+
+
 def run_validation(changes, context):
     """Send changes to Claude Sonnet for platform engineering review."""
     client = anthropic.Anthropic()
@@ -109,17 +134,14 @@ def run_validation(changes, context):
     rubric_path = Path(__file__).parent / "rubric.md"
     rubric = rubric_path.read_text()
 
-    # Format changed files
-    changes_text = ""
-    for c in changes:
-        changes_text += f"\n### File: {c['filepath']}\n"
-        changes_text += f"#### Diff:\n```\n{c['diff']}\n```\n"
-        changes_text += f"#### Full content (truncated):\n```\n{c['full_content'][:3000]}\n```\n\n"
+    # Budget-aware formatting
+    changes_text = _budget_changes(changes, _MAX_CODE_CHARS)
 
-    # Format codebase context
+    # Format codebase context within budget
     context_text = ""
+    ctx_per_file = max(500, _MAX_CONTEXT_CHARS // max(len(context), 1))
     for path, content in context.items():
-        context_text += f"\n### {path} (for reference):\n```python\n{content}\n```\n"
+        context_text += f"\n### {path} (for reference):\n```python\n{content[:ctx_per_file]}\n```\n"
 
     prompt = (
         "You are an engineering QA reviewer for Sparky AI, an autonomous crypto "
@@ -140,6 +162,10 @@ def run_validation(changes, context):
         "performance without correctness impact, or test helper simplifications.\n\n"
         "IMPORTANT: Be specific. Reference the exact rubric section. Only flag "
         "concrete violations you can see in the code — not hypothetical risks.\n\n"
+        "CRITICAL: Before flagging a function call's keyword argument as wrong, verify "
+        "the actual function signature. Different functions use different parameter names "
+        "for different purposes. The rubric's 'What NOT to Flag' section has authoritative "
+        "API signatures — consult it before reporting parameter name issues.\n\n"
         f"## ENGINEERING RUBRIC\n{rubric}\n\n"
         f"## CODEBASE REFERENCE (current state of key files)\n{context_text}\n\n"
         f"## CODE CHANGES TO REVIEW\n{changes_text}\n\n"
@@ -269,7 +295,7 @@ def main():
     try:
         result = run_validation(changes, context)
     except anthropic.RateLimitError as e:
-        # Rate limit exhausted after all retries — BLOCK the PR, do not pass
+        # Rate limit exhausted after retries (~90s) — block the PR.
         print(f"RATE LIMIT: All retries exhausted: {e}", flush=True)
         result = {
             "summary": "INCONCLUSIVE: Anthropic API rate limit (429) — validation did not execute. Re-trigger CI to retry.",
