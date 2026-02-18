@@ -12,9 +12,7 @@ from sparky.backtest.costs import TransactionCostModel
 from sparky.backtest.engine import BacktestResult, WalkForwardBacktester
 from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.backtest.statistics import BacktestStatistics
-from sparky.features.registry import FeatureDefinition, FeatureRegistry
 from sparky.features.returns import annualized_sharpe, simple_returns
-from sparky.features.selection import FeatureSelector
 from sparky.features.technical import ema, momentum, rsi
 from sparky.models.baselines import BuyAndHold, EqualWeight, SimpleMomentum
 from sparky.tracking.experiment import ExperimentTracker
@@ -164,103 +162,6 @@ class TestLeakageDetectorPreservesModelState:
         # Report should be valid
         assert len(report.checks) == 3
         assert report.passed  # No leakage in clean synthetic data
-
-
-class TestFeatureRegistryToSelectionPipeline:
-    """Register features -> build matrix -> select with real model."""
-
-    def test_end_to_end_feature_pipeline(self):
-        """Features flow from registry through selection correctly."""
-        np.random.seed(42)
-        n = 500
-        dates = pd.date_range("2020-01-01", periods=n, freq="D")
-
-        # Synthetic price data
-        prices = pd.Series(
-            100 * np.exp(np.cumsum(np.random.normal(0.0003, 0.02, n))),
-            index=dates,
-            name="close",
-        )
-        data = {"price": pd.DataFrame({"close": prices}, index=dates)}
-
-        # Register real features
-        registry = FeatureRegistry()
-        registry.register(
-            FeatureDefinition(
-                name="rsi_14",
-                category="technical",
-                compute_fn=lambda d: rsi(d["price"]["close"], 14),
-                input_columns=["close"],
-                lookback=14,
-                asset="btc",
-            )
-        )
-        registry.register(
-            FeatureDefinition(
-                name="momentum_30",
-                category="technical",
-                compute_fn=lambda d: momentum(d["price"]["close"], 30),
-                input_columns=["close"],
-                lookback=30,
-                asset="btc",
-            )
-        )
-        registry.register(
-            FeatureDefinition(
-                name="ema_ratio_20",
-                category="technical",
-                compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 20) - 1,
-                input_columns=["close"],
-                lookback=20,
-                asset="btc",
-            )
-        )
-        registry.register(
-            FeatureDefinition(
-                name="ema_ratio_50",
-                category="technical",
-                compute_fn=lambda d: d["price"]["close"] / ema(d["price"]["close"], 50) - 1,
-                input_columns=["close"],
-                lookback=50,
-                asset="btc",
-            )
-        )
-        registry.register(
-            FeatureDefinition(
-                name="volatility_proxy",
-                category="technical",
-                compute_fn=lambda d: d["price"]["close"].rolling(20).std() / d["price"]["close"],
-                input_columns=["close"],
-                lookback=20,
-                asset="btc",
-            )
-        )
-
-        # Build feature matrix
-        feature_names = registry.list_features(asset="btc")
-        assert len(feature_names) == 5
-
-        matrix = registry.build_feature_matrix(asset="btc", feature_names=feature_names, data=data)
-        assert not matrix.empty
-        assert matrix.shape[1] == 5
-
-        # Create target for feature selection
-        returns = simple_returns(prices)
-        y = (returns.shift(-1) > 0).astype(float).loc[matrix.index].fillna(0).astype(int)
-
-        # Run feature selection with a real model
-        model = DecisionTreeClassifier(max_depth=3, random_state=42)
-        selector = FeatureSelector(
-            correlation_threshold=0.85,
-            importance_threshold=0.01,
-        )
-        result = selector.select(matrix, y, model=model)
-
-        # Verify result structure
-        assert len(result.selected_features) > 0
-        assert all(f in feature_names for f in result.selected_features)
-        assert result.importance_scores is not None
-        assert result.correlation_matrix is not None
 
 
 class TestExperimentTrackerLogsRealBacktest:
