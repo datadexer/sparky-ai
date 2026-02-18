@@ -89,8 +89,8 @@ pre_results = run_pre_checks(data, config)
 if has_blocking_failure(pre_results):
     raise RuntimeError("Pre-experiment checks failed")
 
-# After backtest
-post_results = run_post_checks(returns, metrics, config, n_trials=N)
+# After backtest (n_trades = actual number of trades made by the strategy)
+post_results = run_post_checks(returns, metrics, config, n_trades=n_trades)
 log_results(pre_results + post_results, run_id="my_run")
 ```
 Pre-checks: holdout boundary, minimum samples, no lookahead, costs specified, param-data ratio.
