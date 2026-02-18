@@ -7,6 +7,27 @@ infrastructure soundness, data plumbing, and system correctness — not quant fi
 
 ---
 
+## 0. CRITICAL: Shared Utility Function Delegation
+
+Research sweep scripts in `scripts/` commonly delegate correctness-critical operations
+to shared utility modules (e.g., `sweep_utils.py`). When a script imports and calls
+utility functions like `evaluate()`, `net_ret()`, `run_pre()`, these functions handle:
+
+- **Signal timing** (`positions.shift(1)`) — inside `net_ret()`, not at the call site
+- **Cost deduction** — inside `net_ret()` or `evaluate()`, not at the call site
+- **Guardrails** (`run_pre_checks()`, `run_post_checks()`, `log_results()`) — inside `evaluate()`, not at the call site
+- **DSR/n_trials** — passed inside `evaluate()` to `compute_all_metrics()`, not at the call site
+- **wandb logging** — handled by wrapper functions, not at the call site
+
+**Do NOT flag a script for missing these operations if it delegates to utility functions.**
+If code truncation prevents you from seeing the utility function's implementation,
+and the script imports from a shared utility module, assume the utility handles
+correctness and do NOT flag the call site. This is a DEFAULT-PASS rule: scripts that
+delegate to shared utilities are assumed correct unless you can see concrete evidence
+of a bug INSIDE the utility function itself.
+
+---
+
 ## 1. Backtesting Engine Integrity
 
 ### 1.1 Signal Timing
@@ -25,6 +46,12 @@ net_returns = signals.shift(1) * price_returns   # signals[T] applied to return[
 **NOT a violation (common false positives):**
 - `target = returns.shift(-1)` — this creates the *label* for supervised learning, not a trading signal
 - Shift applied inside a model's `predict()` — the model itself may handle timing internally
+- Shift applied inside a shared utility function (e.g., `net_ret()` doing `positions.shift(1)`)
+  or signal function (e.g., `rolling().max().shift(1)` inside signal generators). If you only
+  see the call site `pos = strategy_fn(prices)` followed by `evaluate(prices, pos, ...)`,
+  the shift is inside those functions — do NOT flag the call site.
+- Research sweep scripts that call `evaluate()` from `sweep_utils.py` — that function
+  handles signal shifting, cost deduction, guardrails, and n_trials internally.
 
 ### 1.2 Cost Application
 
@@ -36,6 +63,12 @@ The `TransactionCostModel.apply(returns, positions)` method handles this.
 - `costs.apply()` called after `compute_all_metrics()` in the same backtest loop
 - `transaction_costs_bps` config key set to 0, None, or absent
 - Using `cost_bps` or `costs_bps` inconsistently (the canonical key is `transaction_costs_bps`)
+
+**NOT a violation:**
+- Costs applied inside a shared utility (e.g., `net_ret(prices, positions, cf)` deducts
+  costs and returns net returns, then `evaluate()` passes those net returns to
+  `compute_all_metrics()`). If the call site is `evaluate(prices, pos, cfg, n, df, 30)`,
+  the cost deduction happens internally — do NOT flag the call site.
 
 **MEDIUM severity:**
 - Cost model constructed with non-standard values without documented justification

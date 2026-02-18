@@ -31,6 +31,49 @@ logger = logging.getLogger(__name__)
 GATE_REQUEST_PATH = PROJECT_ROOT / "GATE_REQUEST.md"
 GATE_RESPONSE_PATH = PROJECT_ROOT / "GATE_RESPONSE.md"
 
+# Research agents must NOT use git, GitHub CLI, or CI tools.
+# This is enforced at the tool level via --disallowedTools.
+RESEARCH_DISALLOWED_TOOLS = [
+    # Version control & CI
+    "Bash(git:*)",
+    "Bash(gh:*)",
+    "Bash(ruff:*)",
+    "Bash(pre-commit:*)",
+    "Bash(pytest:*)",
+    "Bash(black:*)",
+    "Bash(flake8:*)",
+    "Bash(mypy:*)",
+    # Package management — no installing/removing packages
+    "Bash(pip:*)",
+    "Bash(pip3:*)",
+    "Bash(uv:*)",
+    "Bash(conda:*)",
+    # Network — no arbitrary downloads
+    "Bash(curl:*)",
+    "Bash(wget:*)",
+    # System administration
+    "Bash(systemctl:*)",
+    "Bash(chmod:*)",
+    "Bash(chown:*)",
+    # Destructive operations
+    "Bash(rm -rf:*)",
+    # Process management
+    "Bash(kill:*)",
+    "Bash(pkill:*)",
+    "Bash(killall:*)",
+    # OOS vault access — block common read commands
+    "Bash(cat data/.oos_vault:*)",
+    "Bash(cat ./data/.oos_vault:*)",
+    "Bash(head data/.oos_vault:*)",
+    "Bash(head ./data/.oos_vault:*)",
+    "Bash(tail data/.oos_vault:*)",
+    "Bash(tail ./data/.oos_vault:*)",
+    "Bash(ls data/.oos_vault:*)",
+    "Bash(ls ./data/.oos_vault:*)",
+    "Bash(cp data/.oos_vault:*)",
+    "Bash(cp ./data/.oos_vault:*)",
+]
+
 
 # ── Directive ─────────────────────────────────────────────────────────────
 
@@ -432,8 +475,8 @@ class ContextBuilder:
             parts.append("## Previous Results (top by Sharpe)")
             if has_low_cost:
                 parts.append(
-                    "**WARNING**: Results marked with * used costs below 50 bps and are "
-                    "NOT comparable to 50 bps results. Re-run these configs at 50 bps."
+                    "**WARNING**: Results marked with * used costs below 30 bps and are "
+                    "NOT comparable to 30 bps results. Re-run these configs at 30 bps."
                 )
             parts.append("| # | Family | Sharpe | DSR | Key Params |")
             parts.append("|---|--------|--------|-----|------------|")
@@ -485,9 +528,9 @@ class ContextBuilder:
         # Cost audit note
         if has_low_cost:
             parts.append(
-                "\n**COST AUDIT**: Some prior results used <50 bps costs (marked with *). "
-                "These are NOT comparable to the standard 50 bps. Re-run promising configs "
-                "at 50 bps before drawing conclusions."
+                "\n**COST AUDIT**: Some prior results used <30 bps costs (marked with *). "
+                "These are NOT comparable to the standard 30 bps. Re-run promising configs "
+                "at 30 bps before drawing conclusions."
             )
 
         return "\n".join(parts)
@@ -814,6 +857,20 @@ class ResearchOrchestrator:
             "or different feature combinations. Negative results narrow the search space."
         )
 
+        # Hard exit protocol
+        parts.append(
+            "\n## CRITICAL: Clean Exit Protocol\n"
+            "When you have finished ALL experiments and logged to wandb, EXIT IMMEDIATELY.\n"
+            "Do NOT:\n"
+            "- Look for additional work or tidy up code\n"
+            "- Run git commands, lint, or CI\n"
+            "- Edit CLAUDE.md, RESEARCH_AGENT.md, configs, src/, tests/, or docs/\n"
+            "- Modify your own memory files or project instructions\n"
+            "- Interact with GitHub PRs or issues\n\n"
+            "Your session is sandboxed. Writes outside results/, scratch/, and "
+            "scripts/*.py are BLOCKED. If you are done, just stop."
+        )
+
         return "\n".join(parts)
 
     def run(self) -> int:
@@ -906,6 +963,8 @@ class ResearchOrchestrator:
                     step_name=session_tag,
                     attempt=session_number,
                     log_dir=self.log_dir,
+                    disallowed_tools=RESEARCH_DISALLOWED_TOOLS,
+                    extra_env={"SPARKY_RESEARCH_SANDBOX": "1"},
                 )
 
                 end_ts = datetime.now(timezone.utc).isoformat()

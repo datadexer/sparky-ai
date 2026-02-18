@@ -367,7 +367,9 @@ def check_consistency(metrics: dict, max_rolling_std: float = 1.5) -> GuardrailR
 # === ORCHESTRATORS ===
 
 
-def run_pre_checks(data: pd.DataFrame, config: dict, asset: str = "btc") -> list[GuardrailResult]:
+def run_pre_checks(
+    data: pd.DataFrame, config: dict, asset: str = "btc", min_samples: int = 2000
+) -> list[GuardrailResult]:
     """Run all pre-experiment checks.
 
     Args:
@@ -377,13 +379,15 @@ def run_pre_checks(data: pd.DataFrame, config: dict, asset: str = "btc") -> list
             - target: target column name (default: "target_1h")
             - transaction_costs_bps: costs in basis points
         asset: Asset for holdout boundary check.
+        min_samples: Minimum sample count. Default 2000 (hourly).
+            Use 500 for daily data.
 
     Returns:
         List of GuardrailResult objects.
     """
     return [
         check_holdout_boundary(data, asset),
-        check_minimum_samples(data),
+        check_minimum_samples(data, min_samples=min_samples),
         check_no_lookahead(data, config),
         check_costs_specified(config),
         check_param_data_ratio(config, data),

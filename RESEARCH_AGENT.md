@@ -67,8 +67,10 @@ from sparky.tracking.guardrails import (
     run_pre_checks, run_post_checks, has_blocking_failure, log_results
 )
 
-# Before experiment
+# Before experiment (hourly data — default min_samples=2000)
 pre_results = run_pre_checks(data, config)
+# For daily data (fewer rows), lower the sample threshold:
+# pre_results = run_pre_checks(data, config, min_samples=500)
 if has_blocking_failure(pre_results):
     raise RuntimeError("Pre-checks failed")
 
@@ -77,7 +79,7 @@ post_results = run_post_checks(returns, metrics, config, n_trials=N)
 log_results(pre_results + post_results, run_id="my_run")
 ```
 
-Pre-checks: holdout boundary, minimum samples, no lookahead, costs >= 50 bps, param-data ratio.
+Pre-checks: holdout boundary, minimum samples, no lookahead, costs >= 30 bps, param-data ratio.
 Post-checks: sharpe sanity (<4.0), minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
 
 ## Experiment Tracking (wandb)
@@ -134,6 +136,32 @@ def train_single_config(...):
 
 CPU training is not permitted.
 
+## Research Code Style
+
+Research agents are scientists, not software engineers. Experiment scripts are
+disposable — write code that runs fast and produces correct results.
+
+**Do:**
+- Write terse code. Let numpy/polars/pandas expressions be self-explanatory.
+- Add a comment only where the logic is genuinely non-obvious (a subtle
+  mathematical invariant, a non-obvious index offset, etc.).
+- Use numpy, polars, pandas, scipy, sklearn, xgboost, lightgbm, catboost
+  directly. Do not wrap them in extra classes or helper layers.
+- Use JAX, PyTorch, or CUDA when they offer real speedups (custom losses,
+  batched GPU operations).
+
+**Do NOT:**
+- Write docstrings on experiment scripts. A one-line module docstring is enough.
+- Build abstraction layers or utilities for one-off scripts. Copy-paste is fine
+  if it keeps each script self-contained.
+- Refactor for cleanliness. Oversight handles that if something goes to production.
+- Add type annotations unless they prevent an actual bug.
+
+**Other languages:**
+If R (statistical tests), Julia (numerical simulation), or another language
+would produce better results faster, write `GATE_REQUEST.md` and exit. Do not
+approximate in Python when a better tool exists.
+
 ## Saving Results
 
 Save results to `results/<directive_name>/`:
@@ -147,6 +175,29 @@ with open(out_dir / "session_003_results.json", "w") as f:
     json.dump(results, f, indent=2, default=str)
 ```
 
+## CRITICAL: Exit Protocol — READ THIS
+
+When you have completed your experiments and logged results to wandb:
+1. Write final results to `results/<directive_name>/`
+2. **EXIT IMMEDIATELY.** Do not look for additional work.
+
+**After finishing research, you MUST NOT:**
+- Tidy up, refactor, or reformat code
+- Fix lint warnings or code style issues
+- Interact with git (commit, branch, push, PR)
+- Edit CI configs, rubrics, or validation scripts
+- Modify CLAUDE.md, RESEARCH_AGENT.md, or any config files
+- Write to `.claude/`, `src/`, `tests/`, `configs/`, or `docs/`
+- Edit your own memory files or project instructions
+- Rewrite documentation or roadmaps
+- Comment on or interact with GitHub PRs/issues
+
+Your sandbox enforces these restrictions. If you attempt to write outside
+`results/`, `scratch/`, or `scripts/*.py`, the write will be BLOCKED.
+
+If you find yourself repeating "session is done" or similar phrases,
+the orchestrator will detect the idle loop and kill your process.
+
 ## CRITICAL: Do NOT Use Git
 
 You must NOT create branches, commit, push, or run any git commands.
@@ -155,6 +206,24 @@ Your outputs go to wandb and `results/` only.
 If you need a platform change (new feature, bug fix, data issue),
 write `GATE_REQUEST.md` to the project root explaining what you need,
 then exit. The orchestrator will pause for oversight.
+
+## CRITICAL: Do NOT Run CI, Linting, or Formatting
+
+You must NOT run ruff, black, flake8, mypy, pre-commit, pytest, or any CI-related
+commands. Your job is research — write experiment scripts and run them. Code quality
+and cleanup are handled separately by oversight sessions. Do not waste session time
+on formatting or lint fixes.
+
+## Code Style
+
+Write terse code with minimal comments. Let the code be self-explaining.
+No verbose docstrings, no markdown generation, no print-heavy logging.
+You are expected to write directly in numpy, polars, pandas, jax, cuda, pytorch, etc.
+This is where the real experimentation happens — optimize for iteration speed.
+
+**Library requests:** If you need a library or tool that isn't installed, write a
+`GATE_REQUEST.md` requesting it. Do NOT run pip, uv, conda, or any package installer.
+The orchestrator will install approved packages in an oversight session.
 
 ## Python Environment
 

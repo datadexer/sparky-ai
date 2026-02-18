@@ -96,7 +96,7 @@ def _is_exempt_vault(filepath: str) -> bool:
 
     Only the loader and the split script are allowed to reference the vault.
     """
-    exempt = {"loader.py", "split_holdout_data.py", "conftest.py"}
+    exempt = {"loader.py", "split_holdout_data.py", "conftest.py", "orchestrator.py"}
     return any(e in filepath for e in exempt) or _is_self(filepath) or any(e in filepath for e in _HOLDOUT_EXEMPT)
 
 
