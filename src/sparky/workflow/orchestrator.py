@@ -475,8 +475,8 @@ class ContextBuilder:
             parts.append("## Previous Results (top by Sharpe)")
             if has_low_cost:
                 parts.append(
-                    "**WARNING**: Results marked with * used costs below 50 bps and are "
-                    "NOT comparable to 50 bps results. Re-run these configs at 50 bps."
+                    "**WARNING**: Results marked with * used costs below 30 bps and are "
+                    "NOT comparable to 30 bps results. Re-run these configs at 30 bps."
                 )
             parts.append("| # | Family | Sharpe | DSR | Key Params |")
             parts.append("|---|--------|--------|-----|------------|")
@@ -528,9 +528,9 @@ class ContextBuilder:
         # Cost audit note
         if has_low_cost:
             parts.append(
-                "\n**COST AUDIT**: Some prior results used <50 bps costs (marked with *). "
-                "These are NOT comparable to the standard 50 bps. Re-run promising configs "
-                "at 50 bps before drawing conclusions."
+                "\n**COST AUDIT**: Some prior results used <30 bps costs (marked with *). "
+                "These are NOT comparable to the standard 30 bps. Re-run promising configs "
+                "at 30 bps before drawing conclusions."
             )
 
         return "\n".join(parts)

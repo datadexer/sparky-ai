@@ -11,6 +11,28 @@ on:
 # a push to main that already passed review).
 
 jobs:
+  # ── PR Size Check (PR only) ──────────────────────────────────────────────
+  pr-size-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR size
+        run: |
+          ADDITIONS=$(git diff --numstat origin/main...HEAD -- '*.py' '*.yaml' '*.yml' '*.sh' '*.toml' '*.md' \
+            | awk '{s+=$1} END {print s+0}')
+          echo "PR additions (code only): $ADDITIONS lines"
+          if [ "$ADDITIONS" -gt 2500 ]; then
+            echo "::error::PR too large ($ADDITIONS additions). Target <500, hard limit 2500. Split into smaller PRs."
+            exit 1
+          elif [ "$ADDITIONS" -gt 500 ]; then
+            echo "::warning::PR is large ($ADDITIONS additions). Consider splitting into smaller PRs."
+          fi
+
   # ── Quality Gate ───────────────────────────────────────────────────────────
   quality-gate:
     runs-on: ubuntu-latest
