@@ -56,6 +56,7 @@ MIN_FEATURES = 5
 def load_and_prepare_data():
     """Load features and targets, align, clean, and split by timestamp."""
     print("Loading data...")
+    # Dataset names confirmed against list_datasets() registry.
     features = load("features_hourly_full", purpose="training")
     targets = load("targets_hourly_1h", purpose="training")
 

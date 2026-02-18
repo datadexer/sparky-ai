@@ -44,7 +44,7 @@ ENTRY_PERIOD = 40
 EXIT_PERIOD = 20
 # 30 bps is deducted at ENTRY and again at EXIT (60 bps total for a complete round-trip).
 # This matches TransactionCostModel.standard() and the project's minimum 30 bps floor.
-COST_BPS = 30.0
+TRANSACTION_COSTS_BPS = 30.0
 DSR_THRESHOLD = 0.95
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -126,13 +126,13 @@ def donchian_signal(prices: pd.Series, entry: int = 40, exit_p: int = 20) -> pd.
 def compute_strategy_returns(
     daily_returns: pd.Series,
     signals: pd.Series,
-    costs_bps: float = COST_BPS,
+    costs_bps: float = TRANSACTION_COSTS_BPS,
 ) -> np.ndarray:
     """
     Apply signal to returns with transaction costs.
 
     costs_bps: basis points deducted on EACH position change (open or close).
-    Default = COST_BPS = 30.  Opening costs 30 bps; closing costs 30 bps;
+    Default = TRANSACTION_COSTS_BPS = 30.  Opening costs 30 bps; closing costs 30 bps;
     round-trip total = 60 bps.  Matches TransactionCostModel.standard().
 
     Signals are shifted by 1 day before use so that the position on day T
@@ -248,7 +248,7 @@ def main():
                 "adx_threshold": 25,
                 "entry_period": 40,
                 "exit_period": 20,
-                "transaction_costs_bps": COST_BPS,
+                "transaction_costs_bps": TRANSACTION_COSTS_BPS,
                 "features": [],  # Rule-based, no ML features
                 "target": "target_1d",
                 "n_trials": N_TRIALS,
@@ -269,7 +269,7 @@ def main():
                 "adx_threshold": 36,
                 "entry_period": 40,
                 "exit_period": 20,
-                "transaction_costs_bps": COST_BPS,
+                "transaction_costs_bps": TRANSACTION_COSTS_BPS,
                 "features": [],
                 "target": "target_1d",
                 "n_trials": N_TRIALS,
@@ -287,7 +287,7 @@ def main():
                 "exit_period": 20,
                 "adx_period": 14,
                 "adx_threshold": 30,
-                "transaction_costs_bps": COST_BPS,
+                "transaction_costs_bps": TRANSACTION_COSTS_BPS,
                 "features": [],
                 "target": "target_1d",
                 "n_trials": N_TRIALS,
@@ -333,7 +333,7 @@ def main():
         # ── 2. Build signals + compute returns ───────────────────────────────
         print("\n[2/4] Computing signals and returns...")
         signals = spec["signal_fn"](prices_daily, daily_returns)
-        strat_returns = compute_strategy_returns(daily_returns, signals, costs_bps=COST_BPS)
+        strat_returns = compute_strategy_returns(daily_returns, signals, costs_bps=TRANSACTION_COSTS_BPS)
 
         # Also compute no-cost returns for reporting (for comparison with stored values)
         pos_no_cost = signals.reindex(daily_returns.index).fillna(0).shift(1).fillna(0)
