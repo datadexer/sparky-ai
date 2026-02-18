@@ -9,22 +9,46 @@ linters can't detect:
 - Use of --no-verify to bypass hooks
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-# Holdout boundary patterns — nobody should hardcode these in src/
-_HOLDOUT_PATTERNS = [
-    "2024-07-01",
-    "2024-07-02",
-    "2024-08",
-    "2024-09",
-    "2024-10",
-    "2024-11",
-    "2024-12",
-    "2025-",
-]
+def _load_holdout_patterns() -> list[str]:
+    """Generate holdout date patterns dynamically from configs/holdout_policy.yaml.
+
+    Uses regex parsing (no pyyaml dependency) to extract oos_start dates
+    and generate patterns for the OOS year and beyond.
+    """
+    policy_path = Path(__file__).resolve().parent.parent.parent / "configs" / "holdout_policy.yaml"
+    if not policy_path.exists():
+        return ["2024-"]  # conservative fallback
+
+    content = policy_path.read_text()
+    dates = re.findall(r'oos_start:\s*"(\d{4})-(\d{2})-(\d{2})"', content)
+    if not dates:
+        return ["2024-"]
+
+    earliest_year = min(int(d[0]) for d in dates)
+    earliest_month = min(int(d[1]) for d in dates if int(d[0]) == earliest_year)
+
+    patterns = set()
+    # Exact start dates
+    for year_str, month_str, day_str in dates:
+        patterns.add(f"{year_str}-{month_str}-{day_str}")
+    # All months from OOS start month onward in the start year
+    for m in range(earliest_month, 13):
+        patterns.add(f"{earliest_year}-{m:02d}")
+    # Subsequent years
+    for y in range(earliest_year + 1, earliest_year + 3):
+        patterns.add(f"{y}-")
+
+    return sorted(patterns)
+
+
+# Holdout boundary patterns — dynamically generated from policy YAML
+_HOLDOUT_PATTERNS = _load_holdout_patterns()
 
 # Files/dirs exempt from holdout date checks
 _HOLDOUT_EXEMPT = {
@@ -47,6 +71,12 @@ _BYPASS_PATTERNS = [
     "disable_guardrails",
 ]
 
+# Vault access patterns — direct vault reads bypass holdout protection
+_VAULT_PATTERNS = [
+    ".oos_vault",
+    "split_holdout_data",
+]
+
 # Cost-related terms expected in backtest/strategy files
 _COST_TERMS = {"costs_bps", "transaction_costs", "cost", "fee", "commission", "slippage"}
 
@@ -59,6 +89,15 @@ def _is_exempt_holdout(filepath: str) -> bool:
 def _is_self(filepath: str) -> bool:
     """Check if this is the checker script itself."""
     return "sparky_checks" in filepath
+
+
+def _is_exempt_vault(filepath: str) -> bool:
+    """Check if a file is exempt from vault access checks.
+
+    Only the loader and the split script are allowed to reference the vault.
+    """
+    exempt = {"loader.py", "split_holdout_data.py", "conftest.py"}
+    return any(e in filepath for e in exempt) or _is_self(filepath) or any(e in filepath for e in _HOLDOUT_EXEMPT)
 
 
 def check_file(filepath: str) -> list[str]:
@@ -128,6 +167,19 @@ def check_file(filepath: str) -> list[str]:
                 f"All backtests must account for transaction costs."
             )
 
+    # 5. Direct vault access — only loader.py and split script may reference the vault
+    if not _is_exempt_vault(filepath):
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            for pattern in _VAULT_PATTERNS:
+                if pattern in line:
+                    errors.append(
+                        f"{filepath}:{i}: Direct OOS vault access ('{pattern}'). "
+                        "Use sparky.data.loader.load(purpose='oos_evaluation') instead."
+                    )
+
     return errors
 
 
@@ -146,14 +198,38 @@ def get_staged_files() -> list[str]:
     return [f for f in files if Path(f).exists()]
 
 
+def check_policy_immutability() -> list[str]:
+    """BLOCK: Reject commits that modify holdout_policy.yaml."""
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    staged = result.stdout.strip().split("\n")
+    errors = []
+    for f in staged:
+        if "holdout_policy.yaml" in f:
+            errors.append(
+                f"{f}: BLOCKED — holdout_policy.yaml is immutable. "
+                "Changes require human approval (use --no-verify with AK sign-off)."
+            )
+    return errors
+
+
 def main() -> int:
     """Check staged Python files (or all src/ files if not in git context)."""
+    all_errors = []
+
+    # Check policy immutability first
+    all_errors.extend(check_policy_immutability())
+
     files = get_staged_files()
-    if not files:
+    if not files and not all_errors:
         print("Sparky pre-commit checks: no Python files to check")
         return 0
 
-    all_errors = []
     for f in files:
         all_errors.extend(check_file(f))
 

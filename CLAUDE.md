@@ -145,10 +145,13 @@ a HIGH finding is a false positive, explain why in the PR comments.
 ## Holdout Data Policy
 See `configs/holdout_policy.yaml` — IMMUTABLE. Do NOT hardcode OOS dates anywhere.
 - The OOS boundary and embargo days are defined in that config file. Read them dynamically.
-- The data loader (`sparky.data.loader`) reads the boundary dynamically and enforces it for `purpose="training"`.
-- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human).
+- **Data files are split at the holdout boundary.** All files in `data/` contain ONLY in-sample data. No matter which library you use (pandas, polars, pyarrow), you will only see IS data.
+- OOS data is stored in a vault that you may NOT access directly.
+- The data loader enforces holdout for `purpose="training"`. Use `purpose="analysis"` for exploration (IS only).
+- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human). AK will provide an authorized HoldoutGuard.
 - Each model gets exactly ONE OOS evaluation. No repeated peeking.
 - You may NOT modify `configs/holdout_policy.yaml`. The pre-commit hook and orchestrator will block this.
+- You may NOT reference or access `data/.oos_vault/` in any code. The pre-commit hook will block this.
 
 ## Graduated Success Thresholds
 

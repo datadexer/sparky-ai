@@ -77,17 +77,16 @@ class TestListDatasets:
 
 
 class TestLoad:
-    def test_training_truncates_at_holdout(self, tmp_data_dir):
+    def test_training_truncates_at_holdout(self, tmp_data_dir, holdout_dates):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             df = load("btc_1h_features", purpose="training", asset="btc")
-            # Holdout is 2024-07-01, embargo 30 days -> max 2024-06-01
-            assert df.index.max() <= pd.Timestamp("2024-06-01", tz="UTC")
+            assert df.index.max() <= holdout_dates["max_training_ts"]
 
-    def test_analysis_returns_full_data(self, tmp_data_dir):
+    def test_analysis_returns_full_data(self, tmp_data_dir, holdout_dates):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             df = load("btc_1h_features", purpose="analysis", asset="btc")
             # Should include data past holdout boundary
-            assert df.index.max() > pd.Timestamp("2024-07-01", tz="UTC")
+            assert df.index.max() > holdout_dates["oos_start_ts"]
 
     def test_training_shorter_than_analysis(self, tmp_data_dir):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
@@ -98,17 +97,17 @@ class TestLoad:
     def test_invalid_purpose_raises(self, tmp_data_dir):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             with pytest.raises(ValueError, match="Invalid purpose"):
-                load("btc_1h_features", purpose="oos_evaluation")
+                load("btc_1h_features", purpose="something_invalid")
 
     def test_missing_dataset_raises(self, tmp_data_dir):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             with pytest.raises(FileNotFoundError):
                 load("nonexistent_dataset")
 
-    def test_validation_also_truncates(self, tmp_data_dir):
+    def test_validation_also_truncates(self, tmp_data_dir, holdout_dates):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             df = load("btc_1h_features", purpose="validation", asset="btc")
-            assert df.index.max() <= pd.Timestamp("2024-06-01", tz="UTC")
+            assert df.index.max() <= holdout_dates["max_training_ts"]
 
     def test_utc_enforcement(self, tmp_data_dir):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):

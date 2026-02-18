@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 import yaml
 
+from sparky.oversight.holdout_guard import get_policy_hash
 from sparky.workflow.engine import (
     LOG_DIR,
     PROJECT_ROOT,
@@ -699,6 +700,9 @@ class ResearchOrchestrator:
             state.status = "running"
             state.save(self.state_dir)
 
+            # Record policy hash at startup for integrity checking
+            initial_policy_hash = get_policy_hash()
+
             # Main loop
             while True:
                 # Evaluate stopping criteria
@@ -764,6 +768,19 @@ class ResearchOrchestrator:
                 else:
                     state.crash_counter = 0
                     state.crash_backoff_seconds = 120
+
+                # Post-session integrity checks
+                current_hash = get_policy_hash()
+                if current_hash != initial_policy_hash:
+                    state.status = "paused"
+                    state.save(self.state_dir)
+                    send_alert(
+                        "CRITICAL",
+                        "holdout_policy.yaml was modified during orchestrator run! "
+                        "Pausing immediately. This requires human investigation.",
+                    )
+                    logger.error("Holdout policy tampered — halting orchestrator")
+                    return 1
 
                 # Query wandb for session results
                 results = self._query_session_results(session_tag)

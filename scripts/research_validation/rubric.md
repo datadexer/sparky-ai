@@ -188,17 +188,28 @@ Cost validation:
 
 ### 2.3 Holdout Integrity
 
-The out-of-sample (OOS) boundary is **2024-07-01** with a 30-day embargo buffer.
-This is defined in `configs/holdout_policy.yaml` and is IMMUTABLE.
+The out-of-sample (OOS) boundary and embargo buffer are defined in
+`configs/holdout_policy.yaml` and are IMMUTABLE. Do NOT hardcode specific dates.
 
-- No training data may include observations after 2024-07-01.
-- No features may be computed using data after 2024-06-01 (embargo buffer).
+- No training data may include observations after the OOS start date.
+- No features may be computed using data after the embargo boundary
+  (OOS start minus embargo_days, as defined in the policy).
 - Code MUST use `sparky.data.loader.load(purpose="training")` which auto-truncates.
 - Using raw `pd.read_parquet()` for any model training or feature engineering is HIGH
   severity (bypasses holdout guard).
 - OOS evaluation requires explicit written approval from AK (the human operator).
 - Each model gets exactly ONE OOS evaluation. Repeated peeking at OOS results and
   re-tuning is data snooping.
+- **Any PR that modifies `configs/holdout_policy.yaml` is HIGH severity.** This file
+  is immutable and can only be changed by the human operator (AK).
+- **Any code that hardcodes OOS boundary dates** (e.g., `"2024-01-01"`, `"2024-07-01"`)
+  instead of reading from `HoldoutGuard` or `configs/holdout_policy.yaml` is HIGH
+  severity. All holdout dates must be derived dynamically from the policy.
+- **Any code that directly accesses `data/.oos_vault/`** or references the vault path
+  is HIGH severity. OOS data must ONLY be accessed via
+  `load(purpose="oos_evaluation", oos_guard=guard)` with proper authorization.
+  The vault contains full data including the holdout period — direct reads bypass
+  all holdout enforcement.
 
 ### 2.4 Position Sizing Realism
 

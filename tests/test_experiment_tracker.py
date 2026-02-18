@@ -133,11 +133,11 @@ class TestExperimentTracker:
                         name="test",
                         config={"lr": 0.01},
                         metrics={"auc": 0.6},
-                        date_range=("2020-01-01", "2024-06-01"),
+                        date_range=("2020-01-01", "2023-06-30"),
                     )
                     call_kwargs = mock_wandb.init.call_args[1]
                     assert call_kwargs["config"]["date_range_start"] == "2020-01-01"
-                    assert call_kwargs["config"]["date_range_end"] == "2024-06-01"
+                    assert call_kwargs["config"]["date_range_end"] == "2023-06-30"
 
     def test_get_best_run(self, tracker):
         mock_run = MagicMock()
