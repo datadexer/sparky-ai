@@ -21,6 +21,7 @@ class TransactionCostModel:
         self.slippage_pct = slippage_pct
         self.spread_pct = spread_pct
         self.total_cost_pct = fee_pct + slippage_pct + spread_pct
+        self.round_trip_cost = 2 * self.total_cost_pct
 
     @classmethod
     def standard(cls) -> "TransactionCostModel":
