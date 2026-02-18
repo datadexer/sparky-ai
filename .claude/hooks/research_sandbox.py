@@ -32,6 +32,8 @@ PROTECTED_SCRIPTS = {
     "scripts/sparky",
     "scripts/alert.sh",
     "scripts/ceo_runner.sh",
+    "scripts/sweep_utils.py",
+    "scripts/sweep_two_stage.py",
 }
 
 # Absolute temp dirs always allowed
