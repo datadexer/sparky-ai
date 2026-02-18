@@ -370,10 +370,17 @@ Backtesters must implement `BacktesterBase`. Violation = MEDIUM.
 All training runs must use the guardrail framework:
 - `run_pre_checks(data, config)` BEFORE training. Checks: holdout boundary, minimum
   samples, no lookahead, costs specified, parameter-data ratio.
-- `run_post_checks(returns, metrics, config, n_trials)` AFTER backtest. Checks: Sharpe
+- `run_post_checks(returns, metrics, config, n_trades=N)` AFTER backtest. Checks: Sharpe
   sanity, minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
+  Note: the parameter is `n_trades` (trade count), NOT `n_trials`. DSR multiple testing
+  correction is handled by `compute_all_metrics(returns, n_trials=N)`, which is a
+  separate function called before `run_post_checks`.
 - `has_blocking_failure(results)` must be checked; blocking failures must halt execution.
 - Missing guardrail integration = MEDIUM severity.
+
+**Parameter disambiguation:** `n_trials` (config count for DSR) goes to
+`compute_all_metrics()`. `n_trades` (trade count) goes to `run_post_checks()`.
+Do not confuse these — they are different functions with different parameters.
 
 ### 5.3 Experiment Tracking
 
@@ -406,3 +413,21 @@ All training runs must use the guardrail framework:
 - Seeds must be logged to W&B or otherwise recorded.
 - Results must be reproducible given the same seed and data.
 - Missing seed setting = MEDIUM severity.
+
+---
+
+## 6. GENERAL REVIEW PRINCIPLES
+
+### 6.1 Verify Before Flagging
+
+Before flagging any code as incorrect, verify your assumption against the actual codebase:
+
+- **Function signatures**: Check the actual parameter names before claiming a keyword
+  argument is wrong. Different functions may use similar-sounding names for different
+  purposes (e.g., `n_trials` in `compute_all_metrics()` vs `n_trades` in
+  `run_post_checks()` — these are correct and intentionally different).
+- **Internal APIs**: If a function call uses a keyword argument you don't recognize, it
+  may be correct — the rubric may not document every parameter. Only flag if you can
+  confirm the parameter does not exist on the target function.
+- **Intentional patterns**: Code that looks unusual may be deliberately written that way.
+  Check for comments or docstrings explaining the rationale before flagging.
