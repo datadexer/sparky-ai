@@ -16,12 +16,12 @@ mkdir -p "$REVIEW_DIR"
 HEALTH_OUTPUT=$(mktemp)
 bash "$PROJECT_ROOT/scripts/system_health_check.sh" "$HEALTH_OUTPUT" 2>/dev/null || true
 
-# Get latest CEO session log (last 200 lines)
-LATEST_CEO_LOG=$(ls -t "$PROJECT_ROOT/logs/ceo_sessions"/ceo_session_*.log 2>/dev/null | head -1)
-if [ -n "$LATEST_CEO_LOG" ] && [ -s "$LATEST_CEO_LOG" ]; then
-    CEO_LOG_TAIL=$(tail -200 "$LATEST_CEO_LOG")
+# Get latest Research Agent session log (last 200 lines)
+LATEST_RESEARCH_LOG=$(ls -t "$PROJECT_ROOT/logs/research_sessions"/research_session_*.log 2>/dev/null | head -1)
+if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
+    RESEARCH_LOG_TAIL=$(tail -200 "$LATEST_RESEARCH_LOG")
 else
-    CEO_LOG_TAIL="(No CEO session log available or log is empty — CEO may still be running with buffered output)"
+    RESEARCH_LOG_TAIL="(No Research Agent session log available or log is empty — Research Agent may still be running with buffered output)"
 fi
 
 # Get recent research log entries
@@ -65,7 +65,7 @@ done
 
 # Build RBM prompt
 read -r -d '' RBM_PROMPT << 'PROMPT_EOF' || true
-You are the Research Business Manager for Sparky AI. Produce a structured review of the CEO agent's recent work.
+You are the Research Business Manager for Sparky AI. Produce a structured review of the Research Agent's recent work.
 
 Read the context below and produce a review in this exact format:
 
@@ -74,8 +74,8 @@ Read the context below and produce a review in this exact format:
 ## System Health
 [Summarize health check output. Flag any concerns.]
 
-## CEO Activity Summary
-[What has the CEO been doing? Is it productive or spinning?]
+## Research Agent Activity Summary
+[What has the Research Agent been doing? Is it productive or spinning?]
 
 ## Experiment Portfolio Assessment
 - Active experiments: [list]
@@ -104,8 +104,8 @@ FULL_PROMPT="$RBM_PROMPT
 --- System Health Check ---
 $(cat "$HEALTH_OUTPUT")
 
---- Recent CEO Session Log (last 200 lines) ---
-$CEO_LOG_TAIL
+--- Recent Research Agent Session Log (last 200 lines) ---
+$RESEARCH_LOG_TAIL
 
 --- Research Log (last 100 lines) ---
 $RESEARCH_LOG

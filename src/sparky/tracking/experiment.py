@@ -37,19 +37,19 @@ _current_session_id: str | None = None
 
 
 def set_current_session(session_id: str) -> None:
-    """Set the active CEO session ID for experiment tracking."""
+    """Set the active research session ID for experiment tracking."""
     global _current_session_id
     _current_session_id = session_id
 
 
 def clear_current_session() -> None:
-    """Clear the active CEO session ID."""
+    """Clear the active research session ID."""
     global _current_session_id
     _current_session_id = None
 
 
 def get_current_session() -> str | None:
-    """Return the currently active CEO session ID, or None."""
+    """Return the currently active research session ID, or None."""
     return _current_session_id
 
 

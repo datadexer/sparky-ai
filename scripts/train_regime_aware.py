@@ -5,7 +5,7 @@ Loads data via sparky.data.loader, classifies market regimes, trains
 regime-conditional models, and evaluates with walk-forward backtesting.
 
 All infrastructure (loader, experiment DB, GPU, timeout) is wired in.
-CEO agent fills in the regime classification and trading rule TODOs.
+Research agent fills in the regime classification and trading rule TODOs.
 
 Usage:
     PYTHONPATH=. python3 scripts/train_regime_aware.py
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 def classify_regime(df: pd.DataFrame) -> pd.Series:
     """Classify each row into a market regime.
 
-    TODO (CEO): Implement regime classification. Options:
+    TODO (Research Agent): Implement regime classification. Options:
     - Volatility-based: realized_vol > threshold → "high_vol" else "low_vol"
     - Trend-based: SMA crossover → "bull" / "bear" / "sideways"
     - HMM: Hidden Markov Model with 2-3 states
@@ -72,7 +72,7 @@ def train_regime_model(
 ) -> object:
     """Train a model on data from a specific regime.
 
-    TODO (CEO): Choose model type and hyperparams per regime.
+    TODO (Research Agent): Choose model type and hyperparams per regime.
 
     Args:
         X_train: Features for this regime's training data.
@@ -152,7 +152,7 @@ def main():
 
     logger.info(f"Trained {len(models)} regime-specific models")
 
-    # TODO (CEO): Walk-forward evaluation
+    # TODO (Research Agent): Walk-forward evaluation
     # Use WalkForwardBacktester with regime-conditional prediction:
     # At each test point, check which regime we're in, then use that regime's model.
 

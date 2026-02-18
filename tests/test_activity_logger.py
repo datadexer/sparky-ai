@@ -27,7 +27,7 @@ def tmp_log_dir(tmp_path):
 def logger(tmp_log_dir):
     """Create a logger with a temporary directory."""
     return AgentActivityLogger(
-        agent_id="test_ceo",
+        agent_id="test_research",
         session_id="test-session-001",
         log_dir=tmp_log_dir,
     )
@@ -49,7 +49,7 @@ class TestActivityLoggerBasic:
     def test_log_dir_auto_created(self, tmp_log_dir):
         """Missing log directory should be auto-created."""
         assert not tmp_log_dir.exists()
-        AgentActivityLogger("ceo", "test", log_dir=tmp_log_dir)
+        AgentActivityLogger("research", "test", log_dir=tmp_log_dir)
         assert tmp_log_dir.exists()
 
     def test_log_task_started(self, logger, tmp_log_dir):
@@ -59,7 +59,7 @@ class TestActivityLoggerBasic:
         assert len(entries) == 1
         entry = entries[0]
         assert entry["action_type"] == "task_started"
-        assert entry["agent_id"] == "test_ceo"
+        assert entry["agent_id"] == "test_research"
         assert entry["session_id"] == "test-session-001"
         assert entry["phase"] == "phase_0"
         assert entry["task"] == "returns_calculations"

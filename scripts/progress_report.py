@@ -68,7 +68,7 @@ def main():
     # Load activity log
     log_dir = Path("logs/agent_activity")
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    log_path = log_dir / f"ceo_{today}.jsonl"
+    log_path = log_dir / f"research_{today}.jsonl"
 
     if not log_path.exists():
         print(f"❌ No activity log found: {log_path}")

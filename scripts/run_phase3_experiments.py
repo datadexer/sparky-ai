@@ -214,7 +214,7 @@ def feature_ablation_experiment():
     logger.info("Feature Ablation Experiment")
     logger.info("=" * 60)
 
-    activity_logger = AgentActivityLogger(agent_id="ceo", session_id="phase-3-ml-models")
+    activity_logger = AgentActivityLogger(agent_id="research", session_id="phase-3-ml-models")
     tracker = ExperimentTracker(experiment_name="phase3_feature_ablation")
 
     X, y, returns = load_data(horizon=7)  # Use 7d horizon as default
@@ -321,7 +321,7 @@ def horizon_experiment():
     logger.info("Horizon Sensitivity Experiment")
     logger.info("=" * 60)
 
-    activity_logger = AgentActivityLogger(agent_id="ceo", session_id="phase-3-ml-models")
+    activity_logger = AgentActivityLogger(agent_id="research", session_id="phase-3-ml-models")
     tracker = ExperimentTracker(experiment_name="phase3_horizon_sensitivity")
 
     results = []
@@ -390,7 +390,7 @@ def model_comparison_experiment():
     logger.info("Model Comparison Experiment")
     logger.info("=" * 60)
 
-    activity_logger = AgentActivityLogger(agent_id="ceo", session_id="phase-3-ml-models")
+    activity_logger = AgentActivityLogger(agent_id="research", session_id="phase-3-ml-models")
     tracker = ExperimentTracker(experiment_name="phase3_model_comparison")
 
     X, y, returns = load_data(horizon=7)

@@ -42,7 +42,7 @@ def walk_forward_split(index, train_min=1095, test_len=365, step=365):
     return folds
 
 def main():
-    timer = TaskTimer(agent_id="ceo")
+    timer = TaskTimer(agent_id="research")
     timer.start("train_stacking_meta")
 
     print("="*80)

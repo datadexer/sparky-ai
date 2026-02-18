@@ -19,7 +19,7 @@ class TaskTimer:
     """Track wall-clock time for agent tasks.
 
     Usage:
-        timer = TaskTimer(agent_id="ceo")
+        timer = TaskTimer(agent_id="research")
         timer.start("regime_detection_experiments")
         # ... do work ...
         timer.end(claimed_duration_minutes=45)

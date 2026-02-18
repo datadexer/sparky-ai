@@ -26,7 +26,7 @@ SELECTED_FEATURES = [
 ]
 
 def main():
-    timer = TaskTimer(agent_id="ceo")
+    timer = TaskTimer(agent_id="research")
     timer.start("train_7day_horizon")
 
     print("="*80)

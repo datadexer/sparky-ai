@@ -660,8 +660,8 @@ def main():
         logger.info(f"  {config['model_type']} {config['_hash']}: AUC={result['auc']:.4f}")
 
     # Stage 2: Walk-forward validation for top 5
-    # TODO: Integrate with WalkForwardBacktester when CEO wires up the pipeline
-    logger.info("\nStage 2: Walk-forward validation (scaffold — CEO to implement)")
+    # TODO: Integrate with WalkForwardBacktester when Research Agent wires up the pipeline
+    logger.info("\nStage 2: Walk-forward validation (scaffold — Research Agent to implement)")
     logger.info("Top 5 configs saved. Run walk-forward manually or extend this script.")
 
     # Save summary

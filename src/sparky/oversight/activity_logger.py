@@ -27,7 +27,7 @@ class AgentActivityLogger:
     """Structured JSONL logger for agent activity tracking.
 
     Usage:
-        logger = AgentActivityLogger(agent_id="ceo", session_id="phase-0-validation")
+        logger = AgentActivityLogger(agent_id="research", session_id="phase-0-validation")
         logger.log_task_started("phase_0", "returns_calculations", "Implementing returns")
     """
 

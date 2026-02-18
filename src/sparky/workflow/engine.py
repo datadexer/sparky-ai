@@ -35,7 +35,7 @@ def _upload_session_to_wandb(telemetry, log_path, step) -> None:
                 entity="datadex_ai",
                 name=f"session_{telemetry.session_id}_{telemetry.step}",
                 job_type="session",
-                group="ceo_sessions",
+                group="research_sessions",
                 config={
                     "session_id": telemetry.session_id,
                     "step": telemetry.step,
@@ -76,7 +76,7 @@ def _upload_session_to_wandb(telemetry, log_path, step) -> None:
     t = threading.Thread(target=_upload, daemon=True)
     t.start()
 STATE_DIR = PROJECT_ROOT / "workflows" / "state"
-LOG_DIR = PROJECT_ROOT / "logs" / "ceo_sessions"
+LOG_DIR = PROJECT_ROOT / "logs" / "research_sessions"
 ALERT_SCRIPT = PROJECT_ROOT / "scripts" / "alert.sh"
 
 

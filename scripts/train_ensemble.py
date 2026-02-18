@@ -27,7 +27,7 @@ SELECTED_FEATURES = [
 ]
 
 def main():
-    timer = TaskTimer(agent_id="ceo")
+    timer = TaskTimer(agent_id="research")
     timer.start("train_ensemble")
 
     print("="*80)

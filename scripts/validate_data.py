@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validate macro and on-chain data collected by CEO agent.
+Validate macro and on-chain data collected by Research Agent.
 
 Checks:
 1. Row count and date range coverage
@@ -332,7 +332,7 @@ def main():
     """Main validation function."""
     print("=" * 80)
     print("  SPARKY AI - DATA VALIDATION AGENT")
-    print("  Validating CEO Agent's Macro and On-Chain Data Collection")
+    print("  Validating Research Agent's Macro and On-Chain Data Collection")
     print("=" * 80)
 
     try:

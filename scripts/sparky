@@ -27,10 +27,10 @@ from pathlib import Path
 
 PROJECT_ROOT = Path("/home/akamath/sparky-ai")
 STATE_DIR = PROJECT_ROOT / "workflows" / "state"
-LOG_DIR = PROJECT_ROOT / "logs" / "ceo_sessions"
+LOG_DIR = PROJECT_ROOT / "logs" / "research_sessions"
 TELEMETRY_DIR = PROJECT_ROOT / "logs" / "telemetry"
 ALERTS_LOG = PROJECT_ROOT / "logs" / "alerts.log"
-SERVICE_NAME = "sparky-ceo"
+SERVICE_NAME = "sparky-research"
 
 
 def _load_state() -> dict | None:

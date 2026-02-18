@@ -1,7 +1,7 @@
 # Sparky AI — Full Guidelines Reference
 
 This document contains the complete guidelines previously in CLAUDE.md.
-CEO agents should reference this for detailed protocols. The condensed
+Research agents should reference this for detailed protocols. The condensed
 version in `CLAUDE.md` covers day-to-day operations.
 
 ## Integration Testing (mandatory)
@@ -148,7 +148,7 @@ sparky-ai/
 - Failed experiments get ONE LINE in the research log, not full analysis sections with tables
 
 ## Resource Protection Rules (enforced by Oversight)
-- **CEO LIMIT**: Up to 3 concurrent Task tool sub-agents. Sub-agents should NOT spawn their own sub-agents unless truly necessary.
+- **Research Agent LIMIT**: Up to 3 concurrent Task tool sub-agents. Sub-agents should NOT spawn their own sub-agents unless truly necessary.
 - **MEMORY-INTENSIVE**: For model training or data loading into DataFrames >1GB, run ONLY 1 agent at a time.
 - **BEFORE SPAWNING**: Run `bash scripts/system_health_check.sh /tmp/health.txt && cat /tmp/health.txt` and check status. If DEGRADED or CRITICAL, do NOT spawn.
 - **IF MACHINE BECOMES SLOW**: Run `scripts/system_health_check.sh`. If CRITICAL, run `scripts/emergency_cleanup.sh`.
