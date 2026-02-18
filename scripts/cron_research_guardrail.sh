@@ -76,6 +76,10 @@ LATEST_RESEARCH_LOG=$(ls -t "$PROJECT_ROOT/logs/research_sessions"/research_sess
 if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
     # Check last 500 lines for holdout period references in data operations
     # Look for patterns that suggest actual data access, not just mentions
+    # Exclusion filter reduces false positives from guardrail/boundary-check log lines.
+    # KNOWN LIMITATION: A log line containing both a holdout date pattern AND an
+    # exclusion keyword (e.g. "within boundary") would evade detection. This is
+    # acceptable for autonomous research but the exclusion list is security-relevant.
     HOLDOUT_HITS=$(tail -500 "$LATEST_RESEARCH_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | grep -vcE "(PASSED|boundary|embargo|HoldoutGuard|within boundary)" 2>/dev/null || echo 0)
     HOLDOUT_HITS=$(echo "$HOLDOUT_HITS" | tr -d '[:space:]')
 

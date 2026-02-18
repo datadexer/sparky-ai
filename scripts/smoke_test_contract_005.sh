@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-VENV="/home/akamath/sparky-ai/.venv/bin"
-PROJECT="/home/akamath/sparky-ai"
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VENV="$PROJECT/.venv/bin"
 
 echo "=== Contract 005 Smoke Test ==="
 
