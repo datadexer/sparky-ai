@@ -9,8 +9,8 @@ This agent focuses on infrastructure correctness: backtesting plumbing,
 data access patterns, wandb parameter flow, cost model usage, guardrails,
 and testing coverage.
 
-Exits 0 if no HIGH severity issues found (or on error/skip).
-Exits 1 if HIGH severity issues found (blocks merge).
+Exits 0 if no HIGH severity issues found.
+Exits 1 if HIGH severity issues found or rate-limited after retries.
 Posts findings as PR comment via GitHub API.
 """
 
@@ -18,19 +18,23 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
-# ── Context Budget ────────────────────────────────────────────────────────────
-# Hard limit on total characters sent to the LLM.  80k chars ≈ 20k tokens,
-# well within Sonnet's 200k context and keeps cost/latency reasonable.
-MAX_TOTAL_CHARS = 80_000
-MAX_FILES = 15
-MAX_DIFF_PER_FILE = 4_000
-MAX_CONTENT_PER_FILE = 3_000
+import anthropic
+
+# Retry delays (seconds) on 429 rate-limit errors.
+# Four total attempts: immediate, +30s, +30s, +30s = 90s of retrying.
+_RATE_LIMIT_RETRY_DELAYS = [30, 30, 30]
+
+# Free tier: 10K input tokens/min ≈ 40K chars. Target well under to avoid 429s.
+# Budget: ~6K tokens for rubric+prompt, ~3K tokens for code context.
+_MAX_CODE_CHARS = 12000  # ~3K tokens for all changed files combined
+_MAX_CONTEXT_CHARS = 4000  # reference files budget
 
 
 def get_changed_files():
-    """Get diff of changed files in this PR (budget-aware).
+    """Get diff of changed files in this PR.
 
     Includes Python files, YAML configs, and shell scripts — unlike
     research-validation which only reviews Python. Platform engineering
@@ -49,34 +53,20 @@ def get_changed_files():
     ]
 
     changes = []
-    total_chars = 0
-    for filepath in reviewable[:MAX_FILES]:
+    for filepath in reviewable[:15]:  # limit to 15 files
         diff = subprocess.run(
             ["git", "diff", "origin/main...HEAD", "--", filepath],
             capture_output=True,
             text=True,
         )
-        diff_text = diff.stdout[:MAX_DIFF_PER_FILE]
-        content = Path(filepath).read_text(errors="replace")[:MAX_CONTENT_PER_FILE]
-
-        entry_size = len(diff_text) + len(content)
-        if total_chars + entry_size > MAX_TOTAL_CHARS:
-            content = "(content omitted — context budget exceeded)"
-            entry_size = len(diff_text) + len(content)
-            if total_chars + entry_size > MAX_TOTAL_CHARS:
-                print(f"  Context budget reached at {len(changes)} files, skipping remaining")
-                break
-
-        total_chars += entry_size
+        content = Path(filepath).read_text(errors="replace")
         changes.append(
             {
                 "filepath": filepath,
-                "diff": diff_text,
+                "diff": diff.stdout,
                 "full_content": content,
             }
         )
-
-    print(f"  Collected {len(changes)} files, ~{total_chars:,} chars of context")
     return changes
 
 
@@ -95,26 +85,63 @@ def get_codebase_context():
     return context
 
 
+def _create_message_with_retry(client, **kwargs):
+    """Call client.messages.create with exponential backoff on rate limits.
+
+    Raises anthropic.RateLimitError if all retries are exhausted.
+    """
+    for attempt, delay in enumerate([0] + _RATE_LIMIT_RETRY_DELAYS):
+        if delay:
+            print(
+                f"Rate limited (429) — retrying in {delay}s "
+                f"(attempt {attempt + 1}/{len(_RATE_LIMIT_RETRY_DELAYS) + 1})...",
+                flush=True,
+            )
+            time.sleep(delay)
+        try:
+            return client.messages.create(**kwargs)
+        except anthropic.RateLimitError:
+            if attempt == len(_RATE_LIMIT_RETRY_DELAYS):
+                raise  # All retries exhausted — propagate to caller
+
+
+def _budget_changes(changes, max_chars):
+    """Distribute character budget across changed files, prioritizing diffs."""
+    if not changes:
+        return ""
+    n = len(changes)
+    per_file = max(500, max_chars // n)
+    # Give 70% to diff, 30% to content
+    diff_budget = int(per_file * 0.7)
+    content_budget = per_file - diff_budget
+
+    text = ""
+    for c in changes:
+        text += f"\n### File: {c['filepath']}\n"
+        diff = c["diff"][:diff_budget]
+        text += f"#### Diff:\n```\n{diff}\n```\n"
+        if content_budget > 100:
+            content = c["full_content"][:content_budget]
+            text += f"#### Full content (truncated):\n```\n{content}\n```\n"
+        text += "\n"
+    return text
+
+
 def run_validation(changes, context):
     """Send changes to Claude Sonnet for platform engineering review."""
-    import anthropic
-
     client = anthropic.Anthropic()
 
     rubric_path = Path(__file__).parent / "rubric.md"
     rubric = rubric_path.read_text()
 
-    # Format changed files
-    changes_text = ""
-    for c in changes:
-        changes_text += f"\n### File: {c['filepath']}\n"
-        changes_text += f"#### Diff:\n```\n{c['diff']}\n```\n"
-        changes_text += f"#### Full content (truncated):\n```\n{c['full_content']}\n```\n\n"
+    # Budget-aware formatting
+    changes_text = _budget_changes(changes, _MAX_CODE_CHARS)
 
-    # Format codebase context
+    # Format codebase context within budget
     context_text = ""
+    ctx_per_file = max(500, _MAX_CONTEXT_CHARS // max(len(context), 1))
     for path, content in context.items():
-        context_text += f"\n### {path} (for reference):\n```python\n{content}\n```\n"
+        context_text += f"\n### {path} (for reference):\n```python\n{content[:ctx_per_file]}\n```\n"
 
     prompt = (
         "You are an engineering QA reviewer for Sparky AI, an autonomous crypto "
@@ -135,6 +162,10 @@ def run_validation(changes, context):
         "performance without correctness impact, or test helper simplifications.\n\n"
         "IMPORTANT: Be specific. Reference the exact rubric section. Only flag "
         "concrete violations you can see in the code — not hypothetical risks.\n\n"
+        "CRITICAL: Before flagging a function call's keyword argument as wrong, verify "
+        "the actual function signature. Different functions use different parameter names "
+        "for different purposes. The rubric's 'What NOT to Flag' section has authoritative "
+        "API signatures — consult it before reporting parameter name issues.\n\n"
         f"## ENGINEERING RUBRIC\n{rubric}\n\n"
         f"## CODEBASE REFERENCE (current state of key files)\n{context_text}\n\n"
         f"## CODE CHANGES TO REVIEW\n{changes_text}\n\n"
@@ -157,7 +188,8 @@ def run_validation(changes, context):
         "passed must be false if ANY HIGH severity issues exist."
     )
 
-    response = client.messages.create(
+    response = _create_message_with_retry(
+        client,
         model="claude-sonnet-4-5-20250929",
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
@@ -169,13 +201,9 @@ def run_validation(changes, context):
 
     try:
         result = json.loads(text)
-    except json.JSONDecodeError:
-        result = {
-            "summary": "Validation agent returned non-JSON response (review manually)",
-            "issues": [],
-            "passed": True,
-            "raw_response": text[:2000],
-        }
+    except json.JSONDecodeError as exc:
+        # Non-JSON response is inconclusive — do NOT treat as pass
+        raise ValueError(f"Validation agent returned non-JSON response (len={len(text)}): {text[:300]}") from exc
 
     return result
 
@@ -187,7 +215,10 @@ def post_pr_comment(result):
         print("No PR_NUMBER env var — skipping comment")
         return
 
-    if result["passed"]:
+    # Build comment header
+    if result.get("inconclusive"):
+        status = "## :warning: Platform Validation: INCONCLUSIVE"
+    elif result["passed"]:
         status = "## :white_check_mark: Platform Validation: PASSED"
     else:
         status = "## :x: Platform Validation: FAILED (HIGH severity engineering issues found)"
@@ -216,6 +247,11 @@ def post_pr_comment(result):
                 comment += f"**{issue['file']}** (line ~{issue.get('line', '?')})\n"
                 comment += f"> {issue['description']}\n\n"
                 comment += f"Fix: {issue.get('fix', 'See description')}\n\n"
+
+    if result.get("inconclusive"):
+        comment += (
+            "\n> **This PR cannot be merged until validation re-runs successfully.**\n> Re-trigger CI to retry.\n"
+        )
 
     comment += "\n---\n*Automated review by Sparky Platform Validation Agent (Sonnet)*"
 
@@ -258,15 +294,20 @@ def main():
 
     try:
         result = run_validation(changes, context)
-    except Exception as e:
-        print(f"Platform validation failed with error: {e}")
+    except anthropic.RateLimitError as e:
+        # Rate limit exhausted after retries (~90s) — block the PR.
+        print(f"RATE LIMIT: All retries exhausted: {e}", flush=True)
         result = {
-            "summary": f"Platform validation unavailable: {e}",
+            "summary": "INCONCLUSIVE: Anthropic API rate limit (429) — validation did not execute. Re-trigger CI to retry.",
             "issues": [],
-            "passed": True,
+            "passed": False,
+            "inconclusive": True,
         }
         post_pr_comment(result)
-        sys.exit(0)
+        Path("platform-validation-report.json").write_text(json.dumps(result, indent=2))
+        print("\nBLOCKED: rate limit — validation inconclusive")
+        sys.exit(1)
+    # All other errors propagate as unhandled exceptions (clear traceback in CI logs)
 
     print(f"\n{'=' * 60}")
     print(f"Summary: {result['summary']}")
