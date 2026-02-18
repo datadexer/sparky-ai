@@ -8,7 +8,7 @@
 
 set -uo pipefail
 
-PROJECT_ROOT="/home/akamath/sparky-ai"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ALERT_DIR="$PROJECT_ROOT/logs/alerts"
 RESEARCH_STOP_FILE="$PROJECT_ROOT/logs/research_sessions/STOP"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

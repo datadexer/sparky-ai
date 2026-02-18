@@ -241,3 +241,15 @@ class TestJSONLFormat:
         session = log.start_session("Test", "branch")
         log.end_session(session, "Done")
         assert log_file.exists()
+
+
+class TestSessionIdCollision:
+    """M-8: Two sessions started in same second get different IDs (microsecond resolution)."""
+
+    def test_same_second_different_ids(self, manager_log):
+        """Sessions started rapidly should get unique IDs due to microseconds."""
+        session1 = manager_log.start_session("Objective 1", "branch-1")
+        session2 = manager_log.start_session("Objective 2", "branch-2")
+        assert session1.session_id != session2.session_id, (
+            f"Session IDs should differ: {session1.session_id} vs {session2.session_id}"
+        )

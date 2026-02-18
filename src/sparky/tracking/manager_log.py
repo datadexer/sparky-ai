@@ -106,7 +106,7 @@ class ManagerLog:
             ManagerSession object to pass to subsequent log calls.
         """
         now = datetime.now(timezone.utc)
-        session_id = now.strftime("%Y%m%d_%H%M%S")
+        session_id = now.strftime("%Y%m%d_%H%M%S_%f")
         session = ManagerSession(
             session_id=session_id,
             objective=objective,
@@ -217,48 +217,58 @@ class ManagerLog:
     def get_history(self, n_sessions: int = 10) -> list[ManagerSession]:
         """Read back completed sessions from JSONL log.
 
+        Uses a deque to only keep the last n_sessions raw lines in memory,
+        then deserializes only those lines. Returns newest first.
+
         Args:
             n_sessions: Maximum number of sessions to return (most recent first).
 
         Returns:
             List of ManagerSession objects, newest first.
         """
+        from collections import deque
+
         if not self.log_file.exists():
             return []
 
-        sessions = []
+        # Only keep the last n_sessions lines (tail-based)
+        tail = deque(maxlen=n_sessions)
         with open(self.log_file) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    data = json.loads(line)
-                    session = ManagerSession(
-                        session_id=data.get("session_id", ""),
-                        objective=data.get("objective", ""),
-                        branch=data.get("branch", ""),
-                        started_at=data.get("started_at", ""),
-                        ended_at=data.get("ended_at", ""),
-                        summary=data.get("summary", ""),
-                    )
-                    # Reconstruct nested records
-                    session.code_agents = [
-                        CodeAgentRecord(**r) for r in data.get("code_agents", [])
-                    ]
-                    session.research_launches = [
-                        ResearchLaunchRecord(**r) for r in data.get("research_launches", [])
-                    ]
-                    session.contract_designs = [
-                        ContractDesignRecord(**r) for r in data.get("contract_designs", [])
-                    ]
-                    session.decisions = data.get("decisions", [])
-                    session.infrastructure = data.get("infrastructure", [])
-                    sessions.append(session)
-                except (json.JSONDecodeError, TypeError) as e:
-                    logger.warning(f"[MANAGER] Failed to parse session entry: {e}")
-                    continue
+            for raw_line in f:
+                stripped = raw_line.strip()
+                if stripped:
+                    tail.append(stripped)
+
+        # Deserialize only the kept lines
+        sessions = []
+        for raw in tail:
+            try:
+                data = json.loads(raw)
+                session = ManagerSession(
+                    session_id=data.get("session_id", ""),
+                    objective=data.get("objective", ""),
+                    branch=data.get("branch", ""),
+                    started_at=data.get("started_at", ""),
+                    ended_at=data.get("ended_at", ""),
+                    summary=data.get("summary", ""),
+                )
+                # Reconstruct nested records
+                session.code_agents = [
+                    CodeAgentRecord(**r) for r in data.get("code_agents", [])
+                ]
+                session.research_launches = [
+                    ResearchLaunchRecord(**r) for r in data.get("research_launches", [])
+                ]
+                session.contract_designs = [
+                    ContractDesignRecord(**r) for r in data.get("contract_designs", [])
+                ]
+                session.decisions = data.get("decisions", [])
+                session.infrastructure = data.get("infrastructure", [])
+                sessions.append(session)
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"[MANAGER] Failed to parse session entry: {e}")
+                continue
 
         # Return most recent first
         sessions.reverse()
-        return sessions[:n_sessions]
+        return sessions

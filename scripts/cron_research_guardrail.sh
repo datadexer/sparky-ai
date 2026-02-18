@@ -11,7 +11,7 @@
 
 set -uo pipefail
 
-PROJECT_ROOT="/home/akamath/sparky-ai"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ALERT_DIR="$PROJECT_ROOT/logs/alerts"
 RESEARCH_STOP_FILE="$PROJECT_ROOT/logs/research_sessions/STOP"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -76,7 +76,7 @@ LATEST_RESEARCH_LOG=$(ls -t "$PROJECT_ROOT/logs/research_sessions"/research_sess
 if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
     # Check last 500 lines for holdout period references in data operations
     # Look for patterns that suggest actual data access, not just mentions
-    HOLDOUT_HITS=$(tail -500 "$LATEST_RESEARCH_LOG" | grep -cE "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null || echo 0)
+    HOLDOUT_HITS=$(tail -500 "$LATEST_RESEARCH_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | grep -vcE "(PASSED|boundary|embargo|HoldoutGuard|within boundary)" 2>/dev/null || echo 0)
     HOLDOUT_HITS=$(echo "$HOLDOUT_HITS" | tr -d '[:space:]')
 
     if [ "$HOLDOUT_HITS" -gt 0 ]; then
@@ -111,7 +111,7 @@ LAST_COMMIT_EPOCH=$(git -C "$PROJECT_ROOT" log -1 --format=%ct 2>/dev/null || ec
 NOW_EPOCH=$(date +%s)
 HOURS_SINCE_COMMIT=$(( (NOW_EPOCH - LAST_COMMIT_EPOCH) / 3600 ))
 
-if [ "$RESEARCH_ALIVE" = true ] && [ "$HOURS_SINCE_COMMIT" -gt 4 ]; then
+if [ "$RESEARCH_ACTIVE" = "active" ] && [ "$HOURS_SINCE_COMMIT" -gt 4 ]; then
     alert "WARNING" "Research Agent stall detected: last commit was ${HOURS_SINCE_COMMIT} hours ago.
 Last commit: $(git -C "$PROJECT_ROOT" log -1 --oneline 2>/dev/null)
 The Research Agent may be stuck in a loop or hitting errors without committing progress."

@@ -10,6 +10,8 @@ from pathlib import Path
 
 from sparky.workflow.engine import Step, Workflow
 
+_RESULTS_DIR = Path("results")
+
 TAG_REMINDER = (
     "\n\nCRITICAL: You must tag every wandb run with both 'contract_005' and the step tag "
     "(shown below). The workflow cannot verify your work without these tags."
@@ -34,15 +36,15 @@ METRICS_REMINDER = (
 
 
 def _audit_done() -> bool:
-    return Path("results/contract_005_audit.md").exists()
+    return (_RESULTS_DIR / "contract_005_audit.md").exists()
 
 
 def _validation_done() -> bool:
-    return Path("results/contract_005_validation.md").exists()
+    return (_RESULTS_DIR / "contract_005_validation.md").exists()
 
 
 def _summary_done() -> bool:
-    return Path("results/contract_005_summary.md").exists()
+    return (_RESULTS_DIR / "contract_005_summary.md").exists()
 
 
 def build_workflow() -> Workflow:
@@ -85,7 +87,7 @@ def build_workflow() -> Workflow:
                 "  # Reconstruct returns from Sharpe: returns ~ Normal(sr/sqrt(T), 1/sqrt(T))\n"
                 "  T = 8760 * 5\n"
                 "  np.random.seed(42)\n"
-                "  sr_best = 1.28  # best known result\n"
+                "  sr_best = <BEST_SHARPE_FROM_STEP_1>  # get from Step 1 audit output\n"
                 "  returns = np.random.normal(sr_best / np.sqrt(T), 1.0 / np.sqrt(T), T)\n"
                 "  dsr = deflated_sharpe_ratio(returns, n_trials=187)\n"
                 "  ```\n"
@@ -104,10 +106,11 @@ def build_workflow() -> Workflow:
             prompt=(
                 "Run the full metrics pipeline with guardrails on the TOP 3 configs from Contract 004.\n\n"
                 "CONTEXT:\n"
-                "The best results from contract_004 (from memory and summary files) are:\n"
-                "1. mom_vol_adx_OR: Sharpe 1.28 — momentum + regime filter\n"
-                "2. breakout_profitability_cat: Sharpe 1.24 — target re-engineering with CatBoost\n"
-                "3. majority_vote_2of3: Sharpe 1.20 — majority vote ensemble\n\n"
+                "These were approximate results when this workflow was written — you MUST verify "
+                "against actual wandb data and Step 1 output:\n"
+                "1. mom_vol_adx_OR: Sharpe ~1.28 — momentum + regime filter\n"
+                "2. breakout_profitability_cat: Sharpe ~1.24 — target re-engineering with CatBoost\n"
+                "3. majority_vote_2of3: Sharpe ~1.20 — majority vote ensemble\n\n"
                 "Read `results/contract_005_audit.md` first to confirm these are still the top 3, "
                 "or update this list if the audit found different results.\n\n"
                 "FOR EACH of the top 3 configs, run the COMPLETE pipeline:\n\n"

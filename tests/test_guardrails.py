@@ -14,6 +14,7 @@ import pytest
 
 from sparky.tracking.guardrails import (
     GuardrailResult,
+    _VALID_SEVERITIES,
     check_holdout_boundary,
     check_minimum_samples,
     check_no_lookahead,
@@ -316,3 +317,111 @@ class TestLogResults:
         assert len(lines) == 2
         assert json.loads(lines[0])["run_id"] == "run1"
         assert json.loads(lines[1])["run_id"] == "run2"
+
+
+# === C-1: Fail closed for non-DatetimeIndex ===
+
+
+class TestHoldoutBoundaryNonDatetimeIndex:
+    def test_range_index_fails_closed(self):
+        """RangeIndex input must fail with passed=False, severity=block."""
+        data = pd.DataFrame({"x": range(100)})  # RangeIndex, not DatetimeIndex
+        result = check_holdout_boundary(data, asset="btc")
+        assert not result.passed
+        assert result.severity == "block"
+        assert "not DatetimeIndex" in result.message
+
+
+# === C-2: Timezone normalization ===
+
+
+class TestHoldoutBoundaryTimezones:
+    def test_tz_naive_datetimeindex(self):
+        """tz-naive DatetimeIndex should not raise TypeError."""
+        dates = pd.date_range("2020-01-01", periods=100, freq="h")  # no tz
+        data = pd.DataFrame({"x": range(100)}, index=dates)
+        result = check_holdout_boundary(data, asset="btc")
+        # Should pass (2020 data well before holdout)
+        assert result.passed
+        assert result.severity == "block"
+
+    def test_tz_aware_utc(self):
+        """tz-aware UTC DatetimeIndex should work normally."""
+        dates = pd.date_range("2020-01-01", periods=100, freq="h", tz="UTC")
+        data = pd.DataFrame({"x": range(100)}, index=dates)
+        result = check_holdout_boundary(data, asset="btc")
+        assert result.passed
+
+    def test_non_utc_timezone(self):
+        """Non-UTC timezone (US/Eastern) should not raise TypeError."""
+        dates = pd.date_range("2020-01-01", periods=100, freq="h", tz="US/Eastern")
+        data = pd.DataFrame({"x": range(100)}, index=dates)
+        result = check_holdout_boundary(data, asset="btc")
+        assert result.passed
+
+
+# === m-4: Severity validation ===
+
+
+class TestGuardrailResultSeverityValidation:
+    def test_invalid_severity_raises_valueerror(self):
+        """Invalid severity string must raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid severity"):
+            GuardrailResult(passed=True, check_name="test", message="ok", severity="critical")
+
+    def test_valid_severities_accepted(self):
+        """All valid severities should not raise."""
+        for sev in ("block", "warn", "info"):
+            result = GuardrailResult(passed=True, check_name="t", message="ok", severity=sev)
+            assert result.severity == sev
+
+
+# === M-2: Explicit n_trades ===
+
+
+class TestMinimumTradesExplicit:
+    def test_explicit_n_trades_override(self):
+        """Explicit n_trades arg takes priority over heuristic."""
+        returns = np.ones(100) * 0.01  # All same sign, heuristic would say 1
+        config = {}
+        result = check_minimum_trades(returns, config, n_trades=50)
+        assert result.passed
+        assert "explicit" in result.message
+
+    def test_n_trades_from_config(self):
+        """n_trades in config takes priority over heuristic."""
+        returns = np.ones(100) * 0.01
+        config = {"n_trades": 50}
+        result = check_minimum_trades(returns, config)
+        assert result.passed
+        assert "config" in result.message
+
+    def test_heuristic_fallback_label(self, good_returns, good_config):
+        """Heuristic fallback includes 'heuristic' in message."""
+        result = check_minimum_trades(good_returns, good_config)
+        assert "heuristic" in result.message
+
+    def test_explicit_n_trades_too_low_fails(self):
+        """Explicit n_trades below min_trades should fail."""
+        returns = np.random.randn(200) * 0.01
+        config = {}
+        result = check_minimum_trades(returns, config, n_trades=5, min_trades=30)
+        assert not result.passed
+        assert "explicit" in result.message
+
+
+# === Severity structural test ===
+
+
+class TestAllCheckSeverities:
+    """All built-in check functions return severity in the valid set."""
+
+    def test_pre_check_severities(self, training_data, good_config):
+        results = run_pre_checks(training_data, good_config)
+        for r in results:
+            assert r.severity in _VALID_SEVERITIES, f"{r.check_name} has invalid severity {r.severity}"
+
+    def test_post_check_severities(self, good_returns, good_metrics, good_config):
+        results = run_post_checks(good_returns, good_metrics, good_config)
+        for r in results:
+            assert r.severity in _VALID_SEVERITIES, f"{r.check_name} has invalid severity {r.severity}"

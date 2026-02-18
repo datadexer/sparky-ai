@@ -10,7 +10,9 @@ Usage:
 
 import json
 import logging
+import math
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 import matplotlib
@@ -38,14 +40,16 @@ def fetch_contract_004_runs():
     grouped = defaultdict(list)
     for run in runs:
         tags = run.tags if hasattr(run, "tags") else []
+        summary = run.summary or {}
         for step in STEPS:
             if step in tags:
                 grouped[step].append({
                     "run_id": run.id,
                     "name": run.name,
-                    "sharpe": run.summary.get("sharpe"),
-                    "dsr": run.summary.get("dsr"),
-                    "max_drawdown": run.summary.get("max_drawdown"),
+                    "sharpe": summary.get("sharpe"),
+                    "dsr": summary.get("dsr"),
+                    "max_drawdown": summary.get("max_drawdown"),
+                    "n_observations": summary.get("n_observations"),
                     "config": dict(run.config) if hasattr(run, "config") else {},
                     "tags": tags,
                 })
@@ -54,14 +58,18 @@ def fetch_contract_004_runs():
             grouped["untagged"].append({
                 "run_id": run.id,
                 "name": run.name,
-                "sharpe": run.summary.get("sharpe"),
+                "sharpe": summary.get("sharpe"),
             })
 
     return grouped
 
 
 def analyze_group(group_name, runs):
-    """Analyze a group of runs: compute expected max Sharpe and DSR."""
+    """Analyze a group of runs: compute expected max Sharpe and DSR.
+
+    Uses n_observations from run summaries for T when available (median of
+    available values), falling back to 8760*5 (5 years of hourly data).
+    """
     sharpes = [r["sharpe"] for r in runs if r["sharpe"] is not None]
     if not sharpes:
         return None
@@ -70,8 +78,15 @@ def analyze_group(group_name, runs):
     best_sharpe = max(sharpes)
     best_run = max([r for r in runs if r["sharpe"] is not None], key=lambda r: r["sharpe"])
 
-    # Expected max Sharpe from noise alone (assuming ~8760 hourly obs per year * 5 years)
-    T = 8760 * 5  # approximate observation count
+    # Dynamic T: use median n_observations from runs, fallback to 8760*5
+    n_obs_values = [r.get("n_observations") for r in runs if r.get("n_observations") is not None]
+    if n_obs_values:
+        T = int(np.median(n_obs_values))
+        T_source = f"median of {len(n_obs_values)} runs"
+    else:
+        T = 8760 * 5  # ~5 years of hourly data
+        T_source = "default (8760*5)"
+
     exp_max_sr = expected_max_sharpe(n_trials, T)
 
     return {
@@ -89,6 +104,8 @@ def analyze_group(group_name, runs):
         "std_sharpe": float(np.std(sharpes)),
         "median_sharpe": float(np.median(sharpes)),
         "all_sharpes": sharpes,
+        "T": T,
+        "T_source": T_source,
     }
 
 
@@ -97,7 +114,7 @@ def generate_report(analyses, total_runs):
     lines = [
         "# Contract 004 Audit Report",
         "",
-        f"**Generated:** {__import__('datetime').datetime.now(__import__('datetime').timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
         f"**Total runs analyzed:** {total_runs}",
         "",
         "## Summary",
@@ -132,9 +149,9 @@ def generate_report(analyses, total_runs):
             "",
             f"- **Runs with Sharpe data:** {a['n_with_sharpe']}",
             f"- **Best Sharpe:** {a['best_sharpe']:.3f} ({a['best_run_name']})",
-            f"- **Expected Max Sharpe (from noise alone with {a['n_with_sharpe']} trials):** {a['expected_max_sharpe']:.3f}",
-            f"- **Best DSR:** {a['best_dsr']:.3f}" if a["best_dsr"] is not None else "- **Best DSR:** Not computed",
-            f"- **Best Max Drawdown:** {a['best_max_dd']:.1%}" if a["best_max_dd"] is not None else "- **Best Max Drawdown:** N/A",
+            f"- **Expected Max Sharpe (from noise alone with {a['n_with_sharpe']} trials, T={a.get('T', 'N/A')} [{a.get('T_source', 'N/A')}]):** {a['expected_max_sharpe']:.3f}",
+            f"- **Best DSR:** {a['best_dsr']:.3f}" if a.get("best_dsr") is not None else "- **Best DSR:** N/A",
+            f"- **Best Max Drawdown:** {a['best_max_dd']:.1%}" if a.get("best_max_dd") is not None else "- **Best Max Drawdown:** N/A",
             f"- **Mean Sharpe:** {a['mean_sharpe']:.3f}",
             f"- **Median Sharpe:** {a['median_sharpe']:.3f}",
             f"- **Std Sharpe:** {a['std_sharpe']:.3f}",
@@ -172,11 +189,21 @@ def generate_report(analyses, total_runs):
 
 
 def generate_histogram(analyses):
-    """Generate Sharpe distribution histogram."""
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    """Generate Sharpe distribution histogram with dynamic grid sizing."""
+    n_steps = len(STEPS)
+    n_cols = 2
+    n_rows = math.ceil(n_steps / n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5 * n_rows))
     fig.suptitle("Contract 004 — Sharpe Ratio Distributions by Step", fontsize=14)
 
-    for ax, step in zip(axes.flat, STEPS):
+    # Flatten axes for uniform iteration
+    axes_flat = axes.flat if hasattr(axes, "flat") else [axes]
+
+    for idx, ax in enumerate(axes_flat):
+        if idx >= n_steps:
+            ax.set_visible(False)
+            continue
+        step = STEPS[idx]
         analysis = next((a for a in analyses if a and a["group"] == step), None)
         if analysis and analysis["all_sharpes"]:
             sharpes = analysis["all_sharpes"]
@@ -232,6 +259,8 @@ def main():
 
     # Generate report
     report = generate_report(analyses, total_runs)
+    # Intentionally named contract_005_audit.md — this is the Contract 005 audit
+    # OF Contract 004 results. The workflow's done_when checks for this filename.
     report_path = OUTPUT_DIR / "contract_005_audit.md"
     report_path.write_text(report)
     logger.info(f"Report written to {report_path}")

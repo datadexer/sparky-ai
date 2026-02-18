@@ -13,7 +13,8 @@
 
 set -uo pipefail
 
-LOG_DIR="/home/akamath/sparky-ai/logs/research_sessions"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LOG_DIR="$PROJECT_ROOT/logs/research_sessions"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_FILE="${LOG_DIR}/research_session_${TIMESTAMP}.log"
 
@@ -24,7 +25,7 @@ ln -sf "$LOG_FILE" "${LOG_DIR}/latest.log"
 
 echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] Research Agent starting" | tee "$LOG_FILE"
 
-cd /home/akamath/sparky-ai
+cd "$PROJECT_ROOT"
 source .venv/bin/activate
 
 # Unset Claude Code env vars so nested claude can launch

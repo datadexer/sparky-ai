@@ -23,13 +23,19 @@ from sparky.workflow.engine import Workflow, WorkflowState
 from sparky.workflow.telemetry import SessionTelemetry
 
 
-def load_contract_005():
-    """Load the real contract 005 workflow definition."""
+def load_contract_005_module():
+    """Load the real contract 005 workflow module (for patching _RESULTS_DIR)."""
     spec = importlib.util.spec_from_file_location(
         "c005", "workflows/contract_005_statistical_audit.py"
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
+
+
+def load_contract_005():
+    """Load the real contract 005 workflow definition."""
+    mod = load_contract_005_module()
     return mod.build_workflow()
 
 
@@ -96,20 +102,17 @@ def test_state_creation():
 
 
 def test_done_when_evaluation():
-    """Test that done_when functions work correctly."""
-    wf = load_contract_005()
+    """Test that done_when functions work correctly via _RESULTS_DIR monkeypatch."""
+    c005_mod = load_contract_005_module()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         results_dir = Path(tmpdir) / "results"
         results_dir.mkdir()
 
-        # Before creating file: done_when should return False
-        # We need to temporarily change the CWD or patch Path
-        # Actually, done_when uses Path("results/...").exists() which checks CWD
-        import os
-        old_cwd = os.getcwd()
+        # Monkeypatch _RESULTS_DIR instead of os.chdir
+        c005_mod._RESULTS_DIR = results_dir
         try:
-            os.chdir(tmpdir)
+            wf = c005_mod.build_workflow()
 
             # Step 1 done_when checks for results/contract_005_audit.md
             assert not wf.steps[0].done_when(), "Step 1 done_when should be False initially"
@@ -130,23 +133,23 @@ def test_done_when_evaluation():
 
             print("PASS: done_when evaluation works for all 3 steps")
         finally:
-            os.chdir(old_cwd)
+            # Restore default
+            c005_mod._RESULTS_DIR = Path("results")
 
 
 def test_step_advancement():
     """Test that completed steps advance the workflow correctly."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        wf = load_contract_005()
-        wf.state_dir = Path(tmpdir)
+    c005_mod = load_contract_005_module()
 
-        # Create results dir under tmpdir to simulate done_when
+    with tempfile.TemporaryDirectory() as tmpdir:
         results_dir = Path(tmpdir) / "results"
         results_dir.mkdir()
 
-        import os
-        old_cwd = os.getcwd()
+        # Monkeypatch _RESULTS_DIR instead of os.chdir
+        c005_mod._RESULTS_DIR = results_dir
         try:
-            os.chdir(tmpdir)
+            wf = c005_mod.build_workflow()
+            wf.state_dir = Path(tmpdir)
 
             # Create all done files so workflow completes instantly
             (results_dir / "contract_005_audit.md").write_text("# Audit\n")
@@ -170,7 +173,7 @@ def test_step_advancement():
 
             print("PASS: step advancement with pre-satisfied done_when")
         finally:
-            os.chdir(old_cwd)
+            c005_mod._RESULTS_DIR = Path("results")
 
 
 def test_budget_tracking():

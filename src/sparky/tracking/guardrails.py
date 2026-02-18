@@ -14,7 +14,7 @@ Usage:
         raise RuntimeError("Pre-experiment checks failed")
 
     # After backtest
-    post_results = run_post_checks(returns, metrics, config, n_trials=50)
+    post_results = run_post_checks(returns, metrics, config)
     log_results(pre_results + post_results, run_id="my_run")
 """
 
@@ -31,6 +31,17 @@ from scipy.stats import kurtosis as scipy_kurtosis
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    "GuardrailResult",
+    "run_pre_checks",
+    "run_post_checks",
+    "has_blocking_failure",
+    "log_results",
+]
+
+
+_VALID_SEVERITIES = {"block", "warn", "info"}
+
 
 @dataclass
 class GuardrailResult:
@@ -40,6 +51,12 @@ class GuardrailResult:
     message: str
     severity: str  # "block" | "warn" | "info"
 
+    def __post_init__(self):
+        if self.severity not in _VALID_SEVERITIES:
+            raise ValueError(
+                f"Invalid severity {self.severity!r}, must be one of {_VALID_SEVERITIES}"
+            )
+
 
 # === PRE-EXPERIMENT CHECKS ===
 
@@ -48,25 +65,45 @@ def check_holdout_boundary(data: pd.DataFrame, asset: str = "btc") -> GuardrailR
     """BLOCK: Verify data does not extend past holdout boundary.
 
     Uses the same HoldoutGuard as the data loader to check that the data
-    doesn't include any holdout period data.
+    doesn't include any holdout period data. Fails closed (block) if the
+    index is not a DatetimeIndex — cannot verify holdout safety.
     """
     from sparky.oversight.holdout_guard import HoldoutGuard
     guard = HoldoutGuard()
     max_date = guard.get_max_training_date(asset)
 
-    if isinstance(data.index, pd.DatetimeIndex):
-        data_max = data.index.max()
-        if data_max > max_date:
-            return GuardrailResult(
-                passed=False,
-                check_name="holdout_boundary",
-                message=f"Data extends to {data_max}, past holdout boundary {max_date}",
-                severity="block",
-            )
+    if not isinstance(data.index, pd.DatetimeIndex):
+        return GuardrailResult(
+            passed=False,
+            check_name="holdout_boundary",
+            message="Data index is not DatetimeIndex — cannot verify holdout boundary",
+            severity="block",
+        )
+
+    data_max = data.index.max()
+
+    # Normalize both timestamps to UTC for safe comparison
+    if data_max.tzinfo is None:
+        data_max = data_max.tz_localize("UTC")
+    else:
+        data_max = data_max.tz_convert("UTC")
+
+    if hasattr(max_date, "tzinfo") and max_date.tzinfo is None:
+        max_date = max_date.tz_localize("UTC")
+    elif hasattr(max_date, "tz_convert"):
+        max_date = max_date.tz_convert("UTC")
+
+    if data_max > max_date:
+        return GuardrailResult(
+            passed=False,
+            check_name="holdout_boundary",
+            message=f"Data extends to {data_max}, past holdout boundary {max_date}",
+            severity="block",
+        )
     return GuardrailResult(
         passed=True,
         check_name="holdout_boundary",
-        message=f"Data within boundary (max={data.index.max() if isinstance(data.index, pd.DatetimeIndex) else 'N/A'}, limit={max_date})",
+        message=f"Data within boundary (max={data_max}, limit={max_date})",
         severity="block",
     )
 
@@ -139,7 +176,11 @@ def check_param_data_ratio(config: dict, data: pd.DataFrame, max_ratio: float = 
 
     A high parameter-to-data ratio suggests overfitting risk.
     """
-    n_params = len(config.get("features", [])) + len([k for k in config if k not in ("features", "target", "transaction_costs_bps")])
+    n_params = len(config.get("features", [])) + len([
+        k for k in config
+        if k not in ("features", "target", "transaction_costs_bps")
+        and isinstance(config[k], (int, float))
+    ])
     n_samples = len(data)
     ratio = n_params / n_samples if n_samples > 0 else float("inf")
 
@@ -179,33 +220,46 @@ def check_sharpe_sanity(metrics: dict, max_sharpe: float = 4.0) -> GuardrailResu
     )
 
 
-def check_minimum_trades(returns: np.ndarray, config: dict, min_trades: int = 30) -> GuardrailResult:
+def check_minimum_trades(
+    returns: np.ndarray,
+    config: dict,
+    min_trades: int = 30,
+    n_trades: Optional[int] = None,
+) -> GuardrailResult:
     """WARN: Ensure enough trades for statistical significance.
 
-    Counts sign changes in returns as a proxy for trade count when
-    explicit trade count not available.
+    Trade count priority: (1) explicit n_trades arg, (2) config["n_trades"],
+    (3) sign-change heuristic fallback from returns array.
     """
     returns = np.asarray(returns)
-    # Count non-zero returns as active periods
-    active = np.sum(returns != 0)
-    # Estimate trades from sign changes
-    signs = np.sign(returns[returns != 0]) if np.any(returns != 0) else np.array([])
-    if len(signs) > 1:
-        trade_count = int(np.sum(np.diff(signs) != 0)) + 1
+
+    # Priority: (1) explicit arg, (2) config, (3) heuristic
+    if n_trades is not None:
+        trade_count = n_trades
+        source = "explicit"
+    elif "n_trades" in config:
+        trade_count = config["n_trades"]
+        source = "config"
     else:
-        trade_count = len(signs)
+        # Estimate trades from sign changes
+        signs = np.sign(returns[returns != 0]) if np.any(returns != 0) else np.array([])
+        if len(signs) > 1:
+            trade_count = int(np.sum(np.diff(signs) != 0)) + 1
+        else:
+            trade_count = len(signs)
+        source = "heuristic"
 
     if trade_count < min_trades:
         return GuardrailResult(
             passed=False,
             check_name="minimum_trades",
-            message=f"Only ~{trade_count} trades detected, need at least {min_trades}",
+            message=f"Only ~{trade_count} trades detected ({source}), need at least {min_trades}",
             severity="warn",
         )
     return GuardrailResult(
         passed=True,
         check_name="minimum_trades",
-        message=f"~{trade_count} trades detected (min={min_trades})",
+        message=f"~{trade_count} trades detected ({source}, min={min_trades})",
         severity="warn",
     )
 
@@ -335,22 +389,22 @@ def run_post_checks(
     returns: np.ndarray,
     metrics: dict,
     config: dict,
-    n_trials: int = 1,
+    n_trades: Optional[int] = None,
 ) -> list[GuardrailResult]:
     """Run all post-experiment checks.
 
     Args:
         returns: Array of strategy returns.
-        metrics: Dict from compute_all_metrics().
+        metrics: Dict from compute_all_metrics(). DSR should already be computed.
         config: Experiment config dict.
-        n_trials: Total number of strategy configs tested so far.
+        n_trades: Optional explicit trade count (overrides heuristic detection).
 
     Returns:
         List of GuardrailResult objects.
     """
     return [
         check_sharpe_sanity(metrics),
-        check_minimum_trades(returns, config),
+        check_minimum_trades(returns, config, n_trades=n_trades),
         check_dsr_threshold(metrics),
         check_max_drawdown(metrics),
         check_returns_distribution(returns),

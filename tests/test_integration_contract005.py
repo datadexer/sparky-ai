@@ -90,7 +90,7 @@ class TestGuardrailsMetricsPipeline:
 
         # Run post-checks with these metrics
         config = {"transaction_costs_bps": 10.0}
-        post_results = run_post_checks(synthetic_returns, metrics, config, n_trials=50)
+        post_results = run_post_checks(synthetic_returns, metrics, config, )
 
         # Should have 6 checks
         assert len(post_results) == 6
@@ -125,10 +125,10 @@ class TestGuardrailsMetricsPipeline:
 
     def test_guardrails_plus_metrics_end_to_end(self, synthetic_returns):
         """Full pipeline: compute metrics → run post-checks → check for failures."""
-        metrics = compute_all_metrics(synthetic_returns, n_trials=10)
+        metrics = compute_all_metrics(synthetic_returns, n_trials=50)
 
         config = {"transaction_costs_bps": 10.0}
-        post_results = run_post_checks(synthetic_returns, metrics, config, n_trials=10)
+        post_results = run_post_checks(synthetic_returns, metrics, config, )
 
         # Sharpe sanity check should pass for random returns (Sharpe < 4)
         sharpe_checks = [r for r in post_results if r.check_name == "sharpe_sanity"]
@@ -156,8 +156,8 @@ class TestGuardrailsJsonlRoundTrip:
             assert len(pre_results) == 5
 
             # Run post-checks
-            metrics = compute_all_metrics(synthetic_returns, n_trials=10)
-            post_results = run_post_checks(synthetic_returns, metrics, good_config, n_trials=10)
+            metrics = compute_all_metrics(synthetic_returns, n_trials=50)
+            post_results = run_post_checks(synthetic_returns, metrics, good_config, )
             assert len(post_results) == 6
 
             all_results = pre_results + post_results
@@ -200,7 +200,7 @@ class TestGuardrailsJsonlRoundTrip:
             log_results(results, run_id="run_002", logfile=logfile)
 
             with open(logfile) as f:
-                lines = [l.strip() for l in f.readlines() if l.strip()]
+                lines = [line.strip() for line in f.readlines() if line.strip()]
 
             assert len(lines) == 2
             entry1 = json.loads(lines[0])
