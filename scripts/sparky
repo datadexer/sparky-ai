@@ -20,7 +20,6 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -88,25 +87,91 @@ def _get_gpu_stats() -> str:
     return "unavailable"
 
 
+_WANDB_CACHE: list[dict] | None = None
+
+
+def _get_wandb_runs() -> list[dict]:
+    """Fetch all wandb runs via a single GraphQL call (~0.5s vs ~35s with SDK)."""
+    global _WANDB_CACHE
+    if _WANDB_CACHE is not None:
+        return _WANDB_CACHE
+    try:
+        import requests as _req
+
+        # Read API key from netrc (handles multi-line format)
+        api_key = None
+        netrc_path = Path.home() / ".netrc"
+        if netrc_path.exists():
+            tokens = netrc_path.read_text().split()
+            for i, tok in enumerate(tokens):
+                if tok == "machine" and i + 1 < len(tokens) and tokens[i + 1] == "api.wandb.ai":
+                    # Find "password" token after this machine entry
+                    for j in range(i + 2, min(i + 8, len(tokens))):
+                        if tokens[j] == "password" and j + 1 < len(tokens):
+                            api_key = tokens[j + 1]
+                            break
+                    break
+        if not api_key:
+            _WANDB_CACHE = []
+            return []
+
+        query = """
+        query Runs($project: String!, $entity: String!, $order: String, $first: Int) {
+          project(name: $project, entityName: $entity) {
+            runs(order: $order, first: $first) {
+              edges {
+                node { tags summaryMetrics }
+              }
+            }
+          }
+        }
+        """
+        resp = _req.post(
+            "https://api.wandb.ai/graphql",
+            json={
+                "query": query,
+                "variables": {
+                    "project": "sparky-ai",
+                    "entity": "datadex_ai",
+                    "order": "-created_at",
+                    "first": 500,
+                },
+            },
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        edges = resp.json()["data"]["project"]["runs"]["edges"]
+        runs = []
+        for edge in edges:
+            node = edge["node"]
+            summary = {}
+            sm = node.get("summaryMetrics")
+            if sm:
+                try:
+                    summary = json.loads(sm)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            runs.append({"tags": node.get("tags") or [], "summary": summary})
+        _WANDB_CACHE = runs
+        return runs
+    except Exception:
+        _WANDB_CACHE = []
+        return []
+
+
 def _get_wandb_counts(state: dict) -> str:
     """Get wandb run counts by tag."""
     try:
-        sys.path.insert(0, str(PROJECT_ROOT / "src"))
-        from sparky.tracking.experiment import ExperimentTracker
-
-        tracker = ExperimentTracker(experiment_name="contract_004")
-        wf_name = state.get("workflow_name", "")
-        # Count by common tags
+        runs = _get_wandb_runs()
+        total = len(runs)
         tags_to_check = ["sweep", "regime", "ensemble", "feature_analysis"]
         counts = {}
-        total = 0
-        for tag in tags_to_check:
-            c = tracker.count_runs(tags=[wf_name.replace("-", "_"), tag])
-            if c > 0:
-                counts[tag] = c
-                total += c
-        if not counts:
-            total = tracker.count_runs()
+        for run in runs:
+            run_tags = set(run["tags"])
+            for tag in tags_to_check:
+                if tag in run_tags:
+                    counts[tag] = counts.get(tag, 0) + 1
         parts = ", ".join(f"{k}: {v}" for k, v in counts.items())
         return f"{total} runs ({parts})" if parts else f"{total} runs"
     except Exception as e:
@@ -116,11 +181,14 @@ def _get_wandb_counts(state: dict) -> str:
 def _get_best_sharpe(state: dict) -> str:
     """Get best Sharpe from wandb."""
     try:
-        sys.path.insert(0, str(PROJECT_ROOT / "src"))
-        from sparky.tracking.experiment import ExperimentTracker
-
-        tracker = ExperimentTracker(experiment_name="contract_004")
-        best = tracker.best_metric("sharpe")
+        runs = _get_wandb_runs()
+        best = None
+        for run in runs:
+            s = run["summary"]
+            val = s.get("sharpe") or s.get("sharpe_ratio") or s.get("best_sharpe")
+            if val is not None:
+                if best is None or val > best:
+                    best = val
         if best is not None:
             return f"Sharpe {best:.3f}"
         return "N/A"
