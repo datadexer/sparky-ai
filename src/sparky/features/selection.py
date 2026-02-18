@@ -231,10 +231,12 @@ class FeatureSelector:
 
         importance_matrix = []
 
-        # gap=24 creates a 24-sample embargo between train and test folds,
-        # preventing leakage from features that look ahead (e.g. hourly data
-        # predicting 1-day returns needs at least 24h embargo).
-        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=24)
+        # Embargo gap between train/test folds prevents leakage from features
+        # that look ahead. For hourly data predicting 1-day returns, 24 samples
+        # is ideal. Scale down for small datasets to avoid ValueError.
+        fold_size = n // (self.n_stability_folds + 1)
+        gap = min(24, fold_size // 3)
+        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=gap)
         for train_idx, _test_idx in tscv.split(X):
             X_train = X.iloc[train_idx]  # only past data
             y_train = y.iloc[train_idx]
