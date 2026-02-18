@@ -85,6 +85,139 @@ LOG_DIR = PROJECT_ROOT / "logs" / "research_sessions"
 ALERT_SCRIPT = PROJECT_ROOT / "scripts" / "alert.sh"
 
 
+def send_alert(severity: str, message: str) -> None:
+    """Send alert via alert.sh."""
+    try:
+        subprocess.run(
+            ["bash", str(ALERT_SCRIPT), severity, message],
+            timeout=10,
+            capture_output=True,
+        )
+    except Exception as e:
+        logger.warning(f"Alert failed: {e}")
+
+
+def clean_env() -> dict[str, str]:
+    """Build clean environment for Claude subprocess."""
+    env = os.environ.copy()
+    for var in ("CLAUDECODE", "CLAUDE_CODE_SSE_PORT", "CLAUDE_CODE_ENTRYPOINT"):
+        env.pop(var, None)
+    return env
+
+
+def launch_claude_session(
+    prompt: str,
+    max_duration_minutes: int,
+    session_name: str,
+    step_name: str = "session",
+    attempt: int = 1,
+    log_dir: Path = LOG_DIR,
+) -> SessionTelemetry:
+    """Launch a Claude session and collect telemetry.
+
+    Module-level function used by both Workflow and ResearchOrchestrator.
+    """
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    session_id = timestamp
+    log_filename = f"{session_name}_{timestamp}.log"
+
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / log_filename
+    latest_link = log_dir / "latest.log"
+
+    try:
+        if latest_link.is_symlink() or latest_link.exists():
+            latest_link.unlink()
+        latest_link.symlink_to(log_path)
+    except OSError:
+        pass
+
+    parser = StreamParser(session_id=session_id, step=step_name, attempt=attempt)
+    env = clean_env()
+    timeout_seconds = max_duration_minutes * 60
+
+    from sparky.tracking.experiment import clear_current_session, set_current_session
+
+    set_current_session(session_id)
+
+    with open(log_path, "w") as log_file:
+        log_file.write(
+            f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
+            f"Session '{session_name}' step '{step_name}' attempt {attempt}\n"
+        )
+        log_file.flush()
+
+        try:
+            proc = subprocess.Popen(
+                [
+                    "claude",
+                    "-p",
+                    prompt,
+                    "--model",
+                    "sonnet",
+                    "--verbose",
+                    "--output-format",
+                    "stream-json",
+                    "--dangerously-skip-permissions",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                cwd=str(PROJECT_ROOT),
+                text=True,
+                bufsize=1,
+            )
+
+            start_time = time.monotonic()
+            for line in proc.stdout:
+                parser.feed(line, log_file)
+                if time.monotonic() - start_time > timeout_seconds:
+                    proc.kill()
+                    parser.telemetry.exit_reason = "timeout"
+                    logger.warning(f"Session timed out after {max_duration_minutes}m")
+                    break
+
+            proc.wait(timeout=30)
+
+            stderr_output = ""
+            if proc.stderr:
+                try:
+                    stderr_output = proc.stderr.read()
+                except Exception:  # noqa: S110
+                    pass
+
+            if proc.returncode != 0 and parser.telemetry.exit_reason == "completed":
+                stderr_lower = stderr_output.lower()
+                if any(s in stderr_lower for s in ("rate limit", "too many requests", "out of extra usage")):
+                    parser.telemetry.exit_reason = "rate_limit"
+                else:
+                    parser.telemetry.exit_reason = "error"
+
+            if parser.telemetry.exit_reason == "rate_limit":
+                pass  # Already set by parser
+
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            parser.telemetry.exit_reason = "timeout"
+        except FileNotFoundError:
+            logger.error("'claude' command not found")
+            parser.telemetry.exit_reason = "error"
+        except Exception as e:
+            logger.error(f"Error launching claude: {e}")
+            parser.telemetry.exit_reason = "error"
+        finally:
+            clear_current_session()
+
+        log_file.write(
+            f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
+            f"Session ended ({parser.telemetry.exit_reason})\n"
+        )
+
+    telemetry = parser.finalize()
+    save_telemetry(telemetry)
+    return telemetry
+
+
 def _always_false() -> bool:
     return False
 
@@ -244,21 +377,11 @@ class Workflow:
 
     def _alert(self, severity: str, message: str) -> None:
         """Send alert via alert.sh."""
-        try:
-            subprocess.run(
-                ["bash", str(ALERT_SCRIPT), severity, message],
-                timeout=10,
-                capture_output=True,
-            )
-        except Exception as e:
-            logger.warning(f"Alert failed: {e}")
+        send_alert(severity, message)
 
     def _clean_env(self) -> dict[str, str]:
         """Build clean environment for Claude subprocess."""
-        env = os.environ.copy()
-        for var in ("CLAUDECODE", "CLAUDE_CODE_SSE_PORT", "CLAUDE_CODE_ENTRYPOINT"):
-            env.pop(var, None)
-        return env
+        return clean_env()
 
     def _build_prompt(self, step: Step, index: int, inject_text: str = "") -> str:
         """Build the full prompt for a Claude session."""
@@ -282,107 +405,17 @@ class Workflow:
         attempt: int,
     ) -> SessionTelemetry:
         """Launch a Claude session and collect telemetry."""
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        session_id = timestamp
-        log_filename = f"workflow_{self.name}_{timestamp}.log"
-
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        log_path = LOG_DIR / log_filename
-        latest_link = LOG_DIR / "latest.log"
-
-        # Create symlink
-        try:
-            if latest_link.is_symlink() or latest_link.exists():
-                latest_link.unlink()
-            latest_link.symlink_to(log_path)
-        except OSError:
-            pass
-
-        parser = StreamParser(session_id=session_id, step=step.name, attempt=attempt)
-        env = self._clean_env()
-        timeout_seconds = max_duration_minutes * 60
-
-        from sparky.tracking.experiment import clear_current_session, set_current_session
-
-        set_current_session(session_id)
-
-        with open(log_path, "w") as log_file:
-            log_file.write(
-                f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
-                f"Workflow '{self.name}' step '{step.name}' attempt {attempt}\n"
-            )
-            log_file.flush()
-
-            try:
-                proc = subprocess.Popen(
-                    [
-                        "claude",
-                        "-p",
-                        prompt,
-                        "--model",
-                        "sonnet",
-                        "--verbose",
-                        "--output-format",
-                        "stream-json",
-                        "--dangerously-skip-permissions",
-                    ],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    env=env,
-                    cwd=str(PROJECT_ROOT),
-                    text=True,
-                    bufsize=1,
-                )
-
-                start_time = time.monotonic()
-                for line in proc.stdout:
-                    parser.feed(line, log_file)
-                    if time.monotonic() - start_time > timeout_seconds:
-                        proc.kill()
-                        parser.telemetry.exit_reason = "timeout"
-                        logger.warning(f"Session timed out after {max_duration_minutes}m")
-                        break
-
-                proc.wait(timeout=30)
-
-                # Check stderr for rate limit signals
-                stderr_output = ""
-                if proc.stderr:
-                    try:
-                        stderr_output = proc.stderr.read()
-                    except Exception:  # noqa: S110
-                        pass
-
-                if proc.returncode != 0 and parser.telemetry.exit_reason == "completed":
-                    stderr_lower = stderr_output.lower()
-                    if any(s in stderr_lower for s in ("rate limit", "too many requests", "out of extra usage")):
-                        parser.telemetry.exit_reason = "rate_limit"
-                    else:
-                        parser.telemetry.exit_reason = "error"
-
-                # Parser may have detected rate limit from stream-json
-                if parser.telemetry.exit_reason == "rate_limit":
-                    pass  # Already set by parser
-
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                parser.telemetry.exit_reason = "timeout"
-            except FileNotFoundError:
-                logger.error("'claude' command not found")
-                parser.telemetry.exit_reason = "error"
-            except Exception as e:
-                logger.error(f"Error launching claude: {e}")
-                parser.telemetry.exit_reason = "error"
-            finally:
-                clear_current_session()
-
-            log_file.write(
-                f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
-                f"Session ended ({parser.telemetry.exit_reason})\n"
-            )
-
-        telemetry = parser.finalize()
-        save_telemetry(telemetry)
+        telemetry = launch_claude_session(
+            prompt=prompt,
+            max_duration_minutes=max_duration_minutes,
+            session_name=f"workflow_{self.name}",
+            step_name=step.name,
+            attempt=attempt,
+        )
+        # Upload session telemetry to wandb (workflow-specific)
+        log_path = LOG_DIR / "latest.log"
+        if log_path.is_symlink():
+            log_path = log_path.resolve()
         _upload_session_to_wandb(telemetry, log_path, step)
         return telemetry
 

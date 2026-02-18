@@ -14,6 +14,9 @@ Usage:
     sparky inject "msg" — Inject guidance into next session
     sparky budget    — Detailed budget/cost breakdown
     sparky history   — Step completion timeline
+    sparky orch status   — Orchestrator status dashboard
+    sparky orch results  — Show top results from wandb
+    sparky orch respond "msg" — Respond to a gate request and resume
 """
 
 import argparse
@@ -462,6 +465,117 @@ def cmd_history(_args):
         print(f"  {name:<30} {info.get('status', '?'):<12} {info.get('attempts', 0):>8} {completed:>24}")
 
 
+def _load_orch_state() -> dict | None:
+    """Load the most recent orchestrator state file."""
+    if not STATE_DIR.exists():
+        return None
+    state_files = sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for sf in state_files:
+        try:
+            with open(sf) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+    return None
+
+
+def cmd_orch_status(_args):
+    """Print orchestrator status dashboard."""
+    state = _load_orch_state()
+    if not state:
+        print("No orchestrator state found.")
+        return
+
+    name = state.get("name", "unknown")
+    status = state.get("status", "unknown")
+    sessions = state.get("session_count", 0)
+    best = state.get("best_result", {})
+    stall = state.get("stall_counter", 0)
+    crash = state.get("crash_counter", 0)
+    cost = state.get("total_cost_usd", 0)
+    hours = state.get("total_hours", 0)
+    gate_msg = state.get("gate_message")
+
+    best_sharpe = best.get("sharpe", "N/A")
+    best_dsr = best.get("dsr", "N/A")
+    if isinstance(best_sharpe, float):
+        best_sharpe = f"{best_sharpe:.3f}"
+    if isinstance(best_dsr, float):
+        best_dsr = f"{best_dsr:.3f}"
+
+    print(f"Orchestrator: {name} ({status})")
+    print(f"Sessions: {sessions}")
+    print(f"Best: Sharpe={best_sharpe}, DSR={best_dsr}")
+    print(f"Budget: {hours:.1f}h, ${cost:.2f}")
+    print(f"Stall counter: {stall}")
+    print(f"Crash counter: {crash}")
+    if gate_msg:
+        print(f"Gate message: {gate_msg}")
+
+
+def cmd_orch_results(_args):
+    """Show top results from wandb for the orchestrator directive."""
+    state = _load_orch_state()
+    if not state:
+        print("No orchestrator state found.")
+        return
+
+    session_records = state.get("sessions", [])
+    if not session_records:
+        print("No sessions recorded yet.")
+        return
+
+    # Collect best results from session records
+    results = []
+    for s in session_records:
+        sharpe = s.get("best_sharpe")
+        dsr = s.get("best_dsr")
+        if sharpe is not None:
+            results.append(
+                {
+                    "session": s.get("session_number", "?"),
+                    "sharpe": sharpe,
+                    "dsr": dsr,
+                    "duration": s.get("duration_minutes", 0),
+                    "cost": s.get("estimated_cost_usd", 0),
+                }
+            )
+
+    results.sort(key=lambda x: x.get("sharpe", 0) or 0, reverse=True)
+
+    print(f"{'Session':>8} {'Sharpe':>8} {'DSR':>8} {'Duration':>10} {'Cost':>8}")
+    print(f"{'-' * 8:>8} {'-' * 8:>8} {'-' * 8:>8} {'-' * 10:>10} {'-' * 8:>8}")
+    for r in results[:20]:
+        sharpe = f"{r['sharpe']:.3f}" if r["sharpe"] is not None else "N/A"
+        dsr = f"{r['dsr']:.3f}" if r.get("dsr") is not None else "N/A"
+        print(f"{r['session']:>8} {sharpe:>8} {dsr:>8} {r['duration']:>9.0f}m ${r['cost']:>7.2f}")
+
+
+def cmd_orch_respond(args):
+    """Respond to a gate request and resume the orchestrator."""
+    state = _load_orch_state()
+    if not state:
+        print("No orchestrator state found.")
+        return
+
+    if state.get("status") != "gate_triggered":
+        print(f"Orchestrator is not at a gate (status: {state.get('status')})")
+        return
+
+    gate_response_path = PROJECT_ROOT / "GATE_RESPONSE.md"
+    gate_response_path.write_text(args.message)
+
+    state["status"] = "running"
+    state["gate_message"] = None
+    name = state.get("name", "unknown")
+    filepath = STATE_DIR / f"orchestrator_{name}.json"
+    with open(filepath, "w") as f:
+        json.dump(state, f, indent=2)
+
+    print("Response written. Orchestrator status set to 'running'.")
+    print("Restart the service to resume: systemctl --user start sparky-research")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="sparky",
@@ -489,6 +603,14 @@ def main():
     sub.add_parser("budget", help="Budget and cost breakdown")
     sub.add_parser("history", help="Step completion timeline")
 
+    # Orchestrator subcommands
+    p_orch = sub.add_parser("orch", help="Orchestrator commands")
+    orch_sub = p_orch.add_subparsers(dest="orch_command")
+    orch_sub.add_parser("status", help="Orchestrator status dashboard")
+    orch_sub.add_parser("results", help="Show top results")
+    p_orch_respond = orch_sub.add_parser("respond", help="Respond to gate request")
+    p_orch_respond.add_argument("message", help="Response message")
+
     args = parser.parse_args()
 
     commands = {
@@ -506,7 +628,17 @@ def main():
         "history": cmd_history,
     }
 
-    if args.command in commands:
+    if args.command == "orch":
+        orch_commands = {
+            "status": cmd_orch_status,
+            "results": cmd_orch_results,
+            "respond": cmd_orch_respond,
+        }
+        if args.orch_command in orch_commands:
+            orch_commands[args.orch_command](args)
+        else:
+            p_orch.print_help()
+    elif args.command in commands:
         commands[args.command](args)
     else:
         parser.print_help()
