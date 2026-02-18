@@ -29,8 +29,11 @@ except ImportError:
     VBT_VERSION = "not installed"
     print("WARNING: vectorbt not available — skipping cross-validation checks")
 
+from sparky.data.loader import load
 from sparky.models.simple_baselines import donchian_channel_strategy, sma_crossover_strategy
 from sparky.tracking.metrics import compute_all_metrics
+
+_PROJECT_ROOT = Path(__file__).parent.parent
 
 
 # ─────────────────────────────────────────────────────────────
@@ -38,13 +41,8 @@ from sparky.tracking.metrics import compute_all_metrics
 # ─────────────────────────────────────────────────────────────
 
 
-# Worktree root (git checkout at /tmp/sparky-audit); data lives in main repo
-_WORKTREE_ROOT = Path(__file__).parent.parent
-_DATA_ROOT = Path("/home/akamath/sparky-ai")
-
-
 def load_prices() -> pd.Series:
-    df = pd.read_parquet(_DATA_ROOT / "data/btc_daily.parquet")
+    df = load("btc_daily", purpose="analysis")
     return df["close"].dropna()
 
 
@@ -296,7 +294,7 @@ def validate_metrics(returns: pd.Series) -> list[dict]:
 
 
 def write_report(test_results: list, metrics_checks: list) -> bool:
-    results_dir = _DATA_ROOT / "results"
+    results_dir = _PROJECT_ROOT / "results"
     os.makedirs(results_dir, exist_ok=True)
 
     all_test_pass = all(all("PASS" in c or "SKIP" in c for c in r["checks"]) for r in test_results)
