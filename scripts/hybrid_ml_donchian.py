@@ -22,15 +22,18 @@ import pandas as pd
 from catboost import CatBoostClassifier
 
 from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 
 
 def load_data():
-    """Load features and target."""
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    """Load features and target via holdout-enforced loader."""
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    target_df = load("targets_btc_hourly_1d", purpose="training")
 
-    if isinstance(target, pd.DataFrame):
-        target = target["target"]
+    if isinstance(target_df, pd.DataFrame):
+        target = target_df["target"]
+    else:
+        target = target_df
 
     return features, target
 
@@ -86,7 +89,7 @@ def main():
     target_in = target.loc[:"2024-05-31"]
 
     # Load prices
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="training")
     prices_daily = prices_hourly.resample("D").last()["close"]
 
     cost_model = TransactionCostModel.for_btc()

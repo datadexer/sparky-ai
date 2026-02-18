@@ -24,9 +24,10 @@ from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import KFold
+from sklearn.model_selection import TimeSeriesSplit
 
 from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 
 # Top 5 base models from sweep
 BASE_CONFIGS = [
@@ -39,12 +40,14 @@ BASE_CONFIGS = [
 
 
 def load_data():
-    """Load 58-feature dataset."""
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    """Load 58-feature dataset via holdout-enforced loader."""
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    target_df = load("targets_btc_hourly_1d", purpose="training")
 
-    if isinstance(target, pd.DataFrame):
-        target = target["target"]
+    if isinstance(target_df, pd.DataFrame):
+        target = target_df["target"]
+    else:
+        target = target_df
 
     return features, target
 
@@ -69,11 +72,11 @@ def train_base_models(X_train, y_train):
 
 def generate_oof_predictions(X_train, y_train, n_folds=5):
     """Generate out-of-fold predictions for meta-learner training."""
-    kf = KFold(n_splits=n_folds, shuffle=False)  # Time series, no shuffle
+    tscv = TimeSeriesSplit(n_splits=n_folds, gap=24)  # Embargo 24h for hourly data
 
     oof_preds = np.zeros((len(X_train), len(BASE_CONFIGS)))
 
-    for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X_train)):
+    for fold_idx, (train_idx, val_idx) in enumerate(tscv.split(X_train)):
         print(f"  Fold {fold_idx + 1}/{n_folds}")
 
         X_fold_train = X_train.iloc[train_idx]
@@ -124,7 +127,7 @@ def main():
     target_in = target.loc[:"2024-05-31"]
 
     # Load prices
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="training")
     prices_daily = prices_hourly.resample("D").last()["close"]
 
     cost_model = TransactionCostModel.for_btc()

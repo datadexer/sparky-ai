@@ -27,6 +27,7 @@ from lightgbm import LGBMClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 
 # Top 5 configs from sweep (update after sweep completes)
 TOP_CONFIGS = [
@@ -39,12 +40,14 @@ TOP_CONFIGS = [
 
 
 def load_data():
-    """Load 58-feature dataset."""
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    """Load 58-feature dataset via holdout-enforced loader."""
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    target_df = load("targets_btc_hourly_1d", purpose="training")
 
-    if isinstance(target, pd.DataFrame):
-        target = target["target"]
+    if isinstance(target_df, pd.DataFrame):
+        target = target_df["target"]
+    else:
+        target = target_df
 
     return features, target
 
@@ -128,7 +131,7 @@ def main():
     target_in = target.loc[:"2024-05-31"]
 
     # Load prices
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="training")
     prices_daily = prices_hourly.resample("D").last()["close"]
 
     cost_model = TransactionCostModel.for_btc()
