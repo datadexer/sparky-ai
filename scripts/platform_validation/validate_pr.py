@@ -9,8 +9,10 @@ This agent focuses on infrastructure correctness: backtesting plumbing,
 data access patterns, wandb parameter flow, cost model usage, guardrails,
 and testing coverage.
 
-Exits 0 if no HIGH severity issues found (or on error/skip).
-Exits 1 if HIGH severity issues found (blocks merge).
+Exits 0 if no HIGH severity issues found.
+Exits 1 if HIGH severity issues found OR if validation was inconclusive
+        (rate limit, API error, non-JSON response). A PR must not go
+        green when validation was skipped due to API failures.
 Posts findings as PR comment via GitHub API.
 """
 
@@ -18,7 +20,14 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
+
+import anthropic
+
+# Retry delays (seconds) on 429 rate-limit errors.
+# Three total attempts: immediate, +30s, +60s.
+_RATE_LIMIT_RETRY_DELAYS = [30, 60]
 
 
 def get_changed_files():
@@ -73,10 +82,28 @@ def get_codebase_context():
     return context
 
 
+def _create_message_with_retry(client, **kwargs):
+    """Call client.messages.create with exponential backoff on rate limits.
+
+    Raises anthropic.RateLimitError if all retries are exhausted.
+    """
+    for attempt, delay in enumerate([0] + _RATE_LIMIT_RETRY_DELAYS):
+        if delay:
+            print(
+                f"Rate limited (429) — retrying in {delay}s "
+                f"(attempt {attempt + 1}/{len(_RATE_LIMIT_RETRY_DELAYS) + 1})...",
+                flush=True,
+            )
+            time.sleep(delay)
+        try:
+            return client.messages.create(**kwargs)
+        except anthropic.RateLimitError:
+            if attempt == len(_RATE_LIMIT_RETRY_DELAYS):
+                raise  # All retries exhausted — propagate to caller
+
+
 def run_validation(changes, context):
     """Send changes to Claude Sonnet for platform engineering review."""
-    import anthropic
-
     client = anthropic.Anthropic()
 
     rubric_path = Path(__file__).parent / "rubric.md"
@@ -135,7 +162,8 @@ def run_validation(changes, context):
         "passed must be false if ANY HIGH severity issues exist."
     )
 
-    response = client.messages.create(
+    response = _create_message_with_retry(
+        client,
         model="claude-sonnet-4-5-20250929",
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
@@ -147,13 +175,9 @@ def run_validation(changes, context):
 
     try:
         result = json.loads(text)
-    except json.JSONDecodeError:
-        result = {
-            "summary": "Validation agent returned non-JSON response (review manually)",
-            "issues": [],
-            "passed": True,
-            "raw_response": text[:2000],
-        }
+    except json.JSONDecodeError as exc:
+        # Non-JSON response is inconclusive — do NOT treat as pass
+        raise ValueError(f"Validation agent returned non-JSON response (len={len(text)}): {text[:300]}") from exc
 
     return result
 
@@ -165,7 +189,10 @@ def post_pr_comment(result):
         print("No PR_NUMBER env var — skipping comment")
         return
 
-    if result["passed"]:
+    # Build comment header
+    if result.get("inconclusive"):
+        status = "## :warning: Platform Validation: INCONCLUSIVE"
+    elif result["passed"]:
         status = "## :white_check_mark: Platform Validation: PASSED"
     else:
         status = "## :x: Platform Validation: FAILED (HIGH severity engineering issues found)"
@@ -194,6 +221,11 @@ def post_pr_comment(result):
                 comment += f"**{issue['file']}** (line ~{issue.get('line', '?')})\n"
                 comment += f"> {issue['description']}\n\n"
                 comment += f"Fix: {issue.get('fix', 'See description')}\n\n"
+
+    if result.get("inconclusive"):
+        comment += (
+            "\n> **This PR cannot be merged until validation re-runs successfully.**\n> Re-trigger CI to retry.\n"
+        )
 
     comment += "\n---\n*Automated review by Sparky Platform Validation Agent (Sonnet)*"
 
@@ -236,15 +268,20 @@ def main():
 
     try:
         result = run_validation(changes, context)
-    except Exception as e:
-        print(f"Platform validation failed with error: {e}")
+    except anthropic.RateLimitError as e:
+        # Rate limit exhausted after all retries — BLOCK the PR, do not pass
+        print(f"RATE LIMIT: All retries exhausted: {e}", flush=True)
         result = {
-            "summary": f"Platform validation unavailable: {e}",
+            "summary": "INCONCLUSIVE: Anthropic API rate limit (429) — validation did not execute. Re-trigger CI to retry.",
             "issues": [],
-            "passed": True,
+            "passed": False,
+            "inconclusive": True,
         }
         post_pr_comment(result)
-        sys.exit(0)
+        Path("platform-validation-report.json").write_text(json.dumps(result, indent=2))
+        print("\nBLOCKED: rate limit — validation inconclusive")
+        sys.exit(1)
+    # All other errors propagate as unhandled exceptions (clear traceback in CI logs)
 
     print(f"\n{'=' * 60}")
     print(f"Summary: {result['summary']}")
