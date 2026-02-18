@@ -42,7 +42,9 @@ N_TRIALS = 187  # Total contract_004 wandb runs (confirmed by Step 1 audit)
 DONCHIAN_BASELINE_SHARPE = 1.062  # Multi-TF Donchian corrected baseline
 ENTRY_PERIOD = 40
 EXIT_PERIOD = 20
-TRANSACTION_COSTS_BPS = 10.0  # 10 bps round-trip (realistic for BTC futures)
+# 30 bps is deducted at ENTRY and again at EXIT (60 bps total for a complete round-trip).
+# This matches TransactionCostModel.standard() and the project's minimum 30 bps floor.
+TRANSACTION_COSTS_BPS = 30.0
 DSR_THRESHOLD = 0.95
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -124,26 +126,26 @@ def donchian_signal(prices: pd.Series, entry: int = 40, exit_p: int = 20) -> pd.
 def compute_strategy_returns(
     daily_returns: pd.Series,
     signals: pd.Series,
-    costs_bps: float = 10.0,
+    costs_bps: float = TRANSACTION_COSTS_BPS,
 ) -> np.ndarray:
     """
     Apply signal to returns with transaction costs.
 
-    CRITICAL: signals are ALREADY computed at T using data through T-1
-    (donchian uses upper.iloc[i-1]; momentum is computed on prior returns).
-    However, since the signal at time T uses close[T] for the rolling max
-    comparison, we must shift(1) to avoid any look-ahead.
+    costs_bps: basis points deducted on EACH position change (open or close).
+    Default = TRANSACTION_COSTS_BPS = 30.  Opening costs 30 bps; closing costs 30 bps;
+    round-trip total = 60 bps.  Matches TransactionCostModel.standard().
 
-    Position on day T = signal[T-1] (shift by 1 means "trade on next open").
+    Signals are shifted by 1 day before use so that the position on day T
+    comes from the signal computed using data up to day T-1 (no look-ahead).
     """
     pos = signals.reindex(daily_returns.index).fillna(0).shift(1).fillna(0)
 
-    # Apply transaction costs on position changes
+    # Deduct costs_bps on each position change (open or close separately)
     pos_changes = pos.diff().abs()
     pos_changes.iloc[0] = pos.iloc[0]  # First entry
 
-    cost_per_trade = costs_bps / 10000.0  # Convert bps to fractional
-    cost_series = pos_changes * cost_per_trade
+    cost_frac = costs_bps / 10000.0  # basis points → fraction
+    cost_series = pos_changes * cost_frac
 
     strat_ret = pos * daily_returns - cost_series
     return strat_ret.values

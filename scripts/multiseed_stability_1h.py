@@ -15,15 +15,14 @@ from scipy.stats import kendalltau
 from sklearn.metrics import accuracy_score, roc_auc_score
 from xgboost import XGBClassifier
 
+from sparky.data.loader import load
+
 
 def load_and_prepare_data() -> Tuple[pd.DataFrame, pd.Series]:
     """Load features and target, align, clean."""
     print("Loading data...")
-    features_path = Path("data/processed/features_hourly_full.parquet")
-    target_path = Path("data/processed/targets_hourly_1h.parquet")
-
-    X = pd.read_parquet(features_path)
-    y_df = pd.read_parquet(target_path)
+    X = load("features_hourly_full", purpose="training")
+    y_df = load("targets_hourly_1h", purpose="training")
 
     # Ensure datetime index
     if not isinstance(X.index, pd.DatetimeIndex):

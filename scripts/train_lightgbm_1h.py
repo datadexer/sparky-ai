@@ -26,6 +26,8 @@ from pathlib import Path
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
+from sparky.tracking.guardrails import has_blocking_failure, run_pre_checks
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 logging.basicConfig(
@@ -38,20 +40,11 @@ logger = logging.getLogger(__name__)
 
 def load_data():
     """Load hourly features and 1h-ahead targets."""
-    features_path = Path("data/processed/features_hourly_full.parquet")
-    targets_path = Path("data/processed/targets_hourly_1h.parquet")
+    logger.info("Loading features: features_hourly_full")
+    X = load("features_hourly_full", purpose="training")
 
-    if not features_path.exists():
-        raise FileNotFoundError(f"Features not found: {features_path}\nRun scripts/prepare_hourly_features.py first")
-
-    if not targets_path.exists():
-        raise FileNotFoundError(f"Targets not found: {targets_path}\nRun scripts/prepare_hourly_features.py first")
-
-    logger.info(f"Loading features from {features_path}")
-    X = pd.read_parquet(features_path)
-
-    logger.info(f"Loading targets from {targets_path}")
-    y = pd.read_parquet(targets_path)["target"]
+    logger.info("Loading targets: targets_hourly_1h")
+    y = load("targets_hourly_1h", purpose="training")["target"]
 
     # Align by index
     common_idx = X.index.intersection(y.index)
@@ -244,6 +237,12 @@ def main():
 
     # Load data
     X, y = load_data()
+
+    # Pre-experiment guardrail checks
+    config = {"transaction_costs_bps": 30, "features": list(X.columns), "target": "target"}
+    pre_results = run_pre_checks(X, config)
+    if has_blocking_failure(pre_results):
+        raise RuntimeError("Pre-experiment checks failed — aborting training")
 
     # Create splits
     splits = create_splits(X, y)

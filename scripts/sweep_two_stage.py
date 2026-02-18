@@ -165,7 +165,7 @@ def feature_selection(features, target, top_n=20):
 
 def screen_config(X_train, y_train, X_test, y_test, prices_daily, cost_model, model_name, params):
     """Quick screen: single train/test, return Sharpe + accuracy."""
-    config = {"model": model_name, "params": params, "cost_bps": 10}
+    config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
     pre_results = run_pre_checks(X_train, config)
     if has_blocking_failure(pre_results):
         return 0.0, 0.5
@@ -251,7 +251,7 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
         years = [2019, 2020, 2021, 2022, 2023]
 
     # Pre-experiment guardrail checks on full feature set before walk-forward
-    wf_config = {"model": model_name, "params": params, "cost_bps": 10}
+    wf_config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
     pre_results = run_pre_checks(features, wf_config)
     if has_blocking_failure(pre_results):
         print(f"  Walk-forward PRE-CHECK BLOCKED for {model_name}", flush=True)
@@ -260,6 +260,7 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
     cost_model = TransactionCostModel.for_btc()
     yearly_results = []
     all_net_returns = []
+    all_signals = []
 
     for year in years:
         train_end = f"{year - 1}-12-31"
@@ -304,16 +305,21 @@ def validate_walkforward(features, target, prices_daily, model_name, params, yea
             }
         )
         all_net_returns.append(year_net_returns)
+        all_signals.append(signals)
 
     if not yearly_results:
         return {"mean_sharpe": 0.0, "mean_acc": 0.5, "yearly": [], "net_returns": pd.Series(dtype=float)}
 
     combined_net_returns = pd.concat(all_net_returns) if all_net_returns else pd.Series(dtype=float)
 
+    # Count actual trades (position changes across all walk-forward years)
+    combined_signals = pd.concat(all_signals) if all_signals else pd.Series(dtype=int)
+    n_trades = int(combined_signals.diff().abs().sum())
+
     # Post-experiment guardrail checks
     mean_sh = float(np.mean([r["sharpe"] for r in yearly_results]))
-    config = {"model": model_name, "params": params, "cost_bps": 10}
-    post_results = run_post_checks(combined_net_returns.values, {"sharpe": mean_sh}, config, n_trials=300)
+    config = {"model": model_name, "params": params, "transaction_costs_bps": 30}
+    post_results = run_post_checks(combined_net_returns.values, {"sharpe": mean_sh}, config, n_trades=n_trades)
     log_results(post_results, run_id=f"wf_{model_name}_{params.get('depth', params.get('max_depth', '?'))}")
 
     return {

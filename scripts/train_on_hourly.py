@@ -21,10 +21,11 @@ Success criteria:
 """
 
 import logging
-from pathlib import Path
 
 import mlflow
 import pandas as pd
+from sparky.data.loader import load
+from sparky.tracking.guardrails import has_blocking_failure, run_pre_checks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,22 +37,11 @@ logger = logging.getLogger(__name__)
 
 def load_data():
     """Load hourly feature matrix and targets."""
-    features_path = Path("data/processed/feature_matrix_btc_hourly.parquet")
-    targets_path = Path("data/processed/targets_btc_hourly_1d.parquet")
+    logger.info("Loading features from data loader")
+    X = load("feature_matrix_btc_hourly", purpose="training")
 
-    if not features_path.exists():
-        raise FileNotFoundError(
-            f"Feature matrix not found: {features_path}\nRun scripts/prepare_hourly_features.py first"
-        )
-
-    if not targets_path.exists():
-        raise FileNotFoundError(f"Targets not found: {targets_path}\nRun scripts/prepare_hourly_features.py first")
-
-    logger.info(f"Loading features from {features_path}")
-    X = pd.read_parquet(features_path)
-
-    logger.info(f"Loading targets from {targets_path}")
-    y = pd.read_parquet(targets_path)["target"]
+    logger.info("Loading targets from data loader")
+    y = load("targets_btc_hourly_1d", purpose="training")["target"]
 
     logger.info(f"Loaded {len(X):,} samples with {X.shape[1]} features")
     logger.info(f"Features: {list(X.columns)}")
@@ -217,6 +207,12 @@ def main():
 
     # Load data
     X, y = load_data()
+
+    # Pre-experiment guardrail checks
+    config = {"transaction_costs_bps": 30, "features": list(X.columns), "target": "target"}
+    pre_results = run_pre_checks(X, config)
+    if has_blocking_failure(pre_results):
+        raise RuntimeError("Pre-experiment checks failed — aborting training")
 
     # Create splits
     splits = create_splits(X, y)

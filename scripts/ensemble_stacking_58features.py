@@ -137,7 +137,7 @@ def main():
     cost_model = TransactionCostModel.for_btc()
 
     # Pre-experiment guardrail checks
-    config = {"model": "stacking_ensemble", "cost_bps": 10}
+    config = {"model": "stacking_ensemble", "transaction_costs_bps": 30}
     pre_results = run_pre_checks(features_in, config)
     if has_blocking_failure(pre_results):
         print("PRE-CHECK BLOCKED — aborting.")

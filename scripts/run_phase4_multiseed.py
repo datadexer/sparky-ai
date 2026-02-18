@@ -26,6 +26,7 @@ from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.backtest.statistics import BacktestStatistics
 from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.xgboost_model import XGBoostModel
+from sparky.data.loader import load
 
 logging.basicConfig(
     level=logging.INFO,
@@ -131,10 +132,10 @@ def main():
 
     # Load data
     logger.info("Loading data...")
-    X_all = pd.read_parquet("data/processed/feature_matrix_btc.parquet")
+    X_all = load("feature_matrix_btc", purpose="training")
     X = X_all[FEATURE_SET]
 
-    y = pd.read_parquet(f"data/processed/targets_btc_{HORIZON}d.parquet")["target"]
+    y = load(f"targets_btc_{HORIZON}d", purpose="training")["target"]
 
     from sparky.data.storage import DataStore
 

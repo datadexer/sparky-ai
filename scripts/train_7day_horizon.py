@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
 from catboost import CatBoostClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
 
@@ -52,7 +53,7 @@ def main():
 
     # Load hourly data
     print("\nLoading hourly features...")
-    hourly = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
+    hourly = load("feature_matrix_btc_hourly", purpose="training")
 
     # Resample to daily (take last hour of each day)
     daily = hourly.resample("D").last().dropna()

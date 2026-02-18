@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
+from sparky.data.loader import load
 from lightgbm import LGBMClassifier
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
@@ -39,21 +40,18 @@ def load_expanded():
     print("LOADING EXPANDED FEATURE SET (88 features)", flush=True)
     print("=" * 80, flush=True)
 
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly_expanded.parquet")
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly_expanded", purpose="training")
+    target = load("targets_btc_hourly_1d", purpose="training")
     if isinstance(target, pd.DataFrame):
         target = target["target"]
 
-    prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_hourly = load("ohlcv_hourly_max_coverage", purpose="analysis")
     prices_daily = prices_hourly.resample("D").last()
     del prices_hourly
 
     common_idx = features.index.intersection(target.index)
     features = features.loc[common_idx]
     target = target.loc[common_idx]
-
-    features = features.loc[:"2024-05-31"]
-    target = target.loc[:"2024-05-31"]
 
     mask = features.notna().all(axis=1) & target.notna()
     features = features.loc[mask]

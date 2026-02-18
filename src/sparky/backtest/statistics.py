@@ -32,7 +32,7 @@ class BacktestStatistics:
             n_bootstrap: Number of bootstrap samples to generate.
             ci: Confidence interval level (e.g., 0.95 for 95% CI).
             annualize: If True (default), multiply Sharpe by sqrt(periods_per_year).
-            periods_per_year: Trading periods per year (365 for daily crypto, 252 for equity).
+            periods_per_year: Trading periods per year (365 for daily crypto, 8760 for hourly crypto).
             random_state: Optional seed for reproducibility.
 
         Returns:
@@ -143,7 +143,7 @@ class BacktestStatistics:
             n_simulations: Number of bootstrap samples (default 1000)
             block_size: Size of blocks to resample (default: sqrt(n) for optimal bias-variance)
             risk_free_rate: Annualized risk-free rate (decimal, e.g., 0.045 for 4.5%)
-            periods_per_year: Trading periods per year (252 for daily, 365 for crypto)
+            periods_per_year: Trading periods per year (365 for daily crypto, 8760 for hourly crypto)
 
         Returns:
             Dict with:
