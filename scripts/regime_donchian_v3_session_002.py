@@ -6,10 +6,15 @@ Approaches: A) Long/Short Donchian, B) Adaptive Exit, C) HMM Soft Prob, D) Valid
 BTC daily, IS only, 30 bps standard + 50 bps stress.
 """
 
-import numpy as np
-import pandas as pd
-from sparky.tracking.metrics import compute_all_metrics
-from sweep_utils import (
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent / "infra"))
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from sparky.tracking.metrics import compute_all_metrics  # noqa: E402
+from sweep_utils import (  # noqa: E402
     ExperimentTracker,
     PERIODS_PER_YEAR,
     baseline_donchian,

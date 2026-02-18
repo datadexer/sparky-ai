@@ -6,6 +6,10 @@ Stage 1: Screening — single 80/20 split, all configs, ~2 min each
 Stage 2: Validation — top 5 configs, full walk-forward
 
 Writes incremental results to results/sweep_progress.csv after each config.
+
+PROTECTED FILE — research agents cannot edit this file directly.
+To request changes, write a GATE_REQUEST.md in the project root describing
+what you need and why. An oversight session will review and apply the change.
 """
 
 import sys
@@ -147,7 +151,7 @@ def feature_selection(features, target, top_n=20):
     importances = pd.Series(model.feature_importances_, index=features.columns)
     importances = importances.sort_values(ascending=False)
 
-    print(f"\nFeature importance ranking:", flush=True)
+    print("\nFeature importance ranking:", flush=True)
     for i, (feat, imp) in enumerate(importances.items(), 1):
         marker = " <-- KEPT" if i <= top_n else ""
         print(f"  {i:2d}. {feat:<35s} {imp:.4f}{marker}", flush=True)

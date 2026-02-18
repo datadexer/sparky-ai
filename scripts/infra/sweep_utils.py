@@ -1,4 +1,9 @@
-"""Shared utilities for regime Donchian sweep scripts."""
+"""Shared utilities for regime Donchian sweep scripts.
+
+PROTECTED FILE — research agents cannot edit this file directly.
+To request changes, write a GATE_REQUEST.md in the project root describing
+what you need and why. An oversight session will review and apply the change.
+"""
 
 import json
 import logging
@@ -11,7 +16,7 @@ import numpy as np
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.WARNING)
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from sparky.data.loader import load  # noqa: E402

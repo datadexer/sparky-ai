@@ -77,7 +77,7 @@ def get_codebase_context():
         "src/sparky/tracking/guardrails.py",
         "src/sparky/data/loader.py",
         "configs/trading_rules.yaml",
-        "scripts/sweep_utils.py",
+        "scripts/infra/sweep_utils.py",
     ]
     context = {}
     for path in context_files:

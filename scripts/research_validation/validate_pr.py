@@ -102,7 +102,7 @@ def _create_message_with_retry(client, **kwargs):
 def get_codebase_context():
     """Gather lightweight codebase context for shared utility functions."""
     context_files = [
-        "scripts/sweep_utils.py",
+        "scripts/infra/sweep_utils.py",
     ]
     context = {}
     for path in context_files:

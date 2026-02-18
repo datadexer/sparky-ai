@@ -195,6 +195,10 @@ When you have completed your experiments and logged results to wandb:
 Your sandbox enforces these restrictions. If you attempt to write outside
 `results/`, `scratch/`, or `scripts/*.py`, the write will be BLOCKED.
 
+Files in `scripts/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
+`sweep_two_stage.py`). You cannot edit them. To request changes, write a
+`GATE_REQUEST.md` explaining what you need.
+
 If you find yourself repeating "session is done" or similar phrases,
 the orchestrator will detect the idle loop and kill your process.
 

@@ -10,7 +10,7 @@ infrastructure soundness, data plumbing, and system correctness — not quant fi
 ## 0. MANDATORY: Shared Utility Auto-Pass Rule
 
 **ANY script in `scripts/` that imports from a shared utility module (e.g.,
-`from sweep_utils import ...` or any `*_utils` module) is AUTOMATICALLY COMPLIANT
+`from sweep_utils import ...` or any module in `scripts/infra/`) is AUTOMATICALLY COMPLIANT
 with sections 1.1 (signal timing), 1.2 (cost application), 3.1 (n_trials),
 and 4.2 (guardrails).**
 
