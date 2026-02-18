@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+"""Audit Contract 004 wandb runs with Deflated Sharpe Ratio analysis.
+
+Pulls all contract_004 tagged runs from wandb, groups by step (sweep, regime,
+ensemble, novel), computes DSR for each group, and generates an audit report.
+
+Usage:
+    python scripts/audit_contract_004.py
+"""
+
+import json
+import logging
+from collections import defaultdict
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+from sparky.tracking.experiment import ExperimentTracker
+from sparky.tracking.metrics import deflated_sharpe_ratio, expected_max_sharpe
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+logger = logging.getLogger(__name__)
+
+STEPS = ["sweep", "regime", "ensemble", "novel"]
+OUTPUT_DIR = Path("results")
+
+
+def fetch_contract_004_runs():
+    """Fetch all contract_004 runs from wandb, grouped by step tag."""
+    tracker = ExperimentTracker(experiment_name="contract_004")
+
+    # Fetch all runs with contract_004 tag
+    runs = tracker._fetch_runs(filters={"tags": {"$in": ["contract_004"]}})
+
+    grouped = defaultdict(list)
+    for run in runs:
+        tags = run.tags if hasattr(run, "tags") else []
+        for step in STEPS:
+            if step in tags:
+                grouped[step].append({
+                    "run_id": run.id,
+                    "name": run.name,
+                    "sharpe": run.summary.get("sharpe"),
+                    "dsr": run.summary.get("dsr"),
+                    "max_drawdown": run.summary.get("max_drawdown"),
+                    "config": dict(run.config) if hasattr(run, "config") else {},
+                    "tags": tags,
+                })
+                break
+        else:
+            grouped["untagged"].append({
+                "run_id": run.id,
+                "name": run.name,
+                "sharpe": run.summary.get("sharpe"),
+            })
+
+    return grouped
+
+
+def analyze_group(group_name, runs):
+    """Analyze a group of runs: compute expected max Sharpe and DSR."""
+    sharpes = [r["sharpe"] for r in runs if r["sharpe"] is not None]
+    if not sharpes:
+        return None
+
+    n_trials = len(sharpes)
+    best_sharpe = max(sharpes)
+    best_run = max([r for r in runs if r["sharpe"] is not None], key=lambda r: r["sharpe"])
+
+    # Expected max Sharpe from noise alone (assuming ~8760 hourly obs per year * 5 years)
+    T = 8760 * 5  # approximate observation count
+    exp_max_sr = expected_max_sharpe(n_trials, T)
+
+    return {
+        "group": group_name,
+        "n_runs": len(runs),
+        "n_with_sharpe": n_trials,
+        "best_sharpe": best_sharpe,
+        "best_run_name": best_run["name"],
+        "best_run_id": best_run["run_id"],
+        "best_dsr": best_run.get("dsr"),
+        "best_max_dd": best_run.get("max_drawdown"),
+        "expected_max_sharpe": exp_max_sr,
+        "sharpe_vs_expected": best_sharpe - exp_max_sr,
+        "mean_sharpe": float(np.mean(sharpes)),
+        "std_sharpe": float(np.std(sharpes)),
+        "median_sharpe": float(np.median(sharpes)),
+        "all_sharpes": sharpes,
+    }
+
+
+def generate_report(analyses, total_runs):
+    """Generate the audit report markdown."""
+    lines = [
+        "# Contract 004 Audit Report",
+        "",
+        f"**Generated:** {__import__('datetime').datetime.now(__import__('datetime').timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"**Total runs analyzed:** {total_runs}",
+        "",
+        "## Summary",
+        "",
+        "The Deflated Sharpe Ratio (DSR) corrects for multiple testing. A DSR > 0.95 means",
+        "<5% probability the result is a statistical fluke. Expected Max Sharpe shows what",
+        "the best Sharpe from pure noise would be given the number of trials.",
+        "",
+        "## Per-Step Analysis",
+        "",
+        "| Step | Runs | Best Sharpe | Expected Max (noise) | Best vs Expected | Best DSR | Best Run |",
+        "|------|------|-------------|---------------------|-----------------|----------|----------|",
+    ]
+
+    for a in analyses:
+        if a is None:
+            continue
+        dsr_str = f"{a['best_dsr']:.3f}" if a["best_dsr"] is not None else "N/A"
+        lines.append(
+            f"| {a['group']} | {a['n_with_sharpe']} | {a['best_sharpe']:.3f} | "
+            f"{a['expected_max_sharpe']:.3f} | {a['sharpe_vs_expected']:+.3f} | "
+            f"{dsr_str} | {a['best_run_name']} |"
+        )
+
+    lines.extend(["", "## Detailed Per-Step Breakdown", ""])
+
+    for a in analyses:
+        if a is None:
+            continue
+        lines.extend([
+            f"### {a['group'].title()}",
+            "",
+            f"- **Runs with Sharpe data:** {a['n_with_sharpe']}",
+            f"- **Best Sharpe:** {a['best_sharpe']:.3f} ({a['best_run_name']})",
+            f"- **Expected Max Sharpe (from noise alone with {a['n_with_sharpe']} trials):** {a['expected_max_sharpe']:.3f}",
+            f"- **Best DSR:** {a['best_dsr']:.3f}" if a["best_dsr"] is not None else "- **Best DSR:** Not computed",
+            f"- **Best Max Drawdown:** {a['best_max_dd']:.1%}" if a["best_max_dd"] is not None else "- **Best Max Drawdown:** N/A",
+            f"- **Mean Sharpe:** {a['mean_sharpe']:.3f}",
+            f"- **Median Sharpe:** {a['median_sharpe']:.3f}",
+            f"- **Std Sharpe:** {a['std_sharpe']:.3f}",
+            "",
+        ])
+
+    # Overall verdict
+    all_sharpes = []
+    for a in analyses:
+        if a and a["all_sharpes"]:
+            all_sharpes.extend(a["all_sharpes"])
+
+    total_trials = len(all_sharpes)
+    overall_exp_max = expected_max_sharpe(max(total_trials, 2), 8760 * 5) if total_trials > 0 else 0
+    overall_best = max(all_sharpes) if all_sharpes else 0
+
+    lines.extend([
+        "## Overall Verdict",
+        "",
+        f"- **Total configs tested across all steps:** {total_trials}",
+        f"- **Overall expected max Sharpe (noise with {total_trials} trials):** {overall_exp_max:.3f}",
+        f"- **Actual best Sharpe:** {overall_best:.3f}",
+        f"- **Best vs Expected:** {overall_best - overall_exp_max:+.3f}",
+        "",
+    ])
+
+    if overall_best > overall_exp_max:
+        lines.append("**Conclusion:** Best result exceeds noise threshold. Further DSR validation recommended.")
+    else:
+        lines.append("**Conclusion:** Best result does NOT convincingly exceed noise. Consider more diverse strategies.")
+
+    lines.extend(["", "---", "", "*Generated by `scripts/audit_contract_004.py`*", ""])
+
+    return "\n".join(lines)
+
+
+def generate_histogram(analyses):
+    """Generate Sharpe distribution histogram."""
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig.suptitle("Contract 004 — Sharpe Ratio Distributions by Step", fontsize=14)
+
+    for ax, step in zip(axes.flat, STEPS):
+        analysis = next((a for a in analyses if a and a["group"] == step), None)
+        if analysis and analysis["all_sharpes"]:
+            sharpes = analysis["all_sharpes"]
+            ax.hist(sharpes, bins=min(20, max(5, len(sharpes) // 2)), edgecolor="black", alpha=0.7)
+            ax.axvline(
+                analysis["expected_max_sharpe"],
+                color="red",
+                linestyle="--",
+                label=f"Expected max (noise): {analysis['expected_max_sharpe']:.2f}",
+            )
+            ax.axvline(1.062, color="green", linestyle="--", label="Donchian baseline: 1.062")
+            ax.set_title(f"{step.title()} (n={len(sharpes)})")
+            ax.set_xlabel("Sharpe Ratio")
+            ax.set_ylabel("Count")
+            ax.legend(fontsize=8)
+        else:
+            ax.set_title(f"{step.title()} (no data)")
+            ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+
+    plt.tight_layout()
+    output_path = OUTPUT_DIR / "sharpe_distribution.png"
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+    logger.info(f"Histogram saved to {output_path}")
+    return output_path
+
+
+def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Fetching Contract 004 runs from wandb...")
+    grouped = fetch_contract_004_runs()
+
+    total_runs = sum(len(v) for v in grouped.values())
+    logger.info(f"Found {total_runs} total runs")
+    for step, runs in grouped.items():
+        logger.info(f"  {step}: {len(runs)} runs")
+
+    # Analyze each step
+    analyses = []
+    for step in STEPS:
+        runs = grouped.get(step, [])
+        if runs:
+            analysis = analyze_group(step, runs)
+            analyses.append(analysis)
+            if analysis:
+                logger.info(
+                    f"  {step}: best={analysis['best_sharpe']:.3f}, "
+                    f"expected_max={analysis['expected_max_sharpe']:.3f}"
+                )
+        else:
+            logger.info(f"  {step}: no runs found")
+
+    # Generate report
+    report = generate_report(analyses, total_runs)
+    report_path = OUTPUT_DIR / "contract_005_audit.md"
+    report_path.write_text(report)
+    logger.info(f"Report written to {report_path}")
+
+    # Generate histogram
+    generate_histogram(analyses)
+
+    # Also save raw analysis as JSON for programmatic access
+    json_data = {
+        a["group"]: {k: v for k, v in a.items() if k != "all_sharpes"}
+        for a in analyses
+        if a
+    }
+    json_path = OUTPUT_DIR / "contract_004_dsr_analysis.json"
+    json_path.write_text(json.dumps(json_data, indent=2, default=str))
+    logger.info(f"JSON analysis saved to {json_path}")
+
+
+if __name__ == "__main__":
+    main()
