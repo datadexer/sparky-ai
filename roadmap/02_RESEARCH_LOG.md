@@ -4,6 +4,88 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## layer4_sizing_donchian_20260218 — Session 1 — 2026-02-18
+
+**DIRECTIVE**: layer4_sizing_donchian_20260218
+**STATUS**: SUCCESS at 30bps — 4 configs pass gate. FAIL at 50bps — zero configs pass any criteria
+**DATA**: ohlcv_hourly_max_coverage resampled to 4h
+**COSTS**: 30 bps standard, 50 bps stress test
+**ARTIFACTS**: results/layer4_sizing_donchian_20260218/
+**BASE**: meta-labeled Donchian(30,25) 4k, Sharpe 1.981, MaxDD -0.490 unsized
+
+### Sizing families tested (267 configs, 8 families)
+
+| Family | Verdict | Best Sharpe@30 | Best MaxDD | Finding |
+|--------|---------|---------------|------------|---------|
+| Kelly (calibrated) | FAIL | -2.51 | — | Platt collapses proba spread (std=0.032), positions near-zero |
+| Kelly (uncalibrated) | FAIL | -0.10 | -0.28 | Edge too small for Kelly to overcome costs |
+| High-confidence filter | FAIL | 1.550 | -0.490 | Fewer trades but same MaxDD profile |
+| **Inverse vol** | **SUCCESS** | **1.633** | **-0.248** | tv=0.15 is the boundary; 4 configs pass gate |
+| Inv-vol + high conf | FAIL | 1.366 | — | Fewer trades kills Sharpe |
+| Regime × inv-vol | FAIL | 1.234 | — | HMM proba near-binary, crushes position size |
+| Discrete inv-vol | FAIL | 1.925 | -0.254 | Closest miss — just outside MaxDD gate |
+| ATR-based | FAIL | 2.388 | -0.541 | Scales UP in bear markets — counterproductive |
+| Vol threshold | FAIL | 1.868 | -0.296 | Best trade-off but fails -0.25 gate |
+
+### Success configs (all inverse vol, tv=0.15)
+
+| vol_window | Sharpe@30 | DSR | MaxDD@30 | Sharpe@50 | 2020-23 Sharpe | 2020-23 MaxDD |
+|------------|-----------|-----|----------|-----------|----------------|---------------|
+| **60** | **1.633** | **0.992** | **-0.248** | 1.092 | 1.031 | -0.221 |
+| 80 | 1.559 | 0.985 | -0.248 | 1.013 | 1.039 | -0.228 |
+| 100 | 1.556 | 0.985 | -0.244 | 1.005 | 1.102 | -0.223 |
+| 120 | 1.540 | 0.982 | -0.240 | 0.986 | 1.109 | -0.225 |
+
+### Pareto frontier
+
+| Config | Sharpe@30 | MaxDD | Note |
+|--------|-----------|-------|------|
+| Meta unsized | 1.981 | -0.490 | No sizing |
+| vw=30, tv=0.4 | 2.157 | -0.403 | Best Sharpe |
+| vw=60, tv=0.20 | 1.817 | -0.273 | Near gate |
+| vw=60, tv=0.18 | 1.754 | -0.263 | Near gate |
+| **vw=60, tv=0.15** | **1.633** | **-0.248** | **Gate pass** |
+| vw=120, tv=0.15 | 1.540 | -0.240 | Best MaxDD in success |
+
+Continuous Pareto frontier — MaxDD=-0.25 constraint cuts at Sharpe~1.63.
+
+### 50bps stress test: FAIL
+
+**Zero configs pass all 3 criteria at 50bps.** Not even MaxDD > -0.25 alone at 50bps.
+The 30bps success configs at 50bps:
+
+| vol_window | Sharpe@50 | MaxDD@50 | DSR@50 |
+|------------|-----------|----------|--------|
+| 60 | 1.092 | -0.339 | 0.727 |
+| 80 | 1.013 | -0.342 | 0.632 |
+| 100 | 1.005 | -0.343 | 0.620 |
+| 120 | 0.986 | -0.338 | 0.594 |
+
+The strategy is only deployable with limit orders and reliable execution infrastructure.
+50bps represents market orders, partial fills, exchange downtime forcing delayed execution.
+A strategy that passes at 30bps and fails at 50bps has thin margins.
+
+### Key insights
+
+- **Kelly failing is the right outcome.** Meta-model accuracy is 56% — barely above 50%.
+  Kelly sizes on probability, and at 56% the Kelly bet is tiny. The meta-labeling edge is
+  in trade *filtering* (which trades to take), not probability-based *sizing* (how much to
+  bet). Inverse vol doesn't care about the meta-model's probability — it scales with market
+  conditions.
+- **vw=120/tv=0.15 is most interesting for deployment** despite lowest Sharpe (1.540):
+  lowest MaxDD (-0.240), best 2020-2023 Sharpe (1.109), most robust to regime change.
+  Longer vol windows smooth out noise and adapt slower — better for real execution.
+- **Continuous Pareto frontier** — no sizing method breaks through the MaxDD/Sharpe
+  trade-off. The -0.25 constraint cuts the frontier at Sharpe ~1.63.
+
+### Program totals (Layers 3+4)
+
+- 3 sessions (2 meta-labeling + 1 sizing), 627 configs, ~$9 total
+- Deployment candidate (30bps only): inv-vol(vw=60, tv=0.15) — Sharpe 1.633, MaxDD -0.248, DSR 0.992
+- Requires limit-order execution — no margin for slippage
+
+---
+
 ## meta_labeling_donchian_20260218 — Session 1 — 2026-02-18
 
 **DIRECTIVE**: meta_labeling_donchian_20260218
