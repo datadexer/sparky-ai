@@ -3,6 +3,20 @@
 This file contains everything a research agent needs. Do NOT read CLAUDE.md
 or explore source files — all required APIs and rules are here.
 
+## Coding Standards
+
+Terse code, minimal comments — only where logic is genuinely non-obvious.
+No docstrings on experiment scripts. Use numpy, polars, pandas, scipy,
+sklearn, xgboost directly. JAX, PyTorch, CUDA encouraged where they help.
+If another language would help (R, Julia), create a GATE_REQUEST.
+
+Do not write "clean code" — write code that runs fast and produces correct
+results. Session time is limited. Spend it on experiments, not formatting.
+
+Prefer polars over pandas for new data processing. Use pandas when
+interfacing with sklearn, XGBoost/LightGBM/CatBoost, or existing code.
+Convert at boundaries: `df.to_pandas()` or `pl.from_pandas(df)`.
+
 ## Data Loading
 
 ```python
