@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from sparky.data.loader import _detect_asset, _find_parquet, list_datasets, load
+from sparky.oversight.holdout_guard import HoldoutGuard, HoldoutViolation
 
 
 @pytest.fixture
@@ -118,3 +119,46 @@ class TestLoad:
         full_path = tmp_data_dir / "data" / "features" / "btc_1h_features.parquet"
         df = load(str(full_path), purpose="training", asset="btc")
         assert len(df) > 0
+
+
+class TestOosEvaluation:
+    """Tests for purpose='oos_evaluation' — the holdout enforcement critical path."""
+
+    def test_oos_without_guard_raises(self, tmp_data_dir):
+        """No oos_guard at all → HoldoutViolation."""
+        with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
+            with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
+                load("btc_1h_features", purpose="oos_evaluation")
+
+    def test_oos_with_unauthorized_guard_raises(self, tmp_data_dir):
+        """Guard present but authorize_oos_evaluation() never called → HoldoutViolation."""
+        guard = HoldoutGuard()
+        with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
+            with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
+                load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
+
+    def test_oos_with_authorized_guard_reads_vault(self, tmp_data_dir, holdout_dates):
+        """Authorized guard with vault data → returns full dataset including OOS rows."""
+        # Build a vault parquet with post-holdout data
+        vault_dir = tmp_data_dir / "data" / ".oos_vault" / "data" / "features"
+        vault_dir.mkdir(parents=True)
+        dates = pd.date_range("2020-01-01", "2025-06-01", freq="D", tz="UTC")
+        df_full = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df_full.to_parquet(vault_dir / "btc_1h_features.parquet")
+
+        guard = HoldoutGuard()
+        guard.authorize_oos_evaluation(
+            model_name="test_model",
+            approach_family="test",
+            approved_by="human-ak",
+            in_sample_sharpe=1.5,
+        )
+
+        with (
+            patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]),
+            patch("sparky.data.loader.VAULT_DIR", tmp_data_dir / "data" / ".oos_vault" / "data"),
+        ):
+            df = load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
+
+        assert df.index.max() > holdout_dates["oos_start_ts"]
+        assert df.index.tz is not None  # UTC-aware
