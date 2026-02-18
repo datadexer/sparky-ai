@@ -231,12 +231,14 @@ class FeatureSelector:
 
         importance_matrix = []
 
-        # Embargo gap between train/test folds prevents leakage from features
-        # that look ahead. For hourly data predicting 1-day returns, 24 samples
-        # is ideal. Scale down for small datasets to avoid ValueError.
+        # Purged/embargo cross-validation: TimeSeriesSplit with gap parameter
+        # implements an embargo period between train and test sets, preventing
+        # information leakage at fold boundaries. For hourly data predicting
+        # 1-day returns, embargo_periods=24 covers the full prediction horizon.
+        # Scales down for small datasets to avoid ValueError from sklearn.
         fold_size = n // (self.n_stability_folds + 1)
-        gap = min(24, fold_size // 3)
-        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=gap)
+        embargo_periods = min(24, fold_size // 3)
+        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds, gap=embargo_periods)
         for train_idx, _test_idx in tscv.split(X):
             X_train = X.iloc[train_idx]  # only past data
             y_train = y.iloc[train_idx]
