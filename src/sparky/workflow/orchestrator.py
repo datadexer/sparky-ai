@@ -652,6 +652,17 @@ class ResearchOrchestrator:
         parts.append(f"## Tagging\nTag all wandb runs in this session with: {all_tags}")
         parts.append("")
 
+        # Git prohibition
+        parts.append(
+            "## CRITICAL: Do NOT Use Git\n"
+            "You are a research agent. You must NOT create branches, commit, push, "
+            "or run any git commands. Your outputs go to wandb and results/ only.\n"
+            "If you need a platform change (new feature, bug fix, data issue), "
+            "write `GATE_REQUEST.md` to the project root explaining what you need, "
+            "then exit. The orchestrator will pause for oversight."
+        )
+        parts.append("")
+
         # Stuck protocol
         parts.append(
             "## Stuck Protocol\n"

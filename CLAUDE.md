@@ -134,12 +134,16 @@ The agent posts findings as a PR comment. HIGH severity issues block merge.
 The rubric is in `scripts/research_validation/rubric.md`. If you believe
 a HIGH finding is a false positive, explain why in the PR comments.
 
-## Git Workflow
+## Git — Research Agents Must NOT Use Git
+Research agents (sessions launched by the orchestrator) do NOT touch git.
+- Do NOT create branches, commit, push, or open PRs.
+- Your outputs go to: **wandb** (experiment logs), **results/** (artifacts), **scratch files**.
+- If you need a platform change (new feature, bug fix, data pipeline), write `GATE_REQUEST.md` to the project root explaining what you need and exit. The orchestrator will pause and an oversight session will handle it.
+
+Git workflow (oversight/manager sessions only):
 - NEVER commit to `main`. Use `phase-N/short-description` branches.
-- Commit frequently: `feat/fix/test/data/docs/chore/refactor/ci/quality`
 - At phase completion: push branch, open PR via `gh pr create`
 - CI runs automatically on PRs to main. Merge only if CI passes.
-- Merge conflicts: see `docs/FULL_GUIDELINES.md`
 - Branch naming: `oversight/`, `contract-NNN/`, `fix/`, `feat/`, `phase-N/`
 
 ## Holdout Data Policy
