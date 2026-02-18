@@ -42,8 +42,7 @@ def load_data():
     features = load("features_hourly_full", purpose="training")
 
     # Create 1h ahead target (binary: up or down)
-    # NOTE: data/btc_hourly.parquet is not in the loader mapping — kept as pd.read_parquet.
-    prices = pd.read_parquet("data/btc_hourly.parquet")
+    prices = load("btc_hourly", purpose="analysis")
     prices = prices.loc[features.index]
 
     # Target: 1h ahead return > 0

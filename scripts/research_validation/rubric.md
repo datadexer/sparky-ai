@@ -370,8 +370,11 @@ Backtesters must implement `BacktesterBase`. Violation = MEDIUM.
 All training runs must use the guardrail framework:
 - `run_pre_checks(data, config)` BEFORE training. Checks: holdout boundary, minimum
   samples, no lookahead, costs specified, parameter-data ratio.
-- `run_post_checks(returns, metrics, config, n_trials)` AFTER backtest. Checks: Sharpe
+- `run_post_checks(returns, metrics, config, n_trades=N)` AFTER backtest. Checks: Sharpe
   sanity, minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
+  `n_trades` = actual number of position changes by the strategy (for minimum-trades check).
+  DSR is pre-computed via `compute_all_metrics(returns, n_trials=N_CONFIGS)` and passed in
+  the `metrics` dict — `n_trials` is NOT a parameter of `run_post_checks`.
 - `has_blocking_failure(results)` must be checked; blocking failures must halt execution.
 - Missing guardrail integration = MEDIUM severity.
 

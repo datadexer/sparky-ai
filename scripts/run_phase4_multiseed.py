@@ -135,9 +135,7 @@ def main():
     X_all = load("feature_matrix_btc", purpose="training")
     X = X_all[FEATURE_SET]
 
-    # NOTE: dynamic dataset name (targets_btc_{HORIZON}d) — kept as pd.read_parquet
-    # because the dataset name varies with HORIZON and may not be registered in the loader.
-    y = pd.read_parquet(f"data/processed/targets_btc_{HORIZON}d.parquet")["target"]
+    y = load(f"targets_btc_{HORIZON}d", purpose="training")["target"]
 
     from sparky.data.storage import DataStore
 
