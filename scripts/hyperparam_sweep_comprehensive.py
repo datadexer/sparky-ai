@@ -28,7 +28,8 @@ import pandas as pd
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
-from sparky.backtest.cost_model import TransactionCostModel
+from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 from xgboost import XGBClassifier
 
 
@@ -38,9 +39,10 @@ def load_data():
     print("LOADING DATA")
     print("=" * 80)
 
-    features = pd.read_parquet("data/processed/features_hourly_full.parquet")
+    features = load("features_hourly_full", purpose="training")
 
     # Create 1h ahead target (binary: up or down)
+    # NOTE: data/btc_hourly.parquet is not in the loader mapping — kept as pd.read_parquet.
     prices = pd.read_parquet("data/btc_hourly.parquet")
     prices = prices.loc[features.index]
 
@@ -148,7 +150,7 @@ def yearly_walk_forward_validation(features, target, prices, model_name, model_p
             sharpe = 0.0
             total_return = 0.0
         else:
-            sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(252)
+            sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(365)
             total_return = (1 + strategy_returns).prod() - 1
 
         results[year] = {"sharpe": sharpe, "return": total_return, "acc": acc, "auc": auc, "n_samples": len(X_test)}
