@@ -194,14 +194,19 @@ def run_validation(changes, context):
         "passed must be false if ANY HIGH severity issues exist."
     )
 
+    # Use assistant prefill to force JSON output
     response = _create_message_with_retry(
         client,
         model="claude-sonnet-4-5-20250929",
         max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": "{"},
+        ],
     )
 
-    text = response.content[0].text.strip()
+    # Reconstruct JSON (we prefilled "{", model continues from there)
+    text = "{" + response.content[0].text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
 
