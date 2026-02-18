@@ -149,6 +149,8 @@ def yearly_walk_forward_validation(features, target, prices, model_name, model_p
             sharpe = 0.0
             total_return = 0.0
         else:
+            # strategy_returns is a DAILY series (resampled from hourly).
+            # sqrt(365) is the correct annualization for daily crypto returns (24/7 market).
             sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(365)
             total_return = (1 + strategy_returns).prod() - 1
 
