@@ -26,24 +26,22 @@ class TestTransactionCostModel:
         assert model.total_cost_pct == 0.0028
 
     def test_for_btc(self):
-        """Test BTC pre-configured instance."""
+        """Test BTC cost model delegates to standard() — 50 bps per trade."""
         model = TransactionCostModel.for_btc()
-        assert model.fee_pct == 0.001
-        assert model.slippage_pct == 0.0002
-        assert model.spread_pct == 0.0001
-        # Round trip cost should be ~0.26%
-        round_trip_cost = 2 * model.total_cost_pct
-        assert abs(round_trip_cost - 0.0026) < 1e-6
+        assert abs(model.total_cost_pct - 0.005) < 1e-10
+        assert abs(model.round_trip_cost - 0.01) < 1e-10
 
     def test_for_eth(self):
-        """Test ETH pre-configured instance."""
+        """Test ETH cost model delegates to standard() — 50 bps per trade."""
         model = TransactionCostModel.for_eth()
-        assert model.fee_pct == 0.001
-        assert model.slippage_pct == 0.0003
-        assert model.spread_pct == 0.0001
-        # Round trip cost should be ~0.28%
-        round_trip_cost = 2 * model.total_cost_pct
-        assert abs(round_trip_cost - 0.0028) < 1e-6
+        assert abs(model.total_cost_pct - 0.005) < 1e-10
+        assert abs(model.round_trip_cost - 0.01) < 1e-10
+
+    def test_standard(self):
+        """Standard model: 50 bps (0.50%) per trade, 100 bps round trip."""
+        model = TransactionCostModel.standard()
+        assert abs(model.total_cost_pct - 0.005) < 1e-10
+        assert abs(model.round_trip_cost - 0.01) < 1e-10
 
     def test_no_trade_no_cost(self):
         """Test that holding position incurs no costs."""
@@ -86,9 +84,9 @@ class TestTransactionCostModel:
 
         returns_after = model.apply(returns, positions)
 
-        # Total cost should be approximately 0.26% (2 * 0.0013)
+        # Total cost should be 1.0% (2 * 0.50% standard round trip)
         total_cost = returns.sum() - returns_after.sum()
-        expected_round_trip = 2 * model.total_cost_pct
+        expected_round_trip = model.round_trip_cost
 
         assert abs(total_cost - expected_round_trip) < 1e-6
 

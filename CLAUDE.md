@@ -36,6 +36,16 @@ df = load("btc_1h_features", purpose="analysis")    # full data, warning logged
 ```
 NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout boundaries.
 
+## Transaction Costs (MANDATORY — 50 bps per side)
+ALL backtests use **50 bps (0.50%) per side, 100 bps (1.0%) round trip**. Not negotiable.
+```python
+config = {"transaction_costs_bps": 50, ...}  # guardrail enforces >= 50
+```
+Rationale: We execute via **Coinbase market orders** (taker fee ~50-60 bps at basic tier)
+or **Uniswap DEX** (30 bps pool fee + gas + slippage ≈ 50-100 bps). No volume discounts,
+no limit order optimization, no advanced tiers. 50 bps per side is conservative but realistic.
+The guardrail `check_costs_specified` will BLOCK any run with costs below 50 bps.
+
 ## Annualization Convention
 - Default `periods_per_year=365` (daily crypto, 24/7 markets)
 - For hourly data, ALWAYS pass `periods_per_year=8760`

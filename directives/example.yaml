@@ -6,7 +6,7 @@ constraints:
   asset: btc
   timeframe: 1h
   gpu_required: true
-  transaction_costs_bps: 10
+  transaction_costs_bps: 50
   annualization: 8760
 strategy_space:
   - family: momentum_regime

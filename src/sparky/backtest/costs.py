@@ -21,32 +21,30 @@ class TransactionCostModel:
         self.slippage_pct = slippage_pct
         self.spread_pct = spread_pct
         self.total_cost_pct = fee_pct + slippage_pct + spread_pct
+        self.round_trip_cost = 2 * self.total_cost_pct
+
+    @classmethod
+    def standard(cls) -> "TransactionCostModel":
+        """Return the standard cost model: 50 bps (0.50%) per trade.
+
+        This is the canonical cost assumption for all Sparky research.
+        Covers exchange fees, slippage, spread, and market impact.
+        A round trip (enter + exit) costs 100 bps (1.0%).
+
+        Returns:
+            TransactionCostModel with 50 bps per trade.
+        """
+        return cls(fee_pct=0.001, slippage_pct=0.003, spread_pct=0.001)
 
     @classmethod
     def for_btc(cls) -> "TransactionCostModel":
-        """Return a pre-configured instance for Bitcoin.
-
-        Returns:
-            TransactionCostModel with BTC defaults:
-            - fee=0.001 (0.1%)
-            - slippage=0.0002 (0.02%)
-            - spread=0.0001 (0.01%)
-            - Round trip cost: ~0.26%
-        """
-        return cls(fee_pct=0.001, slippage_pct=0.0002, spread_pct=0.0001)
+        """Return the standard cost model for Bitcoin (50 bps per trade)."""
+        return cls.standard()
 
     @classmethod
     def for_eth(cls) -> "TransactionCostModel":
-        """Return a pre-configured instance for Ethereum.
-
-        Returns:
-            TransactionCostModel with ETH defaults:
-            - fee=0.001 (0.1%)
-            - slippage=0.0003 (0.03%)
-            - spread=0.0001 (0.01%)
-            - Round trip cost: ~0.28%
-        """
-        return cls(fee_pct=0.001, slippage_pct=0.0003, spread_pct=0.0001)
+        """Return the standard cost model for Ethereum (50 bps per trade)."""
+        return cls.standard()
 
     def compute_cost(self, position_change: int, asset: str) -> float:
         """Compute fractional cost for a position change.

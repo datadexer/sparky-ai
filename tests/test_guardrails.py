@@ -56,7 +56,7 @@ def good_config():
     return {
         "features": ["feature_1", "feature_2", "feature_3"],
         "target": "target_1h",
-        "transaction_costs_bps": 10.0,
+        "transaction_costs_bps": 50.0,
     }
 
 

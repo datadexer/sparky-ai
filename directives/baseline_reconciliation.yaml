@@ -1,0 +1,67 @@
+name: baseline_reconciliation
+objective: |
+  Establish a canonical Donchian baseline with correct and consistent methodology,
+  then reconcile all prior Sharpe claims.
+
+  Context: The documented Single-TF Donchian(40/20) baseline was Sharpe 1.243, but
+  current runs show 1.607. The gap is explained by three factors:
+    1. Annualization changed from sqrt(252) to sqrt(365) (+20.4%) — this is CORRECT
+    2. Costs changed: original used 26 bps total (TransactionCostModel.for_btc()),
+       current uses 10 bps round-trip. Need to standardize.
+    3. Method: original was mean of 5 yearly walk-forward Sharpes, current is
+       full-period single Sharpe. Walk-forward is more conservative and correct.
+
+  Tasks:
+    1. Cost model is now standardized at 50 bps per trade (decided by AK).
+    2. Compute the canonical baseline using: sqrt(365), 50 bps per trade,
+       walk-forward (yearly) mean Sharpe, with bootstrap CI and DSR.
+    3. Update the regime_donchian directive's baseline reference number.
+    4. Log the canonical baseline to wandb as a reference run.
+
+  Success = a single, well-documented baseline Sharpe number with full methodology
+  documented, logged to wandb, that all future comparisons reference.
+
+constraints:
+  asset: btc
+  timeframe: daily
+  dataset: btc_daily
+  gpu_required: false
+  annualization: 365
+strategy_space:
+  - family: canonical_baseline
+    description: "Establish Donchian(40/20) canonical baseline with standardized methodology"
+    priority: 1
+    parameter_ranges:
+      entry_period: [40]
+      exit_period: [20]
+      cost_bps: [50]
+      evaluation: [walk_forward_yearly, full_period]
+stopping_criteria:
+  success:
+    min_sharpe: 0.0  # not seeking alpha, just establishing truth
+    min_dsr: 0.0
+  budget:
+    max_sessions: 2
+    max_hours: 2
+    max_cost_usd: 10
+    digest_every: 1
+  stall:
+    sessions_without_improvement: 2
+    improvement_threshold: 0.01
+    diversity_threshold: 0.80
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 6.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 2
+wandb_tags: [baseline, canonical, directive_003]
+gates:
+  - trigger: success_criteria_met
+    action: pause_and_alert
+exclusions:
+  - "Do not evaluate on OOS data (boundary defined in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() for data — never pd.read_parquet()"
+  - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
+  - "Use TransactionCostModel.for_btc() from sparky.backtest.costs to understand the full cost model"
+  - "Use standardized 50 bps per trade costs — this is mandatory for all research"

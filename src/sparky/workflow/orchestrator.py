@@ -327,8 +327,14 @@ class ContextBuilder:
 
         # Top results table
         top_results = self._get_top_results()
+        has_low_cost = any(r.get("low_cost_warning") for r in top_results[:10]) if top_results else False
         if top_results:
             parts.append("## Previous Results (top by Sharpe)")
+            if has_low_cost:
+                parts.append(
+                    "**WARNING**: Results marked with * used costs below 50 bps and are "
+                    "NOT comparable to 50 bps results. Re-run these configs at 50 bps."
+                )
             parts.append("| # | Family | Sharpe | DSR | Key Params |")
             parts.append("|---|--------|--------|-----|------------|")
             for i, r in enumerate(top_results[:10], 1):
@@ -340,7 +346,8 @@ class ContextBuilder:
                     sharpe = f"{sharpe:.3f}"
                 if isinstance(dsr, float):
                     dsr = f"{dsr:.3f}"
-                parts.append(f"| {i} | {family} | {sharpe} | {dsr} | {params} |")
+                warn = "*" if r.get("low_cost_warning") else ""
+                parts.append(f"| {i} | {family} | {sharpe}{warn} | {dsr} | {params} |")
         else:
             parts.append("## Previous Results\nNo results yet — this is the first session.")
 
@@ -375,6 +382,14 @@ class ContextBuilder:
                 bd = f"{bd:.3f}"
             parts.append(f"\n**Overall best**: Sharpe={bs}, DSR={bd}")
 
+        # Cost audit note
+        if has_low_cost:
+            parts.append(
+                "\n**COST AUDIT**: Some prior results used <50 bps costs (marked with *). "
+                "These are NOT comparable to the standard 50 bps. Re-run promising configs "
+                "at 50 bps before drawing conclusions."
+            )
+
         return "\n".join(parts)
 
     def _get_top_results(self) -> list[dict]:
@@ -391,12 +406,15 @@ class ContextBuilder:
                 sharpe = run.summary.get("sharpe")
                 if sharpe is None:
                     continue
+                cost_bps = run.config.get("transaction_costs_bps", run.config.get("costs_bps"))
+                low_cost = cost_bps is None or float(cost_bps) < 50
                 results.append(
                     {
                         "family": run.config.get("strategy_family", run.config.get("model_type", "?")),
                         "sharpe": sharpe,
                         "dsr": run.summary.get("dsr"),
                         "params_summary": self._summarize_params(dict(run.config)),
+                        "low_cost_warning": low_cost,
                     }
                 )
             results.sort(key=lambda x: x.get("sharpe", 0) or 0, reverse=True)
@@ -650,6 +668,16 @@ class ResearchOrchestrator:
         # Wandb tag instructions
         all_tags = d.wandb_tags + [session_tag]
         parts.append(f"## Tagging\nTag all wandb runs in this session with: {all_tags}")
+        parts.append("")
+
+        # Cost standard
+        parts.append(
+            "## Transaction Costs — 50 bps per side\n"
+            "ALL backtests MUST use `transaction_costs_bps: 50` (50 bps per side, "
+            "100 bps round trip). This reflects Coinbase taker fees / Uniswap DEX costs. "
+            "No discounts, no limit orders. The guardrail will BLOCK runs below 50 bps.\n"
+            "Any prior results using lower costs are NOT directly comparable."
+        )
         parts.append("")
 
         # Git prohibition
