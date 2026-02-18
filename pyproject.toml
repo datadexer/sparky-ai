@@ -68,6 +68,7 @@ ignore = [
     "S603",   # subprocess call - check for untrusted input (too noisy)
     "S607",   # start process with partial path (too noisy)
     "B905",   # zip() without strict= (too noisy for research code)
+    "I001",   # import sorting (local/CI ruff disagreement)
 ]
 
 [tool.ruff.lint.per-file-ignores]
