@@ -247,6 +247,25 @@ The orchestrator will install approved packages in an oversight session.
 
 Always use `.venv/bin/python`, NOT system `python` or `python3`.
 
+## Sub-Period Validation (MANDATORY)
+
+Every config that beats the baseline MUST report sub-period metrics alongside
+full-period results. Sub-periods: **2017+** (removes early low-liquidity era)
+and **2020+** (post-COVID, includes 2022 bear).
+
+For each period: Sharpe, MaxDD, annual return, n_trades, win rate, and
+buy-and-hold Sharpe for comparison.
+
+```python
+from sweep_utils import subperiod_analysis
+sp = subperiod_analysis(prices, positions, cost_frac)
+# Returns: {"full": {...}, "2017+": {...}, "2020+": {...}}
+```
+
+A strategy with Sharpe 1.98 on 2013-2023 but Sharpe 0.4 on 2020-2023 is NOT
+deployment-worthy. Do not declare any result as "beating baseline" without
+sub-period confirmation.
+
 ## Success Tiers
 
 | Tier | Criteria | Meaning |

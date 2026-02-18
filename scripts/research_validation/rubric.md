@@ -15,7 +15,7 @@ Severity levels:
 **ANY script in `scripts/` that imports from a shared utility module (e.g.,
 `from sweep_utils import ...` or any module in `scripts/infra/`) is AUTOMATICALLY COMPLIANT
 with sections 1.1 (DSR/n_trials), 2.1 (signal timing), 2.2 (transaction costs),
-and 5.2 (guardrails).**
+3.2 (sub-period reporting), and 5.2 (guardrails).**
 
 These scripts delegate all correctness-critical operations to the utility module:
 - DSR and `n_trials` → handled inside `evaluate()` via `compute_all_metrics()`
@@ -281,6 +281,12 @@ The out-of-sample (OOS) boundary and embargo buffer are defined in
 - Strategies trained only on pre-2020 data may not generalize.
 - Walk-forward validation across regime boundaries is essential.
 - 2022 bear market is a critical stress test period. Strategies must be evaluated on it.
+- **Sub-period reporting (MANDATORY)**: Any strategy claimed as beating the baseline
+  MUST report sub-period metrics for at least: full period and 2020+ (post-COVID).
+  Each sub-period must include: Sharpe, MaxDD, annual return, n_trades, win rate,
+  and buy-and-hold Sharpe for the same window. Use `subperiod_analysis()` from
+  `sweep_utils`. Missing sub-period analysis for claimed winners is MEDIUM severity.
+- Scripts using `subperiod_analysis()` from `sweep_utils` are compliant (Section 0).
 
 ### 3.3 Exchange-Specific Risks
 
