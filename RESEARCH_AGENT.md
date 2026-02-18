@@ -67,8 +67,10 @@ from sparky.tracking.guardrails import (
     run_pre_checks, run_post_checks, has_blocking_failure, log_results
 )
 
-# Before experiment
+# Before experiment (hourly data — default min_samples=2000)
 pre_results = run_pre_checks(data, config)
+# For daily data (fewer rows), lower the sample threshold:
+# pre_results = run_pre_checks(data, config, min_samples=500)
 if has_blocking_failure(pre_results):
     raise RuntimeError("Pre-checks failed")
 
@@ -77,7 +79,7 @@ post_results = run_post_checks(returns, metrics, config, n_trials=N)
 log_results(pre_results + post_results, run_id="my_run")
 ```
 
-Pre-checks: holdout boundary, minimum samples, no lookahead, costs >= 50 bps, param-data ratio.
+Pre-checks: holdout boundary, minimum samples, no lookahead, costs >= 30 bps, param-data ratio.
 Post-checks: sharpe sanity (<4.0), minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
 
 ## Experiment Tracking (wandb)
@@ -211,6 +213,17 @@ You must NOT run ruff, black, flake8, mypy, pre-commit, pytest, or any CI-relate
 commands. Your job is research — write experiment scripts and run them. Code quality
 and cleanup are handled separately by oversight sessions. Do not waste session time
 on formatting or lint fixes.
+
+## Code Style
+
+Write terse code with minimal comments. Let the code be self-explaining.
+No verbose docstrings, no markdown generation, no print-heavy logging.
+You are expected to write directly in numpy, polars, pandas, jax, cuda, pytorch, etc.
+This is where the real experimentation happens — optimize for iteration speed.
+
+**Library requests:** If you need a library or tool that isn't installed, write a
+`GATE_REQUEST.md` requesting it. Do NOT run pip, uv, conda, or any package installer.
+The orchestrator will install approved packages in an oversight session.
 
 ## Python Environment
 

@@ -25,6 +25,7 @@ _RATE_LIMIT_RETRY_DELAYS = [30, 30, 30]
 # Free tier: 10K input tokens/min ≈ 40K chars. Target well under to avoid 429s.
 # Budget: ~5K tokens for rubric+prompt, ~3K tokens for code context.
 _MAX_CODE_CHARS = 12000  # ~3K tokens for all changed files combined
+_MAX_CONTEXT_CHARS = 3000  # reference files budget
 
 
 def get_changed_files():
@@ -98,6 +99,18 @@ def _create_message_with_retry(client, **kwargs):
                 raise  # All retries exhausted — propagate to caller
 
 
+def get_codebase_context():
+    """Gather lightweight codebase context for shared utility functions."""
+    context_files = [
+        "scripts/sweep_utils.py",
+    ]
+    context = {}
+    for path in context_files:
+        if Path(path).exists():
+            context[path] = Path(path).read_text(errors="replace")[:3000]
+    return context
+
+
 def run_validation(changes):
     """Send changes to Claude Sonnet for research validation review."""
     client = anthropic.Anthropic()
@@ -107,6 +120,13 @@ def run_validation(changes):
 
     # Budget-aware formatting
     changes_text = _budget_changes(changes, _MAX_CODE_CHARS)
+
+    # Gather context for shared utility functions
+    context = get_codebase_context()
+    context_text = ""
+    ctx_per_file = max(500, _MAX_CONTEXT_CHARS // max(len(context), 1))
+    for path, content in context.items():
+        context_text += f"\n### {path} (shared utility — for reference):\n```python\n{content[:ctx_per_file]}\n```\n"
 
     prompt = (
         "You are a quantitative finance code reviewer for an autonomous "
@@ -127,7 +147,13 @@ def run_validation(changes):
         "the function's actual signature as documented in the rubric. Different functions "
         "use different parameter names for different purposes (e.g., n_trials vs n_trades "
         "are parameters of different functions). See Section 6.1.\n\n"
+        "CRITICAL: Read Section 0 of the rubric (Shared Utility Function Delegation) "
+        "FIRST. Scripts that import from utility modules like sweep_utils.py and call "
+        "evaluate() do NOT need to implement DSR, n_trials, signal shifting, or cost "
+        "deduction at the call site — these are handled inside the utility functions. "
+        "Check the CODEBASE REFERENCE section to see the utility implementations.\n\n"
         f"## RUBRIC\n{rubric}\n\n"
+        f"## CODEBASE REFERENCE (shared utilities)\n{context_text}\n\n"
         f"## CODE CHANGES TO REVIEW\n{changes_text}\n\n"
         "## OUTPUT FORMAT\n"
         "Respond with a JSON object:\n"

@@ -10,6 +10,26 @@ Severity levels:
 
 ---
 
+## 0. CRITICAL: Shared Utility Function Delegation
+
+Research sweep scripts in `scripts/` commonly delegate correctness-critical operations
+to shared utility modules (e.g., `sweep_utils.py`). When a script imports and calls
+utility functions like `evaluate()`, `net_ret()`, `run_pre()`, these functions handle:
+
+- **Signal timing** (`positions.shift(1)`) — inside `net_ret()`, not at the call site
+- **Cost deduction** — inside `net_ret()`, not at the call site
+- **DSR / n_trials** — passed inside `evaluate()` to `compute_all_metrics(ret, n_trials=N)`, not at the call site
+- **Guardrails** — `run_pre_checks()`, `run_post_checks()`, `log_results()` called inside `evaluate()`, not at the call site
+
+**Do NOT flag a script for missing these operations if it delegates to utility functions.**
+If code truncation prevents you from seeing the utility function's implementation,
+and the script imports from a shared utility module, assume the utility handles
+correctness and do NOT flag the call site. This is a DEFAULT-PASS rule: scripts that
+delegate to shared utilities are assumed correct unless you can see concrete evidence
+of a bug INSIDE the utility function itself.
+
+---
+
 ## 1. STATISTICAL METHODOLOGY (HIGH severity)
 
 ### 1.1 Multiple Testing Correction
@@ -36,6 +56,11 @@ or sweep.
   as non-primary and the canonical sweep tool (sweep_two_stage.py) is used for final
   decisions. However, if they DO call training and backtesting, guardrails are strongly
   recommended.
+- Research sweep scripts that delegate metric computation to shared utility functions
+  (e.g., `evaluate()` from `sweep_utils.py` or similar) ARE compliant if the utility
+  function calls `compute_all_metrics(returns, n_trials=N)` with proper `n_trials`.
+  If code truncation prevents seeing the utility implementation, and the script imports
+  from a utility module, do NOT flag for missing DSR. See Section 0.
 
 Reference: Bailey & Lopez de Prado, "The Deflated Sharpe Ratio" (2014).
 

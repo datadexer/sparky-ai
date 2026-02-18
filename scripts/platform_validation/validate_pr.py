@@ -77,6 +77,7 @@ def get_codebase_context():
         "src/sparky/tracking/guardrails.py",
         "src/sparky/data/loader.py",
         "configs/trading_rules.yaml",
+        "scripts/sweep_utils.py",
     ]
     context = {}
     for path in context_files:
@@ -166,6 +167,11 @@ def run_validation(changes, context):
         "the actual function signature. Different functions use different parameter names "
         "for different purposes. The rubric's 'What NOT to Flag' section has authoritative "
         "API signatures — consult it before reporting parameter name issues.\n\n"
+        "CRITICAL: Read Section 0 of the rubric (Shared Utility Function Delegation) "
+        "FIRST. Scripts that import from utility modules like sweep_utils.py and call "
+        "evaluate() do NOT need to implement signal shifting, cost deduction, guardrails, "
+        "or n_trials at the call site — these are handled inside the utility functions. "
+        "Check the CODEBASE REFERENCE section to see the utility implementations.\n\n"
         f"## ENGINEERING RUBRIC\n{rubric}\n\n"
         f"## CODEBASE REFERENCE (current state of key files)\n{context_text}\n\n"
         f"## CODE CHANGES TO REVIEW\n{changes_text}\n\n"

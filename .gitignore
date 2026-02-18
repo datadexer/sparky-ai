@@ -1,5 +1,7 @@
 /data/
 !/data/data_manifest.json
+results/
+scratch/
 mlruns/
 wandb/
 catboost_info/
