@@ -20,7 +20,7 @@ from sparky.workflow.telemetry import SessionTelemetry, StreamParser, save_telem
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path("/home/akamath/sparky-ai")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
 def _upload_session_to_wandb(telemetry, log_path, step) -> None:
