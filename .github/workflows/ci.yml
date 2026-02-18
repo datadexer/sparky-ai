@@ -1,4 +1,4 @@
-name: Code Quality Gate
+name: CI
 
 on:
   push:
@@ -6,7 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# All three jobs run in parallel on the same trigger.
+# research-validation and platform-validation are PR-only (no point reviewing
+# a push to main that already passed review).
+
 jobs:
+  # ── Quality Gate ───────────────────────────────────────────────────────────
   quality-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -42,8 +47,11 @@ jobs:
       - name: Sparky-specific checks
         run: python scripts/hooks/sparky_checks.py
 
-      - name: Unit tests with coverage
-        run: pytest tests/ -v --tb=short -x --timeout=120 --cov=src/sparky --cov-report=term-missing --cov-fail-under=40
+      - name: Unit tests with coverage (parallel)
+        run: |
+          pytest tests/ -v --tb=short -x --timeout=120 \
+            -n auto \
+            --cov=src/sparky --cov-report=term-missing --cov-fail-under=40
 
       - name: Guardrail self-test
         run: |
@@ -103,5 +111,79 @@ jobs:
         with:
           name: bandit-security-report
           path: bandit-report.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ── Research Validation (PR only) ─────────────────────────────────────────
+  research-validation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Run Research Validation Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/research_validation/validate_pr.py
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-validation-report
+          path: research-validation-report.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ── Platform Validation (PR only) ─────────────────────────────────────────
+  platform-validation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Run Platform Validation Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/platform_validation/validate_pr.py
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-validation-report
+          path: platform-validation-report.json
           if-no-files-found: ignore
           retention-days: 30
