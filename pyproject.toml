@@ -49,7 +49,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short -n auto"
 
 [tool.ruff]
 target-version = "py312"
