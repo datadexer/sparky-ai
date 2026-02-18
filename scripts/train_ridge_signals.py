@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+from sparky.data.loader import load
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
 
@@ -64,8 +64,8 @@ def main():
     print(f"Started: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
     print("=" * 80)
 
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly_clean.parquet")
-    targets = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly_clean", purpose="training")
+    targets = load("targets_btc_hourly_1d", purpose="training")
 
     features_daily = features.resample("D").last().dropna()
     targets_daily = targets.resample("D").last().dropna()

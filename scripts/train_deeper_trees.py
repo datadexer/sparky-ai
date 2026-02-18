@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
 from catboost import CatBoostClassifier
 from sklearn.metrics import accuracy_score
 
@@ -65,8 +66,8 @@ def main():
     print("=" * 80)
 
     # Load
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    targets = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    targets = load("targets_btc_hourly_1d", purpose="training")
 
     features_daily = features.resample("D").last().dropna()
     targets_daily = targets.resample("D").last().dropna()
@@ -75,7 +76,7 @@ def main():
     X = features_daily.loc[common][SELECTED_FEATURES]
     y = targets_daily.loc[common]["target"]
 
-    prices = pd.read_parquet("data/raw/btc/ohlcv_hourly.parquet")
+    prices = load("ohlcv_hourly_max_coverage", purpose="analysis")
     prices_daily = prices.resample("D").last().dropna()
     prices_common = prices_daily[prices_daily.index.isin(X.index)].loc[X.index]
 

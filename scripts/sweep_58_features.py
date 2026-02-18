@@ -28,14 +28,15 @@ from lightgbm import LGBMClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 
 
 def load_data():
     """Load 58-feature hourly dataset."""
     print("Loading 58-feature dataset...", flush=True)
 
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    target = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    target = load("targets_btc_hourly_1d", purpose="training")
 
     # Target is a DataFrame with 'target' column, extract as Series
     if isinstance(target, pd.DataFrame):
@@ -98,7 +99,7 @@ def validate_config(features, target, model_name, params):
         signals = pd.Series(signals, index=y_test.index)
 
         # Load prices for this year
-        prices_hourly = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+        prices_hourly = load("ohlcv_hourly_max_coverage", purpose="analysis")
         prices_daily = prices_hourly.resample("D").last()
         prices_test = prices_daily.loc[test_start:test_end]
 

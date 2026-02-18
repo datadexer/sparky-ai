@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 
 from sparky.backtest.costs import TransactionCostModel
+from sparky.data.loader import load
 from sparky.features.returns import annualized_sharpe, max_drawdown
 from sparky.models.xgboost_model import XGBoostModel
 
@@ -44,8 +45,8 @@ def main():
 
     # Load data
     logger.info("Loading data...")
-    X = pd.read_parquet("data/processed/feature_matrix_btc.parquet")
-    targets_df = pd.read_parquet("data/processed/targets_btc_30d.parquet")
+    X = load("feature_matrix_btc", purpose="training")
+    targets_df = load("targets_btc_30d", purpose="training")
     y = targets_df["target"]
 
     # Technical-only features

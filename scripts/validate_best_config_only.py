@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
 from catboost import CatBoostClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
 
@@ -65,8 +66,8 @@ def main():
     print("=" * 80)
 
     # Load
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly.parquet")
-    targets = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly", purpose="training")
+    targets = load("targets_btc_hourly_1d", purpose="training")
 
     # Daily resample
     features_daily = features.resample("D").last().dropna()

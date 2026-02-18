@@ -23,6 +23,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from sparky.data.loader import load
 from sparky.oversight.timeout import ExperimentTimeout, with_timeout
 from sparky.tracking.experiment import ExperimentTracker
 
@@ -67,10 +68,10 @@ TOP10_FEATURES = TOP20_FEATURES[:10]
 def load_data():
     """Load and prepare in-sample data. Returns (features, target, prices_daily)."""
     logger.info("Loading data...")
-    features = pd.read_parquet("data/processed/feature_matrix_btc_hourly_expanded.parquet")
-    target_df = pd.read_parquet("data/processed/targets_btc_hourly_1d.parquet")
+    features = load("feature_matrix_btc_hourly_expanded", purpose="training")
+    target_df = load("targets_btc_hourly_1d", purpose="training")
     target = target_df["target"]
-    prices_raw = pd.read_parquet("data/raw/btc/ohlcv_hourly_max_coverage.parquet")
+    prices_raw = load("ohlcv_hourly_max_coverage", purpose="analysis")
 
     # Resample hourly prices to daily
     prices_daily = prices_raw.resample("D").last()

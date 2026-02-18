@@ -19,6 +19,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
+from sparky.tracking.guardrails import has_blocking_failure, run_pre_checks
 from catboost import CatBoostClassifier
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
@@ -35,8 +37,8 @@ def load_data():
     """Load and align features and targets."""
     logger.info("Loading hourly features and targets...")
 
-    features = pd.read_parquet(project_root / "data/processed/features_hourly_full.parquet")
-    targets = pd.read_parquet(project_root / "data/processed/targets_hourly_1h.parquet")
+    features = load("features_hourly_full", purpose="training")
+    targets = load("targets_hourly_1h", purpose="training")
 
     logger.info(f"Features shape: {features.shape}")
     logger.info(f"Targets shape: {targets.shape}")
@@ -173,6 +175,12 @@ def main():
 
     # Load data
     features, targets = load_data()
+
+    # Pre-experiment guardrail checks
+    config = {"transaction_costs_bps": 30, "features": list(features.columns), "target": "target"}
+    pre_results = run_pre_checks(features, config)
+    if has_blocking_failure(pre_results):
+        raise RuntimeError("Pre-experiment checks failed — aborting walk-forward validation")
 
     # Define folds
     folds = define_walk_forward_folds()

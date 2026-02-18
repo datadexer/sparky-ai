@@ -13,7 +13,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+from sparky.data.loader import load
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import roc_auc_score
 from xgboost import XGBClassifier
@@ -56,8 +56,8 @@ MIN_FEATURES = 5
 def load_and_prepare_data():
     """Load features and targets, align, clean, and split by timestamp."""
     print("Loading data...")
-    features = pd.read_parquet(FEATURES_PATH)
-    targets = pd.read_parquet(TARGET_PATH)
+    features = load("features_hourly_full", purpose="training")
+    targets = load("targets_hourly_1h", purpose="training")
 
     print(f"Features shape: {features.shape}")
     print(f"Targets shape: {targets.shape}")

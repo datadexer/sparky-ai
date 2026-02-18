@@ -24,6 +24,7 @@ from sklearn.metrics import accuracy_score, f1_score, log_loss, precision_score,
 
 from sparky.backtest.leakage_detector import LeakageDetector
 from sparky.models.xgboost_model import XGBoostModel
+from sparky.data.loader import load
 
 
 def load_and_join_features():
@@ -33,10 +34,10 @@ def load_and_join_features():
     print("=" * 80)
 
     # Load all feature sets
-    features_base = pd.read_parquet("data/processed/features_hourly_full.parquet")
-    features_macro = pd.read_parquet("data/processed/macro_features_hourly.parquet")
-    features_onchain = pd.read_parquet("data/processed/onchain_features_hourly.parquet")
-    targets = pd.read_parquet("data/processed/targets_hourly_1h.parquet")
+    features_base = load("features_hourly_full", purpose="training")
+    features_macro = load("macro_features_hourly", purpose="training")
+    features_onchain = load("onchain_features_hourly", purpose="training")
+    targets = load("targets_hourly_1h", purpose="training")
 
     print(f"Base features: {features_base.shape} ({len(features_base.columns)} columns)")
     print(f"Macro features: {features_macro.shape} ({len(features_macro.columns)} columns)")

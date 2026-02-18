@@ -23,6 +23,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sparky.data.loader import load
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
@@ -53,17 +54,14 @@ SPLIT_BOUNDS = {
 
 def load_data(horizon: str) -> tuple[pd.DataFrame, pd.Series]:
     """Load hourly features and target for the given horizon."""
-    features_path = Path("data/processed/features_hourly_full.parquet")
+    # NOTE: target path is parametric (varies with horizon arg) — kept as pd.read_parquet.
+    # Only targets_hourly_1h is in the loader mapping; other horizons may not be registered.
     target_path = Path(f"data/processed/targets_hourly_{horizon}.parquet")
 
-    if not features_path.exists():
-        raise FileNotFoundError(
-            f"Features not found: {features_path}\nRun scripts/prepare_hourly_training_data.py first"
-        )
     if not target_path.exists():
         raise FileNotFoundError(f"Target not found: {target_path}\nRun scripts/prepare_hourly_training_data.py first")
 
-    X = pd.read_parquet(features_path)
+    X = load("features_hourly_full", purpose="training")
     y = pd.read_parquet(target_path)["target"]
 
     # Align on common index
