@@ -2,7 +2,8 @@ name: regime_donchian_daily
 objective: |
   Determine whether regime detection (volatility filtering, HMM states, or
   dynamic ensemble weighting) improves Donchian breakout risk-adjusted returns
-  on BTC daily data. The unfiltered baseline achieves Sharpe ~1.062.
+  on BTC daily data. The unfiltered baseline achieves Sharpe ~1.34 (walk-forward,
+  26 bps costs, sqrt(365)). See baseline_reconciliation directive for methodology.
 
   Success = a regime-aware variant that achieves Sharpe >= 1.0 with DSR > 0.95
   (statistically significant after multiple testing correction).
@@ -74,4 +75,4 @@ exclusions:
   - "Always use sparky.data.loader.load() for data — never pd.read_parquet()"
   - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
   - "Always include transaction costs (10 bps) in backtests"
-  - "Compare every result against the unfiltered Donchian baseline Sharpe ~1.062"
+  - "Compare every result against the unfiltered Donchian baseline (see baseline_reconciliation directive for canonical number)"
