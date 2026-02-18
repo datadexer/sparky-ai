@@ -115,7 +115,7 @@ Two-stage: (1) Feature selection first, keep top 15-20. (2) Stage 1 screening on
 ## Environment
 - **Python:** 3.12+ on aarch64 (NVIDIA DGX Spark)
 - **Package manager:** `uv` — `uv venv`, `uv pip install -e ".[dev]"`
-- **Run tests:** `pytest tests/ -v`
+- **Run tests:** `pytest tests/ -v -n auto` (always use `-n auto` for parallelism)
 
 ## Code Quality Requirements
 All code must pass the quality gate before reaching main.

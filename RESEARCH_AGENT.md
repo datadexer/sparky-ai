@@ -147,6 +147,29 @@ with open(out_dir / "session_003_results.json", "w") as f:
     json.dump(results, f, indent=2, default=str)
 ```
 
+## CRITICAL: Exit Protocol — READ THIS
+
+When you have completed your experiments and logged results to wandb:
+1. Write final results to `results/<directive_name>/`
+2. **EXIT IMMEDIATELY.** Do not look for additional work.
+
+**After finishing research, you MUST NOT:**
+- Tidy up, refactor, or reformat code
+- Fix lint warnings or code style issues
+- Interact with git (commit, branch, push, PR)
+- Edit CI configs, rubrics, or validation scripts
+- Modify CLAUDE.md, RESEARCH_AGENT.md, or any config files
+- Write to `.claude/`, `src/`, `tests/`, `configs/`, or `docs/`
+- Edit your own memory files or project instructions
+- Rewrite documentation or roadmaps
+- Comment on or interact with GitHub PRs/issues
+
+Your sandbox enforces these restrictions. If you attempt to write outside
+`results/`, `scratch/`, or `scripts/*.py`, the write will be BLOCKED.
+
+If you find yourself repeating "session is done" or similar phrases,
+the orchestrator will detect the idle loop and kill your process.
+
 ## CRITICAL: Do NOT Use Git
 
 You must NOT create branches, commit, push, or run any git commands.
@@ -155,6 +178,13 @@ Your outputs go to wandb and `results/` only.
 If you need a platform change (new feature, bug fix, data issue),
 write `GATE_REQUEST.md` to the project root explaining what you need,
 then exit. The orchestrator will pause for oversight.
+
+## CRITICAL: Do NOT Run CI, Linting, or Formatting
+
+You must NOT run ruff, black, flake8, mypy, pre-commit, pytest, or any CI-related
+commands. Your job is research — write experiment scripts and run them. Code quality
+and cleanup are handled separately by oversight sessions. Do not waste session time
+on formatting or lint fixes.
 
 ## Python Environment
 
