@@ -174,17 +174,17 @@ use the corrected `signal.shift(1) * return` pattern.
 
 ### 2.2 Transaction Costs
 
-ALL backtests MUST include realistic transaction costs:
-- Minimum: 5 basis points (0.05%) per side, 10 bps round-trip.
-- For limit orders: 1-2 bps maker rebate possible, but must justify.
-- For market orders in low-liquidity periods: 10-20 bps realistic.
+ALL backtests MUST use the standard transaction cost of **50 basis points (0.50%) per trade**.
+This covers exchange fees, slippage, spread, and market impact. A full round trip
+(enter + exit) costs 100 bps (1.0%). This is not negotiable — the guardrail enforces it.
 
 Cost validation:
-- Strategies claiming an edge smaller than 2x the round-trip cost are suspect (the edge
-  may not survive real execution with slippage).
+- Any `transaction_costs_bps` value below 50 is HIGH severity.
+- Missing `transaction_costs_bps` in config is HIGH severity.
 - Costs must be applied per-trade, not as a flat annual drag.
 - If `cost_bps` is set to 0 or costs are not applied, this is HIGH severity.
 - Watch for cost application AFTER Sharpe calculation (must be BEFORE).
+- Strategies claiming an edge smaller than 2x the round-trip cost (200 bps) are suspect.
 
 ### 2.3 Holdout Integrity
 

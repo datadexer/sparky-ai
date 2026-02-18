@@ -52,7 +52,7 @@ def good_config():
     return {
         "features": ["close", "volume"],
         "target": "target_1h",
-        "transaction_costs_bps": 10.0,
+        "transaction_costs_bps": 50.0,
     }
 
 
@@ -73,7 +73,7 @@ class TestGuardrailsMetricsPipeline:
         assert "max_drawdown" in metrics
 
         # Run post-checks with these metrics
-        config = {"transaction_costs_bps": 10.0}
+        config = {"transaction_costs_bps": 50.0}
         post_results = run_post_checks(
             synthetic_returns,
             metrics,
@@ -130,7 +130,7 @@ class TestGuardrailsMetricsPipeline:
         """Full pipeline: compute metrics → run post-checks → check for failures."""
         metrics = compute_all_metrics(synthetic_returns, n_trials=50)
 
-        config = {"transaction_costs_bps": 10.0}
+        config = {"transaction_costs_bps": 50.0}
         post_results = run_post_checks(
             synthetic_returns,
             metrics,
@@ -316,7 +316,7 @@ class TestGuardrailsBlockingFailureDetection:
         }
         np.random.seed(42)
         returns = np.random.randn(2000) * 0.01
-        config = {"transaction_costs_bps": 10.0}
+        config = {"transaction_costs_bps": 50.0}
         post_results = run_post_checks(returns, metrics, config)
 
         assert has_blocking_failure(post_results) is True
@@ -326,7 +326,7 @@ class TestGuardrailsBlockingFailureDetection:
         np.random.seed(42)
         returns = np.random.randn(2000) * 0.01
         metrics = compute_all_metrics(returns, n_trials=10)
-        config = {"transaction_costs_bps": 10.0}
+        config = {"transaction_costs_bps": 50.0}
         post_results = run_post_checks(returns, metrics, config)
 
         # Sharpe sanity (block severity) should pass for random noise

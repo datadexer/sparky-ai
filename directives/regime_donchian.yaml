@@ -20,7 +20,7 @@ constraints:
   timeframe: daily
   dataset: btc_daily
   gpu_required: false
-  transaction_costs_bps: 10
+  transaction_costs_bps: 50
   annualization: 365
 strategy_space:
   - family: vol_filtered_donchian
@@ -74,5 +74,5 @@ exclusions:
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() for data — never pd.read_parquet()"
   - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
-  - "Always include transaction costs (10 bps) in backtests"
+  - "Always include transaction costs (50 bps per trade) in backtests"
   - "Compare every result against the unfiltered Donchian baseline (see baseline_reconciliation directive for canonical number)"

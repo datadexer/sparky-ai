@@ -91,10 +91,13 @@ research_standards:
     fdr_threshold: 0.05
 
   costs:
+    # Standard: 50 bps (0.50%) per trade, 100 bps round-trip.
+    # This is conservative and covers fees + slippage + spread + market impact.
+    # All research MUST use this. The guardrail enforces minimum 50 bps.
+    standard_cost_bps: 50
     exchange_fee_pct: 0.10
-    slippage_btc_pct: 0.02
-    slippage_eth_pct: 0.03
-    spread_estimate_pct: 0.01
+    slippage_pct: 0.30
+    spread_estimate_pct: 0.10
 
   overfitting:
     max_features_per_model: 20
