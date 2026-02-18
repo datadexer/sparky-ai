@@ -21,21 +21,25 @@ list_datasets()  # returns [{"name": ..., "path": ..., "asset": ...}, ...]
 - `purpose="training"` for all model work. `purpose="analysis"` for exploration only.
 - OOS data is off-limits. Do not attempt `purpose="oos_evaluation"`.
 
-## Transaction Costs — 50 bps per side (MANDATORY)
+## Transaction Costs (MANDATORY — two tiers)
 
-ALL backtests MUST use 50 bps per side (100 bps round trip).
-This reflects Coinbase taker fees / Uniswap DEX costs. No exceptions.
+- **Standard: 30 bps per side** (60 bps RT) — Coinbase limit orders / DEX on L2
+- **Stress test: 50 bps per side** (100 bps RT) — Coinbase market orders worst case
+- Guardrail blocks anything below 30 bps.
 
 ```python
 from sparky.backtest.costs import TransactionCostModel
 
-costs = TransactionCostModel.standard()  # 50 bps per trade
-# Apply to returns:
-net_returns = costs.apply(gross_returns, positions)
+costs_standard = TransactionCostModel.standard()      # 30 bps per side
+costs_stress   = TransactionCostModel.stress_test()    # 50 bps per side
+net_returns = costs_standard.apply(gross_returns, positions)
 ```
 
-Config dict must always include `"transaction_costs_bps": 50`.
-The guardrail will BLOCK any run below 50 bps.
+**Run winners at BOTH 30 bps and 50 bps and report both.** Use 30 bps as the
+primary evaluation. A strategy that only works at 30 bps but not 50 bps is fragile.
+
+Config dict must always include `"transaction_costs_bps": 30` (or 50 for stress test).
+The guardrail will BLOCK any run below 30 bps.
 
 ## Metrics
 

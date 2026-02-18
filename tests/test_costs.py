@@ -26,20 +26,26 @@ class TestTransactionCostModel:
         assert model.total_cost_pct == 0.0028
 
     def test_for_btc(self):
-        """Test BTC cost model delegates to standard() — 50 bps per trade."""
+        """Test BTC cost model delegates to standard() — 30 bps per side."""
         model = TransactionCostModel.for_btc()
-        assert abs(model.total_cost_pct - 0.005) < 1e-10
-        assert abs(model.round_trip_cost - 0.01) < 1e-10
+        assert abs(model.total_cost_pct - 0.003) < 1e-10
+        assert abs(model.round_trip_cost - 0.006) < 1e-10
 
     def test_for_eth(self):
-        """Test ETH cost model delegates to standard() — 50 bps per trade."""
+        """Test ETH cost model delegates to standard() — 30 bps per side."""
         model = TransactionCostModel.for_eth()
-        assert abs(model.total_cost_pct - 0.005) < 1e-10
-        assert abs(model.round_trip_cost - 0.01) < 1e-10
+        assert abs(model.total_cost_pct - 0.003) < 1e-10
+        assert abs(model.round_trip_cost - 0.006) < 1e-10
 
     def test_standard(self):
-        """Standard model: 50 bps (0.50%) per trade, 100 bps round trip."""
+        """Standard model: 30 bps (0.30%) per side, 60 bps round trip."""
         model = TransactionCostModel.standard()
+        assert abs(model.total_cost_pct - 0.003) < 1e-10
+        assert abs(model.round_trip_cost - 0.006) < 1e-10
+
+    def test_stress_test(self):
+        """Stress test model: 50 bps (0.50%) per side, 100 bps round trip."""
+        model = TransactionCostModel.stress_test()
         assert abs(model.total_cost_pct - 0.005) < 1e-10
         assert abs(model.round_trip_cost - 0.01) < 1e-10
 
@@ -84,7 +90,7 @@ class TestTransactionCostModel:
 
         returns_after = model.apply(returns, positions)
 
-        # Total cost should be 1.0% (2 * 0.50% standard round trip)
+        # Total cost should be 0.6% (2 * 0.30% standard round trip)
         total_cost = returns.sum() - returns_after.sum()
         expected_round_trip = model.round_trip_cost
 

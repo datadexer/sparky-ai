@@ -507,7 +507,7 @@ class ContextBuilder:
                 if sharpe is None:
                     continue
                 cost_bps = run.config.get("transaction_costs_bps", run.config.get("costs_bps"))
-                low_cost = cost_bps is None or float(cost_bps) < 50
+                low_cost = cost_bps is None or float(cost_bps) < 30
                 results.append(
                     {
                         "family": run.config.get("strategy_family", run.config.get("model_type", "?")),

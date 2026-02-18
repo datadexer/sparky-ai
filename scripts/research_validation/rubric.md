@@ -174,17 +174,20 @@ use the corrected `signal.shift(1) * return` pattern.
 
 ### 2.2 Transaction Costs
 
-ALL backtests MUST use the standard transaction cost of **50 basis points (0.50%) per trade**.
-This covers exchange fees, slippage, spread, and market impact. A full round trip
-(enter + exit) costs 100 bps (1.0%). This is not negotiable — the guardrail enforces it.
+Two-tier cost model:
+- **Standard: 30 bps per side** (60 bps round trip) — Coinbase limit orders / DEX on L2
+- **Stress test: 50 bps per side** (100 bps round trip) — Coinbase market orders worst case
+
+The guardrail enforces a minimum of 30 bps per side.
 
 Cost validation:
-- Any `transaction_costs_bps` value below 50 is HIGH severity.
+- Any `transaction_costs_bps` value below 30 is HIGH severity.
 - Missing `transaction_costs_bps` in config is HIGH severity.
 - Costs must be applied per-trade, not as a flat annual drag.
 - If `cost_bps` is set to 0 or costs are not applied, this is HIGH severity.
 - Watch for cost application AFTER Sharpe calculation (must be BEFORE).
-- Strategies claiming an edge smaller than 2x the round-trip cost (200 bps) are suspect.
+- Strategies claiming an edge smaller than 2x the round-trip cost (120 bps at standard) are suspect.
+- Winners should be reported at both 30 bps and 50 bps. Results at only one cost level are MEDIUM severity.
 
 ### 2.3 Holdout Integrity
 

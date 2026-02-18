@@ -146,21 +146,24 @@ def check_no_lookahead(data: pd.DataFrame, config: dict) -> GuardrailResult:
     )
 
 
-def check_costs_specified(config: dict, min_costs_bps: float = 50.0) -> GuardrailResult:
-    """BLOCK: Ensure transaction costs are specified at the standard 50 bps per trade."""
+def check_costs_specified(config: dict, min_costs_bps: float = 30.0) -> GuardrailResult:
+    """BLOCK: Ensure transaction costs are specified at >= 30 bps per side.
+
+    Standard: 30 bps (Coinbase limit / DEX L2). Stress test: 50 bps (market orders).
+    """
     costs = config.get("transaction_costs_bps", None)
     if costs is None:
         return GuardrailResult(
             passed=False,
             check_name="costs_specified",
-            message="No transaction_costs_bps in config — must specify costs (standard: 50 bps)",
+            message="No transaction_costs_bps in config — must specify costs (standard: 30 bps, stress: 50 bps)",
             severity="block",
         )
     if costs < min_costs_bps:
         return GuardrailResult(
             passed=False,
             check_name="costs_specified",
-            message=f"Transaction costs {costs} bps below minimum {min_costs_bps} bps. Standard is 50 bps per trade.",
+            message=f"Transaction costs {costs} bps below minimum {min_costs_bps} bps. Standard is 30 bps per side.",
             severity="block",
         )
     return GuardrailResult(
