@@ -1,9 +1,11 @@
-"""CLI entry point for running workflows.
+"""CLI entry point for running workflows and research directives.
 
 Usage:
-    python -m sparky.workflow.runner <workflow_file.py>
+    python -m sparky.workflow.runner <workflow_file.py>    # workflow mode
+    python -m sparky.workflow.runner <directive.yaml>      # orchestrator mode
 
-The workflow file must define a `build_workflow() -> Workflow` function.
+Workflow files must define a `build_workflow() -> Workflow` function.
+YAML files are loaded as ResearchDirective and run via ResearchOrchestrator.
 """
 
 import importlib.util
@@ -38,24 +40,45 @@ def load_workflow(filepath: str):
     return module.build_workflow()
 
 
+def _is_yaml(path: str) -> bool:
+    """Check if the path ends with .yaml or .yml."""
+    return path.endswith((".yaml", ".yml"))
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python -m sparky.workflow.runner <workflow_file.py>")
+        print("Usage: python -m sparky.workflow.runner <workflow.py | directive.yaml>")
         sys.exit(2)
 
-    workflow_path = sys.argv[1]
-    logger.info(f"Loading workflow from {workflow_path}")
+    filepath = sys.argv[1]
 
-    try:
-        workflow = load_workflow(workflow_path)
-    except Exception as e:
-        logger.error(f"Failed to load workflow: {e}")
-        sys.exit(2)
+    if _is_yaml(filepath):
+        from sparky.workflow.orchestrator import ResearchDirective, ResearchOrchestrator
 
-    logger.info(f"Running workflow '{workflow.name}' ({len(workflow.steps)} steps)")
-    exit_code = workflow.run()
-    logger.info(f"Workflow exited with code {exit_code}")
-    sys.exit(exit_code)
+        logger.info(f"Loading directive from {filepath}")
+        try:
+            directive = ResearchDirective.from_yaml(filepath)
+        except Exception as e:
+            logger.error(f"Failed to load directive: {e}")
+            sys.exit(2)
+
+        logger.info(f"Running orchestrator '{directive.name}'")
+        orch = ResearchOrchestrator(directive)
+        exit_code = orch.run()
+        logger.info(f"Orchestrator exited with code {exit_code}")
+        sys.exit(exit_code)
+    else:
+        logger.info(f"Loading workflow from {filepath}")
+        try:
+            workflow = load_workflow(filepath)
+        except Exception as e:
+            logger.error(f"Failed to load workflow: {e}")
+            sys.exit(2)
+
+        logger.info(f"Running workflow '{workflow.name}' ({len(workflow.steps)} steps)")
+        exit_code = workflow.run()
+        logger.info(f"Workflow exited with code {exit_code}")
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":

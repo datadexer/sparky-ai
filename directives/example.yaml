@@ -1,0 +1,44 @@
+name: btc_momentum_deep_dive
+objective: |
+  Determine whether momentum + regime filtering can achieve
+  Sharpe >= 1.0 with DSR > 0.95 on BTC hourly data.
+constraints:
+  asset: btc
+  timeframe: 1h
+  gpu_required: true
+  transaction_costs_bps: 10
+  annualization: 8760
+strategy_space:
+  - family: momentum_regime
+    description: "Momentum + vol/ADX regime filter"
+    priority: 1
+    parameter_ranges:
+      momentum_lookback: [10, 20, 30, 40, 60]
+      adx_period: [10, 14, 20]
+stopping_criteria:
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 20
+    max_hours: 24
+    max_cost_usd: 100
+    digest_every: 5
+  stall:
+    sessions_without_improvement: 5
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+session_limits:
+  max_session_minutes: 120
+  max_cost_per_session: 10.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 5
+wandb_tags: [directive_001, momentum]
+gates:
+  - trigger: success_criteria_met
+    action: pause_and_alert
+  - trigger: stall_detected
+    action: pause_and_alert
+exclusions:
+  - "Do not evaluate on OOS data"
+  - "Do not build paper trading"
