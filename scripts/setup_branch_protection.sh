@@ -15,7 +15,7 @@ gh api "repos/$REPO/branches/main/protection" \
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["quality-gate"]
+    "contexts": ["quality-gate", "research-validation"]
   },
   "enforce_admins": true,
   "required_pull_request_reviews": {
@@ -30,6 +30,7 @@ EOF
 echo ""
 echo "Branch protection enabled on main:"
 echo "  - CI (quality-gate) must pass before merge"
+echo "  - Research validation (Sonnet agent) must pass before merge"
 echo "  - Branch must be up-to-date with main"
 echo "  - No force pushes to main"
 echo "  - No direct pushes (PRs required)"

@@ -41,8 +41,8 @@ jobs:
       - name: Sparky-specific checks
         run: python scripts/hooks/sparky_checks.py
 
-      - name: Unit tests
-        run: pytest tests/ -v --tb=short -x --timeout=120
+      - name: Unit tests with coverage
+        run: pytest tests/ -v --tb=short -x --timeout=120 --cov=src/sparky --cov-report=term-missing --cov-fail-under=40
 
       - name: Guardrail self-test
         run: |

@@ -97,6 +97,18 @@ If pre-commit fails, fix the issues. Do NOT use `--no-verify`.
 - Guardrail self-test (verifies guardrails catch holdout violations and missing costs)
 - Metrics self-test (verifies compute_all_metrics returns expected keys)
 - Import hygiene (core modules import cleanly)
+- Coverage (40% minimum threshold)
+
+**Research Validation (Layer 3, on PRs):**
+Every PR is reviewed by a Sonnet validation agent that checks for:
+- Statistical methodology errors (missing DSR, wrong CV, bad annualization)
+- Backtesting violations (lookahead bias, missing costs, holdout leaks)
+- Crypto-specific issues (wrong trading hours, missing regime awareness)
+- Formula correctness (verified against published sources)
+
+The agent posts findings as a PR comment. HIGH severity issues block merge.
+The rubric is in `scripts/research_validation/rubric.md`. If you believe
+a HIGH finding is a false positive, explain why in the PR comments.
 
 ## Git Workflow
 - NEVER commit to `main`. Use `phase-N/short-description` branches.
