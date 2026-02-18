@@ -12,8 +12,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
-import numpy as np
 import pandas as pd
+from sklearn.model_selection import TimeSeriesSplit
 
 logger = logging.getLogger(__name__)
 
@@ -214,27 +214,25 @@ class FeatureSelector:
         y: pd.Series,
         model,
     ) -> tuple[dict[str, float], list[dict]]:
-        """Test feature importance stability across k-fold splits.
+        """Test feature importance stability across expanding-window splits.
+
+        Uses TimeSeriesSplit (expanding window) instead of k-fold to avoid
+        training on future data. Each fold trains only on past data.
 
         Returns variance of importance per feature. Flags features with
         variance > threshold (unstable — importance depends heavily on data split).
         """
         n = len(X)
-        fold_size = n // self.n_stability_folds
-        if fold_size < 10:
+        if n < self.n_stability_folds * 10:
             logger.warning("Not enough data for stability test")
             return {}, []
 
         importance_matrix = []
 
-        for fold in range(self.n_stability_folds):
-            start = fold * fold_size
-            end = start + fold_size
-            # Train on everything except this fold
-            mask = np.ones(n, dtype=bool)
-            mask[start:end] = False
-            X_train = X.iloc[mask]
-            y_train = y.iloc[mask]
+        tscv = TimeSeriesSplit(n_splits=self.n_stability_folds)
+        for train_idx, _test_idx in tscv.split(X):
+            X_train = X.iloc[train_idx]  # only past data
+            y_train = y.iloc[train_idx]
 
             model.fit(X_train, y_train)
             importance_matrix.append(dict(zip(X.columns, model.feature_importances_)))
