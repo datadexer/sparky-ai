@@ -18,6 +18,8 @@ from sparky.workflow.engine import (
     WorkflowState,
 )
 from sparky.workflow.telemetry import (
+    CACHE_READ_RATE_USD,
+    CACHE_WRITE_RATE_USD,
     INPUT_RATE_USD,
     OUTPUT_RATE_USD,
     SessionTelemetry,
@@ -445,6 +447,27 @@ class TestStreamParser:
         with open(log_path) as f:
             assert "not json at all" in f.read()
 
+    def test_result_cache_token_extraction(self):
+        parser = StreamParser(session_id="test", step="s1", attempt=1)
+        line = json.dumps({
+            "type": "result",
+            "total_cost_usd": 1.50,
+            "num_turns": 5,
+            "usage": {
+                "input_tokens": 50,
+                "output_tokens": 2000,
+                "cache_read_input_tokens": 450000,
+                "cache_creation_input_tokens": 32000,
+            },
+        })
+        parser.feed(line)
+        assert parser.telemetry.tokens_input == 50
+        assert parser.telemetry.tokens_output == 2000
+        assert parser.telemetry.tokens_cache_read == 450000
+        assert parser.telemetry.tokens_cache_creation == 32000
+        assert parser.telemetry.cost_usd == 1.50
+        assert parser.telemetry.num_turns == 5
+
 
 # ── SessionTelemetry tests ──────────────────────────────────────────────
 
@@ -490,6 +513,56 @@ class TestSessionTelemetry:
         with open(filepath) as f:
             data = json.load(f)
         assert data["session_id"] == "20260217_test"
+
+    def test_cost_includes_cache_tokens(self):
+        t = SessionTelemetry(
+            session_id="test", step="s1", attempt=1,
+            started_at="2026-01-01T00:00:00Z",
+            tokens_input=50,
+            tokens_output=2000,
+            tokens_cache_read=450000,
+            tokens_cache_creation=32000,
+        )
+        cost = t.compute_cost()
+        expected = (
+            50 * INPUT_RATE_USD
+            + 32000 * CACHE_WRITE_RATE_USD
+            + 450000 * CACHE_READ_RATE_USD
+            + 2000 * OUTPUT_RATE_USD
+        )
+        assert abs(cost - expected) < 0.001
+        assert cost > 0.25  # sanity: much more than the old ~$0.03
+
+    def test_new_fields_in_to_dict(self):
+        t = SessionTelemetry(
+            session_id="test", step="s1", attempt=1,
+            started_at="2026-01-01T00:00:00Z",
+            tokens_cache_read=100000,
+            tokens_cache_creation=5000,
+            num_turns=3,
+            cost_usd=0.42,
+        )
+        d = t.to_dict()
+        assert d["tokens_cache_read"] == 100000
+        assert d["tokens_cache_creation"] == 5000
+        assert d["num_turns"] == 3
+        assert d["cost_usd"] == 0.42
+
+    def test_serialization_roundtrip_with_cache_fields(self):
+        t = SessionTelemetry(
+            session_id="20260217_cache", step="sweep", attempt=2,
+            started_at="2026-02-17T01:00:00Z",
+            tokens_cache_read=500000,
+            tokens_cache_creation=25000,
+            num_turns=7,
+            cost_usd=1.23,
+        )
+        d = t.to_dict()
+        restored = SessionTelemetry.from_dict(d)
+        assert restored.tokens_cache_read == 500000
+        assert restored.tokens_cache_creation == 25000
+        assert restored.num_turns == 7
+        assert restored.cost_usd == 1.23
 
 
 # ── ExperimentTracker extension tests ───────────────────────────────────

@@ -33,6 +33,25 @@ logger = logging.getLogger(__name__)
 WANDB_PROJECT = "sparky-ai"
 WANDB_ENTITY = "datadex_ai"
 
+_current_session_id: str | None = None
+
+
+def set_current_session(session_id: str) -> None:
+    """Set the active CEO session ID for experiment tracking."""
+    global _current_session_id
+    _current_session_id = session_id
+
+
+def clear_current_session() -> None:
+    """Clear the active CEO session ID."""
+    global _current_session_id
+    _current_session_id = None
+
+
+def get_current_session() -> str | None:
+    """Return the currently active CEO session ID, or None."""
+    return _current_session_id
+
 
 def _load_wandb_key() -> Optional[str]:
     """Load W&B API key from secrets.yaml or environment."""
@@ -265,6 +284,9 @@ class ExperimentTracker:
         if date_range:
             run_config["date_range_start"] = date_range[0]
             run_config["date_range_end"] = date_range[1]
+        sid = get_current_session()
+        if sid:
+            run_config["session_id"] = sid
 
         init_kwargs: dict[str, Any] = {
             "project": self.project,
@@ -325,17 +347,22 @@ class ExperimentTracker:
         git_hash = self._get_git_hash()
         manifest_hash = self._get_data_manifest_hash()
 
+        sweep_config: dict[str, Any] = {
+            "sweep_type": "two_stage",
+            "total_configs": len(results),
+            "git_hash": git_hash,
+            "data_manifest_hash": manifest_hash,
+        }
+        sid = get_current_session()
+        if sid:
+            sweep_config["session_id"] = sid
+
         init_kwargs: dict[str, Any] = {
             "project": self.project,
             "entity": self.entity,
             "name": name,
             "group": group or self.experiment_name,
-            "config": {
-                "sweep_type": "two_stage",
-                "total_configs": len(results),
-                "git_hash": git_hash,
-                "data_manifest_hash": manifest_hash,
-            },
+            "config": sweep_config,
             "tags": tags or [],
             "reinit": True,
         }

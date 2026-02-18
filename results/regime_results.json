@@ -1,1161 +1,275 @@
-[
-  {
-    "approach": "vol_threshold",
-    "name": "vol_regime_10d_e20",
-    "config": {
-      "approach": "vol_threshold",
-      "vol_window": 10,
-      "vol_multiplier": 1.0,
-      "entry_period": 20,
-      "exit_period": 10
-    },
-    "results": {
-      "mean_sharpe": 0.7951200016934177,
-      "std_sharpe": 0.6824587997724995,
-      "min_sharpe": -0.10793642639518716,
-      "max_sharpe": 1.730058677077318,
-      "mean_return": 0.26889586402709365,
-      "mean_max_dd": -0.2450217691577522,
-      "worst_year_sharpe": -0.10793642639518716,
-      "per_year": {
-        "2020": {
-          "sharpe": 1.730058677077318,
-          "total_return": 0.8081435021693877,
-          "max_drawdown": -0.22860339044327962,
-          "win_rate": 0.5634920634920635,
-          "time_in_market": 0.3452054794520548,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.48518008922119765,
-          "total_return": 0.1261406296645302,
-          "max_drawdown": -0.49572723451610984,
-          "win_rate": 0.4583333333333333,
-          "time_in_market": 0.3287671232876712,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -0.10793642639518716,
-          "total_return": -0.034802702568293764,
-          "max_drawdown": -0.17293183758537936,
-          "win_rate": 0.43902439024390244,
-          "time_in_market": 0.11232876712328767,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.0731776668703423,
-          "total_return": 0.17610202684275045,
-          "max_drawdown": -0.08282461408623996,
-          "win_rate": 0.525,
-          "time_in_market": 0.1095890410958904,
-          "year": 2023
-        }
-      },
-      "fold_metrics": [
-        {
-          "sharpe": 1.730058677077318,
-          "total_return": 0.8081435021693877,
-          "max_drawdown": -0.22860339044327962,
-          "win_rate": 0.5634920634920635,
-          "time_in_market": 0.3452054794520548,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.48518008922119765,
-          "total_return": 0.1261406296645302,
-          "max_drawdown": -0.49572723451610984,
-          "win_rate": 0.4583333333333333,
-          "time_in_market": 0.3287671232876712,
-          "year": 2021
-        },
-        {
-          "sharpe": -0.10793642639518716,
-          "total_return": -0.034802702568293764,
-          "max_drawdown": -0.17293183758537936,
-          "win_rate": 0.43902439024390244,
-          "time_in_market": 0.11232876712328767,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.0731776668703423,
-          "total_return": 0.17610202684275045,
-          "max_drawdown": -0.08282461408623996,
-          "win_rate": 0.525,
-          "time_in_market": 0.1095890410958904,
-          "year": 2023
-        }
-      ]
+{
+  "unfiltered_donchian": {
+    "sharpe": 1.3448501744683556,
+    "max_drawdown": 0.4172981921522542,
+    "per_year": {
+      "2019": 1.761192508681614,
+      "2020": 2.6818728589475835,
+      "2021": 0.8773500186924443,
+      "2022": -0.8065778638872144,
+      "2023": 1.7277891786132122
     }
   },
-  {
-    "approach": "vol_threshold",
-    "name": "vol_regime_20d_e20",
-    "config": {
-      "approach": "vol_threshold",
-      "vol_window": 20,
-      "vol_multiplier": 1.0,
-      "entry_period": 20,
-      "exit_period": 10
-    },
-    "results": {
-      "mean_sharpe": 0.8166980584959291,
-      "std_sharpe": 0.9758640133138718,
-      "min_sharpe": -0.5143002371379843,
-      "max_sharpe": 2.203306426179993,
-      "mean_return": 0.3193004706620144,
-      "mean_max_dd": -0.21762819612864173,
-      "worst_year_sharpe": -0.5143002371379843,
+  "approaches": [
+    {
+      "approach": "vol_regime",
+      "name": "vol_regime_10d_S0.59",
+      "mean_sharpe": 0.588,
+      "std_sharpe": 0.486,
+      "min_sharpe": -0.202,
+      "max_sharpe": 1.23,
       "per_year": {
-        "2020": {
-          "sharpe": 2.203306426179993,
-          "total_return": 1.0661158316918682,
-          "max_drawdown": -0.21988380830555124,
-          "win_rate": 0.5739130434782609,
-          "time_in_market": 0.3150684931506849,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.5507157549203299,
-          "total_return": 0.1605410032555743,
-          "max_drawdown": -0.45218604880144253,
-          "win_rate": 0.4672897196261682,
-          "time_in_market": 0.29315068493150687,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -0.5143002371379843,
-          "total_return": -0.09099328914490346,
-          "max_drawdown": -0.15720759940169213,
-          "win_rate": 0.5333333333333333,
-          "time_in_market": 0.0821917808219178,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.027070290021378,
-          "total_return": 0.14153833684551853,
-          "max_drawdown": -0.04123532800588102,
-          "win_rate": 0.5263157894736842,
-          "time_in_market": 0.052054794520547946,
-          "year": 2023
-        }
+        "2019": 0.335,
+        "2020": 1.23,
+        "2021": 0.774,
+        "2022": -0.202,
+        "2023": 0.801
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.203306426179993,
-          "total_return": 1.0661158316918682,
-          "max_drawdown": -0.21988380830555124,
-          "win_rate": 0.5739130434782609,
-          "time_in_market": 0.3150684931506849,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.5507157549203299,
-          "total_return": 0.1605410032555743,
-          "max_drawdown": -0.45218604880144253,
-          "win_rate": 0.4672897196261682,
-          "time_in_market": 0.29315068493150687,
-          "year": 2021
-        },
-        {
-          "sharpe": -0.5143002371379843,
-          "total_return": -0.09099328914490346,
-          "max_drawdown": -0.15720759940169213,
-          "win_rate": 0.5333333333333333,
-          "time_in_market": 0.0821917808219178,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.027070290021378,
-          "total_return": 0.14153833684551853,
-          "max_drawdown": -0.04123532800588102,
-          "win_rate": 0.5263157894736842,
-          "time_in_market": 0.052054794520547946,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "vol_threshold",
-    "name": "vol_regime_50d_e40",
-    "config": {
-      "approach": "vol_threshold",
-      "vol_window": 50,
-      "vol_multiplier": 1.0,
-      "entry_period": 40,
-      "exit_period": 20
+      "overall_sharpe": 0.627,
+      "max_drawdown": 0.277,
+      "total_return": 1.7,
+      "num_trades": 84
     },
-    "results": {
-      "mean_sharpe": 0.7114149149683409,
-      "std_sharpe": 0.8284964248640069,
-      "min_sharpe": -0.43323799294675086,
-      "max_sharpe": 1.876603403090056,
-      "mean_return": 0.26746936736919447,
-      "mean_max_dd": -0.1558353226483319,
-      "worst_year_sharpe": -0.43323799294675086,
+    {
+      "approach": "vol_regime",
+      "name": "vol_regime_20d_S0.96",
+      "mean_sharpe": 0.959,
+      "std_sharpe": 0.787,
+      "min_sharpe": -0.191,
+      "max_sharpe": 2.253,
       "per_year": {
-        "2020": {
-          "sharpe": 1.876603403090056,
-          "total_return": 0.8011494788127471,
-          "max_drawdown": -0.16954894734951267,
-          "win_rate": 0.5957446808510638,
-          "time_in_market": 0.25753424657534246,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.8980226649566171,
-          "total_return": 0.3461528458158343,
-          "max_drawdown": -0.2138336843315442,
-          "win_rate": 0.4968152866242038,
-          "time_in_market": 0.4301369863013699,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -0.43323799294675086,
-          "total_return": -0.10515893352569428,
-          "max_drawdown": -0.20982269131853598,
-          "win_rate": 0.46,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 0.5042715847734409,
-          "total_return": 0.027734078373890636,
-          "max_drawdown": -0.030135967593734693,
-          "win_rate": 0.625,
-          "time_in_market": 0.021917808219178082,
-          "year": 2023
-        }
+        "2019": 0.792,
+        "2020": 2.253,
+        "2021": 1.158,
+        "2022": -0.191,
+        "2023": 0.783
       },
-      "fold_metrics": [
-        {
-          "sharpe": 1.876603403090056,
-          "total_return": 0.8011494788127471,
-          "max_drawdown": -0.16954894734951267,
-          "win_rate": 0.5957446808510638,
-          "time_in_market": 0.25753424657534246,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.8980226649566171,
-          "total_return": 0.3461528458158343,
-          "max_drawdown": -0.2138336843315442,
-          "win_rate": 0.4968152866242038,
-          "time_in_market": 0.4301369863013699,
-          "year": 2021
-        },
-        {
-          "sharpe": -0.43323799294675086,
-          "total_return": -0.10515893352569428,
-          "max_drawdown": -0.20982269131853598,
-          "win_rate": 0.46,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        {
-          "sharpe": 0.5042715847734409,
-          "total_return": 0.027734078373890636,
-          "max_drawdown": -0.030135967593734693,
-          "win_rate": 0.625,
-          "time_in_market": 0.021917808219178082,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "adx_trend",
-    "name": "adx_regime_p14_t20",
-    "config": {
-      "approach": "adx_trend",
-      "adx_period": 14,
-      "adx_threshold": 20,
-      "entry_period": 20,
-      "exit_period": 10
+      "overall_sharpe": 1.041,
+      "max_drawdown": 0.277,
+      "total_return": 5.38,
+      "num_trades": 48
     },
-    "results": {
-      "mean_sharpe": 0.8787707140006076,
-      "std_sharpe": 1.6204753027710228,
-      "min_sharpe": -1.7833300505943617,
-      "max_sharpe": 2.277352153717831,
-      "mean_return": 0.5679144691282831,
-      "mean_max_dd": -0.28869326722225647,
-      "worst_year_sharpe": -1.7833300505943617,
+    {
+      "approach": "vol_regime",
+      "name": "vol_regime_50d_S0.55",
+      "mean_sharpe": 0.553,
+      "std_sharpe": 0.564,
+      "min_sharpe": -0.359,
+      "max_sharpe": 1.227,
       "per_year": {
-        "2020": {
-          "sharpe": 2.277352153717831,
-          "total_return": 1.3782906623992184,
-          "max_drawdown": -0.21988380830555104,
-          "win_rate": 0.5672514619883041,
-          "time_in_market": 0.4684931506849315,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.9348960476269214,
-          "total_return": 0.4154822132938907,
-          "max_drawdown": -0.40610808874718246,
-          "win_rate": 0.46564885496183206,
-          "time_in_market": 0.3589041095890411,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -1.7833300505943617,
-          "total_return": -0.3795596658789101,
-          "max_drawdown": -0.40977399419111105,
-          "win_rate": 0.41333333333333333,
-          "time_in_market": 0.2054794520547945,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 2.08616470525204,
-          "total_return": 0.8574446666989337,
-          "max_drawdown": -0.11900717764518122,
-          "win_rate": 0.5,
-          "time_in_market": 0.4931506849315068,
-          "year": 2023
-        }
+        "2019": 0.844,
+        "2020": 1.227,
+        "2021": 0.855,
+        "2022": -0.359,
+        "2023": 0.196
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.277352153717831,
-          "total_return": 1.3782906623992184,
-          "max_drawdown": -0.21988380830555104,
-          "win_rate": 0.5672514619883041,
-          "time_in_market": 0.4684931506849315,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.9348960476269214,
-          "total_return": 0.4154822132938907,
-          "max_drawdown": -0.40610808874718246,
-          "win_rate": 0.46564885496183206,
-          "time_in_market": 0.3589041095890411,
-          "year": 2021
-        },
-        {
-          "sharpe": -1.7833300505943617,
-          "total_return": -0.3795596658789101,
-          "max_drawdown": -0.40977399419111105,
-          "win_rate": 0.41333333333333333,
-          "time_in_market": 0.2054794520547945,
-          "year": 2022
-        },
-        {
-          "sharpe": 2.08616470525204,
-          "total_return": 0.8574446666989337,
-          "max_drawdown": -0.11900717764518122,
-          "win_rate": 0.5,
-          "time_in_market": 0.4931506849315068,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "adx_trend",
-    "name": "adx_regime_p14_t25",
-    "config": {
-      "approach": "adx_trend",
-      "adx_period": 14,
-      "adx_threshold": 25,
-      "entry_period": 20,
-      "exit_period": 10
+      "overall_sharpe": 0.65,
+      "max_drawdown": 0.277,
+      "total_return": 1.853,
+      "num_trades": 26
     },
-    "results": {
-      "mean_sharpe": 1.1513056314221117,
-      "std_sharpe": 1.193969056879273,
-      "min_sharpe": -0.6091256819827939,
-      "max_sharpe": 2.552198227221447,
-      "mean_return": 0.5707304888710938,
-      "mean_max_dd": -0.2270977057192723,
-      "worst_year_sharpe": -0.6091256819827939,
+    {
+      "approach": "adx_regime",
+      "name": "adx_14_t20_S1.01",
+      "mean_sharpe": 1.01,
+      "std_sharpe": 1.351,
+      "min_sharpe": -1.295,
+      "max_sharpe": 2.584,
       "per_year": {
-        "2020": {
-          "sharpe": 2.552198227221447,
-          "total_return": 1.4124052663786175,
-          "max_drawdown": -0.15234146887912547,
-          "win_rate": 0.5793103448275863,
-          "time_in_market": 0.3972602739726027,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.794420578042312,
-          "total_return": 0.2897404480286905,
-          "max_drawdown": -0.37959008406497324,
-          "win_rate": 0.4774774774774775,
-          "time_in_market": 0.3041095890410959,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -0.6091256819827939,
-          "total_return": -0.11047064637555648,
-          "max_drawdown": -0.2260323025560787,
-          "win_rate": 0.5,
-          "time_in_market": 0.10410958904109589,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.8677294024074822,
-          "total_return": 0.6912468874526234,
-          "max_drawdown": -0.1504269673769118,
-          "win_rate": 0.509090909090909,
-          "time_in_market": 0.4520547945205479,
-          "year": 2023
-        }
+        "2019": 1.764,
+        "2020": 2.584,
+        "2021": 0.381,
+        "2022": -1.295,
+        "2023": 1.615
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.552198227221447,
-          "total_return": 1.4124052663786175,
-          "max_drawdown": -0.15234146887912547,
-          "win_rate": 0.5793103448275863,
-          "time_in_market": 0.3972602739726027,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.794420578042312,
-          "total_return": 0.2897404480286905,
-          "max_drawdown": -0.37959008406497324,
-          "win_rate": 0.4774774774774775,
-          "time_in_market": 0.3041095890410959,
-          "year": 2021
-        },
-        {
-          "sharpe": -0.6091256819827939,
-          "total_return": -0.11047064637555648,
-          "max_drawdown": -0.2260323025560787,
-          "win_rate": 0.5,
-          "time_in_market": 0.10410958904109589,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.8677294024074822,
-          "total_return": 0.6912468874526234,
-          "max_drawdown": -0.1504269673769118,
-          "win_rate": 0.509090909090909,
-          "time_in_market": 0.4520547945205479,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "adx_trend",
-    "name": "adx_regime_p14_t30",
-    "config": {
-      "approach": "adx_trend",
-      "adx_period": 14,
-      "adx_threshold": 30,
-      "entry_period": 40,
-      "exit_period": 20
+      "overall_sharpe": 1.144,
+      "max_drawdown": 0.503,
+      "total_return": 10.562,
+      "num_trades": 68
     },
-    "results": {
-      "mean_sharpe": 1.1807125901632594,
-      "std_sharpe": 0.8294294849627093,
+    {
+      "approach": "adx_regime",
+      "name": "adx_14_t25_S0.94",
+      "mean_sharpe": 0.945,
+      "std_sharpe": 1.374,
+      "min_sharpe": -1.689,
+      "max_sharpe": 2.326,
+      "per_year": {
+        "2019": 1.536,
+        "2020": 2.326,
+        "2021": 1.162,
+        "2022": -1.689,
+        "2023": 1.39
+      },
+      "overall_sharpe": 1.238,
+      "max_drawdown": 0.359,
+      "total_return": 11.115,
+      "num_trades": 66
+    },
+    {
+      "approach": "adx_regime",
+      "name": "adx_14_t30_S1.21",
+      "mean_sharpe": 1.206,
+      "std_sharpe": 0.826,
+      "min_sharpe": -0.277,
+      "max_sharpe": 2.177,
+      "per_year": {
+        "2019": 1.514,
+        "2020": 2.177,
+        "2021": 1.034,
+        "2022": -0.277,
+        "2023": 1.583
+      },
+      "overall_sharpe": 1.357,
+      "max_drawdown": 0.223,
+      "total_return": 11.811,
+      "num_trades": 52
+    },
+    {
+      "approach": "adx_regime",
+      "name": "adx_28_t25_S0.81",
+      "mean_sharpe": 0.812,
+      "std_sharpe": 0.736,
       "min_sharpe": 0.0,
-      "max_sharpe": 2.3421157903052845,
-      "mean_return": 0.5244394158641222,
-      "mean_max_dd": -0.15280118375449223,
-      "worst_year_sharpe": 0.0,
+      "max_sharpe": 1.953,
       "per_year": {
-        "2020": {
-          "sharpe": 2.3421157903052845,
-          "total_return": 1.2944232964625688,
-          "max_drawdown": -0.14275985016926077,
-          "win_rate": 0.5827814569536424,
-          "time_in_market": 0.4136986301369863,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 1.1244618910078652,
-          "total_return": 0.4158055035860839,
-          "max_drawdown": -0.27261308169663484,
-          "win_rate": 0.4523809523809524,
-          "time_in_market": 0.23013698630136986,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": 0.0,
-          "total_return": 0.0,
-          "max_drawdown": 0.0,
-          "win_rate": 0.0,
-          "time_in_market": 0.0,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.2562726793398875,
-          "total_return": 0.3875288634078362,
-          "max_drawdown": -0.1958318031520733,
-          "win_rate": 0.509090909090909,
-          "time_in_market": 0.4520547945205479,
-          "year": 2023
-        }
+        "2019": 1.333,
+        "2020": 1.953,
+        "2021": 0.145,
+        "2022": 0.0,
+        "2023": 0.627
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.3421157903052845,
-          "total_return": 1.2944232964625688,
-          "max_drawdown": -0.14275985016926077,
-          "win_rate": 0.5827814569536424,
-          "time_in_market": 0.4136986301369863,
-          "year": 2020
-        },
-        {
-          "sharpe": 1.1244618910078652,
-          "total_return": 0.4158055035860839,
-          "max_drawdown": -0.27261308169663484,
-          "win_rate": 0.4523809523809524,
-          "time_in_market": 0.23013698630136986,
-          "year": 2021
-        },
-        {
-          "sharpe": 0.0,
-          "total_return": 0.0,
-          "max_drawdown": 0.0,
-          "win_rate": 0.0,
-          "time_in_market": 0.0,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.2562726793398875,
-          "total_return": 0.3875288634078362,
-          "max_drawdown": -0.1958318031520733,
-          "win_rate": 0.509090909090909,
-          "time_in_market": 0.4520547945205479,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "ml_meta",
-    "name": "ml_meta_lh20_d3_lr0.05",
-    "config": {
-      "approach": "ml_meta",
-      "top_n_features": 20,
-      "entry_period": 20,
-      "exit_period": 10,
-      "label_lookahead": 20,
-      "depth": 3,
-      "lr": 0.05,
-      "n_iter": 300
+      "overall_sharpe": 0.919,
+      "max_drawdown": 0.373,
+      "total_return": 4.078,
+      "num_trades": 36
     },
-    "results": {
-      "mean_sharpe": 0.685531368100777,
-      "std_sharpe": 1.8351312542935623,
-      "min_sharpe": -2.193044494629004,
-      "max_sharpe": 2.645004585160415,
-      "mean_return": 0.12827039792837722,
-      "mean_max_dd": -0.13315039818993768,
-      "worst_year_sharpe": -2.193044494629004,
-      "per_year": {
-        "2020": {
-          "sharpe": 1.8243167299226966,
-          "total_return": 0.30674195613966804,
-          "max_drawdown": -0.05365354067263397,
-          "win_rate": 0.6538461538461539,
-          "time_in_market": 0.07123287671232877,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.46584865194900016,
-          "total_return": 0.03641334244546446,
-          "max_drawdown": -0.03658539086421431,
-          "win_rate": 0.5,
-          "time_in_market": 0.005479452054794521,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -2.193044494629004,
-          "total_return": -0.38066780480584617,
-          "max_drawdown": -0.412628126679877,
-          "win_rate": 0.34,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 2.645004585160415,
-          "total_return": 0.5505940979342225,
-          "max_drawdown": -0.02973453454302545,
-          "win_rate": 0.6296296296296297,
-          "time_in_market": 0.07397260273972603,
-          "year": 2023
-        }
-      },
-      "fold_metrics": [
-        {
-          "sharpe": 1.8243167299226966,
-          "total_return": 0.30674195613966804,
-          "max_drawdown": -0.05365354067263397,
-          "win_rate": 0.6538461538461539,
-          "time_in_market": 0.07123287671232877,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.46584865194900016,
-          "total_return": 0.03641334244546446,
-          "max_drawdown": -0.03658539086421431,
-          "win_rate": 0.5,
-          "time_in_market": 0.005479452054794521,
-          "year": 2021
-        },
-        {
-          "sharpe": -2.193044494629004,
-          "total_return": -0.38066780480584617,
-          "max_drawdown": -0.412628126679877,
-          "win_rate": 0.34,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        {
-          "sharpe": 2.645004585160415,
-          "total_return": 0.5505940979342225,
-          "max_drawdown": -0.02973453454302545,
-          "win_rate": 0.6296296296296297,
-          "time_in_market": 0.07397260273972603,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "ml_meta",
-    "name": "ml_meta_lh10_d4_lr0.01",
-    "config": {
-      "approach": "ml_meta",
-      "top_n_features": 20,
-      "entry_period": 20,
-      "exit_period": 10,
-      "label_lookahead": 10,
-      "depth": 4,
-      "lr": 0.01,
-      "n_iter": 500
+    {
+      "approach": "ml_meta_learner",
+      "name": "meta_learner_cat_d3_lr0.05_S0.84",
+      "mean_wf_sharpe": 0.843,
+      "std_wf_sharpe": 0.571,
+      "min_wf_sharpe": 0.128,
+      "sharpe_2022": 0.128,
+      "baseline_donchian": 1.062,
+      "elapsed_seconds": 61.45621371269226,
+      "sharpe_2020": 1.383,
+      "sharpe_2021": 0.437,
+      "sharpe_2023": 1.424
     },
-    "results": {
-      "mean_sharpe": 0.8432930708324315,
-      "std_sharpe": 1.3197076202876241,
-      "min_sharpe": -1.0688641561072856,
-      "max_sharpe": 2.352731079327315,
-      "mean_return": 0.20321649191420316,
-      "mean_max_dd": -0.174113894615414,
-      "worst_year_sharpe": -1.0688641561072856,
+    {
+      "approach": "multi_signal_AND",
+      "name": "multi_vol_adx_AND_S1.05",
+      "mean_sharpe": 1.051,
+      "std_sharpe": 0.501,
+      "min_sharpe": 0.583,
+      "max_sharpe": 2.01,
       "per_year": {
-        "2020": {
-          "sharpe": 1.7340992210214767,
-          "total_return": 0.31214725410333166,
-          "max_drawdown": -0.11311889523571972,
-          "win_rate": 0.5588235294117647,
-          "time_in_market": 0.09315068493150686,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.35520613908822,
-          "total_return": 0.06491306909049221,
-          "max_drawdown": -0.3403372184352628,
-          "win_rate": 0.4727272727272727,
-          "time_in_market": 0.1506849315068493,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -1.0688641561072856,
-          "total_return": -0.13494646448193692,
-          "max_drawdown": -0.17389840494043968,
-          "win_rate": 0.4117647058823529,
-          "time_in_market": 0.04657534246575343,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 2.352731079327315,
-          "total_return": 0.5707521089449257,
-          "max_drawdown": -0.06910105985023371,
-          "win_rate": 0.5319148936170213,
-          "time_in_market": 0.12876712328767123,
-          "year": 2023
-        }
+        "2019": 0.776,
+        "2020": 2.01,
+        "2021": 1.037,
+        "2022": 0.583,
+        "2023": 0.849
       },
-      "fold_metrics": [
-        {
-          "sharpe": 1.7340992210214767,
-          "total_return": 0.31214725410333166,
-          "max_drawdown": -0.11311889523571972,
-          "win_rate": 0.5588235294117647,
-          "time_in_market": 0.09315068493150686,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.35520613908822,
-          "total_return": 0.06491306909049221,
-          "max_drawdown": -0.3403372184352628,
-          "win_rate": 0.4727272727272727,
-          "time_in_market": 0.1506849315068493,
-          "year": 2021
-        },
-        {
-          "sharpe": -1.0688641561072856,
-          "total_return": -0.13494646448193692,
-          "max_drawdown": -0.17389840494043968,
-          "win_rate": 0.4117647058823529,
-          "time_in_market": 0.04657534246575343,
-          "year": 2022
-        },
-        {
-          "sharpe": 2.352731079327315,
-          "total_return": 0.5707521089449257,
-          "max_drawdown": -0.06910105985023371,
-          "win_rate": 0.5319148936170213,
-          "time_in_market": 0.12876712328767123,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "multi_signal",
-    "name": "multi_vol20_adx25_AND",
-    "config": {
-      "approach": "multi_signal_and",
-      "signals": [
-        "vol_20d",
-        "adx_25"
-      ],
-      "mode": "all",
-      "entry_period": 20,
-      "exit_period": 10
+      "overall_sharpe": 1.013,
+      "max_drawdown": 0.213,
+      "total_return": 3.569,
+      "num_trades": 40
     },
-    "results": {
-      "mean_sharpe": 1.0682106776514573,
-      "std_sharpe": 0.9038960040670799,
-      "min_sharpe": 0.19170120748763622,
-      "max_sharpe": 2.56221094492124,
-      "mean_return": 0.33362280473549755,
-      "mean_max_dd": -0.15590570318955313,
-      "worst_year_sharpe": 0.19170120748763622,
+    {
+      "approach": "multi_signal_OR",
+      "name": "multi_vol_adx_OR_S1.23",
+      "mean_sharpe": 1.234,
+      "std_sharpe": 0.943,
+      "min_sharpe": -0.452,
+      "max_sharpe": 2.433,
       "per_year": {
-        "2020": {
-          "sharpe": 2.56221094492124,
-          "total_return": 1.0409054072792983,
-          "max_drawdown": -0.1427598501692607,
-          "win_rate": 0.5795454545454546,
-          "time_in_market": 0.2410958904109589,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.5630488178109649,
-          "total_return": 0.15322018044809016,
-          "max_drawdown": -0.3568559827776074,
-          "win_rate": 0.46808510638297873,
-          "time_in_market": 0.25753424657534246,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": 0.19170120748763622,
-          "total_return": 0.013864955360586295,
-          "max_drawdown": -0.08277165180546338,
-          "win_rate": 0.6428571428571429,
-          "time_in_market": 0.038356164383561646,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 0.9558817403859878,
-          "total_return": 0.12650067585401548,
-          "max_drawdown": -0.04123532800588103,
-          "win_rate": 0.5294117647058824,
-          "time_in_market": 0.04657534246575343,
-          "year": 2023
-        }
+        "2019": 1.482,
+        "2020": 2.433,
+        "2021": 1.155,
+        "2022": -0.452,
+        "2023": 1.552
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.56221094492124,
-          "total_return": 1.0409054072792983,
-          "max_drawdown": -0.1427598501692607,
-          "win_rate": 0.5795454545454546,
-          "time_in_market": 0.2410958904109589,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.5630488178109649,
-          "total_return": 0.15322018044809016,
-          "max_drawdown": -0.3568559827776074,
-          "win_rate": 0.46808510638297873,
-          "time_in_market": 0.25753424657534246,
-          "year": 2021
-        },
-        {
-          "sharpe": 0.19170120748763622,
-          "total_return": 0.013864955360586295,
-          "max_drawdown": -0.08277165180546338,
-          "win_rate": 0.6428571428571429,
-          "time_in_market": 0.038356164383561646,
-          "year": 2022
-        },
-        {
-          "sharpe": 0.9558817403859878,
-          "total_return": 0.12650067585401548,
-          "max_drawdown": -0.04123532800588103,
-          "win_rate": 0.5294117647058824,
-          "time_in_market": 0.04657534246575343,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "multi_signal",
-    "name": "multi_ml_meta_OR_vol20",
-    "config": {
-      "approach": "multi_signal_ml_vol",
-      "signals": [
-        "ml_meta",
-        "vol_20d"
-      ],
-      "mode": "any",
-      "entry_period": 20,
-      "exit_period": 10
+      "overall_sharpe": 1.364,
+      "max_drawdown": 0.277,
+      "total_return": 16.886,
+      "num_trades": 60
     },
-    "results": {
-      "mean_sharpe": 0.9273239490299892,
-      "std_sharpe": 1.9184757987442873,
-      "min_sharpe": -2.057893494416222,
-      "max_sharpe": 2.702853986854153,
-      "mean_return": 0.4832792287874808,
-      "mean_max_dd": -0.28824117119873355,
-      "worst_year_sharpe": -2.057893494416222,
-      "per_year": {
-        "2020": {
-          "sharpe": 2.702853986854153,
-          "total_return": 1.601395053175192,
-          "max_drawdown": -0.21988380830555093,
-          "win_rate": 0.5939849624060151,
-          "time_in_market": 0.3643835616438356,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.5507157549203299,
-          "total_return": 0.1605410032555743,
-          "max_drawdown": -0.45218604880144253,
-          "win_rate": 0.4672897196261682,
-          "time_in_market": 0.29315068493150687,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -2.057893494416222,
-          "total_return": -0.40462475096934847,
-          "max_drawdown": -0.4396594996820597,
-          "win_rate": 0.39705882352941174,
-          "time_in_market": 0.1863013698630137,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 2.5136195487616964,
-          "total_return": 0.5758056096885056,
-          "max_drawdown": -0.04123532800588112,
-          "win_rate": 0.5897435897435898,
-          "time_in_market": 0.10684931506849316,
-          "year": 2023
-        }
-      },
-      "fold_metrics": [
-        {
-          "sharpe": 2.702853986854153,
-          "total_return": 1.601395053175192,
-          "max_drawdown": -0.21988380830555093,
-          "win_rate": 0.5939849624060151,
-          "time_in_market": 0.3643835616438356,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.5507157549203299,
-          "total_return": 0.1605410032555743,
-          "max_drawdown": -0.45218604880144253,
-          "win_rate": 0.4672897196261682,
-          "time_in_market": 0.29315068493150687,
-          "year": 2021
-        },
-        {
-          "sharpe": -2.057893494416222,
-          "total_return": -0.40462475096934847,
-          "max_drawdown": -0.4396594996820597,
-          "win_rate": 0.39705882352941174,
-          "time_in_market": 0.1863013698630137,
-          "year": 2022
-        },
-        {
-          "sharpe": 2.5136195487616964,
-          "total_return": 0.5758056096885056,
-          "max_drawdown": -0.04123532800588112,
-          "win_rate": 0.5897435897435898,
-          "time_in_market": 0.10684931506849316,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "drawdown_filter",
-    "name": "dd_filter_5pct_20d",
-    "config": {
+    {
       "approach": "drawdown_filter",
-      "dd_threshold": 0.05,
-      "lookback_days": 20,
-      "cooldown_days": 10,
-      "entry_period": 20,
-      "exit_period": 10
-    },
-    "results": {
-      "mean_sharpe": 0.8074605769662309,
-      "std_sharpe": 1.462008963893178,
-      "min_sharpe": -1.676026222735102,
-      "max_sharpe": 1.9360667318822853,
-      "mean_return": 0.36595818050296613,
-      "mean_max_dd": -0.2102384064729604,
-      "worst_year_sharpe": -1.676026222735102,
+      "name": "dd_5pct_20d_S0.88",
+      "mean_sharpe": 0.882,
+      "std_sharpe": 1.178,
+      "min_sharpe": -1.415,
+      "max_sharpe": 1.7,
       "per_year": {
-        "2020": {
-          "sharpe": 1.793584818606342,
-          "total_return": 0.7270444091679789,
-          "max_drawdown": -0.20445196659695253,
-          "win_rate": 0.55,
-          "time_in_market": 0.273972602739726,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 1.9360667318822853,
-          "total_return": 0.6500691158438376,
-          "max_drawdown": -0.1080240233520005,
-          "win_rate": 0.5238095238095238,
-          "time_in_market": 0.11506849315068493,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -1.676026222735102,
-          "total_return": -0.24242978545739546,
-          "max_drawdown": -0.3098662212197446,
-          "win_rate": 0.43902439024390244,
-          "time_in_market": 0.11232876712328767,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.1762169801113986,
-          "total_return": 0.3291489824574434,
-          "max_drawdown": -0.21861141472314405,
-          "win_rate": 0.49606299212598426,
-          "time_in_market": 0.34794520547945207,
-          "year": 2023
-        }
+        "2019": 1.443,
+        "2020": 1.699,
+        "2021": 0.982,
+        "2022": -1.415,
+        "2023": 1.7
       },
-      "fold_metrics": [
-        {
-          "sharpe": 1.793584818606342,
-          "total_return": 0.7270444091679789,
-          "max_drawdown": -0.20445196659695253,
-          "win_rate": 0.55,
-          "time_in_market": 0.273972602739726,
-          "year": 2020
-        },
-        {
-          "sharpe": 1.9360667318822853,
-          "total_return": 0.6500691158438376,
-          "max_drawdown": -0.1080240233520005,
-          "win_rate": 0.5238095238095238,
-          "time_in_market": 0.11506849315068493,
-          "year": 2021
-        },
-        {
-          "sharpe": -1.676026222735102,
-          "total_return": -0.24242978545739546,
-          "max_drawdown": -0.3098662212197446,
-          "win_rate": 0.43902439024390244,
-          "time_in_market": 0.11232876712328767,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.1762169801113986,
-          "total_return": 0.3291489824574434,
-          "max_drawdown": -0.21861141472314405,
-          "win_rate": 0.49606299212598426,
-          "time_in_market": 0.34794520547945207,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "drawdown_filter",
-    "name": "dd_filter_10pct_40d",
-    "config": {
+      "overall_sharpe": 1.094,
+      "max_drawdown": 0.394,
+      "total_return": 6.882,
+      "num_trades": 127
+    },
+    {
       "approach": "drawdown_filter",
-      "dd_threshold": 0.1,
-      "lookback_days": 40,
-      "cooldown_days": 15,
-      "entry_period": 20,
-      "exit_period": 10
-    },
-    "results": {
-      "mean_sharpe": 1.0246685616096896,
-      "std_sharpe": 1.4773526850400513,
-      "min_sharpe": -1.2342904801806163,
-      "max_sharpe": 2.528324015477176,
-      "mean_return": 0.5659189138644307,
-      "mean_max_dd": -0.21136908697663767,
-      "worst_year_sharpe": -1.2342904801806163,
+      "name": "dd_10pct_40d_S0.82",
+      "mean_sharpe": 0.816,
+      "std_sharpe": 1.364,
+      "min_sharpe": -1.615,
+      "max_sharpe": 2.45,
       "per_year": {
-        "2020": {
-          "sharpe": 2.528324015477176,
-          "total_return": 1.426933036161087,
-          "max_drawdown": -0.17735046285033917,
-          "win_rate": 0.5704697986577181,
-          "time_in_market": 0.40821917808219177,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.6670767250022774,
-          "total_return": 0.16368341669781783,
-          "max_drawdown": -0.19797387913765213,
-          "win_rate": 0.4897959183673469,
-          "time_in_market": 0.13424657534246576,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -1.2342904801806163,
-          "total_return": -0.2496405687954355,
-          "max_drawdown": -0.29045695249478176,
-          "win_rate": 0.423728813559322,
-          "time_in_market": 0.16164383561643836,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 2.1375639861399205,
-          "total_return": 0.9226997713942537,
-          "max_drawdown": -0.1796950534237777,
-          "win_rate": 0.5052631578947369,
-          "time_in_market": 0.5205479452054794,
-          "year": 2023
-        }
+        "2019": 1.08,
+        "2020": 2.45,
+        "2021": 0.578,
+        "2022": -1.615,
+        "2023": 1.587
       },
-      "fold_metrics": [
-        {
-          "sharpe": 2.528324015477176,
-          "total_return": 1.426933036161087,
-          "max_drawdown": -0.17735046285033917,
-          "win_rate": 0.5704697986577181,
-          "time_in_market": 0.40821917808219177,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.6670767250022774,
-          "total_return": 0.16368341669781783,
-          "max_drawdown": -0.19797387913765213,
-          "win_rate": 0.4897959183673469,
-          "time_in_market": 0.13424657534246576,
-          "year": 2021
-        },
-        {
-          "sharpe": -1.2342904801806163,
-          "total_return": -0.2496405687954355,
-          "max_drawdown": -0.29045695249478176,
-          "win_rate": 0.423728813559322,
-          "time_in_market": 0.16164383561643836,
-          "year": 2022
-        },
-        {
-          "sharpe": 2.1375639861399205,
-          "total_return": 0.9226997713942537,
-          "max_drawdown": -0.1796950534237777,
-          "win_rate": 0.5052631578947369,
-          "time_in_market": 0.5205479452054794,
-          "year": 2023
-        }
-      ]
-    }
-  },
-  {
-    "approach": "drawdown_filter",
-    "name": "dd_filter_15pct_60d",
-    "config": {
+      "overall_sharpe": 1.036,
+      "max_drawdown": 0.47,
+      "total_return": 6.984,
+      "num_trades": 75
+    },
+    {
       "approach": "drawdown_filter",
-      "dd_threshold": 0.15,
-      "lookback_days": 60,
-      "cooldown_days": 20,
-      "entry_period": 40,
-      "exit_period": 20
-    },
-    "results": {
-      "mean_sharpe": 0.8285534574201853,
-      "std_sharpe": 2.1552135139900552,
-      "min_sharpe": -2.5748776287542565,
-      "max_sharpe": 3.2506944095436916,
-      "mean_return": 0.9633962529781619,
-      "mean_max_dd": -0.2622866650536919,
-      "worst_year_sharpe": -2.5748776287542565,
+      "name": "dd_15pct_60d_S0.87",
+      "mean_sharpe": 0.866,
+      "std_sharpe": 1.522,
+      "min_sharpe": -1.684,
+      "max_sharpe": 2.682,
       "per_year": {
-        "2020": {
-          "sharpe": 3.2506944095436916,
-          "total_return": 3.3422552061594146,
-          "max_drawdown": -0.14275985016926068,
-          "win_rate": 0.5874439461883408,
-          "time_in_market": 0.6109589041095891,
-          "year": 2020
-        },
-        "2021": {
-          "sharpe": 0.7498980547214958,
-          "total_return": 0.2314704339051854,
-          "max_drawdown": -0.2818645094878899,
-          "win_rate": 0.47058823529411764,
-          "time_in_market": 0.27945205479452057,
-          "year": 2021
-        },
-        "2022": {
-          "sharpe": -2.5748776287542565,
-          "total_return": -0.4408668861852242,
-          "max_drawdown": -0.4408668861852242,
-          "win_rate": 0.32,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        "2023": {
-          "sharpe": 1.8884989941698103,
-          "total_return": 0.7207262580332718,
-          "max_drawdown": -0.18365541437239288,
-          "win_rate": 0.5,
-          "time_in_market": 0.4931506849315068,
-          "year": 2023
-        }
+        "2019": 1.678,
+        "2020": 2.682,
+        "2021": 0.079,
+        "2022": -1.684,
+        "2023": 1.573
       },
-      "fold_metrics": [
-        {
-          "sharpe": 3.2506944095436916,
-          "total_return": 3.3422552061594146,
-          "max_drawdown": -0.14275985016926068,
-          "win_rate": 0.5874439461883408,
-          "time_in_market": 0.6109589041095891,
-          "year": 2020
-        },
-        {
-          "sharpe": 0.7498980547214958,
-          "total_return": 0.2314704339051854,
-          "max_drawdown": -0.2818645094878899,
-          "win_rate": 0.47058823529411764,
-          "time_in_market": 0.27945205479452057,
-          "year": 2021
-        },
-        {
-          "sharpe": -2.5748776287542565,
-          "total_return": -0.4408668861852242,
-          "max_drawdown": -0.4408668861852242,
-          "win_rate": 0.32,
-          "time_in_market": 0.136986301369863,
-          "year": 2022
-        },
-        {
-          "sharpe": 1.8884989941698103,
-          "total_return": 0.7207262580332718,
-          "max_drawdown": -0.18365541437239288,
-          "win_rate": 0.5,
-          "time_in_market": 0.4931506849315068,
-          "year": 2023
-        }
-      ]
+      "overall_sharpe": 1.065,
+      "max_drawdown": 0.631,
+      "total_return": 8.531,
+      "num_trades": 49
+    },
+    {
+      "approach": "drawdown_filter",
+      "name": "dd_10pct_20d_S0.88",
+      "mean_sharpe": 0.882,
+      "std_sharpe": 1.359,
+      "min_sharpe": -1.615,
+      "max_sharpe": 2.45,
+      "per_year": {
+        "2019": 1.08,
+        "2020": 2.45,
+        "2021": 0.908,
+        "2022": -1.615,
+        "2023": 1.585
+      },
+      "overall_sharpe": 1.109,
+      "max_drawdown": 0.468,
+      "total_return": 8.844,
+      "num_trades": 79
     }
-  }
-]
+  ]
+}

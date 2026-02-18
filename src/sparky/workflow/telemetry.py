@@ -17,8 +17,10 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Sonnet pricing (per token) — update as needed
-INPUT_RATE_USD = 3.0 / 1_000_000   # $3 per 1M input tokens
-OUTPUT_RATE_USD = 15.0 / 1_000_000  # $15 per 1M output tokens
+INPUT_RATE_USD = 3.0 / 1_000_000       # $3 per 1M input tokens
+OUTPUT_RATE_USD = 15.0 / 1_000_000     # $15 per 1M output tokens
+CACHE_WRITE_RATE_USD = 3.75 / 1_000_000  # $3.75 per 1M cache creation tokens
+CACHE_READ_RATE_USD = 0.30 / 1_000_000   # $0.30 per 1M cache read tokens
 
 
 @dataclass
@@ -33,6 +35,10 @@ class SessionTelemetry:
     duration_minutes: float = 0.0
     tokens_input: int = 0
     tokens_output: int = 0
+    tokens_cache_read: int = 0
+    tokens_cache_creation: int = 0
+    num_turns: int = 0
+    cost_usd: float = 0.0  # Claude CLI's own cost calculation (ground truth)
     tool_calls: int = 0
     estimated_cost_usd: float = 0.0
     behavioral_flags: list[str] = field(default_factory=list)
@@ -40,9 +46,11 @@ class SessionTelemetry:
     done_when_result: bool = False
 
     def compute_cost(self) -> float:
-        """Compute estimated cost from token counts."""
+        """Compute estimated cost from token counts, including cache tokens."""
         self.estimated_cost_usd = (
             self.tokens_input * INPUT_RATE_USD
+            + self.tokens_cache_creation * CACHE_WRITE_RATE_USD
+            + self.tokens_cache_read * CACHE_READ_RATE_USD
             + self.tokens_output * OUTPUT_RATE_USD
         )
         return self.estimated_cost_usd
@@ -58,6 +66,10 @@ class SessionTelemetry:
             "duration_minutes": self.duration_minutes,
             "tokens_input": self.tokens_input,
             "tokens_output": self.tokens_output,
+            "tokens_cache_read": self.tokens_cache_read,
+            "tokens_cache_creation": self.tokens_cache_creation,
+            "num_turns": self.num_turns,
+            "cost_usd": self.cost_usd,
             "tool_calls": self.tool_calls,
             "estimated_cost_usd": self.estimated_cost_usd,
             "behavioral_flags": self.behavioral_flags,
@@ -157,6 +169,16 @@ class StreamParser:
             if usage:
                 self.telemetry.tokens_input = usage.get("input_tokens", 0)
                 self.telemetry.tokens_output = usage.get("output_tokens", 0)
+                self.telemetry.tokens_cache_read = usage.get("cache_read_input_tokens", 0)
+                self.telemetry.tokens_cache_creation = usage.get("cache_creation_input_tokens", 0)
+
+            # Capture CLI's own cost and turn count (ground truth)
+            cost = msg.get("total_cost_usd", 0)
+            if cost:
+                self.telemetry.cost_usd = cost
+            turns = msg.get("num_turns", 0)
+            if turns:
+                self.telemetry.num_turns = turns
 
         elif msg_type == "error":
             error_text = str(msg.get("error", ""))
