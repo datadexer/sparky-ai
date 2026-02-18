@@ -34,6 +34,16 @@ tracker.log_experiment("donchian_wf_validated", config={...}, metrics={...}, tag
 ```
 **IMPORTANT:** Do NOT create one W&B run per config. Use `log_sweep()` for sweeps. Use `log_experiment()` only for validated results. Always pass `tags` for workflow tracking.
 
+When logging experiments, always compute full metrics:
+```python
+from sparky.tracking.metrics import compute_all_metrics
+metrics = compute_all_metrics(returns, n_trials=N)  # N = total configs tested so far
+wandb.log(metrics)
+```
+The Deflated Sharpe Ratio (DSR) is the primary evaluation metric, not raw Sharpe.
+DSR > 0.95 = statistically significant after multiple testing correction.
+DSR < 0.95 = could be a fluke. Do not declare victory.
+
 ## GPU Training (DGX Spark)
 - XGBoost: `tree_method="hist", device="cuda"`
 - CatBoost: `task_type="GPU", devices="0"`

@@ -21,6 +21,60 @@ from sparky.workflow.telemetry import SessionTelemetry, StreamParser, save_telem
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path("/home/akamath/sparky-ai")
+
+
+def _upload_session_to_wandb(telemetry, log_path, step) -> None:
+    """Upload session log and telemetry to wandb (background thread)."""
+    import threading
+
+    def _upload():
+        try:
+            import wandb
+            run = wandb.init(
+                project="sparky-ai",
+                entity="datadex_ai",
+                name=f"session_{telemetry.session_id}_{telemetry.step}",
+                job_type="session",
+                group="ceo_sessions",
+                config={
+                    "session_id": telemetry.session_id,
+                    "step": telemetry.step,
+                    "attempt": telemetry.attempt,
+                    "exit_reason": telemetry.exit_reason,
+                },
+                tags=["session", telemetry.step, telemetry.exit_reason],
+                reinit=True,
+            )
+
+            wandb.log({
+                "duration_minutes": telemetry.duration_minutes,
+                "cost_usd": getattr(telemetry, "cost_usd", 0),
+                "estimated_cost_usd": telemetry.estimated_cost_usd,
+                "tokens_input": telemetry.tokens_input,
+                "tokens_output": telemetry.tokens_output,
+                "tokens_cache_read": getattr(telemetry, "tokens_cache_read", 0),
+                "tokens_cache_creation": getattr(telemetry, "tokens_cache_creation", 0),
+                "tool_calls": telemetry.tool_calls,
+                "num_turns": getattr(telemetry, "num_turns", 0),
+            })
+
+            if log_path and Path(log_path).exists():
+                art = wandb.Artifact(
+                    name=f"session-log-{telemetry.session_id}",
+                    type="session_log",
+                    description=f"step={telemetry.step} exit={telemetry.exit_reason}",
+                )
+                art.add_file(str(log_path))
+                run.log_artifact(art)
+
+            wandb.finish()
+            logger.info(f"Uploaded session {telemetry.session_id} to wandb")
+
+        except Exception as e:
+            logger.warning(f"wandb session upload failed (non-fatal): {e}")
+
+    t = threading.Thread(target=_upload, daemon=True)
+    t.start()
 STATE_DIR = PROJECT_ROOT / "workflows" / "state"
 LOG_DIR = PROJECT_ROOT / "logs" / "ceo_sessions"
 ALERT_SCRIPT = PROJECT_ROOT / "scripts" / "alert.sh"
@@ -247,6 +301,9 @@ class Workflow:
         env = self._clean_env()
         timeout_seconds = max_duration_minutes * 60
 
+        from sparky.tracking.experiment import set_current_session, clear_current_session
+        set_current_session(session_id)
+
         with open(log_path, "w") as log_file:
             log_file.write(
                 f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
@@ -310,6 +367,8 @@ class Workflow:
             except Exception as e:
                 logger.error(f"Error launching claude: {e}")
                 parser.telemetry.exit_reason = "error"
+            finally:
+                clear_current_session()
 
             log_file.write(
                 f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] "
@@ -318,6 +377,7 @@ class Workflow:
 
         telemetry = parser.finalize()
         save_telemetry(telemetry)
+        _upload_session_to_wandb(telemetry, log_path, step)
         return telemetry
 
     def run(self) -> int:

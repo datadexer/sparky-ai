@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from sparky.tracking.experiment import ExperimentTracker, config_hash
+from sparky.tracking.experiment import (
+    ExperimentTracker,
+    config_hash,
+    clear_current_session,
+    get_current_session,
+    set_current_session,
+)
 
 
 @pytest.fixture
@@ -213,3 +219,86 @@ class TestExperimentTracker:
     def test_static_config_hash(self, tracker):
         h = tracker.config_hash({"a": 1})
         assert h == config_hash({"a": 1})
+
+
+class TestSessionTracking:
+    def setup_method(self):
+        """Ensure clean session state before each test."""
+        clear_current_session()
+
+    def teardown_method(self):
+        """Clean up session state after each test."""
+        clear_current_session()
+
+    def test_initial_session_is_none(self):
+        assert get_current_session() is None
+
+    def test_set_and_get_session(self):
+        set_current_session("20260217_031500")
+        assert get_current_session() == "20260217_031500"
+
+    def test_clear_session(self):
+        set_current_session("20260217_031500")
+        clear_current_session()
+        assert get_current_session() is None
+
+    def test_set_session_overwrites_previous(self):
+        set_current_session("session_a")
+        set_current_session("session_b")
+        assert get_current_session() == "session_b"
+
+    def test_log_experiment_includes_session_id(self, tracker):
+        """When a session is active, log_experiment should inject session_id into run config."""
+        mock_run = MagicMock()
+        mock_run.id = "run_sid_test"
+        set_current_session("test_session_abc")
+        try:
+            with patch("sparky.tracking.experiment.wandb") as mock_wandb:
+                mock_wandb.init.return_value = mock_run
+                with patch.object(tracker, "_get_git_hash", return_value="abc"):
+                    with patch.object(tracker, "_get_data_manifest_hash", return_value="def"):
+                        tracker.log_experiment(
+                            name="sid_test",
+                            config={"model_type": "xgboost"},
+                            metrics={"sharpe": 1.0},
+                        )
+                        call_kwargs = mock_wandb.init.call_args[1]
+                        assert call_kwargs["config"]["session_id"] == "test_session_abc"
+        finally:
+            clear_current_session()
+
+    def test_log_experiment_no_session_id_when_cleared(self, tracker):
+        """When no session is active, session_id should not appear in run config."""
+        mock_run = MagicMock()
+        mock_run.id = "run_no_sid"
+        clear_current_session()
+        with patch("sparky.tracking.experiment.wandb") as mock_wandb:
+            mock_wandb.init.return_value = mock_run
+            with patch.object(tracker, "_get_git_hash", return_value="abc"):
+                with patch.object(tracker, "_get_data_manifest_hash", return_value="def"):
+                    tracker.log_experiment(
+                        name="no_sid_test",
+                        config={"model_type": "xgboost"},
+                        metrics={"sharpe": 1.0},
+                    )
+                    call_kwargs = mock_wandb.init.call_args[1]
+                    assert "session_id" not in call_kwargs["config"]
+
+    def test_log_sweep_includes_session_id(self, tracker):
+        """When a session is active, log_sweep should inject session_id into sweep config."""
+        mock_run = MagicMock()
+        mock_run.id = "run_sweep_sid"
+        set_current_session("sweep_session_xyz")
+        try:
+            with patch("sparky.tracking.experiment.wandb") as mock_wandb:
+                mock_wandb.init.return_value = mock_run
+                with patch.object(tracker, "_get_git_hash", return_value="abc"):
+                    with patch.object(tracker, "_get_data_manifest_hash", return_value="def"):
+                        tracker.log_sweep(
+                            name="test_sweep",
+                            results=[{"config": {"model_type": "xgboost"}, "metrics": {"sharpe": 0.9}}],
+                        )
+                        call_kwargs = mock_wandb.init.call_args[1]
+                        assert call_kwargs["config"]["session_id"] == "sweep_session_xyz"
+        finally:
+            clear_current_session()
