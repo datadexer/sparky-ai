@@ -87,9 +87,10 @@ class TestCheckHoldoutBoundary:
         assert result.passed
         assert result.severity == "block"
 
-    def test_fails_for_future_data(self):
-        # Data extending past 2024-07-01
-        dates = pd.date_range("2024-06-01", periods=5000, freq="h", tz="UTC")
+    def test_fails_for_future_data(self, holdout_dates):
+        # Data that extends past the holdout embargo boundary
+        start = holdout_dates["max_training_ts"] - pd.Timedelta(days=30)
+        dates = pd.date_range(start, periods=5000, freq="h", tz="UTC")
         data = pd.DataFrame({"x": range(5000)}, index=dates)
         result = check_holdout_boundary(data, asset="btc")
         assert not result.passed

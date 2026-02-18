@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 import yaml
 
+from sparky.oversight.holdout_guard import get_policy_hash
 from sparky.workflow.engine import (
     LOG_DIR,
     PROJECT_ROOT,
@@ -651,6 +652,17 @@ class ResearchOrchestrator:
         parts.append(f"## Tagging\nTag all wandb runs in this session with: {all_tags}")
         parts.append("")
 
+        # Git prohibition
+        parts.append(
+            "## CRITICAL: Do NOT Use Git\n"
+            "You are a research agent. You must NOT create branches, commit, push, "
+            "or run any git commands. Your outputs go to wandb and results/ only.\n"
+            "If you need a platform change (new feature, bug fix, data issue), "
+            "write `GATE_REQUEST.md` to the project root explaining what you need, "
+            "then exit. The orchestrator will pause for oversight."
+        )
+        parts.append("")
+
         # Stuck protocol
         parts.append(
             "## Stuck Protocol\n"
@@ -698,6 +710,9 @@ class ResearchOrchestrator:
 
             state.status = "running"
             state.save(self.state_dir)
+
+            # Record policy hash at startup for integrity checking
+            initial_policy_hash = get_policy_hash()
 
             # Main loop
             while True:
@@ -764,6 +779,19 @@ class ResearchOrchestrator:
                 else:
                     state.crash_counter = 0
                     state.crash_backoff_seconds = 120
+
+                # Post-session integrity checks
+                current_hash = get_policy_hash()
+                if current_hash != initial_policy_hash:
+                    state.status = "paused"
+                    state.save(self.state_dir)
+                    send_alert(
+                        "CRITICAL",
+                        "holdout_policy.yaml was modified during orchestrator run! "
+                        "Pausing immediately. This requires human investigation.",
+                    )
+                    logger.error("Holdout policy tampered — halting orchestrator")
+                    return 1
 
                 # Query wandb for session results
                 results = self._query_session_results(session_tag)

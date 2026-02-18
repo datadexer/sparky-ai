@@ -69,8 +69,13 @@ if [ "$RESEARCH_ACTIVE" != "active" ]; then
 fi
 
 # === 4. Holdout violation detection ===
-# Scan recent Research Agent session logs for access to holdout period (2024-07 onwards)
-HOLDOUT_PATTERNS="2024-0[7-9]|2024-1[0-2]|2025-|2026-"
+# Extract OOS year dynamically from holdout_policy.yaml
+OOS_DATE=$(grep -m1 'oos_start:' "$PROJECT_ROOT/configs/holdout_policy.yaml" \
+    | sed 's/.*"\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)".*/\1/')
+OOS_YEAR=$(echo "$OOS_DATE" | cut -d- -f1)
+NEXT_YEAR=$((OOS_YEAR + 1))
+NEXT_NEXT=$((OOS_YEAR + 2))
+HOLDOUT_PATTERNS="${OOS_YEAR}-|${NEXT_YEAR}-|${NEXT_NEXT}-"
 LATEST_RESEARCH_LOG=$(ls -t "$PROJECT_ROOT/logs/research_sessions"/research_session_*.log 2>/dev/null | head -1)
 
 if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
@@ -85,7 +90,7 @@ if [ -n "$LATEST_RESEARCH_LOG" ] && [ -s "$LATEST_RESEARCH_LOG" ]; then
 
     if [ "$HOLDOUT_HITS" -gt 0 ]; then
         alert "CRITICAL" "HOLDOUT VIOLATION DETECTED in Research Agent session log!
-Found $HOLDOUT_HITS references to holdout period (2024-07+) in data access patterns.
+Found $HOLDOUT_HITS references to holdout period (${OOS_DATE}+) in data access patterns.
 Log: $LATEST_RESEARCH_LOG
 Matching lines:
 $(tail -500 "$LATEST_RESEARCH_LOG" | grep -E "(loc\[.*($HOLDOUT_PATTERNS)|test_start.*=.*($HOLDOUT_PATTERNS)|test_end.*=.*($HOLDOUT_PATTERNS)|\.loc\[\"($HOLDOUT_PATTERNS))" 2>/dev/null | head -10)"
@@ -98,13 +103,13 @@ fi
 for f in "$PROJECT_ROOT"/scripts/*.py; do
     if [ -f "$f" ] && [ "$(find "$f" -mmin -35 2>/dev/null)" ]; then
         # Recently modified script — check for holdout access
-        SCRIPT_HOLDOUT=$(grep -cE "test_end.*=.*(2024-0[7-9]|2024-1[0-2]|2025-|2026-)" "$f" 2>/dev/null || echo 0)
+        SCRIPT_HOLDOUT=$(grep -cE "test_end.*=.*(${HOLDOUT_PATTERNS})" "$f" 2>/dev/null || echo 0)
         SCRIPT_HOLDOUT=$(echo "$SCRIPT_HOLDOUT" | tr -d '[:space:]')
         if [ "$SCRIPT_HOLDOUT" -gt 0 ]; then
             alert "CRITICAL" "HOLDOUT VIOLATION in script: $f
-Script accesses holdout period (post 2024-07-01).
+Script accesses holdout period (post ${OOS_DATE}).
 Matching lines:
-$(grep -nE "test_end.*=.*(2024-0[7-9]|2024-1[0-2]|2025-|2026-)" "$f" 2>/dev/null | head -5)"
+$(grep -nE "test_end.*=.*(${HOLDOUT_PATTERNS})" "$f" 2>/dev/null | head -5)"
             touch "$RESEARCH_STOP_FILE"
         fi
     fi

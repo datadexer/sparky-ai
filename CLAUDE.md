@@ -134,21 +134,28 @@ The agent posts findings as a PR comment. HIGH severity issues block merge.
 The rubric is in `scripts/research_validation/rubric.md`. If you believe
 a HIGH finding is a false positive, explain why in the PR comments.
 
-## Git Workflow
+## Git — Research Agents Must NOT Use Git
+Research agents (sessions launched by the orchestrator) do NOT touch git.
+- Do NOT create branches, commit, push, or open PRs.
+- Your outputs go to: **wandb** (experiment logs), **results/** (artifacts), **scratch files**.
+- If you need a platform change (new feature, bug fix, data pipeline), write `GATE_REQUEST.md` to the project root explaining what you need and exit. The orchestrator will pause and an oversight session will handle it.
+
+Git workflow (oversight/manager sessions only):
 - NEVER commit to `main`. Use `phase-N/short-description` branches.
-- Commit frequently: `feat/fix/test/data/docs/chore/refactor/ci/quality`
 - At phase completion: push branch, open PR via `gh pr create`
 - CI runs automatically on PRs to main. Merge only if CI passes.
-- Merge conflicts: see `docs/FULL_GUIDELINES.md`
 - Branch naming: `oversight/`, `contract-NNN/`, `fix/`, `feat/`, `phase-N/`
 
 ## Holdout Data Policy
 See `configs/holdout_policy.yaml` — IMMUTABLE. Do NOT hardcode OOS dates anywhere.
 - The OOS boundary and embargo days are defined in that config file. Read them dynamically.
-- The data loader (`sparky.data.loader`) reads the boundary dynamically and enforces it for `purpose="training"`.
-- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human).
+- **Data files are split at the holdout boundary.** All files in `data/` contain ONLY in-sample data. No matter which library you use (pandas, polars, pyarrow), you will only see IS data.
+- OOS data is stored in a vault that you may NOT access directly.
+- The data loader enforces holdout for `purpose="training"`. Use `purpose="analysis"` for exploration (IS only).
+- OOS evaluation requires EXPLICIT WRITTEN APPROVAL from AK (human). AK will provide an authorized HoldoutGuard.
 - Each model gets exactly ONE OOS evaluation. No repeated peeking.
 - You may NOT modify `configs/holdout_policy.yaml`. The pre-commit hook and orchestrator will block this.
+- You may NOT reference or access `data/.oos_vault/` in any code. The pre-commit hook will block this.
 
 ## Graduated Success Thresholds
 

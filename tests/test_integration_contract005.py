@@ -251,10 +251,11 @@ class TestGuardrailsPreCheckOrchestrator:
         failed = [r for r in results if not r.passed]
         assert len(failed) == 0, f"Unexpected failures: {[r.check_name for r in failed]}"
 
-    def test_pre_checks_holdout_boundary_fails_for_future_data(self, good_config):
-        """holdout_boundary check fires for data extending past 2024-07-01."""
+    def test_pre_checks_holdout_boundary_fails_for_future_data(self, good_config, holdout_dates):
+        """holdout_boundary check fires for data extending past the OOS boundary."""
         # Data that extends into the holdout period
-        dates = pd.date_range("2024-05-01", periods=5000, freq="h", tz="UTC")
+        start = holdout_dates["max_training_ts"] - pd.Timedelta(days=10)
+        dates = pd.date_range(start, periods=5000, freq="h", tz="UTC")
         future_data = pd.DataFrame(
             {
                 "close": np.random.randn(5000).cumsum() + 100,

@@ -5,8 +5,10 @@ HoldoutGuard.check_data_boundaries() before proceeding.
 Violations are logged and raise HoldoutViolation.
 """
 
+import hashlib
 import json
 import logging
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -18,6 +20,48 @@ logger = logging.getLogger(__name__)
 
 POLICY_PATH = Path("configs/holdout_policy.yaml")
 OOS_LOG_PATH = Path("results/oos_evaluations.jsonl")
+
+
+def _read_committed_policy() -> Optional[bytes]:
+    """Read holdout_policy.yaml from git HEAD (tamper-proof).
+
+    Returns the committed file content, or None if not in a git repo
+    or the file isn't tracked. This is the immutable source of truth —
+    research agents cannot modify git history.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "show", "HEAD:configs/holdout_policy.yaml"],
+            capture_output=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout:
+            return result.stdout
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def get_holdout_dates(asset: str = "btc") -> dict:
+    """Get holdout boundary dates from policy for use in tests and scripts.
+
+    Returns:
+        Dict with keys: oos_start (str), embargo_days (int),
+        max_training_date (pd.Timestamp, UTC).
+    """
+    guard = HoldoutGuard()
+    oos_start, embargo_days = guard.get_oos_boundary(asset)
+    max_train = guard.get_max_training_date(asset)
+    return {
+        "oos_start": oos_start,
+        "embargo_days": embargo_days,
+        "max_training_date": max_train,
+    }
+
+
+def get_policy_hash(policy_path: Path = POLICY_PATH) -> str:
+    """SHA-256 of the holdout policy file, for integrity checking."""
+    return hashlib.sha256(policy_path.read_bytes()).hexdigest()
 
 
 class HoldoutViolation(Exception):
@@ -47,8 +91,21 @@ class HoldoutGuard:
 
     def __init__(self, policy_path: Optional[Path] = None):
         self.policy_path = policy_path or POLICY_PATH
-        with open(self.policy_path) as f:
-            self.policy = yaml.safe_load(f)
+        # Prefer git-committed version (tamper-proof across subprocesses).
+        # Falls back to filesystem if not in a git repo or file isn't tracked.
+        committed = _read_committed_policy()
+        if committed is not None:
+            self.policy = yaml.safe_load(committed)
+            disk_hash = hashlib.sha256(self.policy_path.read_bytes()).hexdigest()
+            git_hash = hashlib.sha256(committed).hexdigest()
+            if disk_hash != git_hash:
+                logger.warning(
+                    "[HOLDOUT GUARD] holdout_policy.yaml on disk differs from git HEAD! "
+                    "Using git-committed version. Disk changes are ignored."
+                )
+        else:
+            with open(self.policy_path) as f:
+                self.policy = yaml.safe_load(f)
         self._oos_authorization = None
 
     def get_oos_boundary(self, asset: str) -> tuple[str, int]:

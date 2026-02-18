@@ -1,0 +1,77 @@
+name: regime_donchian_daily
+objective: |
+  Determine whether regime detection (volatility filtering, HMM states, or
+  dynamic ensemble weighting) improves Donchian breakout risk-adjusted returns
+  on BTC daily data. The unfiltered baseline achieves Sharpe ~1.062.
+
+  Success = a regime-aware variant that achieves Sharpe >= 1.0 with DSR > 0.95
+  (statistically significant after multiple testing correction).
+  A well-documented negative result is also valid.
+
+  Existing code to leverage:
+  - sparky.models.regime_filtered_donchian (vol filter)
+  - sparky.models.regime_hmm (HMM states)
+  - sparky.models.regime_weighted_ensemble (dynamic weighting)
+  - sparky.features.regime_indicators (vol regime, trend detection)
+  - sparky.models.simple_baselines.donchian_channel_strategy (baseline)
+constraints:
+  asset: btc
+  timeframe: daily
+  dataset: btc_daily
+  gpu_required: false
+  transaction_costs_bps: 10
+  annualization: 365
+strategy_space:
+  - family: vol_filtered_donchian
+    description: "Filter Donchian signals during HIGH volatility regimes"
+    priority: 1
+    parameter_ranges:
+      entry_period: [15, 20, 30, 40, 60]
+      exit_period: [5, 10, 15, 20, 30]
+      vol_window: [20, 30, 45, 60]
+  - family: hmm_regime_donchian
+    description: "HMM-detected regimes with per-state Donchian parameters"
+    priority: 2
+    parameter_ranges:
+      n_states: [2, 3]
+      entry_period_low_vol: [15, 20, 30]
+      exit_period_low_vol: [5, 10]
+      entry_period_high_vol: [40, 60]
+      exit_period_high_vol: [20, 30]
+  - family: regime_weighted_ensemble
+    description: "Dynamic weighting of multiple Donchian strategies by detected regime"
+    priority: 3
+    parameter_ranges:
+      n_strategies: [2, 3]
+      regime_method: [vol_threshold, hmm]
+stopping_criteria:
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 8
+    max_hours: 8
+    max_cost_usd: 40
+    digest_every: 4
+  stall:
+    sessions_without_improvement: 3
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+session_limits:
+  max_session_minutes: 90
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+wandb_tags: [regime_donchian, directive_002]
+gates:
+  - trigger: success_criteria_met
+    action: pause_and_alert
+  - trigger: stall_detected
+    action: pause_and_alert
+exclusions:
+  - "Do not evaluate on OOS data (boundary defined in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() for data — never pd.read_parquet()"
+  - "Always use compute_all_metrics(returns, n_trials=N) and report DSR"
+  - "Always include transaction costs (10 bps) in backtests"
+  - "Compare every result against the unfiltered Donchian baseline Sharpe ~1.062"
