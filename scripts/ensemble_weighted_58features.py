@@ -113,7 +113,7 @@ def calculate_sharpe(signals, prices, cost_model):
     if strategy_returns.std() == 0:
         return 0.0
 
-    sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(252)
+    sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(365)
     return sharpe
 
 

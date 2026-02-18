@@ -123,7 +123,7 @@ def validate_config(features, target, prices, model_name, params):
         strategy_returns = strategy_returns.dropna()
 
         if len(strategy_returns) > 0 and strategy_returns.std() > 0:
-            sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(252)
+            sharpe = (strategy_returns.mean() / strategy_returns.std()) * np.sqrt(365)
             total_return = (1 + strategy_returns).prod() - 1
         else:
             sharpe = 0.0
