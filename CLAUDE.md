@@ -44,6 +44,23 @@ The Deflated Sharpe Ratio (DSR) is the primary evaluation metric, not raw Sharpe
 DSR > 0.95 = statistically significant after multiple testing correction.
 DSR < 0.95 = could be a fluke. Do not declare victory.
 
+## Guardrails (MANDATORY)
+Run pre/post experiment checks on every training run. Blocking failures must halt execution.
+```python
+from sparky.tracking.guardrails import run_pre_checks, run_post_checks, has_blocking_failure, log_results
+
+# Before training
+pre_results = run_pre_checks(data, config)
+if has_blocking_failure(pre_results):
+    raise RuntimeError("Pre-experiment checks failed")
+
+# After backtest
+post_results = run_post_checks(returns, metrics, config, n_trials=N)
+log_results(pre_results + post_results, run_id="my_run")
+```
+Pre-checks: holdout boundary, minimum samples, no lookahead, costs specified, param-data ratio.
+Post-checks: sharpe sanity, minimum trades, DSR threshold, max drawdown, returns distribution, consistency.
+
 ## GPU Training (DGX Spark)
 - XGBoost: `tree_method="hist", device="cuda"`
 - CatBoost: `task_type="GPU", devices="0"`
@@ -107,6 +124,17 @@ Before declaring ANY approach "failed":
 - Before paper/live trading goes live
 - Before adding paid data sources
 - When TIER 1 result needs deployment approval
+
+## Manager Session Protocol
+The Opus manager tracks all infrastructure sessions for audit trail:
+```python
+from sparky.tracking.manager_log import ManagerLog
+mlog = ManagerLog()
+session = mlog.start_session(objective="Contract 005 setup", branch="manager/contract-005")
+# ... work ...
+mlog.end_session(session, summary="Completed guardrails + workflow")
+```
+All manager decisions, sub-agent spawns, and research launches are logged to `logs/manager_sessions/session_log.jsonl`.
 
 ## Trading Rules
 See `configs/trading_rules.yaml` — IMMUTABLE.
