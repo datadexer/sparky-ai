@@ -8,21 +8,18 @@ objective: |
 
   Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
 
-  ## Overnight priorities (2026-02-18)
+  ## Daytime priorities (2026-02-19)
 
-  **Priority 0 — 2020-2023 investigation**: BTC Don8h best is 1.087 on 2020+
-  vs ETH 1.762. Why? Run top 5 BTC configs on 2020-2023 specifically.
-  Is BTC structurally weaker post-2020 or parameter sensitivity? Report analysis.
+  **Priority 0 — Deepen Don8h**: entry 35-55, exit 8-18, iv(vw30,tv0.2).
+  Map the full robustness region.
 
-  **Priority 0 — Don8h(40,10) neighborhood**: entry[35,40,45,50], exit[8,10,12,15]
-  with iv(vw30,tv0.2). Expand the robustness finding — is sweet spot entry 35-50
-  exit 8-15 or narrower?
+  **Priority 0 — Year-by-year 2020+**: Top 5 BTC configs year-by-year breakdown
+  2020, 2021, 2022, 2023. Report structural analysis.
 
-  **Priority 1 — BTC Don4h inv_vol**: ETH found Don4h promising. Test BTC 4h
-  with entry[80,100,120,140,160], exit[30,40,50], inv_vol. Competitive with 8h?
+  **Priority 1 — Don4h with inv_vol**: entry 80-160, exit 15-40,
+  iv(vw=20-45, tv=0.15-0.30). Large grid to find BTC 4h optimum.
 
-  **Priority 2 — 100bps cost test**: Run top 3 configs at 100bps. If they survive
-  above Sharpe 1.0 at extreme costs, strong evidence the edge is real.
+  **Priority 2 — Cost degradation**: Top 3 at 100bps. Report survival.
 
   Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
   n_trades(2020+), and neighbor stability analysis for top configs.
@@ -118,8 +115,8 @@ stopping_criteria:
     min_sharpe: 1.0
     min_dsr: 0.95
   budget:
-    max_sessions: 12
-    max_hours: 8
+    max_sessions: 5
+    max_hours: 2
     max_cost_usd: 35
     digest_every: 3
   stall:
@@ -128,7 +125,7 @@ stopping_criteria:
     diversity_threshold: 0.99
 
 session_limits:
-  max_session_minutes: 360
+  max_session_minutes: 60
   max_cost_per_session: 8.0
   min_session_minutes: 5
   max_consecutive_crashes: 3
@@ -141,7 +138,7 @@ gates:
 
 exclusions:
   - "DO NOT explore mean-reversion signals on BTC. Confirmed null result (DSR < 0.05 across all configs)."
-  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
+  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for ALL portfolio construction including cross-timeframe and cross-asset. portfolio_combine() now auto-detects the correct ppy for mixed-timeframe portfolios. Do NOT manually combine returns with index.intersection() and compute metrics — this bypasses the PPY guard and produces inflated Sharpe. When computing metrics on any returns series, ALWAYS pass a pandas Series with DatetimeIndex to compute_all_metrics(). NEVER call .values before passing to metrics functions."
   - "Do NOT proceed to OOS evaluation. Stay in-sample."
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() — never pd.read_parquet()"

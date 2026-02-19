@@ -222,7 +222,7 @@ def worst_year_sharpe(returns, periods_per_year=365):
 # === COMBINED ===
 
 
-def validate_periods_per_year(returns, periods_per_year):
+def validate_periods_per_year(returns, periods_per_year, strict=True):
     """Validate periods_per_year against the data. Raises on gross mismatch."""
     if periods_per_year not in _VALID_PPY:
         raise ValueError(
@@ -231,7 +231,9 @@ def validate_periods_per_year(returns, periods_per_year):
         )
     # If returns has a DatetimeIndex, cross-check against actual data frequency
     idx = getattr(returns, "index", None)
-    if idx is not None and hasattr(idx, "dtype") and "datetime" in str(idx.dtype):
+    has_datetime_index = idx is not None and hasattr(idx, "dtype") and "datetime" in str(idx.dtype)
+
+    if has_datetime_index:
         try:
             span_days = (idx[-1] - idx[0]).total_seconds() / 86400
             if span_days > 30:
@@ -245,9 +247,24 @@ def validate_periods_per_year(returns, periods_per_year):
                     )
         except (TypeError, IndexError):
             pass
+    elif periods_per_year > 1100:
+        # numpy array (no DatetimeIndex) with high-frequency ppy — dangerous
+        # This catches .values + ppy=2190 on 8h data (the exact failure mode)
+        if strict:
+            raise ValueError(
+                f"periods_per_year={periods_per_year} with no DatetimeIndex. "
+                f"High-frequency ppy requires a DatetimeIndex for validation to prevent "
+                f"Sharpe inflation. Pass a pandas Series (not .values) or set strict_ppy=False."
+            )
+        else:
+            logger.warning(
+                "periods_per_year=%d with no DatetimeIndex — cannot validate. "
+                "Sharpe may be inflated if data resolution doesn't match ppy.",
+                periods_per_year,
+            )
 
 
-def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365):
+def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365, strict_ppy=True):
     """Compute comprehensive strategy metrics from a returns series.
 
     Args:
@@ -255,11 +272,9 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         n_trials: total number of strategy configurations tested (for DSR)
         risk_free: risk-free rate per period
         periods_per_year: number of trading periods per year (must be in _VALID_PPY)
-
-    Returns:
-        dict of metrics suitable for wandb.log()
+        strict_ppy: if True (default), reject numpy arrays with ppy > 1100
     """
-    validate_periods_per_year(returns, periods_per_year)
+    validate_periods_per_year(returns, periods_per_year, strict=strict_ppy)
     returns = np.asarray(returns, dtype=float)
 
     # Pre-compute distribution moments for logging (raw Pearson kurtosis, normal=3)

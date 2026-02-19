@@ -334,24 +334,144 @@ def run_custom_signal(
     return _build_result(prices, positions, config, n_trials, df, ppy, benchmark_returns)
 
 
+_RESOLUTION_TO_PPY = {1: 8760, 2: 4380, 4: 2190, 8: 1095, 24: 365}
+
+_logger = logging.getLogger(__name__)
+
+
 def portfolio_combine(
     strategies,
     weighting="equal",
     n_trials=1,
     benchmark_returns=None,
 ):
-    """Combine multiple strategies into a portfolio. All must share same asset/timeframe.
+    """Combine multiple strategies into a portfolio. Supports cross-asset and cross-timeframe.
 
     strategies: list of {"config": run()-compatible config, "weight": float (for "specified")}
     weighting: "equal" | "specified" | "inverse_vol"
     """
+    asset_tfs = {(s["config"]["asset"], s["config"]["timeframe"]) for s in strategies}
+    cross_timeframe = len({tf for _, tf in asset_tfs}) > 1
+    cross_asset = len({a for a, _ in asset_tfs}) > 1
+    same_key = len(asset_tfs) == 1
+
+    if same_key:
+        # Fast path: single asset/timeframe — load data once
+        return _portfolio_combine_same(strategies, weighting, n_trials, benchmark_returns)
+
+    # Cross-timeframe/cross-asset: each strategy loads its own data
+    all_returns = []
+    for s in strategies:
+        cfg = s["config"]
+        df, prices, ppy = _load_data(cfg["asset"], cfg["timeframe"])
+        sig = _make_signal(prices, cfg["signal_type"], cfg.get("signal_params", {}))
+        sig = _apply_sizing(sig, prices, cfg.get("sizing", "flat"), cfg.get("sizing_params", {}), ppy)
+        ret = net_ret(prices, sig, 30 / 10_000)
+        all_returns.append(ret.dropna())
+
+    # Align on common index
+    from functools import reduce
+
+    common = reduce(lambda a, b: a.intersection(b), [r.index for r in all_returns])
+    common = common.sort_values()
+
+    # Auto-detect resolution from common index
+    median_diff = pd.Series(common).diff().dropna().median()
+    hours = median_diff.total_seconds() / 3600
+    # Snap to nearest standard resolution
+    best_res = min(_RESOLUTION_TO_PPY.keys(), key=lambda h: abs(h - hours))
+    ppy = _RESOLUTION_TO_PPY[best_res]
+    _logger.info("Cross-timeframe portfolio: %d obs, resolution=%dh, ppy=%d", len(common), best_res, ppy)
+
+    # Reindex and check for NaN fills
+    aligned_returns = []
+    for i, r in enumerate(all_returns):
+        reindexed = r.reindex(common)
+        n_nan = reindexed.isna().sum()
+        if n_nan > 0:
+            _logger.warning("Strategy %d: %d NaN values filled with 0 after reindex (data gap)", i, n_nan)
+        aligned_returns.append(reindexed.fillna(0))
+
+    # Compute weights
+    n = len(aligned_returns)
+    if weighting == "specified":
+        weights = [s.get("weight", 1.0 / n) for s in strategies]
+    elif weighting == "inverse_vol":
+        vols = [r.std() for r in aligned_returns]
+        inv = [1.0 / (v + 1e-10) for v in vols]
+        total = sum(inv)
+        weights = [w / total for w in inv]
+    else:
+        weights = [1.0 / n] * n
+
+    # Combined portfolio returns (pandas Series with DatetimeIndex — safe for metrics)
+    port_ret = sum(w * r for w, r in zip(weights, aligned_returns))
+
+    m30 = compute_all_metrics(port_ret, n_trials=n_trials, periods_per_year=ppy)
+    m30["n_trades"] = sum(int((r.abs() > 1e-8).sum()) for r in aligned_returns)
+    m30["statistically_significant"] = bool(m30.get("dsr", 0) >= 0.95)
+    sp = subperiod_analysis_from_returns(port_ret, ppy)
+    m30["sub_periods"] = sp
+
+    # Also compute at 50bps
+    all_returns_50 = []
+    for s in strategies:
+        cfg = s["config"]
+        df, prices, strat_ppy = _load_data(cfg["asset"], cfg["timeframe"])
+        sig = _make_signal(prices, cfg["signal_type"], cfg.get("signal_params", {}))
+        sig = _apply_sizing(sig, prices, cfg.get("sizing", "flat"), cfg.get("sizing_params", {}), strat_ppy)
+        ret50 = net_ret(prices, sig, 50 / 10_000)
+        all_returns_50.append(ret50.dropna().reindex(common).fillna(0))
+    port_ret_50 = sum(w * r for w, r in zip(weights, all_returns_50))
+    m50 = compute_all_metrics(port_ret_50, n_trials=n_trials, periods_per_year=ppy)
+
+    result = {
+        "sharpe_30bps": m30["sharpe"],
+        "sharpe_50bps": m50["sharpe"],
+        "dsr_30bps": m30.get("dsr"),
+        "dsr_50bps": m50.get("dsr"),
+        "max_drawdown": m30["max_drawdown"],
+        "n_trades": m30["n_trades"],
+        "win_rate": m30.get("win_rate"),
+        "sub_periods": m30.get("sub_periods", {}),
+        "periods_per_year": ppy,
+        "statistically_significant": m30.get("statistically_significant", False),
+        "metrics_30bps": m30,
+        "metrics_50bps": m50,
+        "cross_timeframe": cross_timeframe,
+        "cross_asset": cross_asset,
+        "detected_resolution_hours": best_res,
+        "effective_ppy": ppy,
+    }
+
+    # Correlation matrix
+    rets_df = pd.DataFrame({f"s{i}": r for i, r in enumerate(aligned_returns)})
+    result["correlation_matrix"] = rets_df.corr().to_dict()
+    result["weights"] = weights
+    return result
+
+
+def subperiod_analysis_from_returns(port_ret, ppy):
+    """Sub-period analysis from pre-computed returns (no positions needed)."""
+    out = {}
+    for label, start, _end in [("full", None, None), ("2017+", "2017-01-01", None), ("2020+", "2020-01-01", None)]:
+        r = port_ret if start is None else port_ret[port_ret.index >= start]
+        if len(r) < 30:
+            continue
+        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy)
+        out[label] = {
+            "sharpe": round(m["sharpe"], 4),
+            "max_drawdown": round(m["max_drawdown"], 4),
+            "annual_return": round(m["mean_return"] * ppy, 4),
+            "win_rate": round(m["win_rate"], 4),
+        }
+    return out
+
+
+def _portfolio_combine_same(strategies, weighting, n_trials, benchmark_returns):
+    """Original same-asset/same-timeframe portfolio path."""
     cfg0 = strategies[0]["config"]
     asset_tf = (cfg0["asset"], cfg0["timeframe"])
-    for s in strategies[1:]:
-        key = (s["config"]["asset"], s["config"]["timeframe"])
-        if key != asset_tf:
-            raise ValueError(f"All strategies must share asset/timeframe. Got {asset_tf} and {key}")
-
     df, prices, ppy = _load_data(*asset_tf)
     all_pos = []
     for s in strategies:
@@ -360,7 +480,6 @@ def portfolio_combine(
         sig = _apply_sizing(sig, prices, cfg.get("sizing", "flat"), cfg.get("sizing_params", {}), ppy)
         all_pos.append(sig)
 
-    # Align on common index (different signal warm-up periods)
     common = all_pos[0].index
     for p in all_pos[1:]:
         common = common.intersection(p.index)
@@ -391,4 +510,8 @@ def portfolio_combine(
         rets = pd.DataFrame({f"s{i}": net_ret(prices_c, p, 30 / 10_000) for i, p in enumerate(aligned)})
         result["correlation_matrix"] = rets.corr().to_dict()
         result["weights"] = weights
+        result["cross_timeframe"] = False
+        result["cross_asset"] = False
+        result["detected_resolution_hours"] = None
+        result["effective_ppy"] = ppy
     return result

@@ -4,7 +4,7 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
-## PPY Validation Audit — 2026-02-19
+## PPY Validation Audit (Round 2) — 2026-02-19
 
 **ALL cross-timeframe portfolio Sharpe values from overnight runs are inflated by sqrt(2) = 1.414x.**
 
@@ -12,9 +12,19 @@ Root cause: combining BTC 4h + ETH 8h returns via `index.intersection()` produce
 common index (~1,096 obs/year). Agents used `ppy=2190` (4h) for annualization instead of `ppy=1095` (8h).
 The `validate_periods_per_year()` guard was bypassed by passing `.values` (numpy array strips DatetimeIndex).
 
-Individual strategy results (single-timeframe) are NOT affected.
+**Round 2 audit** (fix/ppy-guard-portfolio-combine branch): Found 9 additional cross-TF portfolio runs
+from sessions 8-9 that were below the 2.5 threshold and missed in Round 1. All corrected:
+- Session 9: 5 runs (champion, final_validation, champion_deep, portfolio_refined, portfolio)
+- Session 8: 4 runs (threeway_btc2h, portfolio_iveth, long_eth_portfolio, master)
+- 31 prior corrections from Round 1: all verified VALID
+- 4 same-TF portfolio runs (session 7, all 4h): correctly left uncorrected
+- 1 run (s8_r5_3way_deep) already at correct ppy=1095 by agent
 
-Corrected values below. DSR is ppy-independent (uses per-period SR) and remains valid.
+Individual strategy results (single-timeframe) are NOT affected.
+DSR is ppy-independent (uses per-period SR) and remains valid.
+
+**Guard implemented**: `compute_all_metrics(strict_ppy=True)` now rejects numpy arrays with ppy>1100.
+`portfolio_combine()` now supports cross-timeframe and auto-detects resolution.
 
 ---
 
