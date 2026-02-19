@@ -97,7 +97,7 @@ gates:
 
 exclusions:
   - "DO NOT add meta-labeling. ETH meta-labeling is a confirmed null result across 4 sessions."
-  - "Use experiment_runner.run() for all signal evaluations. Do not re-implement signal or cost logic."
+  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
   - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() — never pd.read_parquet()"
@@ -110,4 +110,3 @@ exclusions:
   - "Compare every result against ETH buy-and-hold and BTC Donchian benchmark"
   - "Compute pairwise return correlation with BTC benchmark for diversification"
   - "periods_per_year: 4380 (2h), 2190 (4h), 1095 (8h). Never use 252 or 365 for intraday."
-  - "If your signal type isn't supported by experiment_runner, extend _make_signal() with a new dispatch case and document it."

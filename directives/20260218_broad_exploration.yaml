@@ -1,0 +1,200 @@
+name: broad_exploration_20260218
+objective: |
+  Broad exploration across 8 strategy families to build a ranked table of 5-10
+  validated candidates with diverse return profiles. Uncorrelated strategies are
+  more valuable than incremental Sharpe improvements on the same signal.
+
+  Benchmark to beat:
+  4h BTC Donchian(30,25) + logreg meta-label + inverse vol sizing.
+  Sharpe 1.633@30bps, DSR 0.992 (N=627), MaxDD -0.248, 2020-2023 Sharpe 1.031.
+
+  Output: ranked candidate table sorted by DSR, columns: family, asset, timeframe,
+  Sharpe@30bps, Sharpe@50bps, DSR@N, MaxDD, 2020-2023 Sharpe, correlation-to-benchmark,
+  n_trades(2020-2023). Candidates with pairwise correlation < 0.3 = portfolio diversifiers.
+
+  Validation standard (every candidate beating baseline):
+  - Sharpe at BOTH 30 bps and 50 bps
+  - DSR at cumulative n_trials (starts at 627, increments per config tested)
+  - MaxDD full period and 2020-2023
+  - Sub-periods: full IS, 2017-2023, 2020-2023 with buy-and-hold Sharpe for each
+  - Minimum 30 trades on 2020-2023 sub-period
+  - Return correlation with benchmark strategy
+
+  Layered attribution for new primary signals (families 2, 3):
+  Test raw primary signal first (no meta-labeling, no sizing). Record baseline.
+  Then add meta-labeling. Then add sizing. Report each layer's marginal contribution.
+
+  Data:
+  - BTC hourly: load("btc_ohlcv_hourly") — resample to 2h/4h/8h as needed
+  - ETH hourly: load("eth_ohlcv_hourly") — 60,597 bars, 2017-2023
+  - ETH daily: load("eth_ohlcv_daily") — 1,797 bars
+  - BTC daily: load("btc_ohlcv_daily")
+  - periods_per_year: 2190 (4h), 4380 (2h), 1095 (8h), 8760 (1h), 365 (daily)
+
+  Existing code:
+  - donchian_channel_strategy: sparky.models.simple_baselines
+  - train_hmm_regime_model: sparky.models.regime_hmm
+  - volatility_regime, choppiness_index: sparky.features.regime
+  - rsi, macd, momentum, ema: sparky.features.technical
+  - atr, bollinger_bands, volume_momentum: sparky.features.advanced
+  - WalkForwardBacktester: sparky.backtest.engine
+  - TransactionCostModel: sparky.backtest.costs
+  - compute_all_metrics: sparky.tracking.metrics
+  - net_ret, inv_vol_sizing, subperiod_analysis: scripts/infra/sweep_utils.py
+
+constraints:
+  assets: [btc, eth]
+  timeframes: [2h, 4h, 8h, daily]
+  gpu_required: true
+  transaction_costs_bps: 30
+  n_trials_start: 627
+  n_trials_cumulative: true
+
+strategy_space:
+  - family: eth_donchian_meta_label
+    description: >
+      Transfer validated BTC pipeline to ETH 4h. Donchian + logreg meta-label +
+      inv-vol sizing. Pipeline exists — adapt and run. Fastest family.
+    priority: 1
+    parameter_ranges:
+      entry_period: [20, 25, 30, 40]
+      exit_period: [10, 15, 20, 25]
+      meta_model: [logreg]
+      sizing: [inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.15, 0.20, 0.30]
+
+  - family: bollinger_breakout_meta_label
+    description: >
+      Bollinger breakout primary signal + meta-labeling on BTC 4h. Different market
+      regime capture than Donchian. LAYERED ATTRIBUTION: test raw Bollinger breakout
+      first, then add meta-label, then sizing.
+    priority: 2
+    parameter_ranges:
+      bb_period: [20, 30, 40]
+      bb_std: [1.5, 2.0, 2.5]
+      breakout_type: [close_above, high_above]
+      meta_model: [logreg, xgboost]
+      sizing: [none, inverse_vol]
+
+  - family: mean_reversion_btc
+    description: >
+      RSI extremes, Bollinger bounce, distance-from-SMA on BTC 4h. Anti-correlated
+      with trend-following. HMM regime as strategy SELECTOR — route to mean-reversion
+      in choppy regimes, trend in trending. Not binary filter. LAYERED ATTRIBUTION.
+    priority: 3
+    parameter_ranges:
+      signal_type: [rsi_extreme, bollinger_bounce, sma_distance]
+      rsi_period: [14, 21]
+      rsi_entry: [25, 30]
+      rsi_exit: [50, 70]
+      bb_period: [20, 30]
+      sma_period: [30, 50, 100]
+      hmm_selector: [true, false]
+      hmm_states: [2, 3]
+
+  - family: multi_asset_pooled_meta
+    description: >
+      Pool BTC + ETH Donchian signals into single meta-model with asset-identifier
+      feature. Doubles training sample. Shared meta-model must beat per-asset models.
+    priority: 4
+    parameter_ranges:
+      entry_period: [25, 30]
+      exit_period: [15, 20, 25]
+      meta_model: [logreg, xgboost]
+      asset_feature: [one_hot, none]
+      pooling: [shared_model, per_asset_baseline]
+
+  - family: alternative_timeframes
+    description: >
+      Donchian meta-labeling on BTC at 2h and 8h. Is 4h optimal or just the first
+      thing tried? Use same pipeline, adjust periods_per_year (2h=4380, 8h=1095).
+    priority: 5
+    parameter_ranges:
+      timeframe: [2h, 8h]
+      entry_period: [20, 30, 40, 60]
+      exit_period: [10, 15, 20, 30]
+      meta_model: [logreg]
+      sizing: [inverse_vol]
+
+  - family: regime_switching_portfolio
+    description: >
+      HMM switches between trend-following and mean-reversion allocations on BTC 4h.
+      Binary filtering hurt in Layer 3 — strategy SELECTION is different. Requires
+      families 1-3 to have candidates first.
+    priority: 6
+    parameter_ranges:
+      hmm_states: [2, 3]
+      hmm_features: [returns_vol, returns_vol_volume]
+      trend_strategy: [donchian_meta]
+      reversion_strategy: [rsi_extreme, bollinger_bounce]
+      allocation_method: [binary_switch, probability_weighted]
+
+  - family: onchain_features
+    description: >
+      MVRV, SOPR, NUPL as additional BTC meta-labeling features. Daily frequency,
+      forward-fill onto 4h. File GATE_REQUEST.md if on-chain data API needs setup.
+    priority: 7
+    parameter_ranges:
+      onchain_features: [mvrv, sopr, nupl]
+      feature_combo: [single, pair, all_three]
+      meta_model: [logreg]
+
+  - family: feature_ablation
+    description: >
+      Systematic drop-one feature importance on best meta-labeling config. Identifies
+      which features carry the edge. Refinement — run after families 1-5 have results.
+    priority: 8
+    parameter_ranges:
+      ablation_method: [drop_one, permutation_importance]
+      base_config: [best_from_prior_families]
+
+stopping_criteria:
+  stop_on_success: false
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 20
+    max_hours: 30
+    max_cost_usd: 100
+    digest_every: 3
+  stall:
+    sessions_without_improvement: 6
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+
+session_limits:
+  max_session_minutes: 60  # Change to 360 for overnight run
+  max_cost_per_session: 10.0
+  min_session_minutes: 10
+  max_consecutive_crashes: 3
+
+wandb_tags: [broad_exploration, multi_strategy, 20260218]
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics(returns, n_trials=N, periods_per_year=P) and report DSR"
+  - "Report DSR at both per-family n_trials and cumulative n_trials. Use per-family DSR for candidate ranking, cumulative DSR as a robustness check."
+  - "Always include transaction costs — report Sharpe at BOTH 30 bps (standard) and 50 bps (stress)"
+  - "n_trials starts at 627 (cumulative from Layers 3-4). Increment for every config tested."
+  - "Sub-period validation mandatory for anything beating baseline: full IS, 2017-2023, 2020-2023. Include buy-and-hold Sharpe for each sub-period."
+  - "Minimum 30 trades on the 2020-2023 sub-period for any candidate"
+  - "Layered attribution for new primary signals (families 2, 3): test raw signal first, then meta-label, then sizing. Report each layer's marginal contribution."
+  - "Compare every result against benchmark: Sharpe 1.633@30bps, DSR 0.992, MaxDD -0.248, 2020-2023 Sharpe 1.031"
+  - "For ETH families: compare against ETH buy-and-hold as the asset-specific baseline"
+  - "Compute pairwise return correlation with benchmark for portfolio diversification assessment"
+  - "Do NOT install packages. Use sklearn, xgboost, numpy, scipy, polars, pandas, hmmlearn."
+  - "File GATE_REQUEST.md if on-chain data API setup is needed (family 7)"
+  - "Report ALL configs to wandb — negative results are valuable. No cherry-picking."
+  - "Digest results to roadmap/02_RESEARCH_LOG.md every 3 sessions"
+  - "periods_per_year: 2190 (4h), 4380 (2h), 1095 (8h), 8760 (1h), 365 (daily). Never use 252."
+  - "Do not grind on a single family that isn't working. If 2 sessions on a family yield no configs beating the benchmark, move to the next family. A well-documented null result is valid — move on."
+  - "Use experiment_runner.sweep() for all parameter grid searches. Use run_custom_signal() for novel signal types. Use portfolio_combine() for multi-strategy combinations. Do not re-implement data loading, cost models, metrics computation, sub-period analysis, or W&B logging in experiment scripts."
+  - "Do not write standalone experiment scripts with manual for-loops over parameter grids. sweep() handles grid expansion, n_trials tracking, DSR sort, JSON save, and wandb logging."
