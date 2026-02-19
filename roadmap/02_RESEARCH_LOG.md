@@ -4,6 +4,121 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## eth_strategies directive — Session 7 — 2026-02-19
+
+**STATUS**: TIER 1 confirmed (honest, 4h-grid portfolio)
+**TRIALS**: n_trials_start=1781, n_trials_end=2718 (937 configs this session)
+
+### CRITICAL: Session 5 TIER 1 was inflated
+
+Session 5 "TIER 1" portfolio S30=2.760 was computed with **wrong periods_per_year**.
+The common BTC+ETH 8h grid was evaluated with ppy=2190 (4h) instead of ppy=1095 (8h).
+This inflated Sharpe by sqrt(2). Honest value: S≈1.952 (confirmed by session 6 replication).
+
+### NEW Honest TIER 1 (4h grid, ppy=2190 everywhere)
+
+**BTC Don4h(60,20)_iv(vw=90, tv=0.15) 75% + ETH Don4h(164,47)flat 25%**
+
+| Metric | Value |
+|--------|-------|
+| Sharpe@30bps | **2.293** |
+| Sharpe@50bps | 2.163 |
+| DSR (n=2718) | 0.994 |
+| Max Drawdown | **-13.1%** |
+| Sharpe 2020+ | **1.760** |
+| Sortino | 0.074 |
+| Calmar | 3.54 |
+| Corr(BTC,ETH) | 0.321 |
+| Tier | **TIER 1** |
+
+Sub-period validation: full S=2.293 MaxDD=-13.1%, 2020+ S=1.760 MaxDD=-11.7%.
+**Artifact**: `results/eth_strategies_20260218/session_007_master.json`
+
+### Session 7 Key Discoveries
+
+1. **Frequency inflation bug**: Session 5 S=2.760 = artifact. Real portfolio S≈2.293 on 4h grid.
+2. **BTC Don4h is better than BTC Don8h as benchmark**: BTC Don4h(50-60,20) S30=1.85-1.89 vs benchmark (30,25) S30=1.705.
+3. **BTC inv_vol achieves DSR=1.000**: BTC(60,20)_iv(vw=60-90, tv=0.10-0.15) has DSR=1.000 standalone with MaxDD=-10% to -16%.
+4. **Optimal 4h portfolio structure**: BTC-iv 70-75% + ETH-flat 25-30% on 4h grid. Higher BTC weight gives lower MaxDD.
+5. **ETH Bollinger 4h null**: Best S30=2.156 flat — dominated by Donchian. Not a competitive standalone.
+6. **MaxDD<15% with S30>2.2**: BTC inv_vol (vw≥90) reduces portfolio MaxDD without Sharpe penalty.
+7. **Fine-tuning peak**: BTC(60,20)_iv(120,0.15)+ETH(164,47)_75-25 = S30=2.298, S50=2.174, MaxDD=-13.5%.
+
+### Best Candidates Session 7
+
+| Config | S30 | S50 | DSR | MaxDD | S2020 |
+|--------|-----|-----|-----|-------|-------|
+| BTC(60,20)iv(90,0.15)+ETH(164,47) 75-25 | 2.293 | 2.163 | 0.994 | -13.1% | 1.760 |
+| BTC(60,20)iv(120,0.15)+ETH(164,47) 75-25 | 2.298 | 2.174 | 0.995 | -13.5% | 1.766 |
+| BTC(60,20)iv(120,0.12)+ETH(164,47) 75-25 | 2.293 | 2.181 | 0.995 | -12.6% | 1.763 |
+| BTC(60,20)iv(90,0.15)+ETH(138,47) 75-25 | 2.292 | 2.161 | 0.995 | -14.4% | 1.801 |
+| BTC(60,20)iv(120,0.15)+ETH(138,47) 75-25 | 2.297 | 2.172 | 0.995 | -14.9% | 1.807 |
+
+### Next Steps (requires AK decision)
+
+- OOS evaluation — **needs AK approval** (one-shot, existing one-shot budget)
+- Walk-forward validation of best 4h portfolio
+- Explore 3-way: BTC-iv + ETH Don4h(138) + ETH Don4h(164) at 60-20-20
+
+---
+
+## btc_deep + eth_strategies directives — 2026-02-18/19 — TIER 1 RESULTS (REVISED)
+
+**NOTE**: Session 5 "TIER 1" portfolio S=2.760 was inflated by frequency bug. See Session 7 above for corrected results.
+
+Two parallel directives ran across multiple sessions totaling 933+ cumulative trials.
+
+### Revised Best Result — Portfolio TIER 1
+
+**BTC Don4h(60,20)iv(vw=90,tv=0.15) 75% + ETH Don4h(164,47)flat 25%** — S30=2.293 MaxDD=-13.1% (session 7)
+
+### Best Individual Strategies
+
+| Tag | S30 | S50 | DSR | MDD | S2020 |
+|-----|-----|-----|-----|-----|-------|
+| BTC_Don4h(160,25)_iv0.15vw30 | 2.319 | 2.107 | 1.000 | -12.5% | 1.20 |
+| ETH_Don4h(138,47)_flat | 2.140 | 2.099 | 0.993 | -38.8% | 1.71 |
+| BTC_Don4h(60,20)_iv(90,0.15) | 2.093 | 1.807 | 1.000 | -17.8% | 1.086 |
+| ETH_Don8h(83,33)_iv30_0.15 | 2.056 | 1.971 | 0.988 | -9.5% | 1.89 |
+
+### Key Discoveries (btc_deep, 3 sessions, 1260 unique configs)
+
+1. **BTC Don4h large entries (120-200)**: Previous sweeps only tested entry≤80. The true optimum is entry=150-170. 198 configs with DSR≥0.999 and S30≥2.0 — massive plateau.
+2. **Extreme cost robustness**: All top-5 BTC configs survive 100bps (S@100>1.0). Edge is real.
+3. **BTC 2020+**: Requires long lookback (160-period = 27 days on 4h) post-2020. ETH maintains momentum at medium lookback.
+
+### Best Individual Strategies
+
+| Tag | S30 | S50 | DSR | MDD | S2020 |
+|-----|-----|-----|-----|-----|-------|
+| BTC_Don4h(160,25)_iv0.15vw30 | 2.319 | 2.107 | 1.000 | -12.5% | 1.20 |
+| ETH_Don4h(138,47)_flat | 2.140 | 2.099 | 0.993 | -38.8% | 1.71 |
+| ETH_Don8h(83,33)_iv30_0.15 | 2.056 | 1.971 | 0.988 | -9.5% | 1.89 |
+| ETH_Don4h(140,70)_flat | 2.061 | 2.030 | 0.977 | — | 1.97 |
+| ETH_Don8h(72,27)_flat | 2.081 | — | 0.986 | -39.7% | 1.64 |
+
+### Key Discoveries (btc_deep, 3 sessions, 1260 unique configs)
+
+1. **BTC Don4h large entries (120-200)**: Previous sweeps only tested entry≤80. The true optimum is entry=150-170. 198 configs with DSR≥0.999 and S30≥2.0 — massive plateau.
+2. **Extreme cost robustness**: All top-5 BTC configs survive 100bps (S@100>1.0). Edge is real.
+3. **BTC 2020+**: Requires long lookback (160-period = 27 days on 4h) post-2020. ETH maintains momentum at medium lookback.
+
+### Key Discoveries (eth_strategies, 5 sessions, 933 cumulative trials)
+
+1. **ETH Don4h beats Don8h**: S30=2.140 vs 2.081. Optimal: ep=138, xp=47 (xp/ep≈0.34).
+2. **ETH Don8h inv_vol collapses MaxDD**: -39%→-10% at trivial Sharpe cost (2.081→2.056).
+3. **Portfolio S30=2.760**: BTC+ETH cross-asset portfolio beats best individual (+0.62) AND slashes MaxDD from -38.8% to -9.8%.
+4. **Robust plateaus**: ETH Don4h ep=120-160, xp=48-50 (multiple DSR=0.993 configs); BTC Don4h ep=120-200 plateau.
+
+### Next Steps (requires AK decision)
+
+- OOS evaluation of best portfolio — **needs AK approval** (one-shot)
+- Walk-forward validation of `BTC_Don4h(160,25)_iv0.15vw30` and `ETH_Don4h(138,47)_flat`
+- ETH Don4h exit=65-80 region (S2020 keeps rising with larger exits — ETH_Don4h(140,70) S2020=1.97)
+- BTC+ETH portfolio weight optimization (currently coarse 50/35/15)
+
+---
+
 ## Corrected Candidate Rankings — 2026-02-18
 
 **NOTE**: Broad exploration inv_vol results are INVALIDATED (PR #58 sizing bug).

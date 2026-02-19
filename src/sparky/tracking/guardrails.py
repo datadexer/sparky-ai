@@ -207,6 +207,47 @@ def check_param_data_ratio(config: dict, data: pd.DataFrame, max_ratio: float = 
 # === POST-EXPERIMENT CHECKS ===
 
 
+def check_ppy_consistency(returns: np.ndarray, config: dict, metrics: dict) -> GuardrailResult:
+    """BLOCK: Validate periods_per_year matches data frequency."""
+    from sparky.tracking.metrics import _VALID_PPY
+
+    ppy = config.get("periods_per_year", metrics.get("periods_per_year"))
+    if ppy is None:
+        return GuardrailResult(
+            passed=True,
+            check_name="ppy_consistency",
+            message="periods_per_year not in config — skipped",
+            severity="block",
+        )
+    if ppy not in _VALID_PPY:
+        return GuardrailResult(
+            passed=False,
+            check_name="ppy_consistency",
+            message=f"periods_per_year={ppy} not a valid crypto frequency {sorted(_VALID_PPY)}",
+            severity="block",
+        )
+    # Cross-check against data length if we have n_observations and a time span
+    n_obs = metrics.get("n_observations", len(returns))
+    # Heuristic: given n_obs and ppy, infer years. If <0.5 years or >20 years, suspect.
+    implied_years = n_obs / ppy if ppy > 0 else 0
+    if implied_years > 0 and (implied_years < 0.25 or implied_years > 15):
+        return GuardrailResult(
+            passed=False,
+            check_name="ppy_consistency",
+            message=(
+                f"periods_per_year={ppy} with n_obs={n_obs} implies {implied_years:.1f} years "
+                f"— likely wrong ppy (expected 1-12 years for IS data)"
+            ),
+            severity="block",
+        )
+    return GuardrailResult(
+        passed=True,
+        check_name="ppy_consistency",
+        message=f"periods_per_year={ppy} consistent with {n_obs} observations ({implied_years:.1f}y)",
+        severity="block",
+    )
+
+
 def check_sharpe_sanity(metrics: dict, max_sharpe: float = 4.0) -> GuardrailResult:
     """BLOCK: Flag suspiciously high Sharpe ratios."""
     sharpe = metrics.get("sharpe", 0)
@@ -423,6 +464,7 @@ def run_post_checks(
         )
         n_trades = n_trials
     return [
+        check_ppy_consistency(returns, config, metrics),
         check_sharpe_sanity(metrics),
         check_minimum_trades(returns, config, n_trades=n_trades),
         check_dsr_threshold(metrics),
