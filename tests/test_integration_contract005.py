@@ -81,7 +81,7 @@ class TestGuardrailsMetricsPipeline:
         )
 
         # Should have 6 checks
-        assert len(post_results) == 6
+        assert len(post_results) == 7
 
         # DSR check should be present
         dsr_checks = [r for r in post_results if r.check_name == "dsr_threshold"]
@@ -169,7 +169,7 @@ class TestGuardrailsJsonlRoundTrip:
                 metrics,
                 good_config,
             )
-            assert len(post_results) == 6
+            assert len(post_results) == 7
 
             all_results = pre_results + post_results
 
@@ -189,8 +189,8 @@ class TestGuardrailsJsonlRoundTrip:
             assert "summary" in entry
 
             # Verify summary counts
-            assert entry["summary"]["total"] == 11  # 5 pre + 6 post
-            assert entry["summary"]["passed"] + entry["summary"]["failed"] == 11
+            assert entry["summary"]["total"] == 12  # 5 pre + 7 post
+            assert entry["summary"]["passed"] + entry["summary"]["failed"] == 12
 
             # Verify each check entry has required fields
             for check in entry["checks"]:

@@ -1,7 +1,13 @@
 """Strategy evaluation metrics beyond Sharpe ratio."""
 
+import logging
+
 import numpy as np
 from scipy.stats import norm
+
+logger = logging.getLogger(__name__)
+
+_VALID_PPY = {365, 1095, 2190, 4380, 8760}
 
 
 def sharpe_ratio(returns, risk_free=0.0):
@@ -216,6 +222,31 @@ def worst_year_sharpe(returns, periods_per_year=365):
 # === COMBINED ===
 
 
+def validate_periods_per_year(returns, periods_per_year):
+    """Validate periods_per_year against the data. Raises on gross mismatch."""
+    if periods_per_year not in _VALID_PPY:
+        raise ValueError(
+            f"periods_per_year={periods_per_year} is not a standard crypto frequency. "
+            f"Valid values: {sorted(_VALID_PPY)}"
+        )
+    # If returns has a DatetimeIndex, cross-check against actual data frequency
+    idx = getattr(returns, "index", None)
+    if idx is not None and hasattr(idx, "dtype") and "datetime" in str(idx.dtype):
+        try:
+            span_days = (idx[-1] - idx[0]).total_seconds() / 86400
+            if span_days > 30:
+                actual_ppy = len(idx) / (span_days / 365.25)
+                ratio = periods_per_year / actual_ppy
+                if ratio > 1.6 or ratio < 0.6:
+                    raise ValueError(
+                        f"periods_per_year={periods_per_year} but data implies ~{actual_ppy:.0f} "
+                        f"obs/year (ratio={ratio:.2f}). Likely wrong ppy — would inflate Sharpe "
+                        f"by sqrt({ratio:.2f})={ratio**0.5:.2f}x."
+                    )
+        except (TypeError, IndexError):
+            pass
+
+
 def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365):
     """Compute comprehensive strategy metrics from a returns series.
 
@@ -223,11 +254,12 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         returns: array of period returns (daily or hourly)
         n_trials: total number of strategy configurations tested (for DSR)
         risk_free: risk-free rate per period
-        periods_per_year: number of trading periods per year
+        periods_per_year: number of trading periods per year (must be in _VALID_PPY)
 
     Returns:
         dict of metrics suitable for wandb.log()
     """
+    validate_periods_per_year(returns, periods_per_year)
     returns = np.asarray(returns, dtype=float)
 
     # Pre-compute distribution moments for logging (raw Pearson kurtosis, normal=3)

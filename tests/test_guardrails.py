@@ -277,7 +277,7 @@ class TestRunPreChecks:
 class TestRunPostChecks:
     def test_returns_all_checks(self, good_returns, good_metrics, good_config):
         results = run_post_checks(good_returns, good_metrics, good_config)
-        assert len(results) == 6
+        assert len(results) == 7
         assert all(isinstance(r, GuardrailResult) for r in results)
 
 

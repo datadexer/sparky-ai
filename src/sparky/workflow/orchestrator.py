@@ -759,10 +759,22 @@ class ResearchOrchestrator:
             state.stall_counter = 0
 
     def _update_best(self, state: OrchestratorState, session_record: SessionRecord) -> None:
-        """Update best_result if this session beat the previous best."""
+        """Update best_result if this session beat the previous best.
+
+        Flags suspicious jumps (>50% improvement) — likely a ppy or data bug.
+        """
         curr_sharpe = session_record.best_sharpe or 0
         prev_sharpe = state.best_result.get("sharpe", 0) or 0
         if curr_sharpe > prev_sharpe:
+            if prev_sharpe > 0.5 and curr_sharpe > prev_sharpe * 1.5:
+                send_alert(
+                    "WARN",
+                    f"Suspicious Sharpe jump in '{self.directive.name}' S{session_record.session_number}: "
+                    f"{prev_sharpe:.3f} -> {curr_sharpe:.3f} (+{(curr_sharpe / prev_sharpe - 1) * 100:.0f}%). "
+                    f"Possible ppy or data bug. NOT updating best_result.",
+                )
+                logger.warning(f"Suspicious Sharpe jump: {prev_sharpe:.3f} -> {curr_sharpe:.3f}. Skipping best update.")
+                return
             state.best_result = {
                 "sharpe": session_record.best_sharpe,
                 "dsr": session_record.best_dsr,
