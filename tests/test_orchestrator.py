@@ -114,6 +114,18 @@ class TestResearchDirective:
         assert "momentum_lookback" in ranges
         assert ranges["momentum_lookback"] == [10, 20, 30, 40, 60]
 
+    def test_stop_on_success_defaults_true(self, tmp_path):
+        p = tmp_path / "minimal.yaml"
+        p.write_text("name: test\nobjective: test\n")
+        d = ResearchDirective.from_yaml(p)
+        assert d.stopping_criteria.stop_on_success is True
+
+    def test_stop_on_success_parsed_from_yaml(self, tmp_path):
+        p = tmp_path / "no_stop.yaml"
+        p.write_text("name: test\nobjective: test\nstopping_criteria:\n  stop_on_success: false\n")
+        d = ResearchDirective.from_yaml(p)
+        assert d.stopping_criteria.stop_on_success is False
+
 
 # ── OrchestratorState tests ──────────────────────────────────────────────
 
@@ -637,6 +649,39 @@ class TestResearchOrchestrator:
         # Should have sent alert about success
         alert_msgs = [str(c) for c in mock_alert.call_args_list]
         assert any("SUCCESS" in m for m in alert_msgs)
+
+    @patch("sparky.workflow.orchestrator.launch_claude_session")
+    @patch("sparky.workflow.orchestrator.send_alert")
+    @patch("time.sleep")
+    def test_stop_on_success_false_continues(self, mock_sleep, mock_alert, mock_launch, tmp_path):
+        """With stop_on_success=False, success criteria don't halt the loop."""
+        directive = _make_directive(
+            stopping_criteria=StoppingCriteria(
+                stop_on_success=False,
+                success_min_sharpe=1.0,
+                success_min_dsr=0.95,
+                max_sessions=3,
+            ),
+        )
+        orch = ResearchOrchestrator(directive, state_dir=tmp_path, log_dir=tmp_path / "logs")
+
+        t = _make_telemetry(duration_minutes=10.0)
+        mock_launch.return_value = t
+
+        # Every session returns metrics above success thresholds
+        with patch.object(
+            orch,
+            "_query_session_results",
+            return_value={"best_sharpe": 1.5, "best_dsr": 0.99, "run_ids": ["r1"], "configs": [{"lr": 0.01}]},
+        ):
+            result = orch.run()
+
+        assert result == 0
+        state = OrchestratorState.load("test_directive", tmp_path)
+        # Should have run all 3 sessions (budget halt), not stopped at 1 (success)
+        assert state.session_count == 3
+        alert_msgs = [str(c) for c in mock_alert.call_args_list]
+        assert not any("SUCCESS" in m for m in alert_msgs)
 
     @patch("sparky.workflow.orchestrator.launch_claude_session")
     @patch("sparky.workflow.orchestrator.send_alert")
