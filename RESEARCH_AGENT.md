@@ -176,6 +176,39 @@ If R (statistical tests), Julia (numerical simulation), or another language
 would produce better results faster, write `GATE_REQUEST.md` and exit. Do not
 approximate in Python when a better tool exists.
 
+## Experiment Runner (PREFERRED for signal strategies)
+
+Use `experiment_runner.run()` for all signal-based strategy evaluations. It handles
+dataset resolution, correct `periods_per_year`, sizing, dual-cost evaluation (30+50 bps),
+guardrails, sub-period analysis, and benchmark correlation in a single call.
+
+```python
+import sys; sys.path.insert(0, "scripts/infra")
+from experiment_runner import run
+
+result = run({
+    "asset": "btc",              # btc | eth
+    "timeframe": "4h",           # 1h | 2h | 4h | 8h | daily
+    "signal_type": "donchian",   # donchian | bollinger | rsi_extreme
+    "signal_params": {"entry_period": 30, "exit_period": 20},
+    "sizing": "inverse_vol",     # flat | inverse_vol
+    "sizing_params": {"vol_window": 20, "target_vol": 0.4},  # optional
+    "n_trials": 10,              # cumulative configs tested (for DSR)
+    "benchmark_returns": None,   # pd.Series for correlation (optional)
+})
+# Returns dict with: sharpe_30bps, sharpe_50bps, dsr_30bps, dsr_50bps,
+#   max_drawdown, n_trades, win_rate, sub_periods, corr_with_benchmark,
+#   periods_per_year, statistically_significant, metrics_30bps, metrics_50bps
+# Returns None if pre-checks block or <5 trades.
+```
+
+Signal types:
+- `donchian`: entry_period, exit_period
+- `bollinger`: period, num_std, hold_periods (default 10)
+- `rsi_extreme`: period, entry (RSI level to buy), exit (RSI level to sell)
+
+Do NOT re-implement signal, cost, or sizing logic. Use `experiment_runner.run()`.
+
 ## Saving Results
 
 Save results to `results/<directive_name>/`:
