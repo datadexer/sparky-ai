@@ -124,7 +124,7 @@ def _get_wandb_runs() -> list[dict]:
           project(name: $project, entityName: $entity) {
             runs(order: $order, first: $first) {
               edges {
-                node { tags summaryMetrics }
+                node { name tags summaryMetrics }
               }
             }
           }
@@ -156,7 +156,7 @@ def _get_wandb_runs() -> list[dict]:
                     summary = json.loads(sm)
                 except (json.JSONDecodeError, TypeError):
                     pass
-            runs.append({"tags": node.get("tags") or [], "summary": summary})
+            runs.append({"name": node.get("name", ""), "tags": node.get("tags") or [], "summary": summary})
         _WANDB_CACHE = runs
         return runs
     except Exception:
@@ -538,26 +538,207 @@ def _reconstruct_orch_state_from_wandb() -> dict | None:
         return None
 
 
-def cmd_orch_all(_args):
+def _get_service_orch_map() -> dict[str, str]:
+    """Map orch name -> systemd service name by parsing ExecStart directives."""
+    import yaml as _yaml
+
+    result = {}
+    svc_dir = Path.home() / ".config" / "systemd" / "user"
+    if not svc_dir.exists():
+        return result
+    for svc_file in svc_dir.glob("sparky-*.service"):
+        try:
+            text = svc_file.read_text()
+            for line in text.splitlines():
+                line = line.strip()
+                if line.startswith("ExecStart=") and "directives/" in line:
+                    yaml_path = PROJECT_ROOT / "directives" / line.split("directives/", 1)[1]
+                    if yaml_path.exists():
+                        with open(yaml_path) as f:
+                            d = _yaml.safe_load(f)
+                        if d and "name" in d:
+                            result[d["name"]] = svc_file.stem
+        except Exception:
+            continue
+    return result
+
+
+def _get_service_uptime_minutes(service_name: str) -> float | None:
+    """Parse ActiveEnterTimestampMonotonic from systemctl show for elapsed time."""
+    try:
+        r = subprocess.run(
+            ["systemctl", "--user", "show", service_name, "--property=ActiveEnterTimestampMonotonic,ActiveState"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        props = dict(line.split("=", 1) for line in r.stdout.strip().splitlines() if "=" in line)
+        if props.get("ActiveState") != "active":
+            return None
+        # Monotonic timestamp in microseconds
+        mono_us = int(props.get("ActiveEnterTimestampMonotonic", "0"))
+        if mono_us == 0:
+            return None
+        # Get current monotonic time from /proc/uptime (seconds since boot)
+        with open("/proc/uptime") as f:
+            boot_secs = float(f.read().split()[0])
+        now_us = int(boot_secs * 1_000_000)
+        elapsed_minutes = (now_us - mono_us) / 60_000_000
+        return elapsed_minutes if elapsed_minutes > 0 else None
+    except Exception:
+        return None
+
+
+def _get_directive_tags() -> dict[str, list[str]]:
+    """Map orch name -> wandb_tags from directive YAMLs."""
+    import yaml as _yaml
+
+    result = {}
+    directives_dir = PROJECT_ROOT / "directives"
+    if not directives_dir.exists():
+        return result
+    for yf in directives_dir.glob("*.yaml"):
+        if yf.name == "active.yaml":
+            continue
+        try:
+            with open(yf) as f:
+                d = _yaml.safe_load(f)
+            if d and "name" in d and "wandb_tags" in d:
+                result[d["name"]] = d["wandb_tags"]
+        except Exception:
+            continue
+    return result
+
+
+def _count_wandb_runs_by_tags(all_runs: list[dict], tags: list[str]) -> int:
+    """Count runs matching ALL given tags."""
+    tag_set = set(tags)
+    return sum(1 for r in all_runs if tag_set.issubset(set(r["tags"])))
+
+
+def _get_run_metrics(all_runs: list[dict], run_id: str) -> dict:
+    """Get max_drawdown and annual_return for a specific wandb run by name."""
+    for r in all_runs:
+        if r.get("name") == run_id:
+            s = r["summary"]
+            ar = s.get("annual_return")
+            if ar is None:
+                tr = s.get("total_return")
+                n_obs = s.get("n_observations", 0)
+                ppy = s.get("periods_per_year", 365)
+                if tr is not None and n_obs and ppy:
+                    years = n_obs / ppy
+                    ar = (1 + tr) ** (1 / years) - 1 if years > 0 else None
+            return {"max_drawdown": s.get("max_drawdown"), "annual_return": ar}
+    return {}
+
+
+def _fmt_elapsed(minutes: float) -> str:
+    """Format minutes as e.g. '12m' or '2h3m'."""
+    if minutes < 60:
+        return f"{minutes:.0f}m"
+    h = int(minutes // 60)
+    m = int(minutes % 60)
+    return f"{h}h{m}m"
+
+
+def cmd_orch_all(args):
     """Show table view of all orchestrators."""
     states = _load_all_orch_states()
     if not states:
         print("No orchestrator states found.")
         return
 
-    print(f"{'Name':<45} {'Status':<14} {'Sessions':>8} {'Sharpe':>8} {'DSR':>8} {'Cost':>8}")
-    print(f"{'-' * 45} {'-' * 14} {'-' * 8} {'-' * 8} {'-' * 8} {'-' * 8}")
+    show_all = getattr(args, "all", False)
+    wandb_runs = _get_wandb_runs()
+    svc_map = _get_service_orch_map()
+    dir_tags = _get_directive_tags()
+
+    active_states = []
+    completed_states = []
     for s in states:
+        status = s.get("status", "?")
+        if status in ("running", "gate_triggered"):
+            active_states.append(s)
+        else:
+            completed_states.append(s)
+
+    def _render_row(s: dict, show_active: bool = False) -> str:
         name = s.get("name", "?")
         status = s.get("status", "?")
         sessions = s.get("session_count", 0)
         best = s.get("best_result", {})
         cost = s.get("total_cost_usd", 0)
+
+        # Check for invalidated results
+        invalidated = best.get("invalidated", False)
+        if invalidated or (status == "done" and not best):
+            status_s = "done*"
+        else:
+            status_s = status
+
         sharpe = best.get("sharpe")
         dsr = best.get("dsr")
-        sharpe_s = f"{sharpe:.3f}" if isinstance(sharpe, (int, float)) else "N/A"
-        dsr_s = f"{dsr:.3f}" if isinstance(dsr, (int, float)) else "N/A"
-        print(f"{name:<45} {status:<14} {sessions:>8} {sharpe_s:>8} {dsr_s:>8} ${cost:>7.2f}")
+        sharpe_s = f"{sharpe:.3f}" if isinstance(sharpe, (int, float)) and not invalidated else "-"
+        dsr_s = f"{dsr:.3f}" if isinstance(dsr, (int, float)) and not invalidated else "-"
+
+        # MaxDD and annual return — try state first, then wandb
+        max_dd = best.get("max_drawdown")
+        ann_ret = best.get("annual_return")
+        if max_dd is None and best.get("run_id"):
+            rm = _get_run_metrics(wandb_runs, best["run_id"])
+            max_dd = rm.get("max_drawdown")
+            if ann_ret is None:
+                ann_ret = rm.get("annual_return")
+
+        dd_s = f"{max_dd * 100:.1f}%" if isinstance(max_dd, (int, float)) and not invalidated else "-"
+        ar_s = f"{ann_ret * 100:.1f}%" if isinstance(ann_ret, (int, float)) and not invalidated else "-"
+
+        # Active session indicator
+        active_s = ""
+        if show_active and status == "running":
+            svc_name = svc_map.get(name)
+            sess_num = sessions + 1
+            parts = [f"S{sess_num}"]
+            if svc_name:
+                uptime = _get_service_uptime_minutes(svc_name)
+                if uptime is not None:
+                    parts.append(_fmt_elapsed(uptime))
+            tags = dir_tags.get(name, [])
+            if tags:
+                n_runs = _count_wandb_runs_by_tags(wandb_runs, tags)
+                parts.append(f"{n_runs} runs")
+            active_s = " (" + ", ".join(parts[1:]) + ")" if len(parts) > 1 else ""
+            active_s = parts[0] + active_s
+
+        return (
+            f"{name:<38} {status_s:<12} {sessions:>4} {sharpe_s:>8} {dsr_s:>7} "
+            f"{dd_s:>7} {ar_s:>9} ${cost:>6.2f}  {active_s}"
+        )
+
+    header = (
+        f"{'Name':<38} {'Status':<12} {'Sess':>4} {'Sharpe':>8} {'DSR':>7} "
+        f"{'MaxDD':>7} {'Ann.Ret':>9} {'Cost':>7}  {'Active'}"
+    )
+    sep = "-" * len(header)
+
+    if active_states:
+        print(header)
+        print(sep)
+        for s in active_states:
+            print(_render_row(s, show_active=True))
+        print()
+
+    if completed_states and not show_all:
+        print(f"{len(completed_states)} completed orchestrator(s) hidden (use --all)")
+    elif completed_states and show_all:
+        if not active_states:
+            print(header)
+            print(sep)
+        else:
+            print("Completed:")
+        for s in completed_states:
+            print(_render_row(s))
 
 
 def cmd_orch_status(_args):
@@ -690,7 +871,8 @@ def main():
     # Orchestrator subcommands
     p_orch = sub.add_parser("orch", help="Orchestrator commands")
     orch_sub = p_orch.add_subparsers(dest="orch_command")
-    orch_sub.add_parser("all", help="Table view of all orchestrators")
+    p_orch_all = orch_sub.add_parser("all", help="Table view of all orchestrators")
+    p_orch_all.add_argument("--all", action="store_true", help="Show completed orchestrators too")
     p_orch_status = orch_sub.add_parser("status", help="Orchestrator status dashboard")
     p_orch_status.add_argument("--name", help="Orchestrator name (default: most recent)")
     p_orch_results = orch_sub.add_parser("results", help="Show top results")

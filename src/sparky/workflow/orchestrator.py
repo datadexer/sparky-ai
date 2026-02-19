@@ -223,6 +223,8 @@ class SessionRecord:
     exit_code: int = 0
     best_sharpe: Optional[float] = None
     best_dsr: Optional[float] = None
+    best_max_drawdown: Optional[float] = None
+    best_annual_return: Optional[float] = None
     wandb_run_ids: list[str] = field(default_factory=list)
     wandb_run_configs: list[dict] = field(default_factory=list)
     estimated_cost_usd: float = 0.0
@@ -237,6 +239,8 @@ class SessionRecord:
             "exit_code": self.exit_code,
             "best_sharpe": self.best_sharpe,
             "best_dsr": self.best_dsr,
+            "best_max_drawdown": self.best_max_drawdown,
+            "best_annual_return": self.best_annual_return,
             "wandb_run_ids": self.wandb_run_ids,
             "wandb_run_configs": self.wandb_run_configs,
             "estimated_cost_usd": self.estimated_cost_usd,
@@ -743,6 +747,8 @@ class ResearchOrchestrator:
                 "dsr": session_record.best_dsr,
                 "run_id": session_record.wandb_run_ids[0] if session_record.wandb_run_ids else None,
                 "session_number": session_record.session_number,
+                "max_drawdown": session_record.best_max_drawdown,
+                "annual_return": session_record.best_annual_return,
             }
 
     def _query_session_results(self, session_tag: str) -> dict:
@@ -751,10 +757,13 @@ class ResearchOrchestrator:
             from sparky.tracking.experiment import ExperimentTracker
 
             tracker = ExperimentTracker(experiment_name=self.directive.name)
-            runs = tracker._fetch_runs(filters={"tags": {"$all": [session_tag]}})
+            required_tags = [session_tag] + list(self.directive.wandb_tags)
+            runs = tracker._fetch_runs(filters={"tags": {"$all": required_tags}})
 
             best_sharpe = None
             best_dsr = None
+            best_max_drawdown = None
+            best_annual_return = None
             run_ids = []
             configs = []
 
@@ -765,12 +774,25 @@ class ResearchOrchestrator:
                 d = run.summary.get("dsr") or run.summary.get("best_dsr")
                 if s is not None and (best_sharpe is None or s > best_sharpe):
                     best_sharpe = s
+                    best_max_drawdown = run.summary.get("max_drawdown")
+                    # Try direct annual_return first, else compute CAGR
+                    ar = run.summary.get("annual_return")
+                    if ar is None:
+                        tr = run.summary.get("total_return")
+                        n_obs = run.summary.get("n_observations", 0)
+                        ppy = run.summary.get("periods_per_year", 365)
+                        if tr is not None and n_obs and ppy:
+                            years = n_obs / ppy
+                            ar = (1 + tr) ** (1 / years) - 1 if years > 0 else None
+                    best_annual_return = ar
                 if d is not None and (best_dsr is None or d > best_dsr):
                     best_dsr = d
 
             return {
                 "best_sharpe": best_sharpe,
                 "best_dsr": best_dsr,
+                "best_max_drawdown": best_max_drawdown,
+                "best_annual_return": best_annual_return,
                 "run_ids": run_ids,
                 "configs": configs,
             }
@@ -1010,6 +1032,8 @@ class ResearchOrchestrator:
                     exit_code=0 if telemetry.exit_reason == "completed" else 1,
                     best_sharpe=results["best_sharpe"],
                     best_dsr=results["best_dsr"],
+                    best_max_drawdown=results.get("best_max_drawdown"),
+                    best_annual_return=results.get("best_annual_return"),
                     wandb_run_ids=results["run_ids"],
                     wandb_run_configs=results["configs"],
                     estimated_cost_usd=telemetry.estimated_cost_usd,
