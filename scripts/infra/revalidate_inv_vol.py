@@ -4,6 +4,14 @@ The old inv_vol_sizing hardcoded periods_per_year=365, which is wrong for
 intraday data. This script re-runs key configs with corrected sizing and
 reports old vs new metrics.
 
+NOTE on Layer 4 meta-labeled result (Sharpe 1.633, MaxDD -0.248):
+The Layer 4 scripts (layer4_sizing_session1_r4.py etc.) used a LOCAL
+inv_vol_sizing_4h() with PERIODS_PER_YEAR_4H=2190 — already correct.
+That result is NOT affected by this fix. Confirmed by code inspection.
+
+Broad exploration scripts (broad_exp_10/11/15/16/17) DID use the broken
+sweep_utils.inv_vol_sizing() on 4h data — those results are invalidated.
+
 Run: .venv/bin/python scripts/infra/revalidate_inv_vol.py
 """
 
@@ -18,7 +26,7 @@ from experiment_runner import run  # noqa: E402
 
 CONFIGS = [
     {
-        "name": "BTC_Don4h(30,25)_invvol — Layer 4 benchmark",
+        "name": "BTC_Don4h(30,25)_invvol (raw, no meta)",
         "config": {
             "asset": "btc",
             "timeframe": "4h",
@@ -111,6 +119,27 @@ def main():
     print("=" * 90)
     print("Compare against previous (broken) results to assess impact.")
     print("Flat-sizing configs should be unchanged (no inv_vol_sizing used).")
+
+    # Layer 4 meta-labeled result verification
+    print("\n" + "=" * 90)
+    print("Layer 4 META-LABELED result (Sharpe 1.633, MaxDD -0.248):")
+    print("  Used local inv_vol_sizing_4h() with PERIODS_PER_YEAR_4H=2190")
+    print("  → ALREADY CORRECT. Not affected by this fix.")
+    print("  Source: scripts/layer4_sizing_session1_r4.py line 53, 149")
+
+    # Show sizing scale difference for reference
+    from sweep_utils import inv_vol_sizing  # noqa: E402
+
+    from sparky.data.loader import load  # noqa: E402
+
+    p4h = load("btc_ohlcv_4h", purpose="training")["close"]
+    old = inv_vol_sizing(p4h, vw=20, tv=0.4, periods_per_year=365)
+    new = inv_vol_sizing(p4h, vw=20, tv=0.4, periods_per_year=2190)
+    print("\n  4h sizing scale comparison (vw=20, tv=0.4):")
+    print(f"    Old (ppy=365):  mean={old.mean():.3f}, median={old.median():.3f}")
+    print(f"    New (ppy=2190): mean={new.mean():.3f}, median={new.median():.3f}")
+    print(f"    Ratio: {old.mean() / new.mean():.2f}x oversize with wrong ppy")
+    print("=" * 90)
 
 
 if __name__ == "__main__":
