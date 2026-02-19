@@ -4,6 +4,24 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## Corrected Candidate Rankings — 2026-02-18
+
+**NOTE**: Broad exploration inv_vol results are INVALIDATED (PR #58 sizing bug).
+Only Agent A (eth_strategies) and Agent B (btc_deep) results are trustworthy.
+Broad exploration inv_vol results must be revalidated before inclusion.
+
+| # | Config | Source | S@30 | S@50 | DSR | MaxDD | 2020+ S | Status |
+|---|--------|--------|------|------|-----|-------|---------|--------|
+| 1 | btc_don8h(40,10) iv(vw30,tv0.2) | Agent B | 2.045 | 1.817 | 1.000 | -14.2% | 1.087 | VALIDATED |
+| 2 | eth_don8h(72,27) flat | Agent A | 2.081 | 2.041 | 0.986 | -39.0% | 1.762 | VALIDATED |
+| 3 | eth_don8h(83,30) flat | Agent A | 2.080 | 2.046 | 0.986 | -32.9% | 1.617 | VALIDATED |
+| 4 | eth_don8h(85,30) invvol | Agent A | 2.019 | — | 0.979 | -10.4% | — | NEEDS 50bps |
+| 5 | eth_don4h(140,48) flat | Agent A | 2.126 | — | 0.993 | — | — | INCOMPLETE |
+
+Remaining in-sample. OOS requires explicit AK approval.
+
+---
+
 ## layer4_sizing_donchian_20260218 — Session 1 — 2026-02-18
 
 **DIRECTIVE**: layer4_sizing_donchian_20260218
