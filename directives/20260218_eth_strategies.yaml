@@ -1,0 +1,113 @@
+name: eth_strategies_20260218
+objective: |
+  Deep exploration of ETH signal strategies across multiple timeframes.
+  ETH has low correlation with BTC strategies (~0.28 Donchian, ~0.12 Bollinger),
+  making it a genuine portfolio diversifier.
+
+  Benchmark: BTC Don4h(30,25) flat Sharpe 1.702@30bps.
+  ETH-specific baseline: ETH buy-and-hold.
+
+  Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
+
+  Priority order:
+  1. eth_donchian_8h — deep sweep, our best ETH family. Corr ~0.28 with BTC.
+  2. eth_donchian_2h — validate whether 2h works for ETH.
+  3. eth_bollinger_8h — BB period/std sweep, corr ~0.12 with BTC.
+  4. eth_bollinger_2h — untested territory.
+
+  Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
+  corr-to-BTC-benchmark, n_trades(2020+).
+
+constraints:
+  assets: [eth]
+  timeframes: [2h, 4h, 8h]
+  gpu_required: false
+  transaction_costs_bps: 30
+  n_trials_start: 627
+  n_trials_cumulative: true
+
+strategy_space:
+  - family: eth_donchian_8h_raw
+    description: >
+      Deep sweep of Donchian on ETH 8h. Entry 20-100, exit 10-40.
+      Test both flat and inverse_vol sizing (with correct periods_per_year).
+    priority: 1
+    parameter_ranges:
+      entry_period: [20, 30, 40, 50, 60, 80, 100]
+      exit_period: [10, 15, 20, 25, 30, 40]
+      sizing: [flat, inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.2, 0.3, 0.4]
+
+  - family: eth_donchian_2h_raw
+    description: >
+      Validate whether 2h Donchian works for ETH like it does for BTC.
+    priority: 2
+    parameter_ranges:
+      entry_period: [40, 60, 80, 100]
+      exit_period: [20, 30, 40]
+      sizing: [flat, inverse_vol]
+
+  - family: eth_bollinger_8h_raw
+    description: >
+      Bollinger breakout on ETH 8h. Low correlation with Donchian.
+    priority: 3
+    parameter_ranges:
+      period: [15, 20, 30, 40]
+      num_std: [1.5, 2.0, 2.5]
+      hold_periods: [5, 10, 20]
+      sizing: [flat, inverse_vol]
+
+  - family: eth_bollinger_2h_raw
+    description: >
+      Untested: Bollinger breakout on ETH 2h.
+    priority: 4
+    parameter_ranges:
+      period: [20, 30, 40]
+      num_std: [1.5, 2.0, 2.5]
+      hold_periods: [10, 20, 40]
+      sizing: [flat]
+
+stopping_criteria:
+  stop_on_success: false
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 12
+    max_hours: 8
+    max_cost_usd: 35
+    digest_every: 3
+  stall:
+    sessions_without_improvement: 4
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [eth_strategies, 20260218, agent_a]
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "DO NOT add meta-labeling. ETH meta-labeling is a confirmed null result across 4 sessions."
+  - "Use experiment_runner.run() for all signal evaluations. Do not re-implement signal or cost logic."
+  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics and report DSR"
+  - "Report DSR at three levels: per-family n_trials, per-asset n_trials, and global n_trials. Use per-family DSR for candidate ranking."
+  - "Always include transaction costs — report Sharpe at BOTH 30 bps and 50 bps"
+  - "n_trials starts at 627. Increment for every config tested."
+  - "Sub-period validation mandatory: full IS, 2017-2023, 2020-2023"
+  - "Minimum 30 trades on the 2020-2023 sub-period"
+  - "Compare every result against ETH buy-and-hold and BTC Donchian benchmark"
+  - "Compute pairwise return correlation with BTC benchmark for diversification"
+  - "periods_per_year: 4380 (2h), 2190 (4h), 1095 (8h). Never use 252 or 365 for intraday."
+  - "If your signal type isn't supported by experiment_runner, extend _make_signal() with a new dispatch case and document it."
