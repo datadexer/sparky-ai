@@ -125,12 +125,12 @@ def subperiod_analysis(prices, positions, cf, periods_per_year=PERIODS_PER_YEAR)
     return out
 
 
-def rvol(prices, w=20):
-    return np.log(prices / prices.shift(1)).rolling(w).std() * np.sqrt(PERIODS_PER_YEAR)
+def rvol(prices, w=20, periods_per_year=PERIODS_PER_YEAR):
+    return np.log(prices / prices.shift(1)).rolling(w).std() * np.sqrt(periods_per_year)
 
 
-def inv_vol_sizing(prices, vw=20, tv=0.4):
-    return (tv / rvol(prices, vw)).clip(0.1, 1.5).fillna(0.5)
+def inv_vol_sizing(prices, vw=20, tv=0.4, periods_per_year=PERIODS_PER_YEAR):
+    return (tv / rvol(prices, vw, periods_per_year)).clip(0.1, 1.5).fillna(0.5)
 
 
 def baseline_donchian(prices, ep=40, xp=20):
