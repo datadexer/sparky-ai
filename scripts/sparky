@@ -14,9 +14,10 @@ Usage:
     sparky inject "msg" — Inject guidance into next session
     sparky budget    — Detailed budget/cost breakdown
     sparky history   — Step completion timeline
-    sparky orch status   — Orchestrator status dashboard
-    sparky orch results  — Show top results from wandb
-    sparky orch respond "msg" — Respond to a gate request and resume
+    sparky orch all      — Table view of all orchestrators
+    sparky orch status [--name N] — Orchestrator status dashboard
+    sparky orch results [--name N] — Show top results from wandb
+    sparky orch respond [--name N] "msg" — Respond to a gate request and resume
 """
 
 import argparse
@@ -465,19 +466,44 @@ def cmd_history(_args):
         print(f"  {name:<30} {info.get('status', '?'):<12} {info.get('attempts', 0):>8} {completed:>24}")
 
 
-def _load_orch_state() -> dict | None:
-    """Load the most recent orchestrator state file. Falls back to wandb reconstruction."""
-    if STATE_DIR.exists():
-        state_files = sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-        for sf in state_files:
+def _load_orch_state(name: str | None = None) -> dict | None:
+    """Load orchestrator state by name, or most recent if name is None."""
+    if not STATE_DIR.exists():
+        return _reconstruct_orch_state_from_wandb() if name is None else None
+
+    if name:
+        filepath = STATE_DIR / f"orchestrator_{name}.json"
+        if filepath.exists():
             try:
-                with open(sf) as f:
+                with open(filepath) as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
-                continue
+                pass
+        return None
 
-    # No state file — try to reconstruct from wandb
+    state_files = sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for sf in state_files:
+        try:
+            with open(sf) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+
     return _reconstruct_orch_state_from_wandb()
+
+
+def _load_all_orch_states() -> list[dict]:
+    """Load all orchestrator state files."""
+    states = []
+    if not STATE_DIR.exists():
+        return states
+    for sf in sorted(STATE_DIR.glob("orchestrator_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            with open(sf) as f:
+                states.append(json.load(f))
+        except (json.JSONDecodeError, OSError):
+            continue
+    return states
 
 
 def _reconstruct_orch_state_from_wandb() -> dict | None:
@@ -512,9 +538,32 @@ def _reconstruct_orch_state_from_wandb() -> dict | None:
         return None
 
 
+def cmd_orch_all(_args):
+    """Show table view of all orchestrators."""
+    states = _load_all_orch_states()
+    if not states:
+        print("No orchestrator states found.")
+        return
+
+    print(f"{'Name':<45} {'Status':<14} {'Sessions':>8} {'Sharpe':>8} {'DSR':>8} {'Cost':>8}")
+    print(f"{'-' * 45} {'-' * 14} {'-' * 8} {'-' * 8} {'-' * 8} {'-' * 8}")
+    for s in states:
+        name = s.get("name", "?")
+        status = s.get("status", "?")
+        sessions = s.get("session_count", 0)
+        best = s.get("best_result", {})
+        cost = s.get("total_cost_usd", 0)
+        sharpe = best.get("sharpe")
+        dsr = best.get("dsr")
+        sharpe_s = f"{sharpe:.3f}" if isinstance(sharpe, (int, float)) else "N/A"
+        dsr_s = f"{dsr:.3f}" if isinstance(dsr, (int, float)) else "N/A"
+        print(f"{name:<45} {status:<14} {sessions:>8} {sharpe_s:>8} {dsr_s:>8} ${cost:>7.2f}")
+
+
 def cmd_orch_status(_args):
     """Print orchestrator status dashboard."""
-    state = _load_orch_state()
+    name = getattr(_args, "name", None)
+    state = _load_orch_state(name)
     if not state:
         print("No orchestrator state found.")
         return
@@ -548,7 +597,8 @@ def cmd_orch_status(_args):
 
 def cmd_orch_results(_args):
     """Show top results from wandb for the orchestrator directive."""
-    state = _load_orch_state()
+    name = getattr(_args, "name", None)
+    state = _load_orch_state(name)
     if not state:
         print("No orchestrator state found.")
         return
@@ -586,7 +636,8 @@ def cmd_orch_results(_args):
 
 def cmd_orch_respond(args):
     """Respond to a gate request and resume the orchestrator."""
-    state = _load_orch_state()
+    name = getattr(args, "name", None)
+    state = _load_orch_state(name)
     if not state:
         print("No orchestrator state found.")
         return
@@ -639,9 +690,13 @@ def main():
     # Orchestrator subcommands
     p_orch = sub.add_parser("orch", help="Orchestrator commands")
     orch_sub = p_orch.add_subparsers(dest="orch_command")
-    orch_sub.add_parser("status", help="Orchestrator status dashboard")
-    orch_sub.add_parser("results", help="Show top results")
+    orch_sub.add_parser("all", help="Table view of all orchestrators")
+    p_orch_status = orch_sub.add_parser("status", help="Orchestrator status dashboard")
+    p_orch_status.add_argument("--name", help="Orchestrator name (default: most recent)")
+    p_orch_results = orch_sub.add_parser("results", help="Show top results")
+    p_orch_results.add_argument("--name", help="Orchestrator name (default: most recent)")
     p_orch_respond = orch_sub.add_parser("respond", help="Respond to gate request")
+    p_orch_respond.add_argument("--name", help="Orchestrator name (default: most recent)")
     p_orch_respond.add_argument("message", help="Response message")
 
     args = parser.parse_args()
@@ -663,6 +718,7 @@ def main():
 
     if args.command == "orch":
         orch_commands = {
+            "all": cmd_orch_all,
             "status": cmd_orch_status,
             "results": cmd_orch_results,
             "respond": cmd_orch_respond,

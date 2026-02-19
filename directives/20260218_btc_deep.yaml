@@ -1,0 +1,105 @@
+name: btc_deep_20260218
+objective: |
+  Deep exploration of BTC signal strategies at underexplored timeframes.
+  Focus on robustness validation and filling gaps in the parameter space.
+
+  Benchmark: BTC Don4h(30,25) flat Sharpe 1.702@30bps, DSR 0.991.
+  Key result needing validation: BTC_Don2h(80,40) Sharpe 1.819 — is this
+  a local optimum or part of a robust region?
+
+  Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
+
+  Priority order:
+  1. btc_donchian_2h_robustness — neighbor validation around (80,40).
+     Also: all 2h inv-vol results need re-validation after sizing fix.
+  2. btc_bollinger_2h — completely untested on BTC 2h.
+  3. btc_donchian_8h_deep — lightly explored, partial diversifier.
+
+  Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
+  n_trades(2020+), and neighbor stability analysis for top configs.
+
+constraints:
+  assets: [btc]
+  timeframes: [2h, 4h, 8h]
+  gpu_required: false
+  transaction_costs_bps: 30
+  n_trials_start: 627
+  n_trials_cumulative: true
+
+strategy_space:
+  - family: btc_donchian_2h_robustness
+    description: >
+      BTC_Don2h(80,40) scored Sharpe 1.819. Sweep neighbors to validate:
+      entry 60-100, exit 30-50. Test flat + inverse_vol (with corrected ppy).
+      Report whether the (80,40) region is robust or isolated.
+    priority: 1
+    parameter_ranges:
+      entry_period: [60, 70, 80, 90, 100]
+      exit_period: [30, 35, 40, 45, 50]
+      sizing: [flat, inverse_vol]
+      vol_window: [20, 30, 40]
+      target_vol: [0.2, 0.3, 0.4]
+
+  - family: btc_bollinger_2h
+    description: >
+      Completely untested: Bollinger breakout on BTC 2h. Different signal
+      from Donchian — potential diversifier within BTC timeframes.
+    priority: 2
+    parameter_ranges:
+      period: [15, 20, 30, 40, 60]
+      num_std: [1.5, 2.0, 2.5]
+      hold_periods: [10, 20, 40]
+      sizing: [flat, inverse_vol]
+
+  - family: btc_donchian_8h_deep
+    description: >
+      BTC Donchian at 8h — lightly explored. Partial diversifier
+      vs 2h/4h due to different trade frequency.
+    priority: 3
+    parameter_ranges:
+      entry_period: [20, 30, 40, 50, 60]
+      exit_period: [10, 15, 20, 25, 30]
+      sizing: [flat, inverse_vol]
+
+stopping_criteria:
+  stop_on_success: false
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 12
+    max_hours: 8
+    max_cost_usd: 35
+    digest_every: 3
+  stall:
+    sessions_without_improvement: 4
+    improvement_threshold: 0.05
+    diversity_threshold: 0.80
+
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [btc_deep, 20260218, agent_b]
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "DO NOT explore mean-reversion signals on BTC. Confirmed null result (DSR < 0.05 across all configs)."
+  - "Use experiment_runner.run() for all signal evaluations. Do not re-implement signal or cost logic."
+  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics and report DSR"
+  - "Report DSR at three levels: per-family n_trials, per-asset n_trials, and global n_trials. Use per-family DSR for candidate ranking."
+  - "Always include transaction costs — report Sharpe at BOTH 30 bps and 50 bps"
+  - "n_trials starts at 627. Increment for every config tested."
+  - "Sub-period validation mandatory: full IS, 2017-2023, 2020-2023"
+  - "Minimum 30 trades on the 2020-2023 sub-period"
+  - "Compare every result against BTC Don4h(30,25) flat benchmark (Sharpe 1.702)"
+  - "periods_per_year: 4380 (2h), 2190 (4h), 1095 (8h). Never use 252 or 365 for intraday."
+  - "If your signal type isn't supported by experiment_runner, extend _make_signal() with a new dispatch case and document it."
