@@ -134,16 +134,13 @@ If pre-commit fails, fix the issues. Do NOT use `--no-verify`.
 - Import hygiene (core modules import cleanly)
 - Coverage (40% minimum threshold)
 
-**Research Validation (Layer 3, on PRs):**
-Every PR is reviewed by a Sonnet validation agent that checks for:
-- Statistical methodology errors (missing DSR, wrong CV, bad annualization)
-- Backtesting violations (lookahead bias, missing costs, holdout leaks)
-- Crypto-specific issues (wrong trading hours, missing regime awareness)
-- Formula correctness (verified against published sources)
+**Pre-commit validation (via `claude` CLI):**
+Two validation hooks run on every commit using `claude -p`:
+- **Research Validation**: checks statistical methodology, backtesting validity, formula correctness
+- **Platform Validation**: checks engineering correctness, data plumbing, guardrails, wandb flow
 
-The agent posts findings as a PR comment. HIGH severity issues block merge.
-The rubric is in `scripts/research_validation/rubric.md`. If you believe
-a HIGH finding is a false positive, explain why in the PR comments.
+HIGH severity issues block the commit. Rubrics: `scripts/research_validation/rubric.md`
+and `scripts/platform_validation/rubric.md`. Hooks skip gracefully if `claude` CLI is unavailable.
 
 ## Git — Research Agents Must NOT Use Git
 Research agents (sessions launched by the orchestrator) do NOT touch git.

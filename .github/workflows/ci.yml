@@ -6,10 +6,8 @@ on:
   pull_request:
     branches: [main]
 
-# quality-gate runs in parallel with validation jobs.
-# research-validation and platform-validation run SEQUENTIALLY (platform after
-# research) to avoid competing for the Anthropic API free-tier rate limit
-# (10K input tokens/min, 5 RPM). Both are PR-only.
+# quality-gate runs on push to main and PRs.
+# Research and platform validation run locally as pre-commit hooks via claude CLI.
 
 jobs:
   # ── Quality Gate ───────────────────────────────────────────────────────────
@@ -112,80 +110,5 @@ jobs:
         with:
           name: bandit-security-report
           path: bandit-report.json
-          if-no-files-found: ignore
-          retention-days: 30
-
-  # ── Research Validation (PR only) ─────────────────────────────────────────
-  research-validation:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install anthropic
-
-      - name: Run Research Validation Agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: python scripts/research_validation/validate_pr.py
-
-      - name: Upload validation report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: research-validation-report
-          path: research-validation-report.json
-          if-no-files-found: ignore
-          retention-days: 30
-
-  # ── Platform Validation (PR only, after research to avoid rate limits) ────
-  platform-validation:
-    if: github.event_name == 'pull_request'
-    needs: research-validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install anthropic
-
-      - name: Run Platform Validation Agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: python scripts/platform_validation/validate_pr.py
-
-      - name: Upload validation report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: platform-validation-report
-          path: platform-validation-report.json
           if-no-files-found: ignore
           retention-days: 30
