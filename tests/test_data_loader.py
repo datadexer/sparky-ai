@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from sparky.data.loader import _detect_asset, _find_parquet, list_datasets, load
+from sparky.data.loader import _detect_asset, _find_parquet, _in_vault, list_datasets, load
 from sparky.oversight.holdout_guard import HoldoutGuard, HoldoutViolation
 
 
@@ -52,6 +52,77 @@ class TestFindParquet:
     def test_returns_none_for_missing(self, tmp_data_dir):
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
             assert _find_parquet("nonexistent_dataset") is None
+
+
+class TestVaultExclusion:
+    """Vault paths must never leak into non-OOS lookups."""
+
+    def test_in_vault_detects_vault_paths(self, tmp_path):
+        vault = tmp_path / "data" / ".oos_vault"
+        vault.mkdir(parents=True)
+        with patch("sparky.data.loader.VAULT_DIR", vault):
+            assert _in_vault(vault / "data" / "raw" / "btc" / "ohlcv.parquet")
+            assert not _in_vault(tmp_path / "data" / "raw" / "btc" / "ohlcv.parquet")
+
+    def test_find_parquet_excludes_vault(self, tmp_data_dir):
+        vault_dir = tmp_data_dir / "data" / ".oos_vault" / "data" / "raw"
+        vault_dir.mkdir(parents=True)
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="D", tz="UTC")
+        df = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df.to_parquet(vault_dir / "secret_data.parquet")
+
+        with (
+            patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data"]),
+            patch("sparky.data.loader.VAULT_DIR", tmp_data_dir / "data" / ".oos_vault"),
+        ):
+            assert _find_parquet("secret_data") is None
+
+    def test_list_datasets_excludes_vault(self, tmp_data_dir):
+        vault_dir = tmp_data_dir / "data" / ".oos_vault" / "data" / "raw"
+        vault_dir.mkdir(parents=True)
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="D", tz="UTC")
+        df = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df.to_parquet(vault_dir / "vault_only.parquet")
+
+        with (
+            patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data"]),
+            patch("sparky.data.loader.VAULT_DIR", tmp_data_dir / "data" / ".oos_vault"),
+            patch("sparky.data.loader._DATASET_ALIASES", {}),
+        ):
+            names = [d["name"] for d in list_datasets()]
+            assert "vault_only" not in names
+
+
+class TestDatasetAliases:
+    def test_alias_resolves(self, tmp_data_dir):
+        alias_path = tmp_data_dir / "data" / "raw" / "eth" / "ohlcv_hourly.parquet"
+        alias_path.parent.mkdir(parents=True, exist_ok=True)
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="h", tz="UTC")
+        df = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df.to_parquet(alias_path)
+
+        with (
+            patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data"]),
+            patch("sparky.data.loader._DATASET_ALIASES", {"eth_ohlcv_hourly": alias_path}),
+        ):
+            result = _find_parquet("eth_ohlcv_hourly")
+            assert result is not None
+            assert result == alias_path
+
+    def test_aliases_in_list_datasets(self, tmp_data_dir):
+        alias_path = tmp_data_dir / "data" / "raw" / "eth" / "ohlcv_hourly.parquet"
+        alias_path.parent.mkdir(parents=True, exist_ok=True)
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="h", tz="UTC")
+        df = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df.to_parquet(alias_path)
+
+        with (
+            patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data"]),
+            patch("sparky.data.loader.VAULT_DIR", tmp_data_dir / "data" / ".oos_vault"),
+            patch("sparky.data.loader._DATASET_ALIASES", {"eth_ohlcv_hourly": alias_path}),
+        ):
+            names = [d["name"] for d in list_datasets()]
+            assert "eth_ohlcv_hourly" in names
 
 
 class TestListDatasets:
