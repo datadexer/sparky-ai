@@ -84,6 +84,7 @@ class StoppingCriteria:
 
     success_min_sharpe: float = 1.0
     success_min_dsr: float = 0.95
+    stop_on_success: bool = True
     max_sessions: int = 20
     max_hours: float = 24.0
     max_cost_usd: float = 100.0
@@ -159,6 +160,7 @@ class ResearchDirective:
         stall = stopping.get("stall", {})
 
         sc = StoppingCriteria(
+            stop_on_success=stopping.get("stop_on_success", True),
             success_min_sharpe=success.get("min_sharpe", 1.0),
             success_min_dsr=success.get("min_dsr", 0.95),
             max_sessions=budget.get("max_sessions", 20),
@@ -679,10 +681,11 @@ class ResearchOrchestrator:
         sc = self.directive.stopping_criteria
 
         # Success
-        best_sharpe = state.best_result.get("sharpe", 0) or 0
-        best_dsr = state.best_result.get("dsr", 0) or 0
-        if best_sharpe >= sc.success_min_sharpe and best_dsr >= sc.success_min_dsr:
-            return f"SUCCESS: Sharpe={best_sharpe:.3f} DSR={best_dsr:.3f}"
+        if sc.stop_on_success:
+            best_sharpe = state.best_result.get("sharpe", 0) or 0
+            best_dsr = state.best_result.get("dsr", 0) or 0
+            if best_sharpe >= sc.success_min_sharpe and best_dsr >= sc.success_min_dsr:
+                return f"SUCCESS: Sharpe={best_sharpe:.3f} DSR={best_dsr:.3f}"
 
         # Session limit
         if state.session_count >= sc.max_sessions:

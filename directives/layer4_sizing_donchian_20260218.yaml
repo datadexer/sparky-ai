@@ -96,6 +96,7 @@ strategy_space:
       target_vol: [0.15, 0.20, 0.30]
 
 stopping_criteria:
+  stop_on_success: false
   success:
     min_sharpe: 1.30
     min_dsr: 0.95
