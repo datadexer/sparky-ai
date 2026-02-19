@@ -146,6 +146,7 @@ and `scripts/platform_validation/rubric.md`. Hooks skip gracefully if `claude` C
 Research agents (sessions launched by the orchestrator) do NOT touch git.
 - Do NOT create branches, commit, push, or open PRs.
 - Your outputs go to: **wandb** (experiment logs), **results/** (artifacts), **scratch files**.
+- Session scripts you create in `scripts/` will be moved to `scripts/archive/` after runs (gitignored). Do NOT expect them to persist across sessions. You may read `scripts/archive/` to recreate a result or analyze a prior run, but keep it targeted — scanning many archived scripts is expensive.
 - If you need a platform change (new feature, bug fix, data pipeline), write `GATE_REQUEST.md` to the project root explaining what you need and exit. The orchestrator will pause and an oversight session will handle it.
 
 Git workflow (oversight/manager sessions only):
