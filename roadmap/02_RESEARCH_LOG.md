@@ -4,6 +4,81 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## PPY Validation Audit — 2026-02-19
+
+**ALL cross-timeframe portfolio Sharpe values from overnight runs are inflated by sqrt(2) = 1.414x.**
+
+Root cause: combining BTC 4h + ETH 8h returns via `index.intersection()` produces an 8h-resolution
+common index (~1,096 obs/year). Agents used `ppy=2190` (4h) for annualization instead of `ppy=1095` (8h).
+The `validate_periods_per_year()` guard was bypassed by passing `.values` (numpy array strips DatetimeIndex).
+
+Individual strategy results (single-timeframe) are NOT affected.
+
+Corrected values below. DSR is ppy-independent (uses per-period SR) and remains valid.
+
+---
+
+## eth_strategies directive — Session 12 — 2026-02-19
+
+**STATUS**: TIER 1 (corrected) — Cross-timeframe portfolio
+**TRIALS**: n_trials_start=627, n_trials_end=16269 (15,642 configs this session)
+
+### Session 12 Champion (3-way portfolio)
+
+**BTC4h(68,9)_iv(vw150,tv0.20) 30% + ETH8h(82,34)_iv(vw30,tv0.06) 57% + ETH8h(30,5)_iv(vw30,tv0.22) 13%**
+
+| Metric | Agent Reported | Corrected (ppy=1095) |
+|--------|---------------|---------------------|
+| Sharpe@30bps | ~~3.434~~ | **2.428** |
+| Sharpe@50bps | ~~3.129~~ | **2.212** |
+| DSR | 0.993 | 0.993 (unchanged) |
+| MaxDD | -3.62% | -3.62% (legitimate) |
+| 2020+ Sharpe | ~~3.146~~ | **2.225** |
+| 2022+ Sharpe | ~~1.651~~ | **1.167** |
+| Robustness | 2000/2000 = 100% | 2000/2000 = 100% |
+
+### Key Discoveries
+
+1. **Short ETH8h as 3rd component**: ETH8h(30,5)_iv at 13% weight captures short-term momentum
+2. **ETH8h tv=0.06**: Lower target vol for dominant ETH8h_long leg
+3. **BTC4h params stable**: ep=65-70, xp=9, vw=150, tv=0.18-0.22
+4. **ETH4h/ETH2h/BTC8h eliminated** as 3rd components — only short ETH8h helps
+
+Results: `results/eth_strategies_20260218/session_012_master.json`
+
+---
+
+## btc_deep_20260218 Sessions 2-9 — 2026-02-19
+
+**Individual configs VALIDATED. Portfolio results corrected for ppy.**
+
+### BTC Individual Configs (no ppy correction needed)
+
+| Config | S@30bps | DSR | MaxDD | S2020+ |
+|--------|---------|-----|-------|--------|
+| Don4h(160,25) iv(vw30,tv0.15) | **2.319** | 1.000 | -12.5% | 1.200 |
+| Don8h(82,20) iv(vw30,tv0.2) | **2.220** | 1.000 | -21.6% | 1.404 |
+| Don8h(80,20) iv(vw30,tv0.2) | **2.213** | 1.000 | -19.7% | 1.427 |
+| Don8h(75,20) iv(vw30,tv0.2) | **2.170** | 1.000 | -19.4% | 1.452 |
+
+### BTC Cross-Timeframe Portfolios (corrected)
+
+| Portfolio | Agent Reported | Corrected (ppy=1095) |
+|-----------|---------------|---------------------|
+| Don4h(160,25)[40%]+Don8h(80,20)[60%] | ~~3.196~~ | **~2.26** |
+| 3-way (40/40/20) | ~~3.203~~ | **~2.30** |
+| P2@100bps | ~~2.402~~ | **~1.70** |
+
+BTC correlation claim (0.59) is artifact of mixed-period returns. Actual at matched 8h: **0.90**.
+
+### Walk-Forward Validation (BTC individual, from S5)
+- Don8h(82,20)_iv: IS=2.220 → WF=1.708 (77% retention), WF_DSR=0.924
+- Don4h(160,25)_iv: IS=2.319 → WF=1.552 (67% retention), WF_DSR=0.831
+
+Results: `results/btc_deep_20260218/session_009_final_summary.json`
+
+---
+
 ## eth_strategies directive — Session 7 — 2026-02-19
 
 **STATUS**: TIER 1 confirmed (honest, 4h-grid portfolio)
