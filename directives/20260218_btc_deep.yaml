@@ -4,16 +4,25 @@ objective: |
   Focus on robustness validation and filling gaps in the parameter space.
 
   Benchmark: BTC Don4h(30,25) flat Sharpe 1.702@30bps, DSR 0.991.
-  Key result needing validation: BTC_Don2h(80,40) Sharpe 1.819 — is this
-  a local optimum or part of a robust region?
+  Validated best: BTC Don8h(40,10) iv(vw30,tv0.2) Sharpe 2.045@30bps.
 
   Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
 
-  Priority order:
-  1. btc_donchian_2h_robustness — neighbor validation around (80,40).
-     Also: all 2h inv-vol results need re-validation after sizing fix.
-  2. btc_bollinger_2h — completely untested on BTC 2h.
-  3. btc_donchian_8h_deep — lightly explored, partial diversifier.
+  ## Overnight priorities (2026-02-18)
+
+  **Priority 0 — 2020-2023 investigation**: BTC Don8h best is 1.087 on 2020+
+  vs ETH 1.762. Why? Run top 5 BTC configs on 2020-2023 specifically.
+  Is BTC structurally weaker post-2020 or parameter sensitivity? Report analysis.
+
+  **Priority 0 — Don8h(40,10) neighborhood**: entry[35,40,45,50], exit[8,10,12,15]
+  with iv(vw30,tv0.2). Expand the robustness finding — is sweet spot entry 35-50
+  exit 8-15 or narrower?
+
+  **Priority 1 — BTC Don4h inv_vol**: ETH found Don4h promising. Test BTC 4h
+  with entry[80,100,120,140,160], exit[30,40,50], inv_vol. Competitive with 8h?
+
+  **Priority 2 — 100bps cost test**: Run top 3 configs at 100bps. If they survive
+  above Sharpe 1.0 at extreme costs, strong evidence the edge is real.
 
   Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
   n_trades(2020+), and neighbor stability analysis for top configs.
@@ -27,12 +36,54 @@ constraints:
   n_trials_cumulative: true
 
 strategy_space:
+  - family: btc_donchian_8h_neighborhood
+    description: >
+      Don8h(40,10) neighborhood: entry[35,40,45,50], exit[8,10,12,15]
+      with iv(vw30,tv0.2). Map the robustness region.
+    priority: 0
+    parameter_ranges:
+      entry_period: [35, 40, 45, 50]
+      exit_period: [8, 10, 12, 15]
+      sizing: [inverse_vol]
+      vol_window: [30]
+      target_vol: [0.2]
+
+  - family: btc_2020_investigation
+    description: >
+      Run top 5 BTC configs on 2020-2023 sub-period specifically.
+      Report structural analysis of why BTC underperforms ETH post-2020.
+    priority: 0
+    parameter_ranges:
+      entry_period: [35, 40, 45, 50, 80]
+      exit_period: [10, 15, 40]
+      sizing: [flat, inverse_vol]
+
+  - family: btc_donchian_4h_invvol
+    description: >
+      ETH found Don4h promising. Test BTC 4h with inv_vol.
+      Entry 80-160, exit 30-50.
+    priority: 1
+    parameter_ranges:
+      entry_period: [80, 100, 120, 140, 160]
+      exit_period: [30, 40, 50]
+      sizing: [inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.15, 0.2, 0.3]
+
+  - family: btc_cost_degradation
+    description: >
+      Run top 3 configs at 100bps. If Sharpe > 1.0 at extreme costs,
+      strong evidence the edge is real.
+    priority: 2
+    parameter_ranges:
+      transaction_costs_bps: [100]
+
   - family: btc_donchian_2h_robustness
     description: >
       BTC_Don2h(80,40) scored Sharpe 1.819. Sweep neighbors to validate:
       entry 60-100, exit 30-50. Test flat + inverse_vol (with corrected ppy).
       Report whether the (80,40) region is robust or isolated.
-    priority: 1
+    priority: 3
     parameter_ranges:
       entry_period: [60, 70, 80, 90, 100]
       exit_period: [30, 35, 40, 45, 50]
@@ -44,7 +95,7 @@ strategy_space:
     description: >
       Completely untested: Bollinger breakout on BTC 2h. Different signal
       from Donchian — potential diversifier within BTC timeframes.
-    priority: 2
+    priority: 4
     parameter_ranges:
       period: [15, 20, 30, 40, 60]
       num_std: [1.5, 2.0, 2.5]
@@ -72,12 +123,12 @@ stopping_criteria:
     max_cost_usd: 35
     digest_every: 3
   stall:
-    sessions_without_improvement: 4
-    improvement_threshold: 0.05
-    diversity_threshold: 0.80
+    sessions_without_improvement: 8
+    improvement_threshold: 0.01
+    diversity_threshold: 0.99
 
 session_limits:
-  max_session_minutes: 60
+  max_session_minutes: 360
   max_cost_per_session: 8.0
   min_session_minutes: 5
   max_consecutive_crashes: 3
@@ -91,7 +142,7 @@ gates:
 exclusions:
   - "DO NOT explore mean-reversion signals on BTC. Confirmed null result (DSR < 0.05 across all configs)."
   - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
-  - "Do not evaluate on OOS data (boundary in configs/holdout_policy.yaml)"
+  - "Do NOT proceed to OOS evaluation. Stay in-sample."
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() — never pd.read_parquet()"
   - "Always use compute_all_metrics and report DSR"

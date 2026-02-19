@@ -435,10 +435,31 @@ class OrchestratorState:
 # ── Jaccard Diversity ─────────────────────────────────────────────────────
 
 
+_JACCARD_METADATA_KEYS = frozenset(
+    {
+        "session",
+        "directive",
+        "n_trials_start",
+        "n_trials_end",
+        "n_configs",
+        "configs_tested",
+        "total_configs",
+        "agent",
+        "benchmark_btc_sharpe",
+        "benchmark_strategy",
+        "benchmark_sharpe",
+        "key_discovery",
+        "n_candidates",
+        "rounds",
+        "strategies_tested",
+    }
+)
+
+
 def jaccard_similarity(cfg_a: dict, cfg_b: dict) -> float:
-    """Compute Jaccard similarity between two config dicts."""
-    set_a = frozenset((k, str(v)) for k, v in cfg_a.items())
-    set_b = frozenset((k, str(v)) for k, v in cfg_b.items())
+    """Compute Jaccard similarity between two config dicts (strategy params only)."""
+    set_a = frozenset((k, str(v)) for k, v in cfg_a.items() if k not in _JACCARD_METADATA_KEYS)
+    set_b = frozenset((k, str(v)) for k, v in cfg_b.items() if k not in _JACCARD_METADATA_KEYS)
     intersection = len(set_a & set_b)
     union = len(set_a | set_b)
     return intersection / union if union > 0 else 0.0
