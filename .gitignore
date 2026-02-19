@@ -18,3 +18,6 @@ build/
 workflows/state/
 logs/telemetry/
 .claude/settings.local.json
+
+# Archived research scripts (one-off, results in wandb)
+scripts/archive/

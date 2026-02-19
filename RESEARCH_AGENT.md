@@ -17,6 +17,94 @@ Prefer polars over pandas for new data processing. Use pandas when
 interfacing with sklearn, XGBoost/LightGBM/CatBoost, or existing code.
 Convert at boundaries: `df.to_pandas()` or `pl.from_pandas(df)`.
 
+## Experiment Runner (MANDATORY for all experiment scripts)
+
+Use `experiment_runner` for ALL experiment work. Do not re-implement data loading,
+cost models, metrics computation, sub-period analysis, JSON saving, or W&B logging
+in experiment scripts.
+
+### For parameter grid sweeps — use `sweep()`
+
+```python
+import sys; sys.path.insert(0, "scripts/infra")
+from experiment_runner import sweep
+
+results = sweep(
+    base_config={"asset": "eth", "timeframe": "8h", "signal_type": "donchian", "sizing": "flat"},
+    grid={"entry_period": range(60, 90, 5), "exit_period": range(20, 40, 5)},
+    n_trials_start=0,
+    benchmark_returns=btc_bench,
+    wandb_name="eth_don8h_sweep", wandb_tags=["broad_exploration"],
+    save_path="results/eth/r1.json",
+    top_k=10,
+)
+# Handles: grid expansion, n_trials tracking, run() per config, DSR sort,
+# top-K print, JSON save, wandb sweep log. Returns {"results": [...], "n_trials": N}.
+# Grid keys route automatically: signal params by default, vol_window/target_vol
+# to sizing_params, asset/timeframe/signal_type/sizing to top-level.
+```
+
+### For novel signal types — use `run_custom_signal()`
+
+```python
+from experiment_runner import run_custom_signal
+
+def my_mean_rev(prices, lookback=20, threshold=2.0):
+    z = (prices - prices.rolling(lookback).mean()) / prices.rolling(lookback).std()
+    return (z < -threshold).astype(float) - (z > threshold).astype(float)
+
+result = run_custom_signal(
+    signal_func=my_mean_rev, signal_kwargs={"lookback": 20, "threshold": 2.0},
+    asset="btc", timeframe="4h", sizing="flat",
+    n_trials=42, benchmark_returns=btc_bench,
+)
+# signal_func(prices, **kwargs) -> pd.Series of positions (-1 to 1)
+# Handles: data loading, sizing, dual-cost eval, guardrails, sub-periods, benchmark corr.
+```
+
+### For multi-strategy portfolios — use `portfolio_combine()`
+
+```python
+from experiment_runner import portfolio_combine
+
+result = portfolio_combine(
+    strategies=[
+        {"config": {"asset": "btc", "timeframe": "4h", "signal_type": "donchian",
+                     "signal_params": {"entry_period": 30, "exit_period": 20}}, "weight": 0.5},
+        {"config": {"asset": "btc", "timeframe": "4h", "signal_type": "bollinger",
+                     "signal_params": {"period": 40, "num_std": 2.0}}, "weight": 0.5},
+    ],
+    weighting="specified",  # "equal" | "specified" | "inverse_vol"
+    n_trials=42, benchmark_returns=btc_bench,
+)
+# All strategies must share same asset/timeframe. Returns metrics + correlation_matrix + weights.
+```
+
+### For single configs — use `run()`
+
+```python
+from experiment_runner import run
+
+result = run({
+    "asset": "btc", "timeframe": "4h",
+    "signal_type": "donchian",
+    "signal_params": {"entry_period": 30, "exit_period": 20},
+    "sizing": "inverse_vol",
+    "sizing_params": {"vol_window": 20, "target_vol": 0.4},
+    "n_trials": 10,
+    "benchmark_returns": None,
+})
+```
+
+Signal types: donchian (entry_period, exit_period), bollinger (period, num_std, hold_periods),
+rsi_extreme (period, entry, exit).
+
+**Do NOT:**
+- Re-implement data loading, cost computation, metrics, sub-period analysis, or W&B logging
+- Write standalone for-loops over parameter grids (use `sweep()`)
+- Write custom signal evaluation boilerplate (use `run_custom_signal()`)
+- Write multi-strategy combination logic (use `portfolio_combine()`)
+
 ## Data Loading
 
 ```python
@@ -166,8 +254,8 @@ disposable — write code that runs fast and produces correct results.
 
 **Do NOT:**
 - Write docstrings on experiment scripts. A one-line module docstring is enough.
-- Build abstraction layers or utilities for one-off scripts. Copy-paste is fine
-  if it keeps each script self-contained.
+- Build abstraction layers or utilities for one-off scripts. Use experiment_runner
+  functions. Do not duplicate infrastructure logic.
 - Refactor for cleanliness. Oversight handles that if something goes to production.
 - Add type annotations unless they prevent an actual bug.
 
@@ -176,49 +264,15 @@ If R (statistical tests), Julia (numerical simulation), or another language
 would produce better results faster, write `GATE_REQUEST.md` and exit. Do not
 approximate in Python when a better tool exists.
 
-## Experiment Runner (PREFERRED for signal strategies)
-
-Use `experiment_runner.run()` for all signal-based strategy evaluations. It handles
-dataset resolution, correct `periods_per_year`, sizing, dual-cost evaluation (30+50 bps),
-guardrails, sub-period analysis, and benchmark correlation in a single call.
-
-```python
-import sys; sys.path.insert(0, "scripts/infra")
-from experiment_runner import run
-
-result = run({
-    "asset": "btc",              # btc | eth
-    "timeframe": "4h",           # 1h | 2h | 4h | 8h | daily
-    "signal_type": "donchian",   # donchian | bollinger | rsi_extreme
-    "signal_params": {"entry_period": 30, "exit_period": 20},
-    "sizing": "inverse_vol",     # flat | inverse_vol
-    "sizing_params": {"vol_window": 20, "target_vol": 0.4},  # optional
-    "n_trials": 10,              # cumulative configs tested (for DSR)
-    "benchmark_returns": None,   # pd.Series for correlation (optional)
-})
-# Returns dict with: sharpe_30bps, sharpe_50bps, dsr_30bps, dsr_50bps,
-#   max_drawdown, n_trades, win_rate, sub_periods, corr_with_benchmark,
-#   periods_per_year, statistically_significant, metrics_30bps, metrics_50bps
-# Returns None if pre-checks block or <5 trades.
-```
-
-Signal types:
-- `donchian`: entry_period, exit_period
-- `bollinger`: period, num_std, hold_periods (default 10)
-- `rsi_extreme`: period, entry (RSI level to buy), exit (RSI level to sell)
-
-Do NOT re-implement signal, cost, or sizing logic. Use `experiment_runner.run()`.
-
 ## Saving Results
 
-Save results to `results/<directive_name>/`:
+`sweep()` saves automatically via `save_path=`. For individual results:
 ```python
 import json
 from pathlib import Path
-
-out_dir = Path("results/regime_donchian")
-out_dir.mkdir(parents=True, exist_ok=True)
-with open(out_dir / "session_003_results.json", "w") as f:
+out = Path("results/<directive_name>")
+out.mkdir(parents=True, exist_ok=True)
+with open(out / "session_N_results.json", "w") as f:
     json.dump(results, f, indent=2, default=str)
 ```
 
