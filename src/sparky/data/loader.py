@@ -60,6 +60,13 @@ _ASSET_PATTERNS = {
     "matic": "cross_asset",
 }
 
+_DATASET_ALIASES = {
+    "eth_ohlcv_hourly": Path("data/raw/eth/ohlcv_hourly.parquet"),
+    "eth_ohlcv_daily": Path("data/raw/eth/ohlcv.parquet"),
+    "btc_ohlcv_hourly": Path("data/raw/btc/ohlcv_hourly_max_coverage.parquet"),
+    "btc_ohlcv_daily": Path("data/raw/btc/ohlcv.parquet"),
+}
+
 _guard = HoldoutGuard()
 
 
@@ -72,27 +79,47 @@ def _detect_asset(dataset: str) -> str:
     return "cross_asset"  # conservative default
 
 
-def _find_parquet(dataset: str, search_dirs: Optional[list[Path]] = None) -> Optional[Path]:
+def _in_vault(path: Path) -> bool:
+    """Check if a path is inside the OOS vault."""
+    try:
+        path.resolve().relative_to(VAULT_DIR.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _find_parquet(
+    dataset: str, search_dirs: Optional[list[Path]] = None, *, allow_vault: bool = False
+) -> Optional[Path]:
     """Find a parquet file matching the dataset name.
 
     Searches the given directories (default DATA_DIRS) for files matching:
     - Exact name: {dataset}.parquet
     - With subdirectory: */{dataset}.parquet
+
+    Vault paths are excluded unless allow_vault=True (used by _find_vault_parquet).
     """
+    # Check aliases first (only for non-vault lookups with default dirs)
+    if not allow_vault and search_dirs is None and dataset in _DATASET_ALIASES:
+        alias_path = _DATASET_ALIASES[dataset]
+        if alias_path.exists():
+            return alias_path
+
     dirs = search_dirs or DATA_DIRS
     for data_dir in dirs:
         if not data_dir.exists():
             continue
         # Exact match
         exact = data_dir / f"{dataset}.parquet"
-        if exact.exists():
+        if exact.exists() and (allow_vault or not _in_vault(exact)):
             return exact
         # Search subdirectories
         for path in sorted(data_dir.rglob(f"{dataset}.parquet")):
-            return path
+            if allow_vault or not _in_vault(path):
+                return path
         # Partial match: dataset name is a substring
         for path in sorted(data_dir.rglob("*.parquet")):
-            if dataset in path.stem:
+            if dataset in path.stem and (allow_vault or not _in_vault(path)):
                 return path
     return None
 
@@ -105,7 +132,7 @@ def _find_vault_parquet(dataset: str) -> Optional[Path]:
     if not VAULT_DIR.exists():
         return None
     vault_dirs = [VAULT_DIR / d for d in DATA_DIRS]
-    return _find_parquet(dataset, search_dirs=vault_dirs)
+    return _find_parquet(dataset, search_dirs=vault_dirs, allow_vault=True)
 
 
 def list_datasets() -> list[dict[str, str]]:
@@ -116,11 +143,16 @@ def list_datasets() -> list[dict[str, str]]:
     """
     datasets = []
     seen = set()
+    # Registered aliases first
+    for alias_name, alias_path in _DATASET_ALIASES.items():
+        if alias_path.exists() and alias_name not in seen:
+            seen.add(alias_name)
+            datasets.append({"name": alias_name, "path": str(alias_path), "asset": _detect_asset(alias_name)})
     for data_dir in DATA_DIRS:
         if not data_dir.exists():
             continue
         for path in sorted(data_dir.rglob("*.parquet")):
-            if path.name in seen:
+            if _in_vault(path) or path.name in seen:
                 continue
             seen.add(path.name)
             name = path.stem
