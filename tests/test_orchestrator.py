@@ -212,6 +212,31 @@ class TestSessionRecord:
         assert restored.best_sharpe == 1.05
         assert restored.wandb_run_configs == [{"lr": 0.01}, {"lr": 0.05}]
 
+    def test_new_fields_roundtrip(self):
+        record = SessionRecord(
+            session_id="20260218_002",
+            session_number=2,
+            start_ts="2026-02-18T00:00:00Z",
+            best_max_drawdown=-0.25,
+            best_annual_return=0.42,
+        )
+        d = record.to_dict()
+        assert d["best_max_drawdown"] == -0.25
+        assert d["best_annual_return"] == 0.42
+        restored = SessionRecord.from_dict(d)
+        assert restored.best_max_drawdown == -0.25
+        assert restored.best_annual_return == 0.42
+
+    def test_new_fields_default_none(self):
+        record = SessionRecord(session_id="s1", session_number=1, start_ts="t")
+        assert record.best_max_drawdown is None
+        assert record.best_annual_return is None
+
+    def test_from_dict_ignores_unknown_fields(self):
+        d = {"session_id": "s1", "session_number": 1, "start_ts": "t", "unknown_field": 42}
+        record = SessionRecord.from_dict(d)
+        assert record.session_id == "s1"
+
 
 # ── Jaccard tests ─────────────────────────────────────────────────────────
 
@@ -318,6 +343,47 @@ class TestStallDetection:
         state.sessions.append(record)
         orch._update_stall(state, record)
         assert state.stall_counter == 1  # Both sharpe stall and diversity stall
+
+
+# ── Update Best tests ────────────────────────────────────────────────────
+
+
+class TestUpdateBest:
+    def test_stores_max_drawdown_and_annual_return(self, tmp_path):
+        directive = _make_directive()
+        orch = ResearchOrchestrator(directive, state_dir=tmp_path)
+        state = OrchestratorState(name="test")
+
+        record = SessionRecord(
+            session_id="s1",
+            session_number=1,
+            start_ts="t",
+            best_sharpe=1.5,
+            best_dsr=0.98,
+            best_max_drawdown=-0.25,
+            best_annual_return=0.42,
+            wandb_run_ids=["r1"],
+        )
+        orch._update_best(state, record)
+        assert state.best_result["sharpe"] == 1.5
+        assert state.best_result["max_drawdown"] == -0.25
+        assert state.best_result["annual_return"] == 0.42
+
+    def test_none_fields_when_not_provided(self, tmp_path):
+        directive = _make_directive()
+        orch = ResearchOrchestrator(directive, state_dir=tmp_path)
+        state = OrchestratorState(name="test")
+
+        record = SessionRecord(
+            session_id="s1",
+            session_number=1,
+            start_ts="t",
+            best_sharpe=1.0,
+            wandb_run_ids=["r1"],
+        )
+        orch._update_best(state, record)
+        assert state.best_result["max_drawdown"] is None
+        assert state.best_result["annual_return"] is None
 
 
 # ── Crash Loop Protection tests ──────────────────────────────────────────
@@ -809,6 +875,30 @@ class TestResearchOrchestrator:
 
         result = orch.run()
         assert result == 1  # should fail to acquire lock
+
+
+class TestQuerySessionResults:
+    """Tests for _query_session_results tag filtering."""
+
+    def test_filters_by_directive_tags(self, tmp_path):
+        """_query_session_results must filter by directive wandb_tags to prevent cross-experiment contamination."""
+        from unittest.mock import MagicMock
+
+        directive = _make_directive(wandb_tags=["broad_exploration", "20260218"])
+        orch = ResearchOrchestrator(directive, state_dir=tmp_path)
+
+        mock_run = MagicMock()
+        mock_run.id = "run123"
+        mock_run.config = {"lr": 0.01}
+        mock_run.summary = {"sharpe": 1.5, "dsr": 0.9}
+
+        with patch("sparky.tracking.experiment.ExperimentTracker._fetch_runs", return_value=[mock_run]) as mock_fetch:
+            orch._query_session_results("session_001")
+            call_filters = mock_fetch.call_args[1].get("filters") or mock_fetch.call_args[0][0]
+            required = call_filters["tags"]["$all"]
+            assert "session_001" in required
+            assert "broad_exploration" in required
+            assert "20260218" in required
 
 
 class TestReconstructFromWandb:
