@@ -65,6 +65,13 @@ _DATASET_ALIASES = {
     "eth_ohlcv_daily": Path("data/raw/eth/ohlcv.parquet"),
     "btc_ohlcv_hourly": Path("data/raw/btc/ohlcv_hourly_max_coverage.parquet"),
     "btc_ohlcv_daily": Path("data/raw/btc/ohlcv.parquet"),
+    # Pre-computed resampled OHLCV (built by scripts/infra/build_resampled_ohlcv.py)
+    "btc_ohlcv_2h": Path("data/processed/btc_ohlcv_2h.parquet"),
+    "btc_ohlcv_4h": Path("data/processed/btc_ohlcv_4h.parquet"),
+    "btc_ohlcv_8h": Path("data/processed/btc_ohlcv_8h.parquet"),
+    "eth_ohlcv_2h": Path("data/processed/eth_ohlcv_2h.parquet"),
+    "eth_ohlcv_4h": Path("data/processed/eth_ohlcv_4h.parquet"),
+    "eth_ohlcv_8h": Path("data/processed/eth_ohlcv_8h.parquet"),
 }
 
 _guard = HoldoutGuard()
