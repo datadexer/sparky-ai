@@ -184,7 +184,7 @@ class TestBashValidation:
         assert not allowed
 
     def test_cp_to_results_allowed(self):
-        allowed, _ = research_sandbox.is_bash_command_allowed("cp scratch/data.csv results/data.csv", PROJECT_ROOT)
+        allowed, _ = research_sandbox.is_bash_command_allowed("cp /tmp/data.csv results/data.csv", PROJECT_ROOT)
         assert allowed
 
     def test_mv_to_configs_blocked(self):
