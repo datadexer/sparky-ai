@@ -73,6 +73,9 @@ _DATASET_ALIASES = {
     "eth_ohlcv_4h": Path("data/processed/eth_ohlcv_4h.parquet"),
     "eth_ohlcv_8h": Path("data/processed/eth_ohlcv_8h.parquet"),
     # On-chain metrics (BGeometrics)
+    # NOTE: May have <9 columns if rate limit was hit during initial sync.
+    # Expected columns: sopr, nupl, mvrv_zscore, realized_price, cdd,
+    #   puell_multiple, active_addresses, hash_rate, supply_in_profit
     "btc_onchain_bgeometrics": Path("data/raw/onchain/bgeometrics_combined.parquet"),
     "btc_mvrv_zscore": Path("data/raw/onchain/bgeometrics/mvrv_zscore.parquet"),
     "btc_sopr": Path("data/raw/onchain/bgeometrics/sopr.parquet"),
@@ -142,6 +145,10 @@ def _find_parquet(
         # Partial match: dataset name is a substring
         for path in sorted(data_dir.rglob("*.parquet")):
             if dataset in path.stem and (allow_vault or not _in_vault(path)):
+                logger.warning(
+                    f"[LOADER] Partial dataset name match for '{dataset}': using '{path}'. "
+                    "Use the full alias or exact filename to suppress this warning."
+                )
                 return path
     return None
 
