@@ -27,3 +27,10 @@ scripts/eth_s[0-9]*.py
 scripts/eth_strategies_s*.py
 scripts/s[0-9]*_*.py
 scripts/*_session[0-9]*.py
+
+# Generated reports (plots, CSVs, HTML) — too large for git
+reports/**/plots/
+reports/**/portfolio_inputs/
+reports/**/dry_run/
+reports/**/candidates/*/report.html
+reports/**/candidates/*/results.json

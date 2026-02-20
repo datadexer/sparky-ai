@@ -4,5 +4,9 @@ created: 2026-02-18
 phases:
   exploration_btc: { status: completed, config: exploration_btc.yaml }
   exploration_eth: { status: completed, config: exploration_eth.yaml }
-  investigation_btc: { status: active, config: investigation_btc.yaml }
-  investigation_eth: { status: active, config: investigation_eth.yaml }
+  investigation_btc: { status: completed, config: investigation_btc.yaml }
+  investigation_eth: { status: completed, config: investigation_eth.yaml }
+  validation_btc: { status: completed, config: validation_btc.yaml }
+  validation_eth: { status: completed, config: validation_eth.yaml }
+  portfolio: { status: completed, config: portfolio.yaml }
+  report: { status: completed }
