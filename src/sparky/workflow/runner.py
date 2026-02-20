@@ -22,17 +22,42 @@ def main():
 
     filepath = sys.argv[1]
 
-    from sparky.workflow.orchestrator import ResearchDirective, ResearchOrchestrator
+    import yaml as _yaml
 
-    logger.info(f"Loading directive from {filepath}")
+    logger.info(f"Loading from {filepath}")
     try:
-        directive = ResearchDirective.from_yaml(filepath)
+        with open(filepath) as f:
+            raw = _yaml.safe_load(f)
     except Exception as e:
-        logger.error(f"Failed to load directive: {e}")
+        logger.error(f"Failed to read YAML: {e}")
         sys.exit(2)
 
-    logger.info(f"Running orchestrator '{directive.name}'")
-    orch = ResearchOrchestrator(directive)
+    if isinstance(raw, dict) and "program" in raw and isinstance(raw.get("program", {}).get("phases"), dict):
+        from sparky.workflow.program import ResearchProgram
+
+        logger.info("Detected program YAML — entering program mode")
+        try:
+            program = ResearchProgram.from_yaml(filepath)
+        except Exception as e:
+            logger.error(f"Failed to parse program: {e}")
+            sys.exit(2)
+
+        directive = program.to_directive()
+        from sparky.workflow.orchestrator import ResearchOrchestrator
+
+        orch = ResearchOrchestrator(directive, program=program)
+    else:
+        from sparky.workflow.orchestrator import ResearchDirective, ResearchOrchestrator
+
+        try:
+            directive = ResearchDirective.from_yaml(filepath)
+        except Exception as e:
+            logger.error(f"Failed to load directive: {e}")
+            sys.exit(2)
+
+        logger.info(f"Running orchestrator '{directive.name}'")
+        orch = ResearchOrchestrator(directive)
+
     exit_code = orch.run()
     logger.info(f"Orchestrator exited with code {exit_code}")
     sys.exit(exit_code)

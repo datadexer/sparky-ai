@@ -278,6 +278,7 @@ class OrchestratorState:
     sessions: list[SessionRecord] = field(default_factory=list)
     gate_message: Optional[str] = None
     lockfile_pid: int = 0
+    program_state: dict | None = None  # PhaseState.to_dict() when in program mode
 
     def to_dict(self) -> dict:
         return {
@@ -293,6 +294,7 @@ class OrchestratorState:
             "sessions": [s.to_dict() for s in self.sessions],
             "gate_message": self.gate_message,
             "lockfile_pid": self.lockfile_pid,
+            "program_state": self.program_state,
         }
 
     @classmethod
@@ -311,6 +313,7 @@ class OrchestratorState:
             sessions=sessions,
             gate_message=d.get("gate_message"),
             lockfile_pid=d.get("lockfile_pid", 0),
+            program_state=d.get("program_state"),
         )
 
     def save(self, state_dir: Path = STATE_DIR) -> None:
@@ -615,6 +618,116 @@ class ContextBuilder:
                 parts.append(f"{k}={v}")
         return ", ".join(parts)
 
+    def build_program_context(self, program, phase_state, core_memory: dict) -> str:
+        """Build context for program-mode sessions with phase + coverage info."""
+        from sparky.workflow.program import (
+            evaluate_coverage,
+            extract_coverage,
+            format_coverage_gaps,
+        )
+
+        phase_cfg = program.phases.get(phase_state.current_phase)
+        if phase_cfg is None:
+            return self.build()
+
+        coverage = extract_coverage(core_memory, phase_state.current_phase)
+        _, cov_status = evaluate_coverage(coverage, phase_cfg.coverage_requirements)
+
+        parts = []
+        parts.append(f"## Phase: {phase_state.current_phase.upper()}")
+        parts.append(f"**Objective:** {phase_cfg.objective}")
+        parts.append("")
+
+        # Coverage gaps
+        gaps = format_coverage_gaps(cov_status)
+        parts.append(gaps)
+        parts.append("")
+
+        # Core memory summary
+        key_findings = core_memory.get("key_findings", [])
+        if key_findings:
+            parts.append("### Key Findings")
+            for f in key_findings[-5:]:
+                parts.append(f"- {f}")
+            parts.append("")
+
+        top_candidates = core_memory.get("top_candidates", [])
+        if top_candidates:
+            parts.append("### Top Candidates")
+            for c in top_candidates[:5]:
+                if isinstance(c, dict):
+                    cid = c.get("id", "?")
+                    sharpe = c.get("sharpe", "?")
+                    parts.append(f"- {cid} (Sharpe={sharpe})")
+                else:
+                    parts.append(f"- {c}")
+            parts.append("")
+
+        open_questions = core_memory.get("open_questions", [])
+        if open_questions:
+            parts.append("### Open Questions")
+            for q in open_questions:
+                parts.append(f"- {q}")
+            parts.append("")
+
+        null_results = core_memory.get("null_results", [])
+        if null_results:
+            parts.append("### Null Results")
+            for n in null_results[-5:]:
+                parts.append(f"- {n}")
+            parts.append("")
+
+        # Conditional branches triggered
+        branches = core_memory.get("conditional_branches_triggered", [])
+        if branches:
+            parts.append("### Conditional Branches Triggered")
+            for b in branches:
+                parts.append(f"- {b}")
+            parts.append("")
+
+        # Next session priority
+        priorities = core_memory.get("next_session_priority", [])
+        if priorities:
+            parts.append("### Next Session Priority")
+            for p in priorities:
+                parts.append(f"- {p}")
+            parts.append("")
+
+        # Phase-specific info
+        if phase_cfg.depth_protocol:
+            parts.append("### Depth Protocol")
+            for round_name, round_info in phase_cfg.depth_protocol.items():
+                desc = round_info.get("description", "") if isinstance(round_info, dict) else str(round_info)
+                parts.append(f"- **{round_name}**: {desc}")
+            parts.append("")
+
+        if phase_cfg.investigation_battery:
+            parts.append("### Investigation Battery")
+            for test_name, test_info in phase_cfg.investigation_battery.items():
+                desc = test_info.get("description", "") if isinstance(test_info, dict) else str(test_info)
+                parts.append(f"- **{test_name}**: {desc}")
+            parts.append("")
+
+        if phase_cfg.validation_battery:
+            parts.append("### Validation Battery")
+            for test_name, test_info in phase_cfg.validation_battery.items():
+                desc = test_info.get("description", "") if isinstance(test_info, dict) else str(test_info)
+                parts.append(f"- **{test_name}**: {desc}")
+            parts.append("")
+
+        if phase_cfg.construction_protocol:
+            parts.append("### Construction Protocol")
+            for step_name, step_info in phase_cfg.construction_protocol.items():
+                desc = step_info.get("description", "") if isinstance(step_info, dict) else str(step_info)
+                parts.append(f"- **{step_name}**: {desc}")
+            parts.append("")
+
+        # Include wandb results context from standard build
+        wandb_context = self.build()
+        parts.append(wandb_context)
+
+        return "\n".join(parts)
+
     def _parameter_coverage(self) -> str:
         """Heuristic coverage of parameter_ranges vs. configs seen in wandb."""
         # v1 limitation: best-effort hint only, not authoritative
@@ -655,10 +768,12 @@ class ResearchOrchestrator:
         directive: ResearchDirective,
         state_dir: Path = STATE_DIR,
         log_dir: Path = LOG_DIR,
+        program=None,  # Optional[ResearchProgram]
     ):
         self.directive = directive
         self.state_dir = state_dir
         self.log_dir = log_dir
+        self.program = program
         self._lockfile = state_dir / f"orchestrator_{directive.name}.lock"
 
     def _acquire_lock(self) -> None:
@@ -944,6 +1059,16 @@ class ResearchOrchestrator:
             "scripts/*.py are BLOCKED. If you are done, just stop."
         )
 
+        if self.program is not None:
+            core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+            parts.append(
+                f"\n## Core Memory Protocol\n"
+                f"1. At session start, read `{core_mem_path}`\n"
+                f"2. At session end, write an updated version\n"
+                f"3. Include: coverage status, candidates, null results, "
+                f"key findings, next_session_priority"
+            )
+
         return "\n".join(parts)
 
     def run(self) -> int:
@@ -999,6 +1124,103 @@ class ResearchOrchestrator:
                     logger.info(f"Stopping: {stop_reason}")
                     return 0
 
+                # Program mode: phase transitions
+                if self.program is not None and stop_reason is None:
+                    from sparky.workflow.program import (
+                        PhaseState,
+                        evaluate_phase_transition,
+                        extract_coverage,
+                        read_core_memory,
+                    )
+
+                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem = read_core_memory(core_mem_path)
+
+                    if state.program_state is None:
+                        state.program_state = PhaseState(current_phase=self.program.phase_order[0]).to_dict()
+
+                    phase_state = PhaseState.from_dict(state.program_state)
+
+                    # Human review gate
+                    if phase_state.pending_human_review:
+                        state.status = "gate_triggered"
+                        state.gate_message = (
+                            f"Phase '{phase_state.current_phase}' requires human review before transition to next phase"
+                        )
+                        state.save(self.state_dir)
+                        send_alert("INFO", state.gate_message)
+                        return 0
+
+                    # Check phase transition
+                    next_phase = evaluate_phase_transition(self.program, phase_state, core_mem)
+                    if next_phase is not None:
+                        phase_state.phase_history.append(
+                            {
+                                "phase": phase_state.current_phase,
+                                "sessions": phase_state.phase_session_count,
+                                "outcome": "transition",
+                            }
+                        )
+                        send_alert(
+                            "INFO",
+                            f"Phase transition: {phase_state.current_phase} → {next_phase}",
+                        )
+                        phase_state.current_phase = next_phase
+                        phase_state.phase_session_count = 0
+                        phase_state.coverage_status = {}
+                        phase_state.pending_human_review = False
+                        state.program_state = phase_state.to_dict()
+                        state.save(self.state_dir)
+                    elif next_phase is None and phase_state.pending_human_review:
+                        # Human review was just set by evaluate_phase_transition
+                        state.program_state = phase_state.to_dict()
+                        state.status = "gate_triggered"
+                        state.gate_message = f"Phase '{phase_state.current_phase}' requires human review"
+                        state.save(self.state_dir)
+                        send_alert("INFO", state.gate_message)
+                        return 0
+
+                    # Phase-specific session limit check
+                    phase_cfg = self.program.phases[phase_state.current_phase]
+                    if phase_state.phase_session_count >= phase_cfg.max_sessions:
+                        if phase_cfg.next_phase is None:
+                            state.status = "done"
+                            state.save(self.state_dir)
+                            send_alert(
+                                "INFO",
+                                f"Program '{self.program.name}' completed",
+                            )
+                            return 0
+                        # Force transition
+                        phase_state.phase_history.append(
+                            {
+                                "phase": phase_state.current_phase,
+                                "sessions": phase_state.phase_session_count,
+                                "outcome": "max_sessions",
+                            }
+                        )
+                        phase_state.current_phase = phase_cfg.next_phase
+                        phase_state.phase_session_count = 0
+                        phase_state.coverage_status = {}
+                        state.program_state = phase_state.to_dict()
+                        state.save(self.state_dir)
+                        send_alert(
+                            "WARN",
+                            f"Phase forced transition (max sessions): → {phase_cfg.next_phase}",
+                        )
+
+                    # Terminal phase completed check
+                    if phase_state.current_phase not in self.program.phases:
+                        state.status = "done"
+                        state.save(self.state_dir)
+                        send_alert(
+                            "INFO",
+                            f"Program '{self.program.name}' completed all phases",
+                        )
+                        return 0
+
+                    state.program_state = phase_state.to_dict()
+
                 # Check crash loop
                 sl = self.directive.session_limits
                 if state.crash_counter >= sl.max_consecutive_crashes:
@@ -1017,7 +1239,18 @@ class ResearchOrchestrator:
 
                 # Build context
                 context_builder = ContextBuilder(self.directive, state)
-                context = context_builder.build()
+                if self.program is not None:
+                    from sparky.workflow.program import (
+                        PhaseState,
+                        read_core_memory,
+                    )
+
+                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem = read_core_memory(core_mem_path)
+                    ps = PhaseState.from_dict(state.program_state or {})
+                    context = context_builder.build_program_context(self.program, ps, core_mem)
+                else:
+                    context = context_builder.build()
 
                 # Build prompt
                 session_number = state.session_count + 1
@@ -1113,6 +1346,22 @@ class ResearchOrchestrator:
                     return 0
 
                 state.save(self.state_dir)
+
+                # Program mode: update phase session count
+                if self.program is not None:
+                    from sparky.workflow.program import (
+                        PhaseState,
+                        extract_coverage,
+                        read_core_memory,
+                    )
+
+                    ps = PhaseState.from_dict(state.program_state or {})
+                    ps.phase_session_count += 1
+                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem = read_core_memory(core_mem_path)
+                    ps.coverage_status = extract_coverage(core_mem, ps.current_phase)
+                    state.program_state = ps.to_dict()
+                    state.save(self.state_dir)
 
         except Exception as e:
             logger.error(f"Orchestrator error: {e}", exc_info=True)
