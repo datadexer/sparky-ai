@@ -33,19 +33,19 @@ def main():
         sys.exit(2)
 
     if isinstance(raw, dict) and "program" in raw and isinstance(raw.get("program", {}).get("phases"), dict):
-        from sparky.workflow.program import ResearchProgram
+        from sparky.workflow.program import ResearchProject
 
-        logger.info("Detected program YAML — entering program mode")
+        logger.info("Detected project YAML — entering project mode")
         try:
-            program = ResearchProgram.from_yaml(filepath)
+            project = ResearchProject.from_yaml(filepath)
         except Exception as e:
-            logger.error(f"Failed to parse program: {e}")
+            logger.error(f"Failed to parse project: {e}")
             sys.exit(2)
 
-        directive = program.to_directive()
+        directive = project.to_directive()
         from sparky.workflow.orchestrator import ResearchOrchestrator
 
-        orch = ResearchOrchestrator(directive, program=program)
+        orch = ResearchOrchestrator(directive, project=project)
     else:
         from sparky.workflow.orchestrator import ResearchDirective, ResearchOrchestrator
 

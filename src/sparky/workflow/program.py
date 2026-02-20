@@ -1,6 +1,6 @@
-"""Research program: multi-phase state machine with depth tracking.
+"""Research project: multi-phase state machine with depth tracking.
 
-A ResearchProgram is a YAML spec defining ordered phases (explore, investigate,
+A ResearchProject is a YAML spec defining ordered phases (explore, investigate,
 validate, portfolio, report) with coverage requirements, exit criteria, and
 stall policies. The orchestrator executes it as a state machine, transitioning
 between phases when coverage + exit criteria are met.
@@ -56,7 +56,7 @@ def _safe_bool(v, default=False) -> bool:
     return default
 
 
-# ── Program YAML Parser ─────────────────────────────────────────────────
+# ── Project YAML Parser ─────────────────────────────────────────────────
 
 
 @dataclass
@@ -83,7 +83,7 @@ class PhaseConfig:
 
 
 @dataclass
-class ResearchProgram:
+class ResearchProject:
     name: str
     version: int
     budget_cap_usd: float
@@ -95,25 +95,25 @@ class ResearchProgram:
     guardrails: dict = field(default_factory=dict)
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "ResearchProgram":
+    def from_yaml(cls, path: str | Path) -> "ResearchProject":
         path = Path(path)
         if not path.exists():
-            raise FileNotFoundError(f"Program file not found: {path}")
+            raise FileNotFoundError(f"Project file not found: {path}")
 
         with open(path) as f:
             raw = yaml.safe_load(f)
 
         if not isinstance(raw, dict):
-            raise ValueError("Program YAML must be a mapping")
+            raise ValueError("Project YAML must be a mapping")
 
         prog = raw.get("program")
         if not isinstance(prog, dict):
-            raise ValueError("Program YAML must have a 'program' key with a mapping")
+            raise ValueError("Project YAML must have a 'program' key with a mapping")
 
         if "name" not in prog:
-            raise ValueError("Program missing required field: 'name'")
+            raise ValueError("Project missing required field: 'name'")
         if "phases" not in prog or not isinstance(prog["phases"], dict):
-            raise ValueError("Program missing required field: 'phases' (must be a mapping)")
+            raise ValueError("Project missing required field: 'phases' (must be a mapping)")
 
         phase_order = list(prog["phases"].keys())
         phases: dict[str, PhaseConfig] = {}
@@ -199,7 +199,7 @@ class ResearchProgram:
             session_limits=SessionLimits(
                 max_session_minutes=pc.session_minutes,
             ),
-            wandb_tags=[f"program_{self.name}"],
+            wandb_tags=[f"project_{self.name}"],
         )
 
 
@@ -237,12 +237,12 @@ class PhaseState:
 
 
 def evaluate_phase_transition(
-    program: ResearchProgram,
+    project: ResearchProject,
     phase_state: PhaseState,
     core_memory: dict,
 ) -> str | None:
     """Check if current phase should transition. Returns next phase name or None."""
-    phase_cfg = program.phases.get(phase_state.current_phase)
+    phase_cfg = project.phases.get(phase_state.current_phase)
     if phase_cfg is None:
         return None
 
@@ -287,12 +287,12 @@ def evaluate_phase_transition(
 
 
 def check_stall(
-    program: ResearchProgram,
+    project: ResearchProject,
     phase_state: PhaseState,
     sessions_without_new_result: int,
 ) -> str | None:
     """Check phase-specific stall policy. Returns action string or None."""
-    phase_cfg = program.phases.get(phase_state.current_phase)
+    phase_cfg = project.phases.get(phase_state.current_phase)
     if phase_cfg is None or not phase_cfg.stall_policy:
         return None
 

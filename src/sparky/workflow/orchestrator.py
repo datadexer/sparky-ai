@@ -618,7 +618,7 @@ class ContextBuilder:
                 parts.append(f"{k}={v}")
         return ", ".join(parts)
 
-    def build_program_context(self, program, phase_state, core_memory: dict) -> str:
+    def build_program_context(self, project, phase_state, core_memory: dict) -> str:
         """Build context for program-mode sessions with phase + coverage info."""
         from sparky.workflow.program import (
             evaluate_coverage,
@@ -626,7 +626,7 @@ class ContextBuilder:
             format_coverage_gaps,
         )
 
-        phase_cfg = program.phases.get(phase_state.current_phase)
+        phase_cfg = project.phases.get(phase_state.current_phase)
         if phase_cfg is None:
             return self.build()
 
@@ -768,12 +768,12 @@ class ResearchOrchestrator:
         directive: ResearchDirective,
         state_dir: Path = STATE_DIR,
         log_dir: Path = LOG_DIR,
-        program=None,  # Optional[ResearchProgram]
+        project=None,  # Optional[ResearchProgram]
     ):
         self.directive = directive
         self.state_dir = state_dir
         self.log_dir = log_dir
-        self.program = program
+        self.project = project
         self._lockfile = state_dir / f"orchestrator_{directive.name}.lock"
 
     def _acquire_lock(self) -> None:
@@ -1059,8 +1059,8 @@ class ResearchOrchestrator:
             "scripts/*.py are BLOCKED. If you are done, just stop."
         )
 
-        if self.program is not None:
-            core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+        if self.project is not None:
+            core_mem_path = self.project.memory.get("core_state_file", "state/core_memory.json")
             parts.append(
                 f"\n## Core Memory Protocol\n"
                 f"1. At session start, read `{core_mem_path}`\n"
@@ -1125,7 +1125,7 @@ class ResearchOrchestrator:
                     return 0
 
                 # Program mode: phase transitions
-                if self.program is not None and stop_reason is None:
+                if self.project is not None and stop_reason is None:
                     from sparky.workflow.program import (
                         PhaseState,
                         evaluate_phase_transition,
@@ -1133,11 +1133,11 @@ class ResearchOrchestrator:
                         read_core_memory,
                     )
 
-                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem_path = self.project.memory.get("core_state_file", "state/core_memory.json")
                     core_mem = read_core_memory(core_mem_path)
 
                     if state.program_state is None:
-                        state.program_state = PhaseState(current_phase=self.program.phase_order[0]).to_dict()
+                        state.program_state = PhaseState(current_phase=self.project.phase_order[0]).to_dict()
 
                     phase_state = PhaseState.from_dict(state.program_state)
 
@@ -1152,7 +1152,7 @@ class ResearchOrchestrator:
                         return 0
 
                     # Check phase transition
-                    next_phase = evaluate_phase_transition(self.program, phase_state, core_mem)
+                    next_phase = evaluate_phase_transition(self.project, phase_state, core_mem)
                     if next_phase is not None:
                         phase_state.phase_history.append(
                             {
@@ -1181,14 +1181,14 @@ class ResearchOrchestrator:
                         return 0
 
                     # Phase-specific session limit check
-                    phase_cfg = self.program.phases[phase_state.current_phase]
+                    phase_cfg = self.project.phases[phase_state.current_phase]
                     if phase_state.phase_session_count >= phase_cfg.max_sessions:
                         if phase_cfg.next_phase is None:
                             state.status = "done"
                             state.save(self.state_dir)
                             send_alert(
                                 "INFO",
-                                f"Program '{self.program.name}' completed",
+                                f"Project '{self.project.name}' completed",
                             )
                             return 0
                         # Force transition
@@ -1210,12 +1210,12 @@ class ResearchOrchestrator:
                         )
 
                     # Terminal phase completed check
-                    if phase_state.current_phase not in self.program.phases:
+                    if phase_state.current_phase not in self.project.phases:
                         state.status = "done"
                         state.save(self.state_dir)
                         send_alert(
                             "INFO",
-                            f"Program '{self.program.name}' completed all phases",
+                            f"Project '{self.project.name}' completed all phases",
                         )
                         return 0
 
@@ -1239,16 +1239,16 @@ class ResearchOrchestrator:
 
                 # Build context
                 context_builder = ContextBuilder(self.directive, state)
-                if self.program is not None:
+                if self.project is not None:
                     from sparky.workflow.program import (
                         PhaseState,
                         read_core_memory,
                     )
 
-                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem_path = self.project.memory.get("core_state_file", "state/core_memory.json")
                     core_mem = read_core_memory(core_mem_path)
                     ps = PhaseState.from_dict(state.program_state or {})
-                    context = context_builder.build_program_context(self.program, ps, core_mem)
+                    context = context_builder.build_program_context(self.project, ps, core_mem)
                 else:
                     context = context_builder.build()
 
@@ -1348,7 +1348,7 @@ class ResearchOrchestrator:
                 state.save(self.state_dir)
 
                 # Program mode: update phase session count
-                if self.program is not None:
+                if self.project is not None:
                     from sparky.workflow.program import (
                         PhaseState,
                         extract_coverage,
@@ -1357,7 +1357,7 @@ class ResearchOrchestrator:
 
                     ps = PhaseState.from_dict(state.program_state or {})
                     ps.phase_session_count += 1
-                    core_mem_path = self.program.memory.get("core_state_file", "state/core_memory.json")
+                    core_mem_path = self.project.memory.get("core_state_file", "state/core_memory.json")
                     core_mem = read_core_memory(core_mem_path)
                     ps.coverage_status = extract_coverage(core_mem, ps.current_phase)
                     state.program_state = ps.to_dict()

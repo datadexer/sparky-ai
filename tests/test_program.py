@@ -8,7 +8,7 @@ import yaml
 from sparky.workflow.program import (
     PhaseConfig,
     PhaseState,
-    ResearchProgram,
+    ResearchProject,
     _safe_float,
     _safe_get,
     _safe_int,
@@ -75,7 +75,7 @@ def _make_program_yaml(tmp_path, overrides=None):
 class TestProgramParsing:
     def test_parse_full_program_yaml(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         assert prog.name == "test_program"
         assert prog.version == 1
         assert "explore" in prog.phases
@@ -84,7 +84,7 @@ class TestProgramParsing:
 
     def test_phase_order_preserved(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         assert prog.phase_order == ["explore", "validate"]
 
     def test_missing_program_key_raises(self, tmp_path):
@@ -92,21 +92,21 @@ class TestProgramParsing:
         with open(path, "w") as f:
             yaml.dump({"not_program": {}}, f)
         with pytest.raises(ValueError, match="program"):
-            ResearchProgram.from_yaml(path)
+            ResearchProject.from_yaml(path)
 
     def test_missing_name_raises(self, tmp_path):
         path = tmp_path / "bad.yaml"
         with open(path, "w") as f:
             yaml.dump({"program": {"phases": {"a": {}}}}, f)
         with pytest.raises(ValueError, match="name"):
-            ResearchProgram.from_yaml(path)
+            ResearchProject.from_yaml(path)
 
     def test_missing_phases_raises(self, tmp_path):
         path = tmp_path / "bad.yaml"
         with open(path, "w") as f:
             yaml.dump({"program": {"name": "x"}}, f)
         with pytest.raises(ValueError, match="phases"):
-            ResearchProgram.from_yaml(path)
+            ResearchProject.from_yaml(path)
 
     def test_phase_defaults(self, tmp_path):
         path = tmp_path / "minimal.yaml"
@@ -115,7 +115,7 @@ class TestProgramParsing:
                 {"program": {"name": "x", "phases": {"only": {"objective": "test"}}}},
                 f,
             )
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         pc = prog.phases["only"]
         assert pc.human_review == "none"
         assert pc.agents == 1
@@ -139,17 +139,17 @@ class TestProgramParsing:
                 f,
             )
         with pytest.raises(ValueError, match="nonexistent"):
-            ResearchProgram.from_yaml(path)
+            ResearchProject.from_yaml(path)
 
     def test_to_directive(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         directive = prog.to_directive("explore")
         assert directive.name == "test_program"
         assert directive.objective == "Explore strategies"
         assert directive.stopping_criteria.max_cost_usd == 50.0
         assert directive.session_limits.max_session_minutes == 120
-        assert "program_test_program" in directive.wandb_tags
+        assert "project_test_program" in directive.wandb_tags
 
 
 # ── PhaseState ───────────────────────────────────────────────────────────
@@ -191,21 +191,21 @@ class TestPhaseState:
 class TestPhaseTransitions:
     def test_no_transition_before_min_sessions(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         ps = PhaseState(current_phase="explore", phase_session_count=1)
         result = evaluate_phase_transition(prog, ps, {})
         assert result is None
 
     def test_force_transition_at_max_sessions(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         ps = PhaseState(current_phase="explore", phase_session_count=10)
         result = evaluate_phase_transition(prog, ps, {})
         assert result == "validate"
 
     def test_transition_when_coverage_met(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         core = {
             "coverage": {
                 "families_screened": {f"f{i}": {"status": "done"} for i in range(5)},
@@ -219,7 +219,7 @@ class TestPhaseTransitions:
 
     def test_no_transition_coverage_not_met(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         core = {
             "coverage": {
                 "families_screened": {"f0": {"status": "done"}},
@@ -232,7 +232,7 @@ class TestPhaseTransitions:
 
     def test_human_review_blocks_transition(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         # validate phase has human_review="required" and no coverage_requirements
         ps = PhaseState(current_phase="validate", phase_session_count=2)
         result = evaluate_phase_transition(prog, ps, {})
@@ -241,7 +241,7 @@ class TestPhaseTransitions:
 
     def test_terminal_phase_max_sessions(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         # validate has next_phase=None, at max_sessions=5
         ps = PhaseState(current_phase="validate", phase_session_count=5)
         result = evaluate_phase_transition(prog, ps, {})
@@ -384,21 +384,21 @@ class TestCoreMemoryResilience:
 class TestStallPolicy:
     def test_stall_triggers_action(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         ps = PhaseState(current_phase="explore")
         result = check_stall(prog, ps, sessions_without_new_result=4)
         assert result == "proceed_with_available"
 
     def test_no_stall_below_threshold(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         ps = PhaseState(current_phase="explore")
         result = check_stall(prog, ps, sessions_without_new_result=2)
         assert result is None
 
     def test_stall_no_policy(self, tmp_path):
         path = _make_program_yaml(tmp_path)
-        prog = ResearchProgram.from_yaml(path)
+        prog = ResearchProject.from_yaml(path)
         ps = PhaseState(current_phase="validate")
         result = check_stall(prog, ps, sessions_without_new_result=100)
         assert result is None
