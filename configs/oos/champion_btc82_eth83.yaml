@@ -11,6 +11,10 @@ portfolio:
       entry_period: 82
       exit_period: 20
       weight: 0.30
+      sizing: inverse_vol
+      sizing_params:
+        vol_window: 30
+        target_vol: 0.20
 
     - asset: eth
       dataset: eth_ohlcv_8h
@@ -18,6 +22,10 @@ portfolio:
       entry_period: 83
       exit_period: 33
       weight: 0.70
+      sizing: inverse_vol
+      sizing_params:
+        vol_window: 30
+        target_vol: 0.15
 
   cost_bps: 30
   periods_per_year: 1095  # 8h bars

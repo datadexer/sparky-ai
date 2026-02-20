@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -41,6 +42,14 @@ def build_leg_returns(leg: dict, cost_bps: int) -> pd.Series:
     signals = donchian_channel_strategy(prices, leg["entry_period"], leg["exit_period"])
     # Anti-lookahead: signal at T applied to return at T+1
     positions = signals.shift(1).fillna(0)
+
+    # Apply inverse volatility sizing if configured
+    if leg.get("sizing") == "inverse_vol":
+        sp = leg["sizing_params"]
+        rvol = np.log(prices / prices.shift(1)).rolling(sp["vol_window"]).std() * np.sqrt(1095)
+        scale = (sp["target_vol"] / rvol).clip(0.1, 1.5).fillna(0.5)
+        positions = positions * scale
+
     price_returns = prices.pct_change().fillna(0)
 
     # Gross strategy returns
