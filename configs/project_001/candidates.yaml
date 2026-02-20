@@ -1,0 +1,73 @@
+project: "project_001"
+phase: "investigation_and_validation"
+
+candidates:
+  btc_don4h_160_25_iv:
+    asset: btc
+    timeframe: 4h
+    signal_type: donchian
+    signal_params: {entry_period: 160, exit_period: 25}
+    sizing: inverse_vol
+    sizing_params: {vol_window: 30, target_vol: 0.15}
+    source: "Agent B, btc_deep session 3"
+    tier: 1
+    notes: "Best BTC individual. Weak 2020+ (S=1.20). Focus on regime breakdown."
+
+  btc_don4h_60_20_iv:
+    asset: btc
+    timeframe: 4h
+    signal_type: donchian
+    signal_params: {entry_period: 60, exit_period: 20}
+    sizing: inverse_vol
+    sizing_params: {vol_window: 90, target_vol: 0.15}
+    source: "Agent A, eth_strategies session 7"
+    tier: 1
+
+  btc_don8h_82_20_iv:
+    asset: btc
+    timeframe: 8h
+    signal_type: donchian
+    signal_params: {entry_period: 82, exit_period: 20}
+    sizing: inverse_vol
+    sizing_params: {vol_window: 30, target_vol: 0.2}
+    source: "Agent B, btc_deep session 5"
+    tier: 1
+    notes: "Walk-forward validated: IS=2.220 -> WF=1.708 (77% retention)"
+
+  eth_don4h_138_47_flat:
+    asset: eth
+    timeframe: 4h
+    signal_type: donchian
+    signal_params: {entry_period: 138, exit_period: 47}
+    sizing: flat
+    source: "Agent A, eth_strategies"
+    tier: 1
+    notes: "High MaxDD (-38.8%). Needs drawdown investigation."
+
+  eth_don4h_164_47_flat:
+    asset: eth
+    timeframe: 4h
+    signal_type: donchian
+    signal_params: {entry_period: 164, exit_period: 47}
+    sizing: flat
+    source: "Agent A, eth_strategies session 7"
+    tier: 1
+
+  eth_don8h_83_33_iv:
+    asset: eth
+    timeframe: 8h
+    signal_type: donchian
+    signal_params: {entry_period: 83, exit_period: 33}
+    sizing: inverse_vol
+    sizing_params: {vol_window: 30, target_vol: 0.15}
+    source: "Agent A, eth_strategies"
+    tier: 1
+    notes: "Best ETH risk-adjusted (MaxDD=-9.5%)"
+
+portfolios:
+  portfolio_btc75_eth25_4h:
+    strategies:
+      - {candidate: btc_don4h_60_20_iv, weight: 0.75}
+      - {candidate: eth_don4h_164_47_flat, weight: 0.25}
+    source: "Agent A, session 7"
+    reference_sharpe_30bps: 2.293
