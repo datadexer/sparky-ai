@@ -135,12 +135,11 @@ If pre-commit fails, fix the issues. Do NOT use `--no-verify`.
 - Coverage (40% minimum threshold)
 
 **Pre-commit validation (via `claude` CLI):**
-Two validation hooks run on every commit using `claude -p`:
-- **Research Validation**: checks statistical methodology, backtesting validity, formula correctness
-- **Platform Validation**: checks engineering correctness, data plumbing, guardrails, wandb flow
+One unified validation hook runs on every commit using `claude -p`:
+- **Code Review**: checks both statistical methodology and engineering correctness in a single pass
 
-HIGH severity issues block the commit. Rubrics: `bin/research_validation/rubric.md`
-and `bin/platform_validation/rubric.md`. Hooks skip gracefully if `claude` CLI is unavailable.
+HIGH severity (Critical) issues block the commit. Rubric: `bin/code_review/rubric.md`.
+Hook skips gracefully if `claude` CLI is unavailable.
 
 ## Git — Research Agents Must NOT Use Git
 Research agents (sessions launched by the orchestrator) do NOT touch git.

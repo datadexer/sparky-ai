@@ -24,17 +24,9 @@ repos:
         pass_filenames: false
         always_run: true
 
-      - id: research-validation
-        name: Research Validation (Claude)
-        entry: python bin/research_validation/validate_pr.py
-        language: python
-        pass_filenames: false
-        always_run: true
-        stages: [pre-commit]
-
-      - id: platform-validation
-        name: Platform Validation (Claude)
-        entry: python bin/platform_validation/validate_pr.py
+      - id: code-review
+        name: Code Review (Claude)
+        entry: python bin/code_review/validate_pr.py
         language: python
         pass_filenames: false
         always_run: true
