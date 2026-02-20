@@ -416,7 +416,7 @@ def sub_period_analysis(config, periods=None):
         if len(r) < 20:
             results[label] = {"sharpe": None, "max_drawdown": None, "n_obs": len(r)}
             continue
-        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy)
+        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy, strict_ppy=False)
         results[label] = {
             "sharpe": m["sharpe"],
             "max_drawdown": m["max_drawdown"],
