@@ -2,6 +2,18 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Read",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      },
+      {
         "matcher": "Write",
         "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
       },

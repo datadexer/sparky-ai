@@ -237,11 +237,12 @@ The out-of-sample (OOS) boundary and embargo buffer are defined in
 - **Any code that hardcodes OOS boundary dates** (e.g., `"2024-01-01"`, `"2024-07-01"`)
   instead of reading from `HoldoutGuard` or `configs/holdout_policy.yaml` is HIGH
   severity. All holdout dates must be derived dynamically from the policy.
-- **Any code that directly accesses `data/.oos_vault/`** or references the vault path
-  is HIGH severity. OOS data must ONLY be accessed via
-  `load(purpose="oos_evaluation", oos_guard=guard)` with proper authorization.
-  The vault contains full data including the holdout period — direct reads bypass
-  all holdout enforcement.
+- **Any code that directly accesses `data/.oos_vault/` or `data/holdout/`** or
+  references these paths is HIGH severity. OOS data must ONLY be accessed via
+  `load(purpose="evaluation")` (env-var gated) or the deprecated
+  `load(purpose="oos_evaluation", oos_guard=guard)`.
+  These directories contain full data including the holdout period — direct reads
+  bypass all holdout enforcement.
 
 ### 2.4 Position Sizing Realism
 

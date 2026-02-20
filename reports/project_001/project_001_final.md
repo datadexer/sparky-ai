@@ -1,7 +1,7 @@
 # Project 001 Final Report — BTC/ETH Donchian Breakout
 
 **Date:** 2026-02-20
-**Status:** OOS Pending AK Approval
+**Status:** CLOSED — OOS FAIL (see reports/oos/p001/P001_FINAL_VERDICT.md)
 **Champion Portfolio:** btc82_30_eth83_70
 
 ---

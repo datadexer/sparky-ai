@@ -43,10 +43,16 @@ ALLOWED_ABSOLUTE_PREFIXES = [
 BLOCKED_COMPONENTS = {
     ".oos_vault",
     "oos_vault",
+    "data/holdout",
 }
 
-# Bash commands referencing OOS vault
-OOS_VAULT_PATTERN = re.compile(r"\.?oos_vault", re.IGNORECASE)
+# Paths blocked for ALL access (read and write) — OOS results must not leak to research agent
+BLOCKED_READ_PREFIXES = [
+    "reports/oos/",
+]
+
+# Bash commands referencing OOS vault or holdout directory
+OOS_VAULT_PATTERN = re.compile(r"(\.?oos_vault|data/holdout|reports/oos)", re.IGNORECASE)
 
 
 # ── Path Resolution ──────────────────────────────────────────────────────
@@ -126,6 +132,28 @@ def is_path_allowed(file_path: str, project_root: Path) -> tuple[bool, str]:
     return False, f"Path not in allowlist: {rel_path}"
 
 
+def is_read_blocked(file_path: str, project_root: Path) -> tuple[bool, str]:
+    """Check if a file path is blocked for reading. Returns (blocked, reason).
+
+    Resolves to project-relative path first, then checks BLOCKED_COMPONENTS
+    (.oos_vault, oos_vault, data/holdout) and BLOCKED_READ_PREFIXES (reports/oos/).
+    """
+    rel_path = _resolve_to_relative(file_path, project_root)
+    if rel_path is None:
+        return False, "outside project"
+
+    # Block reads containing OOS vault or holdout path components
+    for component in BLOCKED_COMPONENTS:
+        if component in rel_path:
+            return True, f"OOS data read blocked: {rel_path}"
+
+    for prefix in BLOCKED_READ_PREFIXES:
+        if rel_path.startswith(prefix) or rel_path == prefix.rstrip("/"):
+            return True, f"OOS results read blocked: {rel_path}"
+
+    return False, "allowed"
+
+
 def is_bash_command_allowed(command: str, project_root: Path) -> tuple[bool, str]:
     """Check if a bash command is allowed.
 
@@ -202,7 +230,16 @@ def main() -> int:
     tool_name = event.get("tool_name", "")
     tool_input = event.get("tool_input", {})
 
-    if tool_name in ("Write", "Edit"):
+    if tool_name in ("Read", "Glob", "Grep"):
+        # Block reads of OOS results and holdout data
+        file_path = tool_input.get("file_path") or tool_input.get("path") or tool_input.get("pattern", "")
+        if file_path:
+            blocked, reason = is_read_blocked(file_path, project_root)
+            if blocked:
+                print(f"SANDBOX BLOCKED: {reason}", file=sys.stderr)
+                return 2
+
+    elif tool_name in ("Write", "Edit"):
         file_path = tool_input.get("file_path", "")
         if not file_path:
             print("SANDBOX: No file_path in Write/Edit tool call", file=sys.stderr)

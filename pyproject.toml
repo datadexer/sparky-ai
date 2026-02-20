@@ -79,6 +79,7 @@ ignore = [
 "bin/*" = ["S101", "E402", "S105", "S106", "F841", "B007", "B023", "S110", "S112", "S324", "E702", "I001", "E741"]
 "bin/sparky" = ["S101", "E402", "S105", "S106", "S605", "S606", "E741"]
 "bin/infra/sweep_two_stage.py" = ["F811", "F541"]
+"scripts/*" = ["E402", "S110"]
 "validate_*.py" = ["F401", "F841", "E402", "S101"]
 
 [tool.bandit]

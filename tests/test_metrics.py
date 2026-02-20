@@ -3,6 +3,7 @@
 import math
 
 import numpy as np
+import pandas as pd
 import pytest
 from scipy.stats import norm
 
@@ -82,6 +83,7 @@ class TestComputeAllMetrics:
         "skewness",
         "kurtosis",
         "sortino",
+        "sortino_per_period",
         "max_drawdown",
         "calmar",
         "cvar_5pct",
@@ -286,6 +288,16 @@ class TestSortinoVsSharpe:
     def test_sortino_is_finite_for_normal_returns(self, profitable_returns):
         so = sortino_ratio(profitable_returns)
         assert math.isfinite(so)
+
+    def test_sortino_annualisation(self):
+        """C-2: Verify annualised sortino = per_period_sortino * sqrt(ppy)."""
+        np.random.seed(42)
+        returns = pd.Series(np.random.randn(1095) * 0.01)
+        m = compute_all_metrics(returns, periods_per_year=1095)
+        expected = m["sortino_per_period"] * np.sqrt(1095)
+        assert abs(m["sortino"] - expected) < 1e-9, (
+            f"Sortino double-annualisation: {m['sortino']:.6f} != {expected:.6f}"
+        )
 
 
 # ---------------------------------------------------------------------------
