@@ -62,7 +62,7 @@ def _make_telemetry(duration_minutes: float = 30.0, exit_reason: str = "complete
 
 class TestResearchDirective:
     def test_from_yaml_loads_example(self):
-        d = ResearchDirective.from_yaml("directives/example.yaml")
+        d = ResearchDirective.from_yaml("directives/archive/example.yaml")
         assert d.name == "btc_momentum_deep_dive"
         assert "momentum" in d.objective.lower()
         assert d.constraints["asset"] == "btc"
@@ -109,7 +109,7 @@ class TestResearchDirective:
         assert d.session_limits.max_session_minutes == 120
 
     def test_parameter_ranges_parsed(self):
-        d = ResearchDirective.from_yaml("directives/example.yaml")
+        d = ResearchDirective.from_yaml("directives/archive/example.yaml")
         ranges = d.strategy_space[0].parameter_ranges
         assert "momentum_lookback" in ranges
         assert ranges["momentum_lookback"] == [10, 20, 30, 40, 60]
