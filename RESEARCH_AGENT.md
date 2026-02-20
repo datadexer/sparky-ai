@@ -294,7 +294,7 @@ When you have completed your experiments and logged results to wandb:
 - Comment on or interact with GitHub PRs/issues
 
 Your sandbox enforces these restrictions. If you attempt to write outside
-`results/` or `scripts/*.py`, the write will be BLOCKED.
+`results/`, `scratch/`, `state/`, `scripts/*.py`, or `GATE_REQUEST.md`, the write will be BLOCKED.
 
 Files in `bin/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
 `sweep_two_stage.py`). You cannot edit them. To request changes, write a
@@ -372,8 +372,8 @@ When the orchestrator assigns a candidate for investigation:
 3. Evaluate results:
 
 **Per-candidate evaluation rules:**
-- **Signal edge** (from edge_attribution): `signal_edge > 0.3` = signal is meaningful
-- **Sizing edge** (from edge_attribution): `sizing_edge > 0.1` = sizing adds value
+- **Signal edge** (from edge_attribution): `full_sharpe > 0 and signal_edge / full_sharpe > 0.15` = signal contributes meaningfully
+- **Sizing edge** (from edge_attribution): `full_sharpe > 0 and sizing_edge / full_sharpe > 0.05` = sizing adds value
 - **Regime resilience** (from regime_decomposition): Sharpe > 0 in bear regime = survives downturns
 - **Crisis performance**: negative total return in ≥2 crisis events = fragile
 - **Trade profile**: win_rate < 0.40 OR profit_factor < 1.0 = edge is illusory
@@ -381,7 +381,8 @@ When the orchestrator assigns a candidate for investigation:
 
 **Actions based on investigation:**
 - All checks pass → mark candidate `ready_for_validation`
-- Signal edge < 0.3 → mark `null_result`, log to null registry
+- full_sharpe ≤ 0 → candidate fails primary screen regardless of attribution
+- Signal edge / full_sharpe < 0.15 (and full_sharpe > 0) → flag `weak_signal`, note in core memory for human review
 - Bear regime Sharpe < -1.0 → mark `regime_fragile`, note in core memory
 - High MaxDD + flat sizing → create variant with inverse_vol, add to candidates
 
@@ -424,7 +425,7 @@ When the orchestrator assigns a candidate for validation:
 ## Session Lifecycle
 
 **On session start:**
-1. Read `state/core_memory.json` for current research state
+1. Read `state/core_memory.json` for current research state. If `dsr` is `null` for candidates, skip DSR gating — validation battery will recompute with correct cumulative n_trials. See `dsr_note` field for context.
 2. Read `state/null_results_registry.json` to avoid repeating failed approaches
 3. Check orchestrator directive for assigned work
 4. Load relevant candidate configs from `configs/project_001/candidates.yaml`

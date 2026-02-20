@@ -940,7 +940,7 @@ class ResearchOrchestrator:
             "- Edit CLAUDE.md, RESEARCH_AGENT.md, configs, src/, tests/, or docs/\n"
             "- Modify your own memory files or project instructions\n"
             "- Interact with GitHub PRs or issues\n\n"
-            "Your session is sandboxed. Writes outside results/, scratch/, and "
+            "Your session is sandboxed. Writes outside results/, scratch/, state/, and "
             "scripts/*.py are BLOCKED. If you are done, just stop."
         )
 

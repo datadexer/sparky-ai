@@ -84,7 +84,12 @@ def stress_test(config, cost_range_bps=None):
 
 
 def bootstrap_sharpe(config, n_samples=10000, block_size=20, seed=42):
-    """Block-resample returns, compute Sharpe/MaxDD/Calmar distributions."""
+    """Block-resample returns, compute Sharpe/MaxDD/Calmar distributions.
+
+    NOTE: maxdd/calmar distributions measure sampling uncertainty over these metrics,
+    not path-realistic risk — block resampling breaks path continuity. Use
+    maxdd_percentiles for hard-fail gating but treat calmar_percentiles as indicative only.
+    """
     prices, positions, returns_30, ppy = _setup(config)
     n = len(returns_30)
     arr = returns_30.values
@@ -411,7 +416,7 @@ def sub_period_analysis(config, periods=None):
         if len(r) < 20:
             results[label] = {"sharpe": None, "max_drawdown": None, "n_obs": len(r)}
             continue
-        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy)
+        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy, strict_ppy=False)
         results[label] = {
             "sharpe": m["sharpe"],
             "max_drawdown": m["max_drawdown"],
@@ -620,7 +625,7 @@ def regime_decomposition(config):
         if len(r) < 20:
             regime_metrics[regime] = {"sharpe": None, "n_obs": int(mask.sum())}
             continue
-        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy)
+        m = compute_all_metrics(r, n_trials=1, periods_per_year=ppy, strict_ppy=False)
         regime_metrics[regime] = {
             "sharpe": m["sharpe"],
             "max_drawdown": m["max_drawdown"],

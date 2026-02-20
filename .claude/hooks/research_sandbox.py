@@ -21,6 +21,8 @@ from pathlib import Path
 # Default-deny: anything not listed here is blocked.
 ALLOWED_WRITE_PREFIXES = [
     "results/",
+    "scratch/",
+    "state/",
     "GATE_REQUEST.md",
 ]
 

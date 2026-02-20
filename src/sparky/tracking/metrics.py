@@ -240,11 +240,15 @@ def validate_periods_per_year(returns, periods_per_year, strict=True):
                 actual_ppy = len(idx) / (span_days / 365.25)
                 ratio = periods_per_year / actual_ppy
                 if ratio > 1.6 or ratio < 0.6:
-                    raise ValueError(
+                    msg = (
                         f"periods_per_year={periods_per_year} but data implies ~{actual_ppy:.0f} "
                         f"obs/year (ratio={ratio:.2f}). Likely wrong ppy — would inflate Sharpe "
                         f"by sqrt({ratio:.2f})={ratio**0.5:.2f}x."
                     )
+                    if strict:
+                        raise ValueError(msg)
+                    else:
+                        logger.warning(msg)
         except (TypeError, IndexError):
             pass
     elif periods_per_year > 1100:

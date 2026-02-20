@@ -32,9 +32,13 @@ class TestPathValidation:
         allowed, _ = research_sandbox.is_path_allowed("results/regime_donchian/session_003.json", PROJECT_ROOT)
         assert allowed
 
-    def test_scratch_dir_blocked(self):
+    def test_scratch_dir_allowed(self):
         allowed, _ = research_sandbox.is_path_allowed("scratch/temp_analysis.py", PROJECT_ROOT)
-        assert not allowed
+        assert allowed
+
+    def test_state_dir_allowed(self):
+        allowed, _ = research_sandbox.is_path_allowed("state/core_memory.json", PROJECT_ROOT)
+        assert allowed
 
     def test_gate_request_allowed(self):
         allowed, _ = research_sandbox.is_path_allowed("GATE_REQUEST.md", PROJECT_ROOT)
@@ -397,3 +401,15 @@ class TestExtraEnv:
         sig = inspect.signature(launch_claude_session)
         assert "disallowed_tools" in sig.parameters
         assert sig.parameters["disallowed_tools"].default is None
+
+
+class TestSettingsHooks:
+    """Verify .claude/settings.json registers sandbox hooks."""
+
+    def test_settings_json_has_hooks(self):
+        settings_path = PROJECT_ROOT / ".claude" / "settings.json"
+        assert settings_path.exists(), ".claude/settings.json must exist"
+        data = json.load(open(settings_path))
+        hooks = data.get("hooks", {}).get("PreToolUse", [])
+        matchers = {h["matcher"] for h in hooks}
+        assert {"Write", "Edit", "Bash"} <= matchers

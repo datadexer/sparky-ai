@@ -35,9 +35,9 @@
     {
       "id": "eth_bollinger_4h",
       "description": "ETH Bollinger Band strategies on 4h timeframe",
-      "configs_tested": null,
+      "configs_tested": 0,
       "best_sharpe": 2.156,
-      "reason": "Dominated by Donchian on all metrics. Not a competitive standalone signal type for ETH.",
+      "reason": "Dominated by Donchian on all metrics. Not a competitive standalone signal type for ETH. Not exhaustively swept — dominated early in exploration.",
       "recommendation": "Do not pursue Bollinger as primary signal for ETH.",
       "artifacts": []
     }
