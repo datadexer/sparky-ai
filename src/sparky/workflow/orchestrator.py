@@ -83,6 +83,11 @@ RESEARCH_DISALLOWED_TOOLS = [
     "Bash(ls ./data/holdout:*)",
     "Bash(cp data/holdout:*)",
     "Bash(cp ./data/holdout:*)",
+    # OOS evaluation reports — prevent result leakage to research agent
+    "Bash(cat reports/oos:*)",
+    "Bash(cat ./reports/oos:*)",
+    "Bash(ls reports/oos:*)",
+    "Bash(ls ./reports/oos:*)",
 ]
 
 

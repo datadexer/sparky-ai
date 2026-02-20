@@ -161,6 +161,34 @@ class TestPathValidation:
         assert not allowed
 
 
+# ── Read-Blocking (OOS Results) ──────────────────────────────────────────
+
+
+class TestReadBlocking:
+    """Test is_read_blocked for OOS report paths."""
+
+    def test_oos_report_blocked(self):
+        blocked, _ = research_sandbox.is_read_blocked("reports/oos/evaluation.md", PROJECT_ROOT)
+        assert blocked
+
+    def test_oos_report_absolute_blocked(self):
+        abs_path = str(PROJECT_ROOT / "reports" / "oos" / "evaluation.md")
+        blocked, _ = research_sandbox.is_read_blocked(abs_path, PROJECT_ROOT)
+        assert blocked
+
+    def test_holdout_read_blocked(self):
+        blocked, _ = research_sandbox.is_read_blocked("data/holdout/btc/ohlcv_8h.parquet", PROJECT_ROOT)
+        assert blocked
+
+    def test_normal_report_not_blocked(self):
+        blocked, _ = research_sandbox.is_read_blocked("reports/project_001/summary.md", PROJECT_ROOT)
+        assert not blocked
+
+    def test_results_not_blocked(self):
+        blocked, _ = research_sandbox.is_read_blocked("results/sweep.json", PROJECT_ROOT)
+        assert not blocked
+
+
 # ── Bash Command Validation ──────────────────────────────────────────────
 
 
@@ -193,6 +221,10 @@ class TestBashValidation:
 
     def test_holdout_dir_ls_blocked(self):
         allowed, _ = research_sandbox.is_bash_command_allowed("ls data/holdout/", PROJECT_ROOT)
+        assert not allowed
+
+    def test_oos_report_cat_blocked(self):
+        allowed, _ = research_sandbox.is_bash_command_allowed("cat reports/oos/evaluation.md", PROJECT_ROOT)
         assert not allowed
 
     def test_cp_to_src_blocked(self):
@@ -430,4 +462,4 @@ class TestSettingsHooks:
         data = json.load(open(settings_path))
         hooks = data.get("hooks", {}).get("PreToolUse", [])
         matchers = {h["matcher"] for h in hooks}
-        assert {"Write", "Edit", "Bash"} <= matchers
+        assert {"Read", "Glob", "Grep", "Write", "Edit", "Bash"} <= matchers
