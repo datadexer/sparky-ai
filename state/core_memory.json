@@ -1,0 +1,62 @@
+{
+  "last_updated": "2026-02-19T00:00:00Z",
+  "project": "project_001",
+  "phase": "investigation_and_validation",
+  "candidates": {
+    "btc_don4h_160_25_iv": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.319,
+      "dsr": 1.000,
+      "max_drawdown": -0.125,
+      "notes": "Best BTC individual. Weak 2020+ (S=1.20). Focus on regime breakdown."
+    },
+    "btc_don4h_60_20_iv": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.093,
+      "dsr": 1.000,
+      "max_drawdown": -0.178,
+      "notes": "Portfolio component. Strong cost robustness."
+    },
+    "btc_don8h_82_20_iv": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.220,
+      "dsr": 1.000,
+      "max_drawdown": -0.216,
+      "notes": "Walk-forward validated: IS=2.220 -> WF=1.708 (77% retention)"
+    },
+    "eth_don4h_138_47_flat": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.140,
+      "dsr": 0.993,
+      "max_drawdown": -0.388,
+      "notes": "High MaxDD (-38.8%). Needs drawdown investigation."
+    },
+    "eth_don4h_164_47_flat": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.126,
+      "dsr": 0.993,
+      "max_drawdown": null,
+      "notes": "Portfolio component (25% weight in best portfolio)."
+    },
+    "eth_don8h_83_33_iv": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.056,
+      "dsr": 0.988,
+      "max_drawdown": -0.095,
+      "notes": "Best ETH risk-adjusted (MaxDD=-9.5%)"
+    }
+  },
+  "portfolios": {
+    "portfolio_btc75_eth25_4h": {
+      "status": "pending_investigation",
+      "sharpe_30": 2.293,
+      "strategies": [
+        {"candidate": "btc_don4h_60_20_iv", "weight": 0.75},
+        {"candidate": "eth_don4h_164_47_flat", "weight": 0.25}
+      ],
+      "notes": "Best honest portfolio (4h grid, no ppy inflation)."
+    }
+  },
+  "cumulative_trials": 16269,
+  "baseline_sharpe": 1.580
+}

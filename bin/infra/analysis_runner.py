@@ -83,14 +83,16 @@ def stress_test(config, cost_range_bps=None):
     }
 
 
-def bootstrap_sharpe(config, n_samples=10000, block_size=20):
-    """Block-resample returns, compute Sharpe distribution."""
+def bootstrap_sharpe(config, n_samples=10000, block_size=20, seed=42):
+    """Block-resample returns, compute Sharpe/MaxDD/Calmar distributions."""
     prices, positions, returns_30, ppy = _setup(config)
     n = len(returns_30)
     arr = returns_30.values
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(seed)
 
     sharpes = np.empty(n_samples)
+    maxdd_dist = np.empty(n_samples)
+    calmar_dist = np.empty(n_samples)
     n_blocks = int(np.ceil(n / block_size))
     for i in range(n_samples):
         blocks = []
@@ -99,17 +101,36 @@ def bootstrap_sharpe(config, n_samples=10000, block_size=20):
             blocks.append(arr[start : start + block_size])
         sample = np.concatenate(blocks)[:n]
         std = np.std(sample, ddof=1)
-        sharpes[i] = (np.mean(sample) / std * np.sqrt(ppy)) if std > 0 else 0.0
+        sr = (np.mean(sample) / std * np.sqrt(ppy)) if std > 0 else 0.0
+        sharpes[i] = sr
+        cum = np.cumprod(1 + sample)
+        running_max = np.maximum.accumulate(cum)
+        dd = cum / running_max - 1
+        mdd = float(dd.min())
+        maxdd_dist[i] = mdd
+        ann_ret = cum[-1] ** (ppy / len(sample)) - 1 if cum[-1] > 0 else 0.0
+        calmar_dist[i] = ann_ret / abs(mdd) if mdd < -1e-8 else 0.0
 
     pcts = {int(p): float(np.percentile(sharpes, p)) for p in [5, 25, 50, 75, 95]}
+    maxdd_pcts = {int(p): float(np.percentile(maxdd_dist, p)) for p in [5, 25, 50, 75, 95]}
+    calmar_pcts = {int(p): float(np.percentile(calmar_dist, p)) for p in [5, 25, 50, 75, 95]}
     return {
         "status": "ok",
         "percentiles": pcts,
+        "maxdd_percentiles": maxdd_pcts,
+        "calmar_percentiles": calmar_pcts,
         "ci_95": (pcts[5], pcts[95]),
         "mean": float(np.mean(sharpes)),
         "std": float(np.std(sharpes)),
         "n_samples": n_samples,
-        "plots_data": {"sharpe_dist": sharpes.tolist(), "percentiles": pcts},
+        "plots_data": {
+            "sharpe_dist": sharpes.tolist(),
+            "maxdd_dist": maxdd_dist.tolist(),
+            "calmar_dist": calmar_dist.tolist(),
+            "percentiles": pcts,
+            "maxdd_percentiles": maxdd_pcts,
+            "calmar_percentiles": calmar_pcts,
+        },
     }
 
 
@@ -148,22 +169,26 @@ def walk_forward_multi(config, window_sizes_days=None):
     }
 
 
-def subsample_stability(config, drop_rates=None, repetitions=100):
-    """Randomly drop N% of returns, recompute Sharpe."""
+def subsample_stability(config, drop_rates=None, repetitions=100, block_size=20, seed=42):
+    """Drop entire blocks of returns (preserving temporal order), recompute Sharpe."""
     if drop_rates is None:
         drop_rates = [0.1, 0.2, 0.3, 0.4, 0.5]
     _, _, returns_30, ppy = _setup(config)
     arr = returns_30.values
     n = len(arr)
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(seed)
+    n_blocks = int(np.ceil(n / block_size))
 
     results = {}
     for rate in drop_rates:
-        keep = int(n * (1 - rate))
+        drop_count = int(np.ceil(rate * n_blocks))
         sharpes = []
         for _ in range(repetitions):
-            idx = rng.choice(n, size=keep, replace=False)
-            sample = arr[idx]
+            drop_idx = set(rng.choice(n_blocks, size=drop_count, replace=False))
+            kept = [arr[b * block_size : (b + 1) * block_size] for b in range(n_blocks) if b not in drop_idx]
+            if not kept:
+                continue
+            sample = np.concatenate(kept)
             std = np.std(sample, ddof=1)
             sr = (np.mean(sample) / std * np.sqrt(ppy)) if std > 0 else 0.0
             sharpes.append(sr)
@@ -260,13 +285,13 @@ def _top_drawdowns(dd_series, n=5):
         trough_val = float(dd[trough_idx])
         # Walk backward to find start
         start_idx = trough_idx
-        for i in range(dd.index.get_loc(trough_idx), -1, -1):
+        for i in range(dd.index.get_loc(trough_idx) - 1, -1, -1):
             if dd.iloc[i] >= -0.001:
                 start_idx = dd.index[i]
                 break
         # Walk forward to find recovery
         end_idx = dd.index[-1]
-        for i in range(dd.index.get_loc(trough_idx), len(dd)):
+        for i in range(dd.index.get_loc(trough_idx) + 1, len(dd)):
             if dd.iloc[i] >= -0.001:
                 end_idx = dd.index[i]
                 break
@@ -345,14 +370,14 @@ def rolling_stability(config, window_days=180):
             in_neg = True
             start = i
         elif not neg and in_neg:
-            duration = i - start
-            if duration >= window_days:  # ~6 months of consecutive negative
-                flagged.append({"start": dates[start], "end": dates[i - 1], "duration_days": duration})
+            duration_days = (pd.Timestamp(dates[i - 1]) - pd.Timestamp(dates[start])).days
+            if duration_days >= 180:
+                flagged.append({"start": dates[start], "end": dates[i - 1], "duration_days": duration_days})
             in_neg = False
     if in_neg:
-        duration = len(negative) - start
-        if duration >= window_days:
-            flagged.append({"start": dates[start], "end": dates[-1], "duration_days": duration})
+        duration_days = (pd.Timestamp(dates[-1]) - pd.Timestamp(dates[start])).days
+        if duration_days >= 180:
+            flagged.append({"start": dates[start], "end": dates[-1], "duration_days": duration_days})
 
     return {
         "status": "ok",
@@ -579,9 +604,10 @@ def regime_decomposition(config):
     """Classify bull/bear/sideways regimes. Per-regime and crisis-event metrics."""
     prices, positions, returns_30, ppy = _setup(config)
 
-    # Regime classification based on 90-day rolling return
+    # Regime classification based on 90-day rolling return (calendar-aware)
     price_series = prices.reindex(returns_30.index).ffill()
-    roll_ret = price_series.pct_change(90).fillna(0)
+    lookback = int(90 * ppy / 365)
+    roll_ret = price_series.pct_change(lookback).fillna(0)
 
     regimes = pd.Series("sideways", index=returns_30.index)
     regimes[roll_ret > 0.20] = "bull"
@@ -644,7 +670,9 @@ def regime_decomposition(config):
 
 _HARD_FAIL = {
     "stress_test": lambda r: r.get("breakeven_bps", 999) < 70,
-    "bootstrap_sharpe": lambda r: r.get("percentiles", {}).get(5, 999) < 0.5,
+    "bootstrap_sharpe": lambda r: (
+        r.get("percentiles", {}).get(5, 999) < 0.5 or r.get("maxdd_percentiles", {}).get(5, 0) < -0.40
+    ),
     "cpcv_validate": lambda r: r.get("pbo", 1) > 0.50,
     "drawdown_analysis": lambda r: r.get("max_drawdown", -1) < -0.45,
 }
@@ -699,9 +727,9 @@ def run_full_validation_battery(config):
     """Run all 12 validation functions. Returns combined results with verdict."""
     tests = {
         "stress_test": lambda: stress_test(config),
-        "bootstrap_sharpe": lambda: bootstrap_sharpe(config, n_samples=5000),
+        "bootstrap_sharpe": lambda: bootstrap_sharpe(config, n_samples=5000, seed=42),
         "walk_forward_multi": lambda: walk_forward_multi(config),
-        "subsample_stability": lambda: subsample_stability(config, repetitions=50),
+        "subsample_stability": lambda: subsample_stability(config, repetitions=50, seed=42),
         "cpcv_validate": lambda: cpcv_validate(config),
         "multi_seed_test": lambda: multi_seed_test(config),
         "tail_risk_analysis": lambda: tail_risk_analysis(config),
