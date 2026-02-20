@@ -19,6 +19,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import yaml
 
 from sparky.data.loader import load
 from sparky.models.simple_baselines import donchian_channel_strategy
@@ -26,7 +27,9 @@ from sparky.tracking.metrics import compute_all_metrics
 from sweep_utils import inv_vol_sizing
 
 OUT = Path("/tmp/sparky_oos_reports/validation_sweep")  # noqa: S108
-OOS_START = pd.Timestamp("2024-01-01", tz="UTC")
+with open(ROOT / "configs/holdout_policy.yaml") as _f:
+    _holdout = yaml.safe_load(_f)
+OOS_START = pd.Timestamp(_holdout["holdout_periods"]["cross_asset"]["oos_start"], tz="UTC")
 PPY = 1095
 COST_BPS = 30
 
@@ -36,10 +39,11 @@ COST_BPS = 30
 
 def load_full_data(dataset):
     """Load IS + OOS data merged."""
-    is_df = load(dataset, purpose="analysis")
+    is_df = load(dataset, purpose="training")
     oos_df = load(dataset, purpose="evaluation")
-    df = pd.concat([is_df, oos_df])
-    return df[~df.index.duplicated(keep="last")].sort_index()
+    oos_df = oos_df[oos_df.index >= OOS_START]
+    df = pd.concat([is_df, oos_df]).sort_index()
+    return df
 
 
 def build_leg(dataset, entry, exit_, vw, tv, cost_bps):
@@ -380,7 +384,7 @@ def eth_only_evaluation():
 
 def main():
     os.chdir(ROOT)
-    OUT.mkdir(parents=True, exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     print("=" * 60)
     print("OOS Validation Sweep")

@@ -2,7 +2,7 @@
 """Single-shot OOS evaluation of a champion portfolio.
 
 Usage:
-    SPARKY_OOS_ENABLED=1 .venv/bin/python scripts/oos_evaluate.py configs/oos/champion_btc82_eth83.yaml
+    SPARKY_OOS_ENABLED=1 .venv/bin/python scripts/oos/oos_evaluate.py configs/oos/champion_btc82_eth83.yaml
 
 Exit codes: 0=PASS, 1=FAIL, 2=ERROR
 Output: markdown report to /tmp/sparky_oos_reports/ (or --output-dir)
@@ -13,7 +13,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import numpy as np
@@ -30,13 +30,15 @@ def load_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def build_leg_returns(leg: dict, cost_bps: int) -> pd.Series:
+def build_leg_returns(leg: dict, cost_bps: int, ppy: int) -> pd.Series:
     """Build net returns for one portfolio leg over the full IS+OOS range."""
-    # Load IS data (from data/) and OOS data (from data/holdout/), merge
-    is_df = load(leg["dataset"], purpose="analysis")
+    is_df = load(leg["dataset"], purpose="training")
     oos_df = load(leg["dataset"], purpose="evaluation")
-    df = pd.concat([is_df, oos_df])
-    df = df[~df.index.duplicated(keep="last")].sort_index()
+    with open(ROOT / "configs/holdout_policy.yaml") as f:
+        _hp = yaml.safe_load(f)
+    oos_boundary = pd.Timestamp(_hp["holdout_periods"]["cross_asset"]["oos_start"], tz="UTC")
+    oos_df = oos_df[oos_df.index >= oos_boundary]
+    df = pd.concat([is_df, oos_df]).sort_index()
 
     prices = df["close"]
     signals = donchian_channel_strategy(prices, leg["entry_period"], leg["exit_period"])
@@ -44,18 +46,15 @@ def build_leg_returns(leg: dict, cost_bps: int) -> pd.Series:
     # Shift combined signal+scale to match research code: position[T] = signal[T-1] * scale[T-1]
     if leg.get("sizing") == "inverse_vol":
         sp = leg["sizing_params"]
-        rvol = np.log(prices / prices.shift(1)).rolling(sp["vol_window"]).std() * np.sqrt(1095)
+        rvol = np.log(prices / prices.shift(1)).rolling(sp["vol_window"]).std() * np.sqrt(ppy)
         scale = (sp["target_vol"] / rvol).clip(0.1, 1.5).fillna(0.5)
         positions = (signals * scale).shift(1).fillna(0)
     else:
         positions = signals.shift(1).fillna(0)
 
     price_returns = prices.pct_change().fillna(0)
-
-    # Gross strategy returns
     gross = positions * price_returns
-
-    # Transaction costs on position changes
+    # cost_bps is per-asset one-way cost, applied to each leg's position changes independently
     cost_frac = cost_bps / 10_000
     trades = positions.diff().abs().fillna(0)
     costs = trades * cost_frac
@@ -67,11 +66,12 @@ def build_portfolio_returns(config: dict) -> pd.Series:
     """Build weighted portfolio returns from all legs."""
     legs = config["portfolio"]["legs"]
     cost_bps = config["portfolio"]["cost_bps"]
+    ppy = config["portfolio"]["periods_per_year"]
 
     leg_returns = {}
     for leg in legs:
         key = f"{leg['asset']}_{leg['entry_period']}_{leg['exit_period']}"
-        leg_returns[key] = (build_leg_returns(leg, cost_bps), leg["weight"])
+        leg_returns[key] = (build_leg_returns(leg, cost_bps, ppy), leg["weight"])
 
     # Align on common index
     all_series = [s for s, _ in leg_returns.values()]
@@ -130,7 +130,7 @@ def write_report(
     result: dict,
     report_dir: Path,
 ):
-    report_dir.mkdir(parents=True, exist_ok=True)
+    report_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     report_path = report_dir / f"oos_evaluation_{ts}.md"
 
@@ -194,7 +194,7 @@ def write_report(
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: SPARKY_OOS_ENABLED=1 .venv/bin/python scripts/oos_evaluate.py <config.yaml>")
+        print("Usage: SPARKY_OOS_ENABLED=1 .venv/bin/python scripts/oos/oos_evaluate.py <config.yaml>")
         sys.exit(2)
 
     # Ensure CWD is project root so loader's relative DATA_DIRS resolve correctly

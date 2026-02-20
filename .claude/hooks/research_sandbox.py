@@ -133,15 +133,16 @@ def is_path_allowed(file_path: str, project_root: Path) -> tuple[bool, str]:
 
 
 def is_read_blocked(file_path: str, project_root: Path) -> tuple[bool, str]:
-    """Check if a file path is blocked for reading. Returns (blocked, reason)."""
-    for component in BLOCKED_COMPONENTS:
-        if component in file_path:
-            return True, f"OOS data read blocked: {file_path}"
+    """Check if a file path is blocked for reading. Returns (blocked, reason).
 
+    Resolves to project-relative path first, then checks BLOCKED_COMPONENTS
+    (.oos_vault, oos_vault, data/holdout) and BLOCKED_READ_PREFIXES (reports/oos/).
+    """
     rel_path = _resolve_to_relative(file_path, project_root)
     if rel_path is None:
         return False, "outside project"
 
+    # Block reads containing OOS vault or holdout path components
     for component in BLOCKED_COMPONENTS:
         if component in rel_path:
             return True, f"OOS data read blocked: {rel_path}"
