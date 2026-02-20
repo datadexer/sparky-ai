@@ -72,6 +72,17 @@ _DATASET_ALIASES = {
     "eth_ohlcv_2h": Path("data/processed/eth_ohlcv_2h.parquet"),
     "eth_ohlcv_4h": Path("data/processed/eth_ohlcv_4h.parquet"),
     "eth_ohlcv_8h": Path("data/processed/eth_ohlcv_8h.parquet"),
+    # On-chain metrics (BGeometrics)
+    "btc_onchain_bgeometrics": Path("data/raw/onchain/bgeometrics_combined.parquet"),
+    "btc_mvrv_zscore": Path("data/raw/onchain/bgeometrics/mvrv_zscore.parquet"),
+    "btc_sopr": Path("data/raw/onchain/bgeometrics/sopr.parquet"),
+    "btc_nupl": Path("data/raw/onchain/bgeometrics/nupl.parquet"),
+    "btc_realized_price": Path("data/raw/onchain/bgeometrics/realized_price.parquet"),
+    "btc_cdd": Path("data/raw/onchain/bgeometrics/cdd.parquet"),
+    "btc_puell_multiple": Path("data/raw/onchain/bgeometrics/puell_multiple.parquet"),
+    "btc_active_addresses": Path("data/raw/onchain/bgeometrics/active_addresses.parquet"),
+    "btc_hash_rate": Path("data/raw/onchain/bgeometrics/hash_rate.parquet"),
+    "btc_supply_in_profit": Path("data/raw/onchain/bgeometrics/supply_in_profit.parquet"),
 }
 
 _guard = HoldoutGuard()

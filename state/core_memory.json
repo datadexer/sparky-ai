@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-02-20T06:55:00Z",
+  "last_updated": "2026-02-20T07:30:00Z",
   "project": "project_001",
   "phase": "report_complete",
   "candidates": {
@@ -89,7 +89,17 @@
         "portfolio_sharpe": -0.261,
         "portfolio_dd": -0.067
       },
-      "notes": "Champion: confirmed across 3 sessions, 55 portfolio configs. MaxDD=-7%. ETH83 saves portfolio in 2022 bear. Awaiting OOS approval."
+      "walk_forward": {
+        "wf_sharpe_30bps": 1.579,
+        "wf_sharpe_50bps": 1.516,
+        "retention": 0.712,
+        "wf_max_drawdown": -0.059,
+        "folds_positive": "4/4",
+        "mean_fold_sharpe": 1.560,
+        "min_fold_sharpe": 0.844,
+        "verdict": "PASS"
+      },
+      "notes": "Champion: confirmed across 3 sessions, 55 portfolio configs. MaxDD=-7%. ETH83 saves portfolio in 2022 bear. Portfolio WF validated: 71.2% retention, all folds positive. OOS-ready pending AK approval."
     },
     "btc160_80_btc60_20_4h": {
       "status": "screened_pass",
