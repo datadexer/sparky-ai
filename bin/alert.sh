@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # alert.sh — Simple alerting: Slack webhook, desktop notification, log file.
 #
-# Usage: scripts/alert.sh SEVERITY "Message text"
+# Usage: bin/alert.sh SEVERITY "Message text"
 #   SEVERITY: INFO | WARN | ERROR | CRITICAL
 #
 # Slack: Set SPARKY_SLACK_WEBHOOK env var to enable.

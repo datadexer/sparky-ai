@@ -33,7 +33,7 @@ jobs:
         run: uv pip install -e ".[dev]" bandit --system
 
       - name: Ruff lint
-        run: ruff check src/ scripts/ tests/
+        run: ruff check src/ bin/ tests/
 
       - name: Ruff format check
         run: ruff format --check src/
@@ -44,7 +44,7 @@ jobs:
           bandit -r src/ -c pyproject.toml --severity-level high
 
       - name: Sparky-specific checks
-        run: python scripts/hooks/sparky_checks.py
+        run: python bin/hooks/sparky_checks.py
 
       - name: Unit tests with coverage (parallel)
         run: |

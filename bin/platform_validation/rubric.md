@@ -10,7 +10,7 @@ infrastructure soundness, data plumbing, and system correctness — not quant fi
 ## 0. MANDATORY: Shared Utility Auto-Pass Rule
 
 **ANY script in `scripts/` that imports from a shared utility module (e.g.,
-`from sweep_utils import ...` or any module in `scripts/infra/`) is AUTOMATICALLY COMPLIANT
+`from sweep_utils import ...` or any module in `bin/infra/`) is AUTOMATICALLY COMPLIANT
 with sections 1.1 (signal timing), 1.2 (cost application), 3.1 (n_trials),
 and 4.2 (guardrails).**
 
@@ -213,7 +213,7 @@ wandb run configs should capture all hyperparameters needed to reproduce the exp
 - New guardrail checks added without a corresponding test that verifies the check fires
 
 **MEDIUM severity:**
-- New CLI commands in `scripts/sparky` without a test
+- New CLI commands in `bin/sparky` without a test
 - New configuration parameters with no test verifying they are read correctly
 - `try/except Exception` blocks that swallow errors without a test for the error case
 

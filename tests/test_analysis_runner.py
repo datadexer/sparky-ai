@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts" / "infra"))
+sys.path.insert(0, str(ROOT / "bin" / "infra"))
 sys.path.insert(0, str(ROOT / "src"))
 
 

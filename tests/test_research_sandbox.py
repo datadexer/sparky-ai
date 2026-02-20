@@ -32,9 +32,9 @@ class TestPathValidation:
         allowed, _ = research_sandbox.is_path_allowed("results/regime_donchian/session_003.json", PROJECT_ROOT)
         assert allowed
 
-    def test_scratch_dir_allowed(self):
+    def test_scratch_dir_blocked(self):
         allowed, _ = research_sandbox.is_path_allowed("scratch/temp_analysis.py", PROJECT_ROOT)
-        assert allowed
+        assert not allowed
 
     def test_gate_request_allowed(self):
         allowed, _ = research_sandbox.is_path_allowed("GATE_REQUEST.md", PROJECT_ROOT)
@@ -62,12 +62,12 @@ class TestPathValidation:
         assert not allowed
 
     def test_infra_sweep_utils_blocked(self):
-        """scripts/infra/ subdirectory is blocked by the subdir rule."""
-        allowed, _ = research_sandbox.is_path_allowed("scripts/infra/sweep_utils.py", PROJECT_ROOT)
+        """bin/infra/ is blocked (protected platform utilities)."""
+        allowed, _ = research_sandbox.is_path_allowed("bin/infra/sweep_utils.py", PROJECT_ROOT)
         assert not allowed
 
     def test_infra_sweep_two_stage_blocked(self):
-        allowed, _ = research_sandbox.is_path_allowed("scripts/infra/sweep_two_stage.py", PROJECT_ROOT)
+        allowed, _ = research_sandbox.is_path_allowed("bin/infra/sweep_two_stage.py", PROJECT_ROOT)
         assert not allowed
 
     def test_src_blocked(self):
@@ -184,7 +184,7 @@ class TestBashValidation:
         assert not allowed
 
     def test_cp_to_results_allowed(self):
-        allowed, _ = research_sandbox.is_bash_command_allowed("cp scratch/data.csv results/data.csv", PROJECT_ROOT)
+        allowed, _ = research_sandbox.is_bash_command_allowed("cp /tmp/data.csv results/data.csv", PROJECT_ROOT)
         assert allowed
 
     def test_mv_to_configs_blocked(self):

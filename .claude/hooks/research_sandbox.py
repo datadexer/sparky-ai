@@ -21,20 +21,15 @@ from pathlib import Path
 # Default-deny: anything not listed here is blocked.
 ALLOWED_WRITE_PREFIXES = [
     "results/",
-    "scratch/",
     "GATE_REQUEST.md",
 ]
 
-# scripts/*.py is allowed, but NOT subdirectories or specific protected files
+# scripts/*.py is allowed, but NOT subdirectories (bin/ is entirely off-limits)
 ALLOWED_SCRIPT_PATTERN = re.compile(r"^scripts/[^/]+\.py$")
 
-PROTECTED_SCRIPTS = {
-    "scripts/sparky",
-    "scripts/alert.sh",
-    "scripts/ceo_runner.sh",
-}
-# Note: scripts/infra/ files are automatically blocked because the sandbox
-# only allows scripts/[^/]+\.py$ (no subdirectories).
+PROTECTED_SCRIPTS: set[str] = set()
+# Note: bin/ is not in ALLOWED_WRITE_PREFIXES so all of bin/ is blocked.
+# scripts/infra/ files are blocked because the pattern only allows scripts/[^/]+\.py$.
 
 # Absolute temp dirs always allowed
 ALLOWED_ABSOLUTE_PREFIXES = [

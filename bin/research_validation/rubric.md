@@ -13,7 +13,7 @@ Severity levels:
 ## 0. MANDATORY: Shared Utility Auto-Pass Rule
 
 **ANY script in `scripts/` that imports from a shared utility module (e.g.,
-`from sweep_utils import ...` or any module in `scripts/infra/`) is AUTOMATICALLY COMPLIANT
+`from sweep_utils import ...` or any module in `bin/infra/`) is AUTOMATICALLY COMPLIANT
 with sections 1.1 (DSR/n_trials), 2.1 (signal timing), 2.2 (transaction costs),
 3.2 (sub-period reporting), and 5.2 (guardrails).**
 
