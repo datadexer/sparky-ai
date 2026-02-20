@@ -3,7 +3,7 @@
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/mpl")  # noqa: S108
@@ -43,6 +43,9 @@ def load_full_data(dataset):
     oos_df = load(dataset, purpose="evaluation")
     oos_df = oos_df[oos_df.index >= OOS_START]
     df = pd.concat([is_df, oos_df]).sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    gap = oos_df.index[0] - is_df.index[-1]
+    assert gap <= pd.Timedelta(hours=16), f"Gap at IS/OOS boundary: {gap}"
     return df
 
 
@@ -54,6 +57,8 @@ def build_leg(dataset, entry, exit_, vw, tv, cost_bps):
     scale = inv_vol_sizing(prices, vw, tv, PPY)
     positions = (signals * scale).shift(1).fillna(0)
     price_returns = prices.pct_change().fillna(0)
+    if prices.iloc[1:].isna().any():
+        print(f"  WARNING: interior NaN prices in {dataset}")
     gross = positions * price_returns
     cost_frac = cost_bps / 10_000
     costs = positions.diff().abs().fillna(0) * cost_frac
@@ -175,7 +180,7 @@ def test_data_continuity():
         max_gap = diffs.max()
         no_big_gaps = max_gap <= pd.Timedelta(hours=24)
 
-        boundary = pd.Timestamp("2024-01-01", tz="UTC")
+        boundary = OOS_START
         near_boundary = prices[
             (prices.index >= boundary - pd.Timedelta(days=1)) & (prices.index <= boundary + pd.Timedelta(days=1))
         ]
@@ -200,7 +205,11 @@ def test_data_continuity():
 
 
 def write_validation_failure_report(all_results):
-    lines = ["# Validation Failure Report", f"**Date**: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ""]
+    lines = [
+        "# Validation Failure Report",
+        f"**Date**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        "",
+    ]
     for r in all_results:
         status = "PASS" if r["passed"] else "**FAIL**"
         actual_str = f"{r['actual']:.4f}" if isinstance(r["actual"], float) else str(r["actual"])
@@ -325,7 +334,7 @@ def eth_only_evaluation():
     verdict = "PASS" if overall else "FAIL"
 
     report = f"""# ETH-Only OOS Evaluation Report — {verdict}
-**Date**: {datetime.now().strftime("%Y-%m-%d %H:%M")}
+**Date**: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
 
 ## Strategy
 - ETH Don8h(83,33) inverse_vol(vw=30, tv=0.15)

@@ -172,12 +172,16 @@ def max_drawdown(returns):
 
 
 def calmar_ratio(returns, periods_per_year=365):
-    """Annualized return / max drawdown."""
+    """CAGR / max drawdown."""
     mdd = max_drawdown(returns)
     if mdd == 0:
         return 0.0
-    ann_return = np.mean(returns) * periods_per_year
-    return float(ann_return / abs(mdd))
+    total = np.prod(1 + returns)
+    n_years = len(returns) / periods_per_year
+    if n_years <= 0 or total <= 0:
+        return 0.0
+    cagr = total ** (1.0 / n_years) - 1
+    return float(cagr / abs(mdd))
 
 
 def conditional_var(returns, alpha=0.05):
@@ -207,8 +211,20 @@ def profit_factor(returns):
     return float(gains / losses) if losses > 0 else float("inf")
 
 
-def worst_year_sharpe(returns, periods_per_year=365):
+def worst_year_sharpe(returns, periods_per_year=365, index=None):
     """Sharpe of the worst calendar year."""
+    if index is not None and hasattr(index, "year"):
+        import pandas as pd
+
+        s = pd.Series(returns, index=index)
+        yearly_sharpes = []
+        for _, grp in s.groupby(s.index.year):
+            if len(grp) >= periods_per_year // 4:
+                yearly_sharpes.append(sharpe_ratio(grp.values))
+        if len(yearly_sharpes) < 2:
+            return sharpe_ratio(returns)
+        return float(min(yearly_sharpes))
+    # Fallback: integer slicing
     n_years = len(returns) // periods_per_year
     if n_years < 2:
         return sharpe_ratio(returns)
@@ -279,6 +295,7 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         strict_ppy: if True (default), reject numpy arrays with ppy > 1100
     """
     validate_periods_per_year(returns, periods_per_year, strict=strict_ppy)
+    _index = getattr(returns, "index", None)
     returns = np.asarray(returns, dtype=float)
 
     # Pre-compute distribution moments for logging (raw Pearson kurtosis, normal=3)
@@ -316,7 +333,7 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         # Consistency
         "rolling_sharpe_std": rolling_sharpe_std(returns),
         "profit_factor": profit_factor(returns),
-        "worst_year_sharpe": worst_year_sharpe(returns, periods_per_year),
+        "worst_year_sharpe": worst_year_sharpe(returns, periods_per_year, index=_index),
         # Practical
         "n_observations": len(returns),
         "win_rate": float(np.mean(returns > 0)),

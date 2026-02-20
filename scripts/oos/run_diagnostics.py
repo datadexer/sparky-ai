@@ -46,6 +46,9 @@ def build_leg_returns(dataset, entry, exit_, vw, tv):
     oos_df = load(dataset, purpose="evaluation")
     oos_df = oos_df[oos_df.index >= OOS_START]
     df = pd.concat([is_df, oos_df]).sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    gap = oos_df.index[0] - is_df.index[-1]
+    assert gap <= pd.Timedelta(hours=16), f"Gap at IS/OOS boundary: {gap}"
     prices = df["close"]
 
     signals = donchian_channel_strategy(prices, entry, exit_)
@@ -53,6 +56,8 @@ def build_leg_returns(dataset, entry, exit_, vw, tv):
     positions = (signals * sizing).shift(1).fillna(0)
 
     price_returns = prices.pct_change().fillna(0)
+    if prices.iloc[1:].isna().any():
+        print(f"  WARNING: interior NaN prices in {dataset}")
     gross = positions * price_returns
     cost_frac = COST_BPS / 10_000
     costs = positions.diff().abs().fillna(0) * cost_frac
@@ -234,7 +239,7 @@ def main():
     # ── Diagnostic 4: Monthly Return Heatmap ─────────────────────────────────────
     print("\nDiagnostic 4: Monthly returns heatmap...")
     oos_daily = (1 + oos).resample("D").prod() - 1
-    monthly = oos_daily.resample("ME").sum()
+    monthly = (1 + oos_daily).resample("ME").prod() - 1
     monthly_df = pd.DataFrame({"year": monthly.index.year, "month": monthly.index.month, "ret": monthly.values})
     pivot = monthly_df.pivot(index="year", columns="month", values="ret")
 
@@ -391,7 +396,7 @@ def main():
 
     report = f"""# OOS Diagnostic Report — Champion Portfolio
 
-Generated: {pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")} UTC
+Generated: {pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M")} UTC
 OOS Period: {oos.index[0].date()} to {oos.index[-1].date()} ({len(oos)} bars, {(oos.index[-1] - oos.index[0]).days} days)
 
 ## Section 1: Corrected OOS Evaluation

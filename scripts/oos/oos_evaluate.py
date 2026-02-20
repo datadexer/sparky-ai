@@ -16,6 +16,8 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+import math
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -23,6 +25,10 @@ import yaml
 from sparky.data.loader import load
 from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.tracking.metrics import compute_all_metrics
+
+
+def _fmt_pf(v):
+    return f"{v:.2f}" if math.isfinite(v) else "inf"
 
 
 def load_config(path: str) -> dict:
@@ -39,6 +45,10 @@ def build_leg_returns(leg: dict, cost_bps: int, ppy: int) -> pd.Series:
     oos_boundary = pd.Timestamp(_hp["holdout_periods"]["cross_asset"]["oos_start"], tz="UTC")
     oos_df = oos_df[oos_df.index >= oos_boundary]
     df = pd.concat([is_df, oos_df]).sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    gap = oos_df.index[0] - is_df.index[-1]
+    expected_bar = pd.Timedelta(hours=8)
+    assert gap <= expected_bar * 2, f"Gap at IS/OOS boundary: {gap}. Warmup data may be missing."
 
     prices = df["close"]
     signals = donchian_channel_strategy(prices, leg["entry_period"], leg["exit_period"])
@@ -53,6 +63,9 @@ def build_leg_returns(leg: dict, cost_bps: int, ppy: int) -> pd.Series:
         positions = signals.shift(1).fillna(0)
 
     price_returns = prices.pct_change().fillna(0)
+    interior_nans = prices.iloc[1:].isna().sum()
+    if interior_nans > 0:
+        print(f"WARNING: {interior_nans} interior NaN prices in {leg['dataset']}")
     gross = positions * price_returns
     # cost_bps is per-asset one-way cost, applied to each leg's position changes independently
     cost_frac = cost_bps / 10_000
@@ -162,7 +175,7 @@ def write_report(
         f"- **Calmar**: {om['calmar']:.3f}",
         f"- **Total Return**: {om['total_return']:.1%}",
         f"- **Win Rate**: {om['win_rate']:.1%}",
-        f"- **Profit Factor**: {om['profit_factor']:.2f}",
+        f"- **Profit Factor**: {_fmt_pf(om['profit_factor'])}",
         f"- **N Observations**: {om['n_observations']}",
         f"- **DSR (n_trials=1)**: {om['dsr']:.3f}",
         "",
@@ -214,6 +227,10 @@ def main():
         sys.exit(2)
 
     oos_start = config["oos"]["start"]
+    with open(ROOT / "configs/holdout_policy.yaml") as f:
+        _hp = yaml.safe_load(f)
+    policy_start = _hp["holdout_periods"]["cross_asset"]["oos_start"]
+    assert oos_start == policy_start, f"Config oos.start ({oos_start}) != holdout_policy ({policy_start})"
     oos_returns = extract_oos_returns(portfolio_returns, oos_start)
     is_returns = extract_is_returns(portfolio_returns, oos_start)
 
