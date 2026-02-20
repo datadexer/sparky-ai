@@ -1,28 +1,23 @@
 name: btc_deep_20260218
 objective: |
-  Deep exploration of BTC signal strategies at underexplored timeframes.
-  Focus on robustness validation and filling gaps in the parameter space.
+  Investigation and validation of BTC TIER 1 candidates.
+  Exploration phase is complete. No new parameter sweeps.
 
-  Benchmark: BTC Don4h(30,25) flat Sharpe 1.702@30bps, DSR 0.991.
-  Validated best: BTC Don8h(40,10) iv(vw30,tv0.2) Sharpe 2.045@30bps.
+  Candidates: read from configs/project_001/candidates.yaml (BTC entries).
+  Use analysis_runner functions for ALL analysis. Do NOT write standalone scripts.
 
-  Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
+  ## Phase: investigation + validation
 
-  ## Daytime priorities (2026-02-19)
+  For each BTC candidate:
+  1. `from analysis_runner import run_full_investigation, run_full_validation_battery`
+  2. Run investigation first (trade_profile, edge_attribution, regime_decomposition)
+  3. Run full validation battery (12 tests)
+  4. `from report_generator import generate_candidate_report`
+  5. Generate report with results
 
-  **Priority 0 — Deepen Don8h**: entry 35-55, exit 8-18, iv(vw30,tv0.2).
-  Map the full robustness region.
+  W&B tags: project=001, phase=investigation
 
-  **Priority 0 — Year-by-year 2020+**: Top 5 BTC configs year-by-year breakdown
-  2020, 2021, 2022, 2023. Report structural analysis.
-
-  **Priority 1 — Don4h with inv_vol**: entry 80-160, exit 15-40,
-  iv(vw=20-45, tv=0.15-0.30). Large grid to find BTC 4h optimum.
-
-  **Priority 2 — Cost degradation**: Top 3 at 100bps. Report survival.
-
-  Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
-  n_trades(2020+), and neighbor stability analysis for top configs.
+  Output: validation reports in reports/project_001/candidates/
 
 constraints:
   assets: [btc]
@@ -115,8 +110,8 @@ stopping_criteria:
     min_sharpe: 1.0
     min_dsr: 0.95
   budget:
-    max_sessions: 5
-    max_hours: 2
+    max_sessions: 12
+    max_hours: 8
     max_cost_usd: 35
     digest_every: 3
   stall:
@@ -125,7 +120,7 @@ stopping_criteria:
     diversity_threshold: 0.99
 
 session_limits:
-  max_session_minutes: 60
+  max_session_minutes: 360
   max_cost_per_session: 8.0
   min_session_minutes: 5
   max_consecutive_crashes: 3
@@ -138,7 +133,7 @@ gates:
 
 exclusions:
   - "DO NOT explore mean-reversion signals on BTC. Confirmed null result (DSR < 0.05 across all configs)."
-  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for ALL portfolio construction including cross-timeframe and cross-asset. portfolio_combine() now auto-detects the correct ppy for mixed-timeframe portfolios. Do NOT manually combine returns with index.intersection() and compute metrics — this bypasses the PPY guard and produces inflated Sharpe. When computing metrics on any returns series, ALWAYS pass a pandas Series with DatetimeIndex to compute_all_metrics(). NEVER call .values before passing to metrics functions."
+  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
   - "Do NOT proceed to OOS evaluation. Stay in-sample."
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() — never pd.read_parquet()"

@@ -192,6 +192,18 @@ def _build_result(prices, positions, config, n_trials, df, ppy, benchmark_ret=No
     return result
 
 
+def build_strategy(config: dict) -> tuple:
+    """Return (prices, positions, df, ppy) without evaluating metrics.
+
+    Useful for analysis/validation code that needs raw strategy data
+    without running the full eval pipeline.
+    """
+    df, prices, ppy = _load_data(config["asset"], config["timeframe"])
+    positions = _make_signal(prices, config["signal_type"], config.get("signal_params", {}))
+    positions = _apply_sizing(positions, prices, config.get("sizing", "flat"), config.get("sizing_params", {}), ppy)
+    return prices, positions, df, ppy
+
+
 def run(config: dict) -> dict | None:
     """Run one strategy config through full eval pipeline.
 

@@ -1,30 +1,23 @@
 name: eth_strategies_20260218
 objective: |
-  Deep exploration of ETH signal strategies across multiple timeframes.
-  ETH has low correlation with BTC strategies (~0.28 Donchian, ~0.12 Bollinger),
-  making it a genuine portfolio diversifier.
+  Investigation and validation of ETH TIER 1 candidates.
+  Exploration phase is complete. No new parameter sweeps.
 
-  Benchmark: BTC Don4h(30,25) flat Sharpe 1.702@30bps.
-  ETH-specific baseline: ETH buy-and-hold.
+  Candidates: read from configs/project_001/candidates.yaml (ETH entries).
+  Use analysis_runner functions for ALL analysis. Do NOT write standalone scripts.
 
-  Use experiment_runner.run() for all evaluations. Do NOT re-implement signals.
+  ## Phase: investigation + validation
 
-  ## Daytime priorities (2026-02-19)
+  For each ETH candidate:
+  1. `from analysis_runner import run_full_investigation, run_full_validation_battery`
+  2. Run investigation first (trade_profile, edge_attribution, regime_decomposition)
+  3. Run full validation battery (12 tests)
+  4. `from report_generator import generate_candidate_report`
+  5. Generate report with results
 
-  **Priority 0 — Inv_vol sizing sweep**: eth_don8h(72,27) and eth_don8h(83,30)
-  with inverse_vol: tv=0.06-0.30, vw=30-150. Report sized versions.
+  W&B tags: project=001, phase=investigation
 
-  **Priority 0 — Fill 50bps gaps**: All TIER 1 candidates need Sharpe@50bps.
-
-  **Priority 1 — Fine-grid Don4h**: entry 130-150, exit 40-55, both flat and inv_vol.
-
-  **Priority 2 — Coverage gaps**: eth_don2h, eth_bb4h — at least 5 configs each.
-
-  **Priority 2 — Portfolio**: Use portfolio_combine() (supports cross-TF now).
-  Report portfolio Sharpe, MaxDD, sub-periods.
-
-  Output: ranked table by DSR with Sharpe@30, Sharpe@50, MaxDD, sub-periods,
-  corr-to-BTC-benchmark, n_trades(2020+).
+  Output: validation reports in reports/project_001/candidates/
 
 constraints:
   assets: [eth]
@@ -115,8 +108,8 @@ stopping_criteria:
     min_sharpe: 1.0
     min_dsr: 0.95
   budget:
-    max_sessions: 5
-    max_hours: 2
+    max_sessions: 12
+    max_hours: 8
     max_cost_usd: 35
     digest_every: 3
   stall:
@@ -125,7 +118,7 @@ stopping_criteria:
     diversity_threshold: 0.99
 
 session_limits:
-  max_session_minutes: 60
+  max_session_minutes: 360
   max_cost_per_session: 8.0
   min_session_minutes: 5
   max_consecutive_crashes: 3
@@ -138,7 +131,7 @@ gates:
 
 exclusions:
   - "DO NOT add meta-labeling. ETH meta-labeling is a confirmed null result across 4 sessions."
-  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for ALL portfolio construction including cross-timeframe and cross-asset. portfolio_combine() now auto-detects the correct ppy for mixed-timeframe portfolios. Do NOT manually combine returns with index.intersection() and compute metrics — this bypasses the PPY guard and produces inflated Sharpe. When computing metrics on any returns series, ALWAYS pass a pandas Series with DatetimeIndex to compute_all_metrics(). NEVER call .values before passing to metrics functions."
+  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
   - "Do NOT proceed to OOS evaluation. Stay in-sample."
   - "Do not build paper trading infrastructure"
   - "Always use sparky.data.loader.load() — never pd.read_parquet()"
