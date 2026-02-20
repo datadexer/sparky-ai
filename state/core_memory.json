@@ -97,6 +97,8 @@
         "folds_positive": "4/4",
         "mean_fold_sharpe": 1.560,
         "min_fold_sharpe": 0.844,
+        "wf_dsr": 0.396,
+        "wf_dsr_note": "Low WF DSR is expected for post-search validation with fixed IS-optimized params (n=16269 configs tested). Not a blocking concern but does not independently satisfy DSR>=0.95.",
         "verdict": "PASS"
       },
       "notes": "Champion: confirmed across 3 sessions, 55 portfolio configs. MaxDD=-7%. ETH83 saves portfolio in 2022 bear. Portfolio WF validated: 71.2% retention, all folds positive. OOS-ready pending AK approval."

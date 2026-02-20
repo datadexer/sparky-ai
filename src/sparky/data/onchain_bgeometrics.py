@@ -23,6 +23,7 @@ RATE LIMIT STRATEGY (free tier):
 
 import json
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,7 +37,8 @@ from sparky.data.storage import DataStore
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://bitcoin-data.com"
-RATE_LIMIT_STATE_PATH = Path("data/.bgeometrics_rate_limit.json")
+_MODULE_DIR = Path(__file__).resolve().parent
+RATE_LIMIT_STATE_PATH = _MODULE_DIR.parents[2] / "data" / ".bgeometrics_rate_limit.json"
 
 # Map our metric names to BGeometrics API endpoints and response field names.
 # NOTE: Only computed indicators available on free tier.
@@ -70,12 +72,13 @@ class BGeometricsFetcher:
     """
 
     def __init__(self, token: Optional[str] = None, rate_limit_path: Optional[Path] = None):
-        self.token = token
+        self.token = token or os.environ.get("BGEOMETRICS_TOKEN")
         self.session = requests.Session()
         self._rate_limit_path = rate_limit_path or RATE_LIMIT_STATE_PATH
         self._last_request_time = 0.0
         self._request_count = 0
         self._rate_limited = False  # Set to True if we hit 429
+        self._last_hour_reset: Optional[datetime] = None
         self._load_rate_limit_state()
 
     def _load_rate_limit_state(self) -> None:
@@ -85,13 +88,16 @@ class BGeometricsFetcher:
                 with open(self._rate_limit_path) as f:
                     state = json.load(f)
                 self._request_count = state.get("request_count", 0)
-                last_reset = state.get("last_reset_hour")
+                # Support both old field name (last_reset_hour) and new (last_hour_reset)
+                last_reset = state.get("last_hour_reset") or state.get("last_reset_hour")
                 if last_reset:
                     reset_time = datetime.fromisoformat(last_reset)
                     now = datetime.now(timezone.utc)
-                    # Reset hourly counter if we're in a new hour
-                    if now.hour != reset_time.hour or (now - reset_time).total_seconds() > 3600:
+                    if (now - reset_time).total_seconds() > 3600:
                         self._request_count = 0
+                        self._last_hour_reset = now
+                    else:
+                        self._last_hour_reset = reset_time
         except (json.JSONDecodeError, OSError, TypeError) as e:
             logger.warning(f"[DATA] Could not load rate limit state: {e}")
 
@@ -99,9 +105,11 @@ class BGeometricsFetcher:
         """Persist rate limit state to disk."""
         try:
             self._rate_limit_path.parent.mkdir(parents=True, exist_ok=True)
+            now = datetime.now(timezone.utc)
             state = {
                 "request_count": self._request_count,
-                "last_reset_hour": datetime.now(timezone.utc).isoformat(),
+                "last_request_time": now.isoformat(),
+                "last_hour_reset": (self._last_hour_reset or now).isoformat(),
             }
             with open(self._rate_limit_path, "w") as f:
                 json.dump(state, f)

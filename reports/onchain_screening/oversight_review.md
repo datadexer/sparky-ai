@@ -103,9 +103,9 @@ True marginal lift on Donchian portfolio: **+0.05 to +0.13 Sharpe** depending on
 
 4. **DSR FAILS at correct n_trials**: s006 r5 reported DSR=0.984 at n_trials=63 (undercount). Session 6 r6 corrected this: **DSR=0.709 at n_trials=16,369**. The on-chain overlay does NOT pass the multiple testing correction. The +0.128 Sharpe improvement is not statistically significant given total configs tested across all screening sessions.
 
-6. **Walk-forward fragility**: s006 r6 tested 4 chronological folds. 3/4 show positive delta, but fold 4 (2022-10 to 2023-03) shows negative delta (-0.206) — the overlay hurt during late bear / early recovery. This aligns with the fee_ph sign flip concern.
+5. **Walk-forward fragility**: s006 r6 tested 4 chronological folds. 3/4 show positive delta, but fold 4 (2022-10 to 2023-03) shows negative delta (-0.206) — the overlay hurt during late bear / early recovery. This aligns with the fee_ph sign flip concern.
 
-5. **MaxDD unchanged on BTC leg**: On-chain overlays reduce MaxDD only on the combined portfolio (via position sizing). The BTC-only MaxDD stays at -70.6% — the overlay scales position but doesn't avoid the bear entirely.
+6. **MaxDD unchanged on BTC leg**: On-chain overlays reduce MaxDD only on the combined portfolio (via position sizing). The BTC-only MaxDD stays at -70.6% — the overlay scales position but doesn't avoid the bear entirely.
 
 ## Verdict: PROMISING
 

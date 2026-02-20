@@ -220,8 +220,8 @@ class TestFetchMetric:
 
             # Only valid records should be included
             assert len(df) == 2
-            assert df["sopr"].iloc[0] == 1.05
-            assert df["sopr"].iloc[1] == 0.98
+            assert df.loc[pd.Timestamp("2024-01-01", tz="UTC"), "sopr"] == pytest.approx(1.05)
+            assert df.loc[pd.Timestamp("2024-01-05", tz="UTC"), "sopr"] == pytest.approx(0.98)
 
     def test_fetch_metric_removes_duplicate_dates(self, fetcher):
         """Test fetch_metric removes duplicate dates, keeping last value."""
@@ -427,6 +427,36 @@ class TestTokenAuthentication:
 
             call_args = mock_get.call_args
             assert "token" not in call_args[1]["params"]
+
+    def test_token_read_from_env_var(self, monkeypatch, mock_sopr_response):
+        """Test token is read from BGEOMETRICS_TOKEN env var when not passed explicitly."""
+        monkeypatch.setenv("BGEOMETRICS_TOKEN", "env_token_abc")
+        env_fetcher = BGeometricsFetcher()
+        with patch.object(env_fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = mock_sopr_response
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            env_fetcher.fetch_metric("sopr", "2024-01-01", "2024-01-03")
+
+            call_args = mock_get.call_args
+            assert call_args[1]["params"]["token"] == "env_token_abc"
+
+    def test_explicit_token_overrides_env_var(self, monkeypatch, mock_sopr_response):
+        """Test explicit constructor token takes precedence over env var."""
+        monkeypatch.setenv("BGEOMETRICS_TOKEN", "env_token_abc")
+        explicit_fetcher = BGeometricsFetcher(token="explicit_token_xyz")
+        with patch.object(explicit_fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = mock_sopr_response
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            explicit_fetcher.fetch_metric("sopr", "2024-01-01", "2024-01-03")
+
+            call_args = mock_get.call_args
+            assert call_args[1]["params"]["token"] == "explicit_token_xyz"
 
 
 class TestAvailableMetrics:
