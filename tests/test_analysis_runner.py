@@ -41,7 +41,7 @@ def _mock_build_strategy():
 
 @pytest.fixture(autouse=True)
 def _mock_load_data():
-    """Mock _load_data for edge_attribution and target_vol_frontier."""
+    """Mock _load_data and _make_signal for edge_attribution and target_vol_frontier."""
 
     def fake_load(asset, tf):
         rng = np.random.RandomState(42)
@@ -52,11 +52,15 @@ def _mock_load_data():
         df = pd.DataFrame({"close": prices}, index=dates)
         return df, prices, ppy
 
-    with patch(
-        "analysis_runner.experiment_runner._load_data"
-        if hasattr(sys.modules.get("analysis_runner", None), "experiment_runner")
-        else "experiment_runner._load_data",
-        side_effect=fake_load,
+    def fake_signal(prices, signal_type, signal_params):
+        pos = pd.Series(0.0, index=prices.index)
+        for i in range(0, len(prices), 40):
+            pos.iloc[i : min(i + 30, len(prices))] = 1.0
+        return pos
+
+    with (
+        patch("experiment_runner._load_data", side_effect=fake_load),
+        patch("experiment_runner._make_signal", side_effect=fake_signal),
     ):
         yield
 
@@ -166,6 +170,52 @@ class TestErrorHandling:
         r = ar._safe(_always_fails, {})
         assert r["status"] == "error"
         assert "test error" in r["error"]
+
+
+class TestBootstrapMaxddCalmar:
+    def test_returns_maxdd_and_calmar_percentiles(self):
+        r = ar.bootstrap_sharpe(SAMPLE_CONFIG, n_samples=200, block_size=10)
+        assert r["status"] == "ok"
+        assert "maxdd_percentiles" in r
+        assert "calmar_percentiles" in r
+        assert 5 in r["maxdd_percentiles"]
+        assert 95 in r["maxdd_percentiles"]
+        # MaxDD should be negative
+        assert r["maxdd_percentiles"][50] < 0
+        # Calmar should exist
+        assert 50 in r["calmar_percentiles"]
+
+
+class TestSubsampleBlockDropping:
+    def test_preserves_temporal_ordering(self):
+        """Block-based dropping must preserve temporal order of returns."""
+        r = ar.subsample_stability(SAMPLE_CONFIG, drop_rates=[0.3], repetitions=5)
+        assert r["status"] == "ok"
+        assert 0.3 in r["results"]
+        assert r["results"][0.3]["mean"] != 0  # non-trivial result
+
+
+class TestTopDrawdowns:
+    def test_synthetic_known_drawdown(self):
+        """Verify start/trough/recovery on a synthetic series with known drawdown."""
+        # Build a series: up, then down, then recover
+        idx = pd.date_range("2020-01-01", periods=100, freq="D", tz="UTC")
+        dd_values = np.zeros(100)
+        # Drawdown from day 20-40, trough at day 30
+        for i in range(20, 41):
+            dd_values[i] = -0.01 * (10 - abs(i - 30))  # peaks at -0.10 at day 30
+        dd_series = pd.Series(dd_values, index=idx)
+        results = ar._top_drawdowns(dd_series, n=1)
+        assert len(results) == 1
+        # Trough should be at day 30 (deepest point)
+        trough_date = pd.Timestamp(results[0]["trough"])
+        assert trough_date == idx[30]
+        # Start should be before trough (last zero before drawdown)
+        start_date = pd.Timestamp(results[0]["start"])
+        assert start_date < trough_date
+        # End should be after trough (first recovery after drawdown)
+        end_date = pd.Timestamp(results[0]["end"])
+        assert end_date > trough_date
 
 
 class TestFullBattery:

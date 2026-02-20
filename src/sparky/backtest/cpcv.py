@@ -42,8 +42,6 @@ def cpcv_paths(returns, n_groups=6, purge_days=5, ppy=365):
         # Purge boundaries (skip first purge_days of each non-first block)
         if i > 0:
             start += purge_days
-        if i < n_groups - 1:
-            end -= purge_days
         if start < end:
             blocks.append(returns[start:end])
         else:

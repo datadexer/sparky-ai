@@ -55,6 +55,20 @@ def test_purge_removes_observations():
     assert purged_obs < nopurge_obs
 
 
+def test_purge_amount_correct():
+    """After fix: only non-first blocks get start-purged, no end-purge."""
+    rng = np.random.RandomState(42)
+    returns = rng.randn(600) * 0.01 + 0.001
+    r = cpcv_paths(returns, n_groups=6, purge_days=10, ppy=365)
+    # block_size=100. Non-first blocks (1-5) each lose 10 from start.
+    # Expected block sizes: block0=100, blocks1-4=90, block5=100
+    # Total obs in full set = 100 + 4*90 + 100 = 560
+    # Each path uses 3 blocks. Average path obs should reflect this.
+    avg_obs = np.mean([p["n_obs"] for p in r["paths"]])
+    # With 6 groups, 3 test blocks per path: avg ~280 obs per path (3 blocks, mix of 100 and 90)
+    assert 250 < avg_obs < 310
+
+
 def test_too_few_observations():
     """Should raise ValueError for tiny series."""
     returns = np.array([0.01, 0.02, 0.03])

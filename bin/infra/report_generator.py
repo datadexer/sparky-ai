@@ -499,7 +499,7 @@ def generate_project_summary(project_id, all_candidate_results, output_dir):
 <h1>Project: {project_id}</h1>
 <h2>Candidate Leaderboard</h2>
 <table>
-<tr><th>Candidate</th><th>Sharpe@30</th><th>Sharpe@50</th><th>DSR</th>
+<tr><th>Candidate</th><th>Sharpe@30</th><th>Sharpe@50</th>
 <th>PBO</th><th>Bootstrap 5th</th><th>MaxDD</th><th>Verdict</th></tr>
 """
 
@@ -511,22 +511,22 @@ def generate_project_summary(project_id, all_candidate_results, output_dir):
 
         sharpe_30 = _get_nested(tests, "stress_test", "results", 30, "sharpe")
         sharpe_50 = _get_nested(tests, "stress_test", "results", 50, "sharpe")
-        dsr = _get_nested(data, "dsr")
+        # DSR column removed — restore when computed at battery level with correct trial count
         pbo = _get_nested(tests, "cpcv_validate", "pbo")
         boot5 = _get_nested(tests, "bootstrap_sharpe", "percentiles", 5)
         maxdd = _get_nested(tests, "drawdown_analysis", "max_drawdown")
         verdict = val.get("overall_verdict", "N/A")
 
-        rows.append((cid, sharpe_30, sharpe_50, dsr, pbo, boot5, maxdd, verdict))
+        rows.append((cid, sharpe_30, sharpe_50, pbo, boot5, maxdd, verdict))
 
     # Sort by Sharpe@30 descending
     rows.sort(key=lambda r: r[1] if isinstance(r[1], (int, float)) else -999, reverse=True)
 
-    for cid, s30, s50, dsr, pbo, b5, mdd, verdict in rows:
+    for cid, s30, s50, pbo, b5, mdd, verdict in rows:
         badge_class = {"PASS": "pass", "FAIL": "fail", "CONDITIONAL": "conditional"}.get(verdict, "error")
         html += f"""<tr>
 <td><a href="candidates/{cid}/report.html">{cid}</a></td>
-<td>{_fmt(s30)}</td><td>{_fmt(s50)}</td><td>{_fmt(dsr)}</td>
+<td>{_fmt(s30)}</td><td>{_fmt(s50)}</td>
 <td>{_fmt(pbo)}</td><td>{_fmt(b5)}</td><td>{_fmt(mdd, pct=True)}</td>
 <td><span class="badge badge-{badge_class}">{verdict}</span></td>
 </tr>\n"""

@@ -1,0 +1,45 @@
+{
+  "last_updated": "2026-02-19T00:00:00Z",
+  "null_results": [
+    {
+      "id": "regime_donchian_v2_v3",
+      "description": "Daily regime-aware Donchian — HMM and vol regime overlays on daily BTC Donchian",
+      "configs_tested": 3922,
+      "sessions": 4,
+      "best_sharpe": 1.777,
+      "best_dsr": 0.730,
+      "reason": "DSR never exceeded 0.95 at N=1552+. Statistical bar too high for daily data resolution. 2022 bear is structural for long-only.",
+      "recommendation": "Do not continue daily-data regime sweeps. Use hourly data for more statistical power.",
+      "artifacts": ["results/regime_donchian/"]
+    },
+    {
+      "id": "xgboost_hourly_features",
+      "description": "XGBoost on hourly feature matrix — 23-88 features, gradient boosted classification",
+      "configs_tested": 88,
+      "best_sharpe": 1.19,
+      "best_dsr": null,
+      "reason": "52.9% accuracy. Feature expansion 58->88 features did not achieve statistical significance.",
+      "recommendation": "Feature engineering needs fundamentally different approach, not more features of the same type.",
+      "artifacts": []
+    },
+    {
+      "id": "kelly_sizing_meta_labeled",
+      "description": "Kelly criterion sizing on meta-labeled Donchian — calibrated and uncalibrated variants",
+      "configs_tested": 267,
+      "sessions": 1,
+      "best_sharpe": -0.10,
+      "reason": "Meta-model accuracy 56% makes Kelly bets tiny. Edge is in trade filtering, not probability-based sizing. Platt calibration collapses probability spread (std=0.032).",
+      "recommendation": "Kelly requires higher accuracy meta-models. Use inverse_vol sizing instead.",
+      "artifacts": ["results/layer4_sizing_donchian_20260218/"]
+    },
+    {
+      "id": "eth_bollinger_4h",
+      "description": "ETH Bollinger Band strategies on 4h timeframe",
+      "configs_tested": null,
+      "best_sharpe": 2.156,
+      "reason": "Dominated by Donchian on all metrics. Not a competitive standalone signal type for ETH.",
+      "recommendation": "Do not pursue Bollinger as primary signal for ETH.",
+      "artifacts": []
+    }
+  ]
+}

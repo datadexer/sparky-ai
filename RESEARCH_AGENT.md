@@ -362,3 +362,93 @@ sub-period confirmation.
 | TIER 3 | Sharpe >= 0.4, shows edge | Keep iterating |
 | TIER 4 | Sharpe < 0.4 after 5+ configs | Pivot approach |
 | TIER 5 | Sharpe < 0.2 after 10+ configs, 2+ families | Abandon |
+
+## Investigation Decision Framework
+
+When the orchestrator assigns a candidate for investigation:
+
+1. Load candidate config from `configs/project_001/candidates.yaml`
+2. Run `run_full_investigation(config)` from `analysis_runner`
+3. Evaluate results:
+
+**Per-candidate evaluation rules:**
+- **Signal edge** (from edge_attribution): `signal_edge > 0.3` = signal is meaningful
+- **Sizing edge** (from edge_attribution): `sizing_edge > 0.1` = sizing adds value
+- **Regime resilience** (from regime_decomposition): Sharpe > 0 in bear regime = survives downturns
+- **Crisis performance**: negative total return in ≥2 crisis events = fragile
+- **Trade profile**: win_rate < 0.40 OR profit_factor < 1.0 = edge is illusory
+- **High MaxDD with flat sizing**: if MaxDD < -30% and sizing=flat, flag for inverse_vol retest
+
+**Actions based on investigation:**
+- All checks pass → mark candidate `ready_for_validation`
+- Signal edge < 0.3 → mark `null_result`, log to null registry
+- Bear regime Sharpe < -1.0 → mark `regime_fragile`, note in core memory
+- High MaxDD + flat sizing → create variant with inverse_vol, add to candidates
+
+## Validation Decision Framework
+
+When the orchestrator assigns a candidate for validation:
+
+1. Load candidate config from `configs/project_001/candidates.yaml`
+2. Run `run_full_validation_battery(config)` from `analysis_runner`
+3. Classify result:
+
+**Hard fail (blocks advancement):**
+- Breakeven cost < 70 bps
+- Bootstrap Sharpe 5th percentile < 0.5
+- Bootstrap MaxDD 5th percentile < -0.40
+- CPCV PBO > 0.50
+- Max drawdown < -0.45
+
+**Soft fail (proceed with caution):**
+- Stress test Sharpe@50bps < 1.0
+- Bootstrap 5th percentile < 0.8
+- Walk-forward fraction positive < 80% in any window
+- Subsample degrades > 20%
+- CPCV PBO > 0.30
+- Rolling stability has flagged periods
+- ≥2 sub-periods with negative Sharpe
+- Correlation with B&H > 0.8
+
+**Classification:**
+- 0 hard fails, 0 soft fails → `PASS` → ready for OOS (requires AK approval)
+- 0 hard fails, 1+ soft fails → `CONDITIONAL` → investigate soft fails, may still advance
+- 1+ hard fails → `FAIL` → do not advance, log reasons
+
+**After validation:**
+- Update `state/core_memory.json` with validation result
+- Generate report via `generate_candidate_report()`
+- If PASS: write `GATE_REQUEST.md` requesting OOS evaluation approval
+- If FAIL: mark candidate and note which tests failed
+
+## Session Lifecycle
+
+**On session start:**
+1. Read `state/core_memory.json` for current research state
+2. Read `state/null_results_registry.json` to avoid repeating failed approaches
+3. Check orchestrator directive for assigned work
+4. Load relevant candidate configs from `configs/project_001/candidates.yaml`
+
+**During session:**
+- Use `experiment_runner` functions for all experiment work
+- Log sweep results via `ExperimentTracker.log_sweep()`
+- Log validated results via `ExperimentTracker.log_experiment()`
+- Save artifacts to `results/<directive_name>/`
+
+**On session end:**
+1. Write final results to `results/<directive_name>/`
+2. Update `state/core_memory.json` with new findings (candidate status changes, new metrics)
+3. If null result found: append to `state/null_results_registry.json`
+4. Exit immediately — do not tidy, refactor, or interact with git
+
+## Terminology and Mandates
+
+- **IS**: In-sample (2019-07-01 to holdout boundary). All research uses IS only.
+- **OOS**: Out-of-sample (holdout boundary onward). Off-limits without AK written approval.
+- **DSR**: Deflated Sharpe Ratio. Primary evaluation metric. Accounts for multiple testing.
+- **PBO**: Probability of Backtest Overfitting. From CPCV analysis.
+- **ppy**: Periods per year. 365 (daily), 2190 (4h), 1095 (8h), 8760 (hourly).
+- **n_trials**: Cumulative configs tested. Critical for DSR — must be tracked across sessions.
+- **GATE_REQUEST**: A file written to project root requesting human oversight intervention.
+- **Null result**: A conclusively failed approach. Must be registered to prevent repetition.
+- **Core memory**: Persistent research state in `state/core_memory.json`. Updated each session.
