@@ -54,7 +54,7 @@ class TestOrchestratorRefusesOosEnv:
                 orch.run()
 
     def test_orchestrator_ok_without_oos_env(self):
-        """Verify env check doesn't fire when var is unset (it'll fail on lock, that's fine)."""
+        """Verify env check doesn't fire when var is unset."""
         from sparky.workflow.orchestrator import ResearchDirective, ResearchOrchestrator
 
         directive = ResearchDirective(name="test_no_oos", objective="test")
@@ -62,14 +62,12 @@ class TestOrchestratorRefusesOosEnv:
 
         env = os.environ.copy()
         env.pop("SPARKY_OOS_ENABLED", None)
-        with patch.dict(os.environ, env, clear=True):
-            # Will fail on lock or session launch, but NOT on the OOS check
-            try:
-                orch.run()
-            except RuntimeError as e:
-                assert "SPARKY_OOS_ENABLED" not in str(e)
-            except Exception:  # noqa: S110
-                pass  # Any other failure is fine — we just verify OOS check doesn't fire
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch.object(orch, "_acquire_lock", side_effect=RuntimeError("mock lock")),
+        ):
+            result = orch.run()
+            assert result == 1  # lock failure returns 1, but OOS check didn't fire
 
 
 class TestHoldoutDirectoryPermissions:
