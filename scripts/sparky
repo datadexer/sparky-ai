@@ -509,31 +509,18 @@ def _load_all_orch_states() -> list[dict]:
 def _reconstruct_orch_state_from_wandb() -> dict | None:
     """Reconstruct orchestrator state from wandb runs (read-only, does not save)."""
     try:
-        # Find the active directive to get tags
-        directives_dir = PROJECT_ROOT / "directives"
-        active_link = directives_dir / "active.yaml"
-        if not active_link.exists():
+        phase_tags = _get_phase_tags()
+        if not phase_tags:
             return None
 
-        import yaml
-
-        with open(active_link) as f:
-            directive_data = yaml.safe_load(f)
-
-        name = directive_data.get("name", "")
-        tags = directive_data.get("wandb_tags", [])
-        if not name:
-            return None
-
+        # Use the first available phase with tags
         from sparky.workflow.orchestrator import OrchestratorState
 
-        state = OrchestratorState.reconstruct_from_wandb(name, tags)
-        if state is None:
-            return None
-
-        # Read-only: return dict for display without saving to disk.
-        # Budget/cost data is not available in wandb, so this is a partial view.
-        return state.to_dict()
+        for name, tags in phase_tags.items():
+            state = OrchestratorState.reconstruct_from_wandb(name, tags)
+            if state is not None:
+                return state.to_dict()
+        return None
     except Exception:
         return None
 
@@ -551,13 +538,20 @@ def _get_service_orch_map() -> dict[str, str]:
             text = svc_file.read_text()
             for line in text.splitlines():
                 line = line.strip()
-                if line.startswith("ExecStart=") and "directives/" in line:
-                    yaml_path = PROJECT_ROOT / "directives" / line.split("directives/", 1)[1]
-                    if yaml_path.exists():
-                        with open(yaml_path) as f:
-                            d = _yaml.safe_load(f)
-                        if d and "name" in d:
-                            result[d["name"]] = svc_file.stem
+                if not line.startswith("ExecStart="):
+                    continue
+                # Extract YAML path from ExecStart (supports configs/ and directives/)
+                yaml_path = None
+                for prefix in ("configs/", "directives/"):
+                    if prefix in line:
+                        rel = prefix + line.split(prefix, 1)[1]
+                        yaml_path = PROJECT_ROOT / rel
+                        break
+                if yaml_path and yaml_path.exists():
+                    with open(yaml_path) as f:
+                        d = _yaml.safe_load(f)
+                    if d and "name" in d:
+                        result[d["name"]] = svc_file.stem
         except Exception:
             continue
     return result
@@ -589,24 +583,43 @@ def _get_service_uptime_minutes(service_name: str) -> float | None:
         return None
 
 
-def _get_directive_tags() -> dict[str, list[str]]:
-    """Map orch name -> wandb_tags from directive YAMLs."""
+def _get_phase_tags() -> dict[str, list[str]]:
+    """Map orch name -> wandb_tags from phase configs and archived directives."""
     import yaml as _yaml
 
     result = {}
-    directives_dir = PROJECT_ROOT / "directives"
-    if not directives_dir.exists():
-        return result
-    for yf in directives_dir.glob("*.yaml"):
-        if yf.name == "active.yaml":
-            continue
-        try:
-            with open(yf) as f:
-                d = _yaml.safe_load(f)
-            if d and "name" in d and "wandb_tags" in d:
-                result[d["name"]] = d["wandb_tags"]
-        except Exception:
-            continue
+
+    # Scan configs/*/project.yaml → resolve each phase's config file
+    configs_dir = PROJECT_ROOT / "configs"
+    if configs_dir.exists():
+        for proj_yaml in configs_dir.glob("*/project.yaml"):
+            try:
+                with open(proj_yaml) as f:
+                    proj = _yaml.safe_load(f)
+                if not proj or "phases" not in proj:
+                    continue
+                for _phase_name, phase_info in proj["phases"].items():
+                    cfg_file = proj_yaml.parent / phase_info.get("config", "")
+                    if cfg_file.exists():
+                        with open(cfg_file) as f:
+                            d = _yaml.safe_load(f)
+                        if d and "name" in d and "wandb_tags" in d:
+                            result[d["name"]] = d["wandb_tags"]
+            except Exception:
+                continue
+
+    # Scan directives/archive/ for backward compat
+    archive_dir = PROJECT_ROOT / "directives" / "archive"
+    if archive_dir.exists():
+        for yf in archive_dir.glob("*.yaml"):
+            try:
+                with open(yf) as f:
+                    d = _yaml.safe_load(f)
+                if d and "name" in d and "wandb_tags" in d:
+                    result[d["name"]] = d["wandb_tags"]
+            except Exception:
+                continue
+
     return result
 
 
@@ -652,7 +665,7 @@ def cmd_orch_all(args):
     show_all = getattr(args, "all", False)
     wandb_runs = _get_wandb_runs()
     svc_map = _get_service_orch_map()
-    dir_tags = _get_directive_tags()
+    dir_tags = _get_phase_tags()
 
     active_states = []
     completed_states = []

@@ -18,7 +18,7 @@ from typing import Any, Optional
 import yaml
 
 from sparky.oversight.holdout_guard import get_policy_hash
-from sparky.workflow.engine import (
+from sparky.workflow.session import (
     LOG_DIR,
     PROJECT_ROOT,
     STATE_DIR,
@@ -135,6 +135,7 @@ class ResearchDirective:
     wandb_tags: list[str] = field(default_factory=list)
     gates: list[GateSpec] = field(default_factory=list)
     exclusions: list[str] = field(default_factory=list)
+    project_dir: Optional[Path] = None
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "ResearchDirective":
@@ -195,6 +196,12 @@ class ResearchDirective:
         for g in data.get("gates", []):
             gates.append(GateSpec(trigger=g.get("trigger", ""), action=g.get("action", "pause_and_alert")))
 
+        # Auto-detect project_dir if YAML lives under configs/*/
+        project_dir = None
+        resolved = path.resolve()
+        if resolved.parent.parent.name == "configs":
+            project_dir = resolved.parent
+
         return cls(
             name=data["name"],
             objective=data["objective"],
@@ -205,6 +212,7 @@ class ResearchDirective:
             wandb_tags=data.get("wandb_tags", []),
             gates=gates,
             exclusions=data.get("exclusions", []),
+            project_dir=project_dir,
         )
 
 
@@ -901,7 +909,14 @@ class ResearchOrchestrator:
         )
         parts.append("")
 
-        # Reminder: costs and git rules are in RESEARCH_AGENT.md
+        # Project dir hint
+        if d.project_dir:
+            parts.append(
+                f"## Project Directory\n"
+                f"This phase belongs to project at `{d.project_dir.relative_to(PROJECT_ROOT)}/`.\n"
+                f"Candidates config: `{d.project_dir.relative_to(PROJECT_ROOT)}/candidates.yaml`"
+            )
+            parts.append("")
 
         # Stuck protocol
         parts.append(

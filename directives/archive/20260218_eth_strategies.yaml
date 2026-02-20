@@ -1,0 +1,146 @@
+name: eth_strategies_20260218
+objective: |
+  Investigation and validation of ETH TIER 1 candidates.
+  Exploration phase is complete. No new parameter sweeps.
+
+  Candidates: read from configs/project_001/candidates.yaml (ETH entries).
+  Use analysis_runner functions for ALL analysis. Do NOT write standalone scripts.
+
+  ## Phase: investigation + validation
+
+  For each ETH candidate:
+  1. `from analysis_runner import run_full_investigation, run_full_validation_battery`
+  2. Run investigation first (trade_profile, edge_attribution, regime_decomposition)
+  3. Run full validation battery (12 tests)
+  4. `from report_generator import generate_candidate_report`
+  5. Generate report with results
+
+  W&B tags: project=001, phase=investigation
+
+  Output: validation reports in reports/project_001/candidates/
+
+constraints:
+  assets: [eth]
+  timeframes: [2h, 4h, 8h]
+  gpu_required: false
+  transaction_costs_bps: 30
+  n_trials_start: 627
+  n_trials_cumulative: true
+
+strategy_space:
+  - family: eth_donchian_4h_deep
+    description: >
+      Complete Don4h validation. Entry 100-180, exit 35-55.
+      Test both flat and inverse_vol sizing.
+    priority: 0
+    parameter_ranges:
+      entry_period: [100, 120, 140, 160, 180]
+      exit_period: [35, 40, 45, 50, 55]
+      sizing: [flat, inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.2, 0.3, 0.4]
+
+  - family: eth_invvol_validation
+    description: >
+      Apply inv_vol to top 3 flat Don8h configs (72/27, 83/30, 83/33).
+      Don8h MaxDD -39% should drop with inv_vol.
+    priority: 0
+    parameter_ranges:
+      entry_period: [72, 83]
+      exit_period: [27, 30, 33]
+      sizing: [inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.15, 0.2, 0.3]
+
+  - family: eth_btc_portfolio
+    description: >
+      Portfolio combination: BTC Don8h(40,10) iv(vw30,tv0.2) at 50%
+      + best ETH inv_vol at 50%. Use portfolio_combine().
+    priority: 2
+    parameter_ranges:
+      btc_weight: [0.5]
+      eth_weight: [0.5]
+
+  - family: eth_donchian_8h_raw
+    description: >
+      Deep sweep of Donchian on ETH 8h. Entry 20-100, exit 10-40.
+      Test both flat and inverse_vol sizing (with correct periods_per_year).
+    priority: 1
+    parameter_ranges:
+      entry_period: [20, 30, 40, 50, 60, 80, 100]
+      exit_period: [10, 15, 20, 25, 30, 40]
+      sizing: [flat, inverse_vol]
+      vol_window: [20, 30, 45]
+      target_vol: [0.2, 0.3, 0.4]
+
+  - family: eth_donchian_2h_raw
+    description: >
+      Validate whether 2h Donchian works for ETH like it does for BTC.
+    priority: 3
+    parameter_ranges:
+      entry_period: [40, 60, 80, 100]
+      exit_period: [20, 30, 40]
+      sizing: [flat, inverse_vol]
+
+  - family: eth_bollinger_8h_raw
+    description: >
+      Bollinger breakout on ETH 8h. Low correlation with Donchian.
+    priority: 3
+    parameter_ranges:
+      period: [15, 20, 30, 40]
+      num_std: [1.5, 2.0, 2.5]
+      hold_periods: [5, 10, 20]
+      sizing: [flat, inverse_vol]
+
+  - family: eth_bollinger_2h_raw
+    description: >
+      Untested: Bollinger breakout on ETH 2h.
+    priority: 4
+    parameter_ranges:
+      period: [20, 30, 40]
+      num_std: [1.5, 2.0, 2.5]
+      hold_periods: [10, 20, 40]
+      sizing: [flat]
+
+stopping_criteria:
+  stop_on_success: false
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 12
+    max_hours: 8
+    max_cost_usd: 35
+    digest_every: 3
+  stall:
+    sessions_without_improvement: 8
+    improvement_threshold: 0.01
+    diversity_threshold: 0.99
+
+session_limits:
+  max_session_minutes: 360
+  max_cost_per_session: 8.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [eth_strategies, 20260218, agent_a]
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "DO NOT add meta-labeling. ETH meta-labeling is a confirmed null result across 4 sessions."
+  - "Use experiment_runner.sweep() for parameter sweeps, run_custom_signal() for novel signals, portfolio_combine() for multi-strategy portfolios. Do not re-implement data loading, cost models, metrics, sub-period analysis, or W&B logging in experiment scripts."
+  - "Do NOT proceed to OOS evaluation. Stay in-sample."
+  - "Do not build paper trading infrastructure"
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics and report DSR"
+  - "Report DSR at three levels: per-family n_trials, per-asset n_trials, and global n_trials. Use per-family DSR for candidate ranking."
+  - "Always include transaction costs — report Sharpe at BOTH 30 bps and 50 bps"
+  - "n_trials starts at 627. Increment for every config tested."
+  - "Sub-period validation mandatory: full IS, 2017-2023, 2020-2023"
+  - "Minimum 30 trades on the 2020-2023 sub-period"
+  - "Compare every result against ETH buy-and-hold and BTC Donchian benchmark"
+  - "Compute pairwise return correlation with BTC benchmark for diversification"
+  - "periods_per_year: 4380 (2h), 2190 (4h), 1095 (8h). Never use 252 or 365 for intraday."

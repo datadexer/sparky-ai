@@ -315,7 +315,7 @@ class TestIdleLoopConstants:
     """Test the idle loop detection patterns from engine.py."""
 
     def test_idle_phrases_match(self):
-        from sparky.workflow.engine import IDLE_LOOP_PHRASES
+        from sparky.workflow.session import IDLE_LOOP_PHRASES
 
         assert IDLE_LOOP_PHRASES.search("The session is done.")
         assert IDLE_LOOP_PHRASES.search("No further action needed.")
@@ -325,7 +325,7 @@ class TestIdleLoopConstants:
         assert IDLE_LOOP_PHRASES.search("The work is complete now.")
 
     def test_idle_phrases_no_false_positive(self):
-        from sparky.workflow.engine import IDLE_LOOP_PHRASES
+        from sparky.workflow.session import IDLE_LOOP_PHRASES
 
         assert not IDLE_LOOP_PHRASES.search("Running experiment sweep...")
         assert not IDLE_LOOP_PHRASES.search("Training XGBoost model")
@@ -382,7 +382,7 @@ class TestExtraEnv:
         """Verify the function signature includes extra_env."""
         import inspect
 
-        from sparky.workflow.engine import launch_claude_session
+        from sparky.workflow.session import launch_claude_session
 
         sig = inspect.signature(launch_claude_session)
         assert "extra_env" in sig.parameters
@@ -392,7 +392,7 @@ class TestExtraEnv:
         """Verify the function signature includes disallowed_tools."""
         import inspect
 
-        from sparky.workflow.engine import launch_claude_session
+        from sparky.workflow.session import launch_claude_session
 
         sig = inspect.signature(launch_claude_session)
         assert "disallowed_tools" in sig.parameters
