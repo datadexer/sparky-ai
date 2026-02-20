@@ -956,7 +956,7 @@ class ResearchOrchestrator:
             logger.warning(f"Failed to query session results: {e}")
             return {"best_sharpe": None, "best_dsr": None, "run_ids": [], "configs": []}
 
-    def _build_session_prompt(self, session_number: int, context: str) -> str:
+    def _build_session_prompt(self, session_number: int, context: str, phase_objective: str | None = None) -> str:
         """Build the prompt for a Claude session."""
         d = self.directive
         session_tag = f"session_{session_number:03d}"
@@ -981,7 +981,7 @@ class ResearchOrchestrator:
             "A bad session runs 1 sweep and exits. Log results to wandb after EACH round "
             "so progress is captured even if the session is interrupted.",
             "",
-            f"## Objective\n{d.objective}",
+            f"## Objective\n{phase_objective or d.objective}",
             "",
         ]
 
@@ -1100,6 +1100,14 @@ class ResearchOrchestrator:
                     GATE_RESPONSE_PATH.unlink(missing_ok=True)
                     # Also clean up gate request
                     GATE_REQUEST_PATH.unlink(missing_ok=True)
+                    # Clear pending human review flag to prevent re-gate loop
+                    if state.program_state and isinstance(state.program_state, dict):
+                        from sparky.workflow.program import PhaseState
+
+                        ps = PhaseState.from_dict(state.program_state)
+                        if ps.pending_human_review:
+                            ps.pending_human_review = False
+                            state.program_state = ps.to_dict()
                     state.save(self.state_dir)
                 else:
                     logger.info(f"Orchestrator is {state.status}. Use 'sparky orch respond' to resume.")
@@ -1127,6 +1135,7 @@ class ResearchOrchestrator:
                 # Program mode: phase transitions
                 if self.project is not None and stop_reason is None:
                     from sparky.workflow.program import (
+                        PHASE_DONE,
                         PhaseState,
                         evaluate_phase_transition,
                         extract_coverage,
@@ -1153,6 +1162,22 @@ class ResearchOrchestrator:
 
                     # Check phase transition
                     next_phase = evaluate_phase_transition(self.project, phase_state, core_mem)
+                    if next_phase == PHASE_DONE:
+                        phase_state.phase_history.append(
+                            {
+                                "phase": phase_state.current_phase,
+                                "sessions": phase_state.phase_session_count,
+                                "outcome": "completed",
+                            }
+                        )
+                        state.program_state = phase_state.to_dict()
+                        state.status = "done"
+                        state.save(self.state_dir)
+                        send_alert(
+                            "INFO",
+                            f"Project '{self.project.name}' completed all phases",
+                        )
+                        return 0
                     if next_phase is not None:
                         phase_state.phase_history.append(
                             {
@@ -1178,45 +1203,6 @@ class ResearchOrchestrator:
                         state.gate_message = f"Phase '{phase_state.current_phase}' requires human review"
                         state.save(self.state_dir)
                         send_alert("INFO", state.gate_message)
-                        return 0
-
-                    # Phase-specific session limit check
-                    phase_cfg = self.project.phases[phase_state.current_phase]
-                    if phase_state.phase_session_count >= phase_cfg.max_sessions:
-                        if phase_cfg.next_phase is None:
-                            state.status = "done"
-                            state.save(self.state_dir)
-                            send_alert(
-                                "INFO",
-                                f"Project '{self.project.name}' completed",
-                            )
-                            return 0
-                        # Force transition
-                        phase_state.phase_history.append(
-                            {
-                                "phase": phase_state.current_phase,
-                                "sessions": phase_state.phase_session_count,
-                                "outcome": "max_sessions",
-                            }
-                        )
-                        phase_state.current_phase = phase_cfg.next_phase
-                        phase_state.phase_session_count = 0
-                        phase_state.coverage_status = {}
-                        state.program_state = phase_state.to_dict()
-                        state.save(self.state_dir)
-                        send_alert(
-                            "WARN",
-                            f"Phase forced transition (max sessions): → {phase_cfg.next_phase}",
-                        )
-
-                    # Terminal phase completed check
-                    if phase_state.current_phase not in self.project.phases:
-                        state.status = "done"
-                        state.save(self.state_dir)
-                        send_alert(
-                            "INFO",
-                            f"Project '{self.project.name}' completed all phases",
-                        )
                         return 0
 
                     state.program_state = phase_state.to_dict()
@@ -1254,7 +1240,15 @@ class ResearchOrchestrator:
 
                 # Build prompt
                 session_number = state.session_count + 1
-                prompt = self._build_session_prompt(session_number, context)
+                phase_objective = None
+                if self.project is not None:
+                    from sparky.workflow.program import PhaseState as _PS
+
+                    ps = _PS.from_dict(state.program_state or {})
+                    phase_cfg = self.project.phases.get(ps.current_phase)
+                    if phase_cfg:
+                        phase_objective = phase_cfg.objective
+                prompt = self._build_session_prompt(session_number, context, phase_objective=phase_objective)
 
                 # Launch session
                 session_tag = f"session_{session_number:03d}"

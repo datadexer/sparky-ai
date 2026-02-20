@@ -16,6 +16,8 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+PHASE_DONE = "__PHASE_DONE__"
+
 
 # ── Safe access helpers ──────────────────────────────────────────────────
 
@@ -153,10 +155,15 @@ class ResearchProject:
                 elimination_rules=phase_data.get("elimination_rules"),
             )
 
-        # Validate next_phase references
+        # Validate next_phase references and stall_policy
         for pc in phases.values():
             if pc.next_phase is not None and pc.next_phase not in phases:
                 raise ValueError(f"Phase '{pc.name}' references unknown next_phase '{pc.next_phase}'")
+            stall_keys = [k for k in pc.stall_policy if k.startswith("sessions_without")]
+            if len(stall_keys) > 1:
+                raise ValueError(
+                    f"Phase '{pc.name}' stall_policy has multiple sessions_without* keys: {stall_keys}. Only one is supported."
+                )
 
         return cls(
             name=prog["name"],
@@ -192,7 +199,7 @@ class ResearchProject:
             strategy_space=[],
             stopping_criteria=StoppingCriteria(
                 stop_on_success=False,
-                max_sessions=pc.max_sessions * len(self.phases),
+                max_sessions=pc.max_sessions * len(self.phases),  # Global budget ceiling; phase-level limits control
                 max_cost_usd=self.budget_cap_usd,
                 max_hours=self.max_calendar_days * 24.0,
             ),
@@ -255,7 +262,7 @@ def evaluate_phase_transition(
         logger.info(
             f"Phase '{phase_state.current_phase}' hit max_sessions ({phase_cfg.max_sessions}), forcing transition"
         )
-        return phase_cfg.next_phase
+        return phase_cfg.next_phase if phase_cfg.next_phase is not None else PHASE_DONE
 
     # Check coverage requirements
     coverage = extract_coverage(core_memory, phase_state.current_phase)
@@ -283,7 +290,7 @@ def evaluate_phase_transition(
         phase_state.pending_human_review = True
         return None
 
-    return phase_cfg.next_phase
+    return phase_cfg.next_phase if phase_cfg.next_phase is not None else PHASE_DONE
 
 
 def check_stall(

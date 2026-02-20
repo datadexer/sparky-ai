@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from sparky.workflow.program import (
+    PHASE_DONE,
     PhaseConfig,
     PhaseState,
     ResearchProject,
@@ -239,13 +240,36 @@ class TestPhaseTransitions:
         assert result is None
         assert ps.pending_human_review is True
 
-    def test_terminal_phase_max_sessions(self, tmp_path):
+    def test_terminal_phase_returns_phase_done(self, tmp_path):
         path = _make_program_yaml(tmp_path)
         prog = ResearchProject.from_yaml(path)
         # validate has next_phase=None, at max_sessions=5
         ps = PhaseState(current_phase="validate", phase_session_count=5)
         result = evaluate_phase_transition(prog, ps, {})
-        assert result is None  # next_phase is None
+        assert result == PHASE_DONE
+
+    def test_terminal_phase_criteria_met_returns_phase_done(self, tmp_path):
+        """Terminal phase with all criteria met returns PHASE_DONE."""
+        path = tmp_path / "terminal.yaml"
+        with open(path, "w") as f:
+            yaml.dump(
+                {
+                    "program": {
+                        "name": "test_terminal",
+                        "phases": {
+                            "explore": {"objective": "Explore", "next_phase": "report"},
+                            "report": {"objective": "Report results", "min_sessions": 1, "max_sessions": 5},
+                        },
+                    }
+                },
+                f,
+            )
+        prog = ResearchProject.from_yaml(path)
+        last_phase = prog.phase_order[-1]
+        phase_cfg = prog.phases[last_phase]
+        state = PhaseState(current_phase=last_phase, phase_session_count=phase_cfg.min_sessions)
+        result = evaluate_phase_transition(prog, state, {})
+        assert result == PHASE_DONE
 
 
 # ── Coverage Tracking ────────────────────────────────────────────────────
@@ -450,3 +474,21 @@ class TestSafeHelpers:
 
     def test_safe_float_string(self):
         assert _safe_float("1.5") == 1.5
+
+
+class TestResumeDeadlockPrevention:
+    def test_resume_clears_pending_human_review(self):
+        """Resuming from gate_triggered clears pending_human_review to prevent deadlock."""
+        ps = PhaseState(
+            current_phase="validate",
+            phase_session_count=5,
+            pending_human_review=True,
+        )
+        ps_dict = ps.to_dict()
+        ps_resumed = PhaseState.from_dict(ps_dict)
+        assert ps_resumed.pending_human_review is True
+        ps_resumed.pending_human_review = False
+        result_dict = ps_resumed.to_dict()
+        assert result_dict["pending_human_review"] is False
+        assert result_dict["current_phase"] == "validate"
+        assert result_dict["phase_session_count"] == 5
