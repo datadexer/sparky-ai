@@ -1,0 +1,71 @@
+name: p002_onchain_screening_btc
+objective: |
+  Screen BGeometrics on-chain metrics for predictive value on BTC returns.
+  This is analysis only — no backtesting, no strategy construction.
+
+  ## Data
+  Use load("btc_onchain_bgeometrics", purpose="training") for the combined on-chain dataset.
+  Use load("btc_ohlcv_daily", purpose="training") for BTC daily prices.
+  Individual metrics: load("btc_mvrv_zscore"), load("btc_sopr"), load("btc_nupl"), load("btc_puell_multiple"), etc.
+  All data is daily resolution. Align on common DatetimeIndex before analysis.
+
+  ## Steps
+  1. Load on-chain metrics and BTC daily prices. Report date range, n_obs, missing data %.
+  2. Feature engineering on each metric:
+     - Z-score (rolling 90d)
+     - Rate of change: 7d, 30d
+     - Percentile rank (rolling 365d)
+     - Extreme indicator: 1 if top/bottom 10th percentile, 0 otherwise
+  3. Univariate information coefficient (IC) analysis:
+     - Compute Spearman rank correlation between each feature and forward BTC returns at 7d, 14d, 30d horizons
+     - Report IC mean, IC std, IC_IR (mean/std), t-stat, p-value
+     - Flag anything with p > 0.05 as not statistically significant
+  4. Hit rate analysis:
+     - Split each feature into quintiles
+     - Report mean forward return for top and bottom quintile at each horizon
+     - Compute hit rate: fraction of top-quintile observations with positive forward return
+  5. Regime comparison:
+     - Compare on-chain regime signals (e.g. MVRV z-score > 2 = overheated, NUPL > 0.7 = euphoria)
+     - vs price-based regime (200d MA cross, volatility regime)
+     - Report: do on-chain signals lead price signals? By how many days?
+  6. Write screening report to results/onchain_screening/screening_report.json
+
+  ## W&B
+  Log IC table and hit rate results as a single wandb run tagged project=002_screening.
+
+constraints:
+  assets: [btc]
+  gpu_required: false
+  transaction_costs_bps: 30
+
+strategy_space: []
+
+stopping_criteria:
+  stop_on_success: false
+  budget:
+    max_sessions: 6
+    max_hours: 6
+    max_cost_usd: 25
+    digest_every: 2
+
+session_limits:
+  max_session_minutes: 90
+  max_cost_per_session: 6.0
+  min_session_minutes: 5
+  max_consecutive_crashes: 3
+
+wandb_tags: [project_002, screening, onchain, btc]
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "Do NOT proceed to OOS evaluation"
+  - "Do NOT build trading strategies or run backtests"
+  - "Always use sparky.data.loader.load() for data access"
+  - "Always report p-values — flag anything with p > 0.05 as NOT significant"
+  - "Tag all W&B runs: project=002_screening"
+  - "Do NOT use experiment_runner — this is pure analysis, not strategy evaluation"
+  - "Use polars for data processing where possible (import polars as pl)"
+  - "periods_per_year=365 for daily data"
