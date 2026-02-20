@@ -1,63 +1,107 @@
 {
-  "last_updated": "2026-02-20T00:00:00Z",
+  "last_updated": "2026-02-20T06:55:00Z",
   "project": "project_001",
-  "phase": "investigation_and_validation",
-  "dsr_note": "DSR values removed — were computed at per-session n_trials (not cumulative 16269). Validation battery will recompute with correct trial count.",
+  "phase": "report_complete",
   "candidates": {
     "btc_don4h_160_25_iv": {
-      "status": "pending_investigation",
+      "status": "validated_pass",
       "sharpe_30": 2.319,
-      "dsr": null,
-      "max_drawdown": -0.125,
-      "notes": "Best BTC individual. Weak 2020+ (S=1.20). Focus on regime breakdown."
+      "sharpe_50": 2.107,
+      "dsr": 0.9999,
+      "max_drawdown": -0.1245,
+      "n_trades": 1421,
+      "notes": "Best BTC individual. 2020+ S=1.200."
     },
     "btc_don4h_60_20_iv": {
-      "status": "pending_investigation",
-      "sharpe_30": 2.093,
-      "dsr": null,
-      "max_drawdown": -0.178,
+      "status": "validated_pass",
+      "sharpe_30": 2.042,
+      "sharpe_50": 1.808,
+      "dsr": 0.9977,
+      "max_drawdown": -0.1486,
+      "n_trades": 941,
       "notes": "Portfolio component. Strong cost robustness."
     },
     "btc_don8h_82_20_iv": {
-      "status": "pending_investigation",
+      "status": "validated_pass",
       "sharpe_30": 2.220,
-      "dsr": null,
-      "max_drawdown": -0.216,
+      "sharpe_50": 2.088,
+      "dsr": 0.9998,
+      "max_drawdown": -0.1972,
+      "n_trades": 1074,
       "notes": "Walk-forward validated: IS=2.220 -> WF=1.708 (77% retention)"
     },
     "eth_don4h_138_47_flat": {
-      "status": "pending_investigation",
+      "status": "validated_fail",
       "sharpe_30": 2.140,
-      "dsr": null,
-      "max_drawdown": -0.388,
-      "notes": "High MaxDD (-38.8%). Needs drawdown investigation."
+      "dsr": 0.9525,
+      "max_drawdown": -0.3879,
+      "notes": "FAIL: bootstrap_sharpe hard fail. MaxDD -38.8%."
     },
     "eth_don4h_164_47_flat": {
-      "status": "pending_investigation",
-      "sharpe_30": 2.126,
-      "dsr": null,
-      "max_drawdown": null,
-      "notes": "Portfolio component (25% weight in best portfolio)."
+      "status": "validated_fail",
+      "sharpe_30": 2.133,
+      "dsr": 0.9505,
+      "max_drawdown": -0.3879,
+      "notes": "FAIL: bootstrap_sharpe hard fail. MaxDD -38.8%."
     },
     "eth_don8h_83_33_iv": {
-      "status": "pending_investigation",
+      "status": "validated_conditional",
       "sharpe_30": 2.056,
-      "dsr": null,
-      "max_drawdown": -0.095,
-      "notes": "Best ETH risk-adjusted (MaxDD=-9.5%)"
+      "sharpe_50": 1.971,
+      "dsr": 0.9279,
+      "max_drawdown": -0.0949,
+      "notes": "Best ETH risk-adjusted. Primary ETH candidate for portfolio."
+    },
+    "eth_don4h_138_47_iv": {
+      "status": "validated_conditional",
+      "sharpe_30": 1.952,
+      "dsr": 0.8785,
+      "max_drawdown": -0.0969,
+      "notes": "IV variant of eth_don4h_138_47_flat."
+    },
+    "eth_don4h_164_47_iv": {
+      "status": "validated_conditional",
+      "sharpe_30": 2.001,
+      "dsr": 0.9026,
+      "max_drawdown": -0.0828,
+      "notes": "IV variant of eth_don4h_164_47_flat."
     }
   },
   "portfolios": {
-    "portfolio_btc75_eth25_4h": {
-      "status": "pending_investigation",
-      "sharpe_30": 2.293,
+    "btc82_30pct_eth83_70pct": {
+      "status": "tier1_candidate",
+      "sharpe_30bps": 2.217,
+      "sharpe_50bps": 2.099,
+      "dsr_30bps": 0.972,
+      "max_drawdown": -0.070,
+      "sharpe_2020plus": 1.943,
+      "validation_verdict": "CONDITIONAL",
+      "hard_fails": [],
+      "soft_fails": ["walk_forward_multi", "tail_risk_analysis", "correlation_stability"],
       "strategies": [
-        {"candidate": "btc_don4h_60_20_iv", "weight": 0.75},
-        {"candidate": "eth_don4h_164_47_flat", "weight": 0.25}
+        {"candidate": "btc_don8h_82_20_iv", "weight": 0.3},
+        {"candidate": "eth_don8h_83_33_iv", "weight": 0.7}
       ],
-      "notes": "Best honest portfolio (4h grid, no ppy inflation)."
+      "btc_eth_correlation": 0.466,
+      "bear_2022": {
+        "btc82_sharpe": -1.688,
+        "eth83_sharpe": 0.443,
+        "portfolio_sharpe": -0.261,
+        "portfolio_dd": -0.067
+      },
+      "notes": "Champion: confirmed across 3 sessions, 55 portfolio configs. MaxDD=-7%. ETH83 saves portfolio in 2022 bear. Awaiting OOS approval."
+    },
+    "btc160_80_btc60_20_4h": {
+      "status": "screened_pass",
+      "sharpe_30bps": 2.334,
+      "dsr_30bps": 1.000,
+      "max_drawdown": -0.128,
+      "sharpe_2020plus": 1.257,
+      "notes": "BTC-only 4h blend. Highest raw Sharpe but S2020+=1.257 is weak. Edge concentrated in 2019."
     }
   },
   "cumulative_trials": 16269,
-  "baseline_sharpe": 1.580
+  "baseline_sharpe": 1.580,
+  "total_portfolios_tested": 55,
+  "recommendation": "btc82_30_eth83_70 ready for single-shot OOS evaluation pending AK approval"
 }

@@ -1,0 +1,166 @@
+name: p001_validation_btc
+
+objective: |
+  Validate the 3 BTC candidates from configs/project_001/candidates.yaml.
+  These are known-good strategies from prior exploration — this session runs deep validation,
+  not discovery. No sweeps. No new configs. Validate exactly what is in candidates.yaml.
+
+  SETUP:
+    import yaml
+    with open("configs/project_001/candidates.yaml") as f:
+        data = yaml.safe_load(f)
+    btc_candidates = {k: v for k, v in data["candidates"].items() if v["asset"] == "btc"}
+    # btc_candidates is a dict: {"btc_don4h_160_25_iv": {...}, ...}
+
+  Each candidate value has keys: asset, timeframe, signal_type, signal_params,
+  sizing, and optionally sizing_params. Build a config dict for each:
+    for candidate_id, c in btc_candidates.items():
+        config = {
+            "asset": c["asset"],
+            "timeframe": c["timeframe"],
+            "signal_type": c["signal_type"],
+            "signal_params": c["signal_params"],
+            "sizing": c["sizing"],
+        }
+        if "sizing_params" in c:
+            config["sizing_params"] = c["sizing_params"]
+
+  FOR EACH CANDIDATE, run in this exact order:
+
+  STEP 1 — Investigation:
+    from analysis_runner import run_full_investigation
+    investigation_results = run_full_investigation(config)
+    # Produces: trade_profile, edge_attribution, regime_decomposition
+
+  STEP 2 — Full validation battery (12 tests):
+    from analysis_runner import run_full_validation_battery
+    validation_results = run_full_validation_battery(config)
+
+  STEP 3 — HTML report:
+    from report_generator import generate_candidate_report
+    generate_candidate_report(
+        candidate_id=candidate_id,
+        investigation_results=investigation_results,
+        validation_results=validation_results,
+        output_dir="reports/project_001",
+    )
+
+  STEP 4 — Export daily returns CSV:
+    Save the candidate's daily returns series to:
+      reports/project_001/portfolio_inputs/{candidate_id}_returns.csv
+    Format: date index (YYYY-MM-DD), single column "returns".
+    Use 30 bps cost. This file feeds the portfolio optimizer in a later session.
+
+  STEP 5 — Metrics (MANDATORY):
+    from sparky.tracking.metrics import compute_all_metrics
+    metrics_30 = compute_all_metrics(returns_30bps, n_trials=16269)
+    metrics_50 = compute_all_metrics(returns_50bps, n_trials=16269)
+    # Report DSR, Sharpe, MaxDD, Calmar, n_trades at BOTH cost tiers.
+    # DSR is computed against n_trials=16269 — the cumulative trial count from all exploration.
+
+  STEP 6 — Guardrails (MANDATORY):
+    from sparky.tracking.guardrails import run_pre_checks, run_post_checks, has_blocking_failure, log_results
+    pre = run_pre_checks(data, config)
+    if has_blocking_failure(pre):
+        raise RuntimeError(f"Pre-check failed for {c['id']}")
+    post = run_post_checks(returns_30bps, metrics_30, config, n_trades=n_trades)
+    log_results(pre + post, run_id=candidate_id)
+
+  STEP 7 — Wandb logging:
+    from sparky.tracking.experiment import ExperimentTracker
+    tracker = ExperimentTracker(experiment_name="p001_validation_btc")
+    tracker.log_experiment(
+        candidate_id,
+        config=config,
+        metrics={
+            "30bps": metrics_30,
+            "50bps": metrics_50,
+            "verdict": "pass" if metrics_30["dsr"] > 0.95 else "review",
+        },
+        tags=["project_001", "validation", "btc"],
+    )
+
+  STEP 8 — Sub-period analysis (MANDATORY for any candidate that beats baseline):
+    from sweep_utils import subperiod_analysis
+    sp = subperiod_analysis(prices, positions, cost_frac=0.003)
+    # Report full, 2017+, 2020+ sub-periods in the summary.
+
+  AFTER ALL 3 CANDIDATES:
+
+  Write BTC summary to reports/project_001/sessions/btc_validation_summary.md.
+  Include per-candidate table: id, Sharpe@30bps, Sharpe@50bps, DSR, MaxDD, n_trades, verdict.
+  Include sub-period breakdown for passing candidates.
+
+  Update state/core_memory.json with per-candidate verdicts:
+    {
+      "btc_validation": {
+        "<candidate_id>": {
+          "sharpe_30bps": <float>,
+          "sharpe_50bps": <float>,
+          "dsr": <float>,
+          "max_dd": <float>,
+          "n_trades": <int>,
+          "verdict": "pass" | "review" | "fail"
+        }
+      }
+    }
+
+  A candidate passes if: DSR > 0.95 AND Sharpe@30bps >= 1.0 AND MaxDD > -50%.
+  A candidate is "review" if: DSR > 0.95 but Sharpe@30bps in [0.7, 1.0).
+  A candidate fails if: DSR <= 0.95 or Sharpe@30bps < 0.7.
+
+  ANNUALIZATION: Use periods_per_year=2190 for 4h data, periods_per_year=1095 for 8h data.
+  Never use 252 or 365 for intraday data.
+
+constraints:
+  assets: [btc]
+  timeframes: [4h, 8h]
+  gpu_required: false
+  transaction_costs_bps: 30
+  n_trials_start: 16269
+  n_trials_cumulative: true
+
+strategy_space: []
+
+stopping_criteria:
+  stop_on_success: false
+  success:
+    min_sharpe: 1.0
+    min_dsr: 0.95
+  budget:
+    max_sessions: 3
+    max_hours: 2
+    max_cost_usd: 15
+    digest_every: 1
+  stall:
+    sessions_without_improvement: 3
+    improvement_threshold: 0.01
+    diversity_threshold: 0.99
+
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 8.0
+  min_session_minutes: 3
+  max_consecutive_crashes: 3
+
+wandb_tags:
+  - project_001
+  - validation
+  - btc
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "No parameter sweeps. This is validation of KNOWN candidates only."
+  - "Use analysis_runner functions exclusively — do NOT write standalone backtest scripts."
+  - "Do NOT proceed to OOS evaluation. Stay in-sample."
+  - "Do not build paper trading infrastructure."
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics and report DSR"
+  - "Report Sharpe at BOTH 30 bps and 50 bps"
+  - "n_trials=16269 (cumulative across all exploration). Use this for DSR calculations."
+  - "Do NOT touch git"
+  - "periods_per_year: 2190 (4h), 1095 (8h). Never use 252 or 365 for intraday."
+  - "Do NOT overwrite existing reports. Before writing any file in reports/, check if it already exists. If it does, skip or append with a session-numbered suffix (e.g., _session002.md)."
