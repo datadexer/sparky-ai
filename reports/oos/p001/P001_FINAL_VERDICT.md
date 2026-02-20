@@ -79,11 +79,8 @@ All 5 tests passed before OOS metrics were computed. The validation suite was de
 
 | File | Description |
 |------|-------------|
-| `oos_evaluation_20260220_181205.md` | First eval attempt — no PPY, minimal format |
-| `oos_evaluation_20260220_181836.md` | Second eval — PPY added, holdout section |
-| `oos_evaluation_20260220_182827.md` | Third eval — IS section added |
-| `oos_evaluation_20260220_184103.md` | Fourth eval — flat sizing, final format |
-| `oos_evaluation_20260220_191508.md` | Fifth eval — IV sizing added, buggy IV timing |
+| `oos_evaluation_20260220_184103.md` | Flat sizing evaluation (no IV) |
+| `oos_evaluation_20260220_191508.md` | IV sizing evaluation |
 | `diagnostics/oos_diagnostic_report.md` | Full diagnostic with per-leg decomposition |
 | `diagnostics/equity_curve.png` | OOS equity curve |
 | `diagnostics/underwater.png` | Drawdown underwater chart |
