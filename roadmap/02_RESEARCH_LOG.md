@@ -4,6 +4,16 @@ Running log of all research findings. Newest entries at the top.
 
 ---
 
+## P001 CLOSED — OOS Evaluation FAIL — 2026-02-20
+
+Champion portfolio BTC Don8h(82,20) 30% + ETH Don8h(83,33) 70% failed OOS evaluation.
+OOS Sharpe 0.417 < 0.5 threshold. BTC leg dead (Sharpe -0.114), ETH marginal (Sharpe 0.645).
+IS→OOS retention 18.8% vs walk-forward prediction of 71.2%.
+Two bugs found and fixed during evaluation (flat sizing default, IV timing lookahead).
+Full verdict: `reports/oos/p001/P001_FINAL_VERDICT.md`
+
+---
+
 ## PPY Validation Audit (Round 2) — 2026-02-19
 
 **ALL cross-timeframe portfolio Sharpe values from overnight runs are inflated by sqrt(2) = 1.414x.**

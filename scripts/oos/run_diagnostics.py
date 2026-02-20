@@ -22,7 +22,7 @@ from sparky.data.loader import load
 from sparky.models.simple_baselines import donchian_channel_strategy
 from sparky.tracking.metrics import compute_all_metrics
 
-OUT = Path("/tmp/sparky_oos_reports/diagnostics")
+OUT = Path("/tmp/sparky_oos_reports/diagnostics")  # noqa: S108
 OUT.mkdir(parents=True, exist_ok=True)
 
 OOS_START = pd.Timestamp("2024-01-01", tz="UTC")
@@ -46,9 +46,8 @@ def build_leg_returns(dataset, entry, exit_, vw, tv):
     prices = df["close"]
 
     signals = donchian_channel_strategy(prices, entry, exit_)
-    positions = signals.shift(1).fillna(0)
     sizing = inv_vol_sizing(prices, vw, tv, PPY)
-    positions = positions * sizing
+    positions = (signals * sizing).shift(1).fillna(0)
 
     price_returns = prices.pct_change().fillna(0)
     gross = positions * price_returns

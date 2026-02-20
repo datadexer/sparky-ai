@@ -40,15 +40,15 @@ def build_leg_returns(leg: dict, cost_bps: int) -> pd.Series:
 
     prices = df["close"]
     signals = donchian_channel_strategy(prices, leg["entry_period"], leg["exit_period"])
-    # Anti-lookahead: signal at T applied to return at T+1
-    positions = signals.shift(1).fillna(0)
 
-    # Apply inverse volatility sizing if configured
+    # Shift combined signal+scale to match research code: position[T] = signal[T-1] * scale[T-1]
     if leg.get("sizing") == "inverse_vol":
         sp = leg["sizing_params"]
         rvol = np.log(prices / prices.shift(1)).rolling(sp["vol_window"]).std() * np.sqrt(1095)
         scale = (sp["target_vol"] / rvol).clip(0.1, 1.5).fillna(0.5)
-        positions = positions * scale
+        positions = (signals * scale).shift(1).fillna(0)
+    else:
+        positions = signals.shift(1).fillna(0)
 
     price_returns = prices.pct_change().fillna(0)
 
