@@ -83,6 +83,10 @@ _DATASET_ALIASES = {
     "btc_active_addresses": Path("data/raw/onchain/bgeometrics/active_addresses.parquet"),
     "btc_hash_rate": Path("data/raw/onchain/bgeometrics/hash_rate.parquet"),
     "btc_supply_in_profit": Path("data/raw/onchain/bgeometrics/supply_in_profit.parquet"),
+    # On-chain metrics (CoinMetrics Community)
+    "btc_onchain_coinmetrics": Path("data/raw/onchain/coinmetrics_btc_daily.parquet"),
+    # On-chain metrics (Blockchain.com)
+    "btc_onchain_blockchain_com": Path("data/raw/onchain/blockchain_com_btc_daily.parquet"),
 }
 
 _guard = HoldoutGuard()
