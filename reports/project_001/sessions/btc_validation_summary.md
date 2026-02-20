@@ -6,6 +6,8 @@
 | btc_don4h_60_20_iv | 2.042 | 1.808 | 0.9977 | -0.149 | 941 | PASS | CONDITIONAL |
 | btc_don8h_82_20_iv | 2.220 | 2.088 | 0.9998 | -0.197 | 1074 | PASS | CONDITIONAL |
 
+**Verdict** = hard criteria met (DSR, Sharpe, MaxDD thresholds). **Val_Battery** = full validation battery including soft checks. All 6 survivors are CONDITIONAL on the full battery (3 structural soft fails shared by all trend-following strategies).
+
 ## Sub-Period Breakdown (Passing Candidates)
 
 ### btc_don4h_160_25_iv

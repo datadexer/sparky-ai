@@ -101,6 +101,7 @@
     }
   },
   "cumulative_trials": 16269,
+  "dsr_note": "All DSR values computed at cumulative n_trials=16269. Recomputed 2026-02-20 after prior per-session DSR bug was identified.",
   "baseline_sharpe": 1.580,
   "total_portfolios_tested": 55,
   "recommendation": "btc82_30_eth83_70 ready for single-shot OOS evaluation pending AK approval"

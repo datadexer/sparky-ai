@@ -14,6 +14,9 @@ objective: |
   - btc_don8h_82_20_iv
   - eth_don8h_83_33_iv
   - eth_don4h_164_47_iv (IV variant — config: asset=eth, timeframe=4h, signal_type=donchian, signal_params={entry_period:164, exit_period:47}, sizing=inverse_vol, sizing_params={vol_window:30, target_vol:0.15})
+  # All 5 survivors included for portfolio screening. Cross-candidate clustering
+  # identified btc82 and eth83 as cluster representatives, but all 5 are tested
+  # in portfolio combinations. Champion portfolio uses only btc82 + eth83.
 
   Note: eth_don4h_164_47_iv may not be in candidates.yaml. If missing, construct the config dict manually from the params above.
 

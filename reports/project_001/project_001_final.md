@@ -37,6 +37,7 @@ This report documents what was found, why it is credible, and where the remainin
 - The 2 ETH flat candidates fail on bootstrap_sharpe hard fail. The -38.8% MaxDD is distributed across 5+ events rather than a single event, which means the bootstrap cannot attribute it to bad luck. The IV variants fix this by reducing position size during high-volatility periods.
 - ETH DSR values are all below 0.95 individually. This is a known weakness of the ETH leg and is part of the reason for the CONDITIONAL verdict. The portfolio DSR exceeds 0.95.
 - BTC 2020+ sub-period Sharpe degrades to 1.20-1.40 across the BTC candidates. This degradation is real and relevant.
+- All 6 survivors share CONDITIONAL status on the full validation battery. The "PASS" label for BTC candidates indicates hard criteria are met; the distinction from ETH "CONDITIONAL" reflects ETH's sub-0.95 individual DSR, not a qualitative difference in validation methodology.
 
 ---
 

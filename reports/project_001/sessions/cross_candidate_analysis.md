@@ -57,6 +57,8 @@ eth_don8h_83_33_iv                   0.408               0.389               0.4
   - Dropped: eth_don4h_138_47_flat (Sharpe=2.026)
   - Dropped: eth_don4h_164_47_flat (Sharpe=2.030)
 
+> **Note on common-period selection:** Representative selected on 2017-2023 common period to ensure fair comparison across 4h/8h timeframes with different data start dates. Full-period Sharpe rankings differ slightly (btc160 leads at 2.319 vs btc82 at 2.220) but the common-period ranking is more comparable.
+
 ## Unique Survivors (Portfolio Construction)
 
 - **btc_don8h_82_20_iv** [PASS] — Sharpe=1.596, MaxDD=-19.32%

@@ -48,8 +48,8 @@ objective: |
   STEP 4 — Export daily returns CSV:
     Save the candidate's daily returns series to:
       reports/project_001/portfolio_inputs/{candidate_id}_returns.csv
-    Format: date index (YYYY-MM-DD), single column "returns".
-    Use 30 bps cost. This file feeds the portfolio optimizer in a later session.
+    Format: date index (YYYY-MM-DD), columns: returns_30bps, returns_50bps.
+    This file feeds the portfolio optimizer in a later session.
 
   STEP 5 — Metrics (MANDATORY):
     from sparky.tracking.metrics import compute_all_metrics
@@ -62,7 +62,7 @@ objective: |
     from sparky.tracking.guardrails import run_pre_checks, run_post_checks, has_blocking_failure, log_results
     pre = run_pre_checks(data, config)
     if has_blocking_failure(pre):
-        raise RuntimeError(f"Pre-check failed for {c['id']}")
+        raise RuntimeError(f"Pre-check failed for {candidate_id}")
     post = run_post_checks(returns_30bps, metrics_30, config, n_trades=n_trades)
     log_results(pre + post, run_id=candidate_id)
 
