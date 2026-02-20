@@ -372,8 +372,8 @@ When the orchestrator assigns a candidate for investigation:
 3. Evaluate results:
 
 **Per-candidate evaluation rules:**
-- **Signal edge** (from edge_attribution): `signal_edge > 0.3` = signal is meaningful
-- **Sizing edge** (from edge_attribution): `sizing_edge > 0.1` = sizing adds value
+- **Signal edge** (from edge_attribution): `signal_edge / full_sharpe > 0.15` = signal contributes meaningfully
+- **Sizing edge** (from edge_attribution): `sizing_edge / full_sharpe > 0.05` = sizing adds value
 - **Regime resilience** (from regime_decomposition): Sharpe > 0 in bear regime = survives downturns
 - **Crisis performance**: negative total return in ≥2 crisis events = fragile
 - **Trade profile**: win_rate < 0.40 OR profit_factor < 1.0 = edge is illusory
@@ -381,7 +381,7 @@ When the orchestrator assigns a candidate for investigation:
 
 **Actions based on investigation:**
 - All checks pass → mark candidate `ready_for_validation`
-- Signal edge < 0.3 → mark `null_result`, log to null registry
+- Signal edge / full_sharpe < 0.15 → flag `weak_signal`, note in core memory for human review
 - Bear regime Sharpe < -1.0 → mark `regime_fragile`, note in core memory
 - High MaxDD + flat sizing → create variant with inverse_vol, add to candidates
 
