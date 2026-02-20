@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": ".claude/hooks/research_sandbox.py"}]
+      }
+    ]
+  }
+}

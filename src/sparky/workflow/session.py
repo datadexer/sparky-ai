@@ -171,7 +171,8 @@ def launch_claude_session(
                 "--verbose",
                 "--output-format",
                 "stream-json",
-                "--dangerously-skip-permissions",
+                "--allowedTools",
+                "Read,Write,Edit,Bash,Glob,Grep",
             ]
             if disallowed_tools:
                 cmd.extend(["--disallowedTools", ",".join(disallowed_tools)])

@@ -294,7 +294,7 @@ When you have completed your experiments and logged results to wandb:
 - Comment on or interact with GitHub PRs/issues
 
 Your sandbox enforces these restrictions. If you attempt to write outside
-`results/` or `scripts/*.py`, the write will be BLOCKED.
+`results/`, `scratch/`, `state/`, `scripts/*.py`, or `GATE_REQUEST.md`, the write will be BLOCKED.
 
 Files in `bin/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
 `sweep_two_stage.py`). You cannot edit them. To request changes, write a
