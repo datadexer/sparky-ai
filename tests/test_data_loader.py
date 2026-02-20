@@ -1,5 +1,7 @@
 """Tests for sparky.data.loader — enforced data access layer."""
 
+import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
@@ -193,29 +195,30 @@ class TestLoad:
 
 
 class TestOosEvaluation:
-    """Tests for purpose='oos_evaluation' — the holdout enforcement critical path."""
+    """Tests for purpose='oos_evaluation' (deprecated) — the holdout enforcement critical path."""
 
     def test_oos_without_guard_raises(self, tmp_data_dir):
         """No oos_guard at all → HoldoutViolation."""
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
-            with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
-                load("btc_1h_features", purpose="oos_evaluation")
+            with pytest.warns(DeprecationWarning):
+                with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
+                    load("btc_1h_features", purpose="oos_evaluation")
 
     def test_oos_with_unauthorized_guard_raises(self, tmp_data_dir):
         """Guard present but authorize_oos_evaluation() never called → HoldoutViolation."""
         guard = HoldoutGuard()
         with patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]):
-            with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
-                load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
+            with pytest.warns(DeprecationWarning):
+                with pytest.raises(HoldoutViolation, match="requires explicit authorization"):
+                    load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
 
-    def test_oos_with_authorized_guard_reads_vault(self, tmp_data_dir, holdout_dates):
-        """Authorized guard with vault data → returns full dataset including OOS rows."""
-        # Build a vault parquet with post-holdout data
-        vault_dir = tmp_data_dir / "data" / ".oos_vault" / "data" / "features"
-        vault_dir.mkdir(parents=True)
+    def test_oos_with_authorized_guard_reads_holdout(self, tmp_data_dir, holdout_dates):
+        """Authorized guard with holdout data → returns full dataset including OOS rows."""
+        holdout_dir = tmp_data_dir / "data" / "holdout" / "btc"
+        holdout_dir.mkdir(parents=True)
         dates = pd.date_range("2020-01-01", "2025-06-01", freq="D", tz="UTC")
         df_full = pd.DataFrame({"close": range(len(dates))}, index=dates)
-        df_full.to_parquet(vault_dir / "btc_1h_features.parquet")
+        df_full.to_parquet(holdout_dir / "1h_features.parquet")
 
         guard = HoldoutGuard()
         guard.authorize_oos_evaluation(
@@ -227,9 +230,47 @@ class TestOosEvaluation:
 
         with (
             patch("sparky.data.loader.DATA_DIRS", [tmp_data_dir / "data" / "features"]),
-            patch("sparky.data.loader.VAULT_DIR", tmp_data_dir / "data" / ".oos_vault" / "data"),
+            patch("sparky.data.loader.HOLDOUT_DIR", tmp_data_dir / "data" / "holdout"),
         ):
-            df = load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
+            with pytest.warns(DeprecationWarning):
+                df = load("btc_1h_features", purpose="oos_evaluation", oos_guard=guard)
 
         assert df.index.max() > holdout_dates["oos_start_ts"]
-        assert df.index.tz is not None  # UTC-aware
+        assert df.index.tz is not None
+
+
+class TestEvaluationPurpose:
+    """Tests for purpose='evaluation' — env-var-gated holdout access."""
+
+    def test_evaluation_blocked_without_env(self, tmp_data_dir):
+        """Without SPARKY_OOS_ENABLED=1 → PermissionError."""
+        env = os.environ.copy()
+        env.pop("SPARKY_OOS_ENABLED", None)
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(PermissionError, match="OOS data access denied"):
+                load("btc_ohlcv_8h", purpose="evaluation")
+
+    def test_evaluation_allowed_with_env(self, tmp_data_dir):
+        """With SPARKY_OOS_ENABLED=1 + holdout data → works."""
+        holdout_dir = tmp_data_dir / "data" / "holdout" / "btc"
+        holdout_dir.mkdir(parents=True)
+        dates = pd.date_range("2020-01-01", "2025-06-01", freq="8h", tz="UTC")
+        df = pd.DataFrame({"close": range(len(dates))}, index=dates)
+        df.to_parquet(holdout_dir / "ohlcv_8h.parquet")
+
+        with (
+            patch.dict(os.environ, {"SPARKY_OOS_ENABLED": "1"}),
+            patch("sparky.data.loader.HOLDOUT_DIR", tmp_data_dir / "data" / "holdout"),
+        ):
+            result = load("btc_ohlcv_8h", purpose="evaluation")
+            assert len(result) > 0
+            assert result.index.tz is not None
+
+    def test_evaluation_missing_data_raises(self):
+        """With env var set but no data → FileNotFoundError."""
+        with (
+            patch.dict(os.environ, {"SPARKY_OOS_ENABLED": "1"}),
+            patch("sparky.data.loader.HOLDOUT_DIR", Path("/nonexistent/holdout")),
+        ):
+            with pytest.raises(FileNotFoundError, match="No holdout data"):
+                load("btc_ohlcv_8h", purpose="evaluation")

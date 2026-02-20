@@ -109,6 +109,7 @@ class TestGuardrailsMetricsPipeline:
             "skewness",
             "kurtosis",
             "sortino",
+            "sortino_per_period",
             "max_drawdown",
             "calmar",
             "cvar_5pct",

@@ -72,6 +72,17 @@ RESEARCH_DISALLOWED_TOOLS = [
     "Bash(ls ./data/.oos_vault:*)",
     "Bash(cp data/.oos_vault:*)",
     "Bash(cp ./data/.oos_vault:*)",
+    # Holdout directory access (OS-level restricted)
+    "Bash(cat data/holdout:*)",
+    "Bash(cat ./data/holdout:*)",
+    "Bash(head data/holdout:*)",
+    "Bash(head ./data/holdout:*)",
+    "Bash(tail data/holdout:*)",
+    "Bash(tail ./data/holdout:*)",
+    "Bash(ls data/holdout:*)",
+    "Bash(ls ./data/holdout:*)",
+    "Bash(cp data/holdout:*)",
+    "Bash(cp ./data/holdout:*)",
 ]
 
 
@@ -1073,6 +1084,12 @@ class ResearchOrchestrator:
 
     def run(self) -> int:
         """Execute the orchestrator loop. Returns 0 on clean exit, 1 on error."""
+        if os.environ.get("SPARKY_OOS_ENABLED") == "1":
+            raise RuntimeError(
+                "SPARKY_OOS_ENABLED is set in the orchestrator environment. "
+                "Research sessions must NOT have OOS access. Unset the variable."
+            )
+
         try:
             self._acquire_lock()
         except RuntimeError as e:

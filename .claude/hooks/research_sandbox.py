@@ -43,10 +43,11 @@ ALLOWED_ABSOLUTE_PREFIXES = [
 BLOCKED_COMPONENTS = {
     ".oos_vault",
     "oos_vault",
+    "data/holdout",
 }
 
-# Bash commands referencing OOS vault
-OOS_VAULT_PATTERN = re.compile(r"\.?oos_vault", re.IGNORECASE)
+# Bash commands referencing OOS vault or holdout directory
+OOS_VAULT_PATTERN = re.compile(r"(\.?oos_vault|data/holdout)", re.IGNORECASE)
 
 
 # ── Path Resolution ──────────────────────────────────────────────────────

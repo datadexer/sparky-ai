@@ -134,6 +134,10 @@ class TestPathValidation:
         allowed, _ = research_sandbox.is_path_allowed("data/oos_vault/btc_2024.parquet", PROJECT_ROOT)
         assert not allowed
 
+    def test_holdout_dir_blocked(self):
+        allowed, _ = research_sandbox.is_path_allowed("data/holdout/btc/ohlcv_8h.parquet", PROJECT_ROOT)
+        assert not allowed
+
     def test_tmp_allowed(self):
         allowed, _ = research_sandbox.is_path_allowed("/tmp/my_temp_file.csv", PROJECT_ROOT)  # noqa: S108
         assert allowed
@@ -181,6 +185,14 @@ class TestBashValidation:
 
     def test_oos_vault_reference_blocked(self):
         allowed, _ = research_sandbox.is_bash_command_allowed("ls -la data/.oos_vault/", PROJECT_ROOT)
+        assert not allowed
+
+    def test_holdout_dir_cat_blocked(self):
+        allowed, _ = research_sandbox.is_bash_command_allowed("cat data/holdout/btc/ohlcv_8h.parquet", PROJECT_ROOT)
+        assert not allowed
+
+    def test_holdout_dir_ls_blocked(self):
+        allowed, _ = research_sandbox.is_bash_command_allowed("ls data/holdout/", PROJECT_ROOT)
         assert not allowed
 
     def test_cp_to_src_blocked(self):
@@ -374,6 +386,12 @@ class TestDisallowedTools:
         from sparky.workflow.orchestrator import RESEARCH_DISALLOWED_TOOLS
 
         assert "Bash(cat data/.oos_vault:*)" in RESEARCH_DISALLOWED_TOOLS
+
+    def test_holdout_dir_patterns(self):
+        from sparky.workflow.orchestrator import RESEARCH_DISALLOWED_TOOLS
+
+        assert "Bash(cat data/holdout:*)" in RESEARCH_DISALLOWED_TOOLS
+        assert "Bash(ls data/holdout:*)" in RESEARCH_DISALLOWED_TOOLS
 
 
 # ── launch_claude_session extra_env ──────────────────────────────────────

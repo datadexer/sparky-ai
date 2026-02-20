@@ -102,7 +102,8 @@ All model training and feature engineering data access MUST go through
 - `pd.read_parquet(...)` in `src/sparky/` for anything that feeds model training
 - `polars.read_parquet(...)` in `src/sparky/` for model training data
 - Direct file path construction to `data/` without going through the loader
-- Any reference to `data/.oos_vault/` outside of `loader.py` and `split_holdout_data.py`
+- Any reference to `data/.oos_vault/` or `data/holdout/` outside of `loader.py`,
+  `split_holdout_data.py`, `oos_evaluate.py`, and `build_holdout_resampled.py`
 
 **MEDIUM severity:**
 - `purpose="analysis"` used in training scripts (should be `purpose="training"`)

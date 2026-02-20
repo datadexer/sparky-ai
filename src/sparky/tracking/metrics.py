@@ -307,8 +307,9 @@ def compute_all_metrics(returns, n_trials=1, risk_free=0.0, periods_per_year=365
         # Distribution moments (for analytical_dsr recomputation)
         "skewness": _skewness,
         "kurtosis": _kurtosis,  # raw Pearson kurtosis, normal=3
-        # Risk
-        "sortino": sortino_ratio(returns, risk_free),
+        # Risk (annualized, matching sharpe convention)
+        "sortino": sortino_ratio(returns, risk_free) * np.sqrt(periods_per_year),
+        "sortino_per_period": sortino_ratio(returns, risk_free),
         "max_drawdown": max_drawdown(returns),
         "calmar": calmar_ratio(returns, periods_per_year),
         "cvar_5pct": conditional_var(returns, 0.05),

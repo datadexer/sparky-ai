@@ -74,6 +74,7 @@ _BYPASS_PATTERNS = [
 # Vault access patterns — direct vault reads bypass holdout protection
 _VAULT_PATTERNS = [
     ".oos_vault",
+    "data/holdout",
     "split_holdout_data",
 ]
 
@@ -96,7 +97,14 @@ def _is_exempt_vault(filepath: str) -> bool:
 
     Only the loader and the split script are allowed to reference the vault.
     """
-    exempt = {"loader.py", "split_holdout_data.py", "conftest.py", "orchestrator.py"}
+    exempt = {
+        "loader.py",
+        "split_holdout_data.py",
+        "conftest.py",
+        "orchestrator.py",
+        "oos_evaluate.py",
+        "build_holdout_resampled.py",
+    }
     return any(e in filepath for e in exempt) or _is_self(filepath) or any(e in filepath for e in _HOLDOUT_EXEMPT)
 
 

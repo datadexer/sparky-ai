@@ -1,0 +1,30 @@
+# Champion Portfolio OOS Evaluation Config
+# BTC Don8h(82,20) 30% + ETH Don8h(83,33) 70%
+# IS metrics: S30=2.217, S50=2.099, DSR=0.972, MaxDD=-7.0%
+# WF retention: 71.2% (4 folds, all positive)
+
+portfolio:
+  legs:
+    - asset: btc
+      dataset: btc_ohlcv_8h
+      strategy: donchian
+      entry_period: 82
+      exit_period: 20
+      weight: 0.30
+
+    - asset: eth
+      dataset: eth_ohlcv_8h
+      strategy: donchian
+      entry_period: 83
+      exit_period: 33
+      weight: 0.70
+
+  cost_bps: 30
+  periods_per_year: 1095  # 8h bars
+
+oos:
+  start: "2024-01-01"
+
+thresholds:
+  sharpe_min: 0.5
+  max_drawdown_max: -0.30
