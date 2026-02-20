@@ -1,20 +1,38 @@
 {
-  "last_updated": "2026-02-19T00:00:00Z",
+  "last_updated": "2026-02-20T03:35:00Z",
+  "validated_signals": [
+    {
+      "signal": "btc_onchain_composite_lagged1d",
+      "description": "50% fee_ph_pctrank365 + 50% mvrv_pctrank365, 1-day publication lag, soft scaler at alpha=1.0",
+      "portfolio_sharpe_30bps": 1.7992,
+      "portfolio_sharpe_50bps": 1.7033,
+      "delta_from_baseline": 0.2042,
+      "max_drawdown": -0.4545,
+      "ic_composite_30d": 0.192,
+      "p_value": "< 0.0001",
+      "wf_positive_folds": "3/4",
+      "sessions": "s002-s006",
+      "verdict": "VALIDATED — use as soft scaler on champion portfolio before OOS evaluation",
+      "date": "2026-02-20"
+    }
+  ],
   "null_results": [
     {
       "id": "regime_donchian_v2_v3",
-      "description": "Daily regime-aware Donchian — HMM and vol regime overlays on daily BTC Donchian",
+      "description": "Daily regime-aware Donchian \u2014 HMM and vol regime overlays on daily BTC Donchian",
       "configs_tested": 3922,
       "sessions": 4,
       "best_sharpe": 1.777,
-      "best_dsr": 0.730,
+      "best_dsr": 0.73,
       "reason": "DSR never exceeded 0.95 at N=1552+. Statistical bar too high for daily data resolution. 2022 bear is structural for long-only.",
       "recommendation": "Do not continue daily-data regime sweeps. Use hourly data for more statistical power.",
-      "artifacts": ["results/regime_donchian/"]
+      "artifacts": [
+        "results/regime_donchian/"
+      ]
     },
     {
       "id": "xgboost_hourly_features",
-      "description": "XGBoost on hourly feature matrix — 23-88 features, gradient boosted classification",
+      "description": "XGBoost on hourly feature matrix \u2014 23-88 features, gradient boosted classification",
       "configs_tested": 88,
       "best_sharpe": 1.19,
       "best_dsr": null,
@@ -24,22 +42,117 @@
     },
     {
       "id": "kelly_sizing_meta_labeled",
-      "description": "Kelly criterion sizing on meta-labeled Donchian — calibrated and uncalibrated variants",
+      "description": "Kelly criterion sizing on meta-labeled Donchian \u2014 calibrated and uncalibrated variants",
       "configs_tested": 267,
       "sessions": 1,
-      "best_sharpe": -0.10,
+      "best_sharpe": -0.1,
       "reason": "Meta-model accuracy 56% makes Kelly bets tiny. Edge is in trade filtering, not probability-based sizing. Platt calibration collapses probability spread (std=0.032).",
       "recommendation": "Kelly requires higher accuracy meta-models. Use inverse_vol sizing instead.",
-      "artifacts": ["results/layer4_sizing_donchian_20260218/"]
+      "artifacts": [
+        "results/layer4_sizing_donchian_20260218/"
+      ]
     },
     {
       "id": "eth_bollinger_4h",
       "description": "ETH Bollinger Band strategies on 4h timeframe",
       "configs_tested": 0,
       "best_sharpe": 2.156,
-      "reason": "Dominated by Donchian on all metrics. Not a competitive standalone signal type for ETH. Not exhaustively swept — dominated early in exploration.",
+      "reason": "Dominated by Donchian on all metrics. Not a competitive standalone signal type for ETH. Not exhaustively swept \u2014 dominated early in exploration.",
       "recommendation": "Do not pursue Bollinger as primary signal for ETH.",
       "artifacts": []
+    },
+    {
+      "signal": "btc_netflow_z30",
+      "description": "Exchange netflow (inflow - outflow) 30d z-score",
+      "ic_30d": 0.018,
+      "p_value": 0.467,
+      "verdict": "NOT SIGNIFICANT - p=0.467, IC=0.018. Exchange flows at daily resolution are not predictive.",
+      "session": "p002_onchain_screening_btc_s002",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_nvt_z90",
+      "description": "NVT ratio (market cap / tx volume) 90d z-score from CoinMetrics",
+      "ic_30d": 0.016,
+      "p_value": 0.514,
+      "verdict": "NOT SIGNIFICANT - p=0.514. NVT derived from CM columns (CapMrktCurUSD/TxCnt*Price) uninformative.",
+      "session": "p002_onchain_screening_btc_s002",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_hr_roc30",
+      "description": "Hash rate 30-day rate of change",
+      "ic_30d": 0.018,
+      "p_value": 0.451,
+      "verdict": "NOT SIGNIFICANT - p=0.451. Short 30d window too noisy. Use 90d window instead.",
+      "session": "p002_onchain_screening_btc_s002",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_onchain_composite_as_hard_gate",
+      "description": "Binary gate on Donchian using on-chain composite > 0",
+      "donchian_sharpe_gated": 0.73,
+      "donchian_sharpe_ungated": 1.238,
+      "verdict": "DEGRADES Donchian performance. Composite has predictive IC but does not improve strategy Sharpe when used as hard binary gate. Use as continuous sizer instead.",
+      "session": "p002_onchain_screening_btc_s002",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_blockchain_com_tx_roc",
+      "description": "Blockchain.com n_transactions 30/90d ROC",
+      "ic_30d_roc30": -0.031,
+      "ic_30d_roc90": 0.034,
+      "p_roc30": 0.191,
+      "p_roc90": 0.17,
+      "verdict": "NOT SIGNIFICANT - Blockchain.com transaction counts not predictive at daily resolution. BC hash rate mirrors CoinMetrics exactly.",
+      "session": "p002_onchain_screening_btc_s002",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_standalone_composite_strategy",
+      "description": "S002 composite (0.25*mvrv_std + 0.75*(-hr_lag30_std)) used standalone as long-only strategy",
+      "standalone_sharpe": 0.605,
+      "bnh_sharpe": 0.732,
+      "verdict": "Cannot use as primary signal — Sharpe < B&H. Composite must overlay existing price signals.",
+      "session": "p002_onchain_screening_btc_s003",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_fee_roc30_as_signal",
+      "description": "30-day rate of change of fee_per_hash",
+      "ic_30d": 0.024,
+      "p_value": 0.311,
+      "verdict": "NOT SIGNIFICANT - ROC form loses signal. Use raw LEVEL of fee_per_hash (IC=0.259***) or pctrank (IC=0.166***). ROC form peaks at lag=30-45d (IC=0.12) which is marginally useful.",
+      "session": "p002_onchain_screening_btc_s003",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "btc_mvrv_hard_gate_below_2",
+      "description": "MVRV z-score hard gate — only trade when mvrv_z90 < 2.0",
+      "gated_sharpe": 0.0,
+      "baseline_sharpe": 1.350,
+      "pct_active": 0.20,
+      "verdict": "Severely degrades Donchian performance. MVRV gate restricts too much (only 20% active). Use MVRV as soft scaler at most.",
+      "session": "p002_onchain_screening_btc_s003",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "fee_ph_hard_gate_portfolio",
+      "description": "Hard gate on champion portfolio (BTC 30% + ETH 70%) using fee_ph_pctrank365 > threshold",
+      "gated_sharpe_best": 0.98,
+      "baseline_sharpe": 1.545,
+      "pct_active_at_best": 0.312,
+      "verdict": "Hard gate degrades portfolio Sharpe (0.98 vs 1.545). 2021 bull run has fee_pctrank=0.29 avg — gate cuts best year. Always use soft scaling (alpha>0) not hard threshold.",
+      "session": "p002_onchain_screening_btc_s004",
+      "date": "2026-02-20"
+    },
+    {
+      "signal": "mvrv_overbought_filter_portfolio",
+      "description": "MVRV z90 > thresh filter on BTC leg of champion portfolio",
+      "best_delta_sharpe": 0.014,
+      "verdict": "Modest improvement (+0.014 Sharpe) at most. Not worth complexity. MVRV identifies overbought only 7.8% of 8h bars — too rare to make meaningful difference.",
+      "session": "p002_onchain_screening_btc_s004",
+      "date": "2026-02-20"
     }
   ]
 }

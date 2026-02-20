@@ -10,6 +10,7 @@ from sparky.data.onchain_bgeometrics import (
     BASE_URL,
     METRIC_ENDPOINTS,
     BGeometricsFetcher,
+    sync_bgeometrics,
 )
 
 
@@ -478,3 +479,45 @@ class TestMetricEndpoints:
 
                 # Verify correct field name in DataFrame
                 assert metric_name in df.columns
+
+
+class TestSyncBgeometrics:
+    @patch("sparky.data.onchain_bgeometrics.DataStore")
+    @patch("sparky.data.onchain_bgeometrics.BGeometricsFetcher")
+    def test_sync_calls_append_for_new_data(self, MockFetcherCls, MockStoreCls):
+        mock_df = pd.DataFrame(
+            {"sopr": [1.05, 0.98]},
+            index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"),
+        )
+        MockFetcherCls.return_value.fetch_metric.return_value = mock_df
+        MockStoreCls.return_value.get_last_timestamp.return_value = None
+
+        results = sync_bgeometrics(metrics=["sopr"])
+
+        assert results["sopr"] == 2
+        MockStoreCls.return_value.append.assert_called_once()
+        call_path = str(MockStoreCls.return_value.append.call_args[0][1])
+        assert "sopr" in call_path
+
+    @patch("sparky.data.onchain_bgeometrics.DataStore")
+    @patch("sparky.data.onchain_bgeometrics.BGeometricsFetcher")
+    def test_sync_incremental_from_last_timestamp(self, MockFetcherCls, MockStoreCls):
+        from datetime import datetime as dt
+
+        MockFetcherCls.return_value.fetch_metric.return_value = pd.DataFrame()
+        MockStoreCls.return_value.get_last_timestamp.return_value = dt(2024, 1, 15, tzinfo=timezone.utc)
+
+        sync_bgeometrics(metrics=["sopr"])
+
+        start_arg = MockFetcherCls.return_value.fetch_metric.call_args[0][1]
+        assert start_arg == "2024-01-16"
+
+    @patch("sparky.data.onchain_bgeometrics.DataStore")
+    @patch("sparky.data.onchain_bgeometrics.BGeometricsFetcher")
+    def test_sync_stops_on_rate_limit(self, MockFetcherCls, MockStoreCls):
+        MockFetcherCls.return_value.fetch_metric.side_effect = RuntimeError("Rate limited")
+        MockStoreCls.return_value.get_last_timestamp.return_value = None
+
+        results = sync_bgeometrics(metrics=["sopr", "nupl"])
+
+        assert MockFetcherCls.return_value.fetch_metric.call_count == 1

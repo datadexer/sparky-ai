@@ -31,14 +31,17 @@ from typing import Optional
 import pandas as pd
 import requests
 
+from sparky.data.storage import DataStore
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://bitcoin-data.com"
 RATE_LIMIT_STATE_PATH = Path("data/.bgeometrics_rate_limit.json")
 
-# Map our metric names to BGeometrics API endpoints and response field names
+# Map our metric names to BGeometrics API endpoints and response field names.
 # NOTE: Only computed indicators available on free tier.
 # Derivatives (funding rate, open interest, basis) require Advanced plan — skip entirely.
+# /v1/ endpoints support date filtering (startday/endday params).
 METRIC_ENDPOINTS = {
     "mvrv_zscore": {"endpoint": "/v1/mvrv", "field": "mvrv"},
     "sopr": {"endpoint": "/v1/sopr", "field": "sopr"},
@@ -202,7 +205,14 @@ class BGeometricsFetcher:
             }
 
             data = self._get(endpoint, params)
-            content = data.get("content", [])
+
+            # Handle both paginated dict and raw list responses
+            if isinstance(data, list):
+                content = data
+                is_last = True
+            else:
+                content = data.get("content", [])
+                is_last = data.get("last", True)
 
             if not content:
                 break
@@ -221,8 +231,7 @@ class BGeometricsFetcher:
                     except (ValueError, TypeError):
                         continue
 
-            # Check if we've reached the last page
-            if data.get("last", True):
+            if is_last:
                 break
 
             page += 1
@@ -295,3 +304,76 @@ class BGeometricsFetcher:
     def available_metrics(self) -> list[str]:
         """List available metric names."""
         return list(METRIC_ENDPOINTS.keys())
+
+
+def sync_bgeometrics(
+    metrics: list[str] | None = None,
+    token: str | None = None,
+) -> dict[str, int]:
+    """Fetch on-chain metrics and save to parquet via DataStore.
+
+    Incremental: checks DataStore.get_last_timestamp() and fetches only new dates.
+    Saves one parquet per metric to data/raw/onchain/bgeometrics/{metric}.parquet.
+    Also saves a wide-join parquet: data/raw/onchain/bgeometrics_combined.parquet.
+    Returns dict of {metric: n_new_rows}.
+    """
+    store = DataStore()
+    fetcher = BGeometricsFetcher(token=token)
+    if metrics is None:
+        metrics = list(METRIC_ENDPOINTS.keys())
+
+    results = {}
+    all_dfs = []
+
+    for metric in metrics:
+        parquet_path = Path(f"data/raw/onchain/bgeometrics/{metric}.parquet")
+
+        last_ts = store.get_last_timestamp(parquet_path)
+        if last_ts:
+            start = (last_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        else:
+            start = "2010-01-01"  # BGeometrics has data from 2009
+
+        try:
+            df = fetcher.fetch_metric(metric, start)
+        except RuntimeError:
+            logger.warning(f"Rate limit hit during sync of {metric}. Stopping.")
+            break
+        except Exception as e:
+            logger.warning(f"Failed to fetch {metric}: {e}")
+            results[metric] = 0
+            continue
+
+        if df.empty:
+            logger.info(f"No new data for {metric}")
+            results[metric] = 0
+        else:
+            meta = {"source": "bgeometrics", "metric": metric, "asset": "btc"}
+            store.append(df, parquet_path, metadata=meta)
+            results[metric] = len(df)
+            logger.info(f"Synced {len(df)} new rows for {metric}")
+
+        if parquet_path.exists():
+            full_df, _ = store.load(parquet_path)
+            all_dfs.append(full_df)
+
+    if all_dfs:
+        combined = all_dfs[0]
+        for df in all_dfs[1:]:
+            combined = combined.join(df, how="outer")
+        combined = combined.sort_index()
+
+        combined_path = Path("data/raw/onchain/bgeometrics_combined.parquet")
+        store.save(
+            combined,
+            combined_path,
+            metadata={
+                "source": "bgeometrics",
+                "asset": "btc",
+                "metrics": list(combined.columns),
+                "n_metrics": len(combined.columns),
+            },
+        )
+        logger.info(f"Saved combined parquet: {len(combined)} rows, {len(combined.columns)} metrics")
+
+    return results
