@@ -1,0 +1,138 @@
+name: p001_portfolio
+
+objective: |
+  Portfolio construction and validation for Project 001 survivors.
+
+  ## Setup
+
+  Read candidates from configs/project_001/candidates.yaml.
+  Read validation results from state/core_memory.json (btc_validation, eth_validation sections).
+
+  Survivors (must use ONLY these):
+  - btc_don4h_160_25_iv
+  - btc_don4h_60_20_iv
+  - btc_don8h_82_20_iv
+  - eth_don8h_83_33_iv
+  - eth_don4h_164_47_iv (IV variant — config: asset=eth, timeframe=4h, signal_type=donchian, signal_params={entry_period:164, exit_period:47}, sizing=inverse_vol, sizing_params={vol_window:30, target_vol:0.15})
+
+  Note: eth_don4h_164_47_iv may not be in candidates.yaml. If missing, construct the config dict manually from the params above.
+
+  ## Step 1: Build Portfolio Configs
+
+  Use portfolio_combine() from experiment_runner:
+  ```python
+  from experiment_runner import portfolio_combine
+
+  strategies = [
+      {"config": btc_config, "weight": w1},
+      {"config": eth_config, "weight": w2},
+  ]
+  result = portfolio_combine(strategies, weighting="specified", n_trials=16269)
+  ```
+
+  ### Tier 1 Configs (MUST TEST ALL):
+  1. Best BTC (btc_don4h_160_25_iv) 50% + best ETH (eth_don8h_83_33_iv) 50% — equal weight
+  2. Best BTC 60% + best ETH 40% — BTC-heavy
+  3. Best BTC 70% + best ETH 30% — more BTC-heavy
+  4. btc_don8h_82_20_iv 50% + eth_don8h_83_33_iv 50% — 8h-only portfolio
+  5. Inverse-vol weighted: all 3 BTC + eth_don8h_83_33_iv (weighting="inverse_vol")
+
+  ### Tier 2 Configs (test if time allows):
+  6. btc_don4h_160_25_iv 40% + btc_don4h_60_20_iv 20% + eth_don8h_83_33_iv 40%
+  7. All 3 BTC equal (33%/33%/34%) + eth_don8h_83_33_iv — 4-strategy portfolio
+  8. btc_don4h_160_25_iv 50% + eth_don4h_164_47_iv 50%
+
+  ## Step 2: Screen at 30bps
+
+  For each portfolio config:
+  1. Run portfolio_combine() to get combined returns
+  2. Compute metrics via compute_all_metrics(returns, n_trials=16269)
+  3. Drop any with Sharpe < 1.0 or MaxDD > -30%
+  4. Report Sharpe at BOTH 30 bps and 50 bps
+
+  ## Step 3: Validation Battery on Top Portfolios
+
+  Run run_full_validation_battery() on top 3-5 screened portfolios.
+  Note: The validation battery may need the portfolio config in a specific format. If it fails, construct a synthetic config dict and pass the combined returns directly.
+
+  If validation battery cannot accept portfolio configs, skip and report metrics + sub-period analysis instead.
+
+  ## Step 4: Investigation on Top 1-2
+
+  Run run_full_investigation() on the best 1-2 portfolios to get regime decomposition and edge attribution.
+
+  Again, if analysis_runner functions don't accept portfolio configs, compute the investigation metrics manually:
+  - Sub-period analysis (full, 2017+, 2020+)
+  - 2022 bear market performance
+  - Monthly returns heatmap
+
+  ## Step 5: Reports
+
+  For each portfolio that passes screening:
+  - generate_candidate_report() if possible, otherwise write a structured JSON results file
+  - Save to reports/project_001/candidates/portfolio_{name}/
+
+  Generate project summary:
+  ```python
+  from report_generator import generate_project_summary
+  generate_project_summary("project_001", all_results, "reports/project_001")
+  ```
+
+  ## Step 6: Output
+
+  Write portfolio results to:
+  - results/project_001_portfolio.json — structured JSON with all portfolio configs, metrics, verdicts
+  - reports/project_001/sessions/portfolio_summary.md — markdown summary
+  - state/core_memory.json — update portfolios section with validated entries
+
+  Log to wandb with tags [project_001, portfolio].
+
+  ## Key Questions to Answer
+  1. Does BTC-ETH diversification reduce MaxDD vs best individual?
+  2. 2022 bear: BTC typically negative, does ETH leg save the portfolio?
+  3. Is portfolio Sharpe > best individual? (Often no — diversification preserves drawdown, not Sharpe)
+  4. What is the optimal BTC/ETH weight ratio?
+
+constraints:
+  gpu_required: false
+  transaction_costs_bps: 30
+  n_trials_start: 16269
+  n_trials_cumulative: true
+
+strategy_space: []
+
+stopping_criteria:
+  stop_on_success: false
+  budget:
+    max_sessions: 3
+    max_hours: 2
+    max_cost_usd: 15
+    digest_every: 1
+  stall:
+    sessions_without_improvement: 3
+
+session_limits:
+  max_session_minutes: 60
+  max_cost_per_session: 8.0
+  min_session_minutes: 3
+  max_consecutive_crashes: 3
+
+wandb_tags:
+  - project_001
+  - portfolio
+
+gates:
+  - trigger: stall_detected
+    action: pause_and_alert
+
+exclusions:
+  - "No parameter sweeps. Build portfolios from validated survivors only."
+  - "Use portfolio_combine() from experiment_runner. Do NOT reimplement portfolio logic."
+  - "Do NOT proceed to OOS evaluation. Stay in-sample."
+  - "Do not build paper trading infrastructure."
+  - "Always use sparky.data.loader.load() — never pd.read_parquet()"
+  - "Always use compute_all_metrics with n_trials=16269"
+  - "Report Sharpe at BOTH 30 bps and 50 bps"
+  - "Do NOT touch git"
+  - "BEWARE of PPY inflation: cross-timeframe portfolios produce aligned returns at the COARSER resolution. validate_periods_per_year() will catch this if you pass a pandas Series."
+  - "Do NOT overwrite existing reports. Before writing any file in reports/, check if it already exists. If it does, either skip or append with a session-numbered suffix (e.g., _session002.md). Never clobber a previous session's output."
