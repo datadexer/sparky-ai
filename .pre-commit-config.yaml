@@ -19,14 +19,14 @@ repos:
     hooks:
       - id: sparky-checks
         name: Sparky-specific checks
-        entry: python scripts/hooks/sparky_checks.py
+        entry: python bin/hooks/sparky_checks.py
         language: python
         pass_filenames: false
         always_run: true
 
       - id: research-validation
         name: Research Validation (Claude)
-        entry: python scripts/research_validation/validate_pr.py
+        entry: python bin/research_validation/validate_pr.py
         language: python
         pass_filenames: false
         always_run: true
@@ -34,7 +34,7 @@ repos:
 
       - id: platform-validation
         name: Platform Validation (Claude)
-        entry: python scripts/platform_validation/validate_pr.py
+        entry: python bin/platform_validation/validate_pr.py
         language: python
         pass_filenames: false
         always_run: true

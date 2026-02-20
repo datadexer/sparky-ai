@@ -26,7 +26,7 @@ in experiment scripts.
 ### For parameter grid sweeps — use `sweep()`
 
 ```python
-import sys; sys.path.insert(0, "scripts/infra")
+import sys; sys.path.insert(0, "bin/infra")
 from experiment_runner import sweep
 
 results = sweep(
@@ -294,9 +294,9 @@ When you have completed your experiments and logged results to wandb:
 - Comment on or interact with GitHub PRs/issues
 
 Your sandbox enforces these restrictions. If you attempt to write outside
-`results/`, `scratch/`, or `scripts/*.py`, the write will be BLOCKED.
+`results/` or `scripts/*.py`, the write will be BLOCKED.
 
-Files in `scripts/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
+Files in `bin/infra/` are **protected platform utilities** (e.g., `sweep_utils.py`,
 `sweep_two_stage.py`). You cannot edit them. To request changes, write a
 `GATE_REQUEST.md` explaining what you need.
 
