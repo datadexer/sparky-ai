@@ -25,11 +25,11 @@ class TestFactoryMethods:
             assert f.symbol == "BTC/USDC:USDC"
             assert f.granularity == "1h"
 
-    def test_coinbase_factory(self):
+    def test_coinbase_intl_factory(self):
         with patch.object(FundingRateFetcher, "_create_exchange", return_value=Mock()):
-            f = FundingRateFetcher.coinbase("ETH")
-            assert f.exchange_id == "coinbase"
-            assert f.symbol == "ETH/USD:USD"
+            f = FundingRateFetcher.coinbase_intl("ETH")
+            assert f.exchange_id == "coinbaseinternational"
+            assert f.symbol == "ETH/USDC:USDC"
             assert f.granularity == "1h"
 
     def test_binance_default_asset(self):
@@ -139,6 +139,48 @@ class TestFetchFundingRates:
         assert fetcher.exchange.fetch_funding_rate_history.call_count == 1
 
 
+class TestOffsetPagination:
+    """Tests for offset-based pagination (coinbaseinternational)."""
+
+    @pytest.fixture
+    def fetcher(self):
+        mock_exchange = Mock()
+        with patch.object(FundingRateFetcher, "_create_exchange", return_value=mock_exchange):
+            f = FundingRateFetcher("coinbaseinternational", "BTC/USDC:USDC", "1h")
+            yield f
+
+    def test_uses_result_offset_param(self, fetcher):
+        page1 = [{"timestamp": 1704067200000 + i * 3600000, "fundingRate": 0.0001} for i in range(1000)]
+        page2 = [{"timestamp": 1704067200000 + (1000 + i) * 3600000, "fundingRate": 0.0002} for i in range(500)]
+
+        fetcher.exchange.fetch_funding_rate_history.side_effect = [page1, page2, []]
+
+        df = fetcher.fetch_funding_rates("2024-01-01", "2025-01-01")
+
+        calls = fetcher.exchange.fetch_funding_rate_history.call_args_list
+        # First call: offset=0
+        p0 = calls[0].kwargs.get("params") or calls[0][1].get("params", {})
+        assert p0.get("result_offset") == 0
+        # Second call: offset=1000
+        p1 = calls[1].kwargs.get("params") or calls[1][1].get("params", {})
+        assert p1.get("result_offset") == 1000
+
+    def test_filters_by_time_range(self, fetcher):
+        start_ts = 1704067200000  # 2024-01-01
+        end_ts = 1704153600000  # 2024-01-02
+        records = [
+            {"timestamp": start_ts - 3600000, "fundingRate": 0.0001},  # before range
+            {"timestamp": start_ts, "fundingRate": 0.0002},  # in range
+            {"timestamp": start_ts + 3600000, "fundingRate": 0.0003},  # in range
+            {"timestamp": end_ts + 3600000, "fundingRate": 0.0004},  # after range
+        ]
+        fetcher.exchange.fetch_funding_rate_history.side_effect = [records]
+
+        df = fetcher.fetch_funding_rates("2024-01-01", "2024-01-02")
+
+        assert len(df) == 2
+
+
 class TestValidation:
     @pytest.fixture
     def fetcher(self):
@@ -245,12 +287,12 @@ class TestSyncFundingRates:
     def test_sync_handles_fetch_exception(self, MockFetcherCls, MockStoreCls):
         mock_instance = Mock()
         mock_instance.fetch_funding_rates.side_effect = Exception("connection refused")
-        MockFetcherCls.coinbase.return_value = mock_instance
+        MockFetcherCls.coinbase_intl.return_value = mock_instance
         MockStoreCls.return_value.get_last_timestamp.return_value = None
 
-        results = sync_funding_rates(asset="BTC", exchanges=["coinbase"])
+        results = sync_funding_rates(asset="BTC", exchanges=["coinbase_intl"])
 
-        assert results["coinbase"] == 0
+        assert results["coinbase_intl"] == 0
 
     @patch("sparky.data.funding_rate.DataStore")
     @patch("sparky.data.funding_rate.FundingRateFetcher")

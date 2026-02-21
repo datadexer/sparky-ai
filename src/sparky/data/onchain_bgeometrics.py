@@ -85,22 +85,24 @@ METRIC_ENDPOINTS = {
         "endpoint": "/v1/open-interest-futures",
         "field": "openInterestFutures",
         "best_effort": True,
+        "deprecated": True,  # Ends Oct 2024. 701 rows kept for historical backtesting.
     },
     "funding_rate_aggregate": {
         "endpoint": "/v1/funding-rate",
         "field": "fundingRate",
         "best_effort": True,
     },
-    # Stablecoin & ETF (multi-field)
+    # Stablecoin (multi-field)
     "stablecoin_supply": {
         "endpoint": "/v1/stablecoin-supply",
         "field": None,
         "multi_field": True,
     },
-    "etf_aggregate": {
-        "endpoint": "/v1/etf-aggregate",
-        "field": None,
-        "multi_field": True,
+    # ETF — CSV-only endpoint (no JSON), uses dedicated fetch path
+    "etf_btc_total": {
+        "endpoint": "/v1/etf-btc-total/csv",
+        "field": "etfBtcTotal",
+        "csv_endpoint": True,
     },
     # Additional indicators
     "vdd_multiple": {"endpoint": "/v1/vdd-multiple", "field": "vddMultiple"},
@@ -220,6 +222,12 @@ class BGeometricsFetcher:
                     f"429 Rate Limited after {self._request_count} requests",
                     response=resp,
                 )
+            if resp.status_code == 404:
+                logger.warning(f"[DATA] BGeometrics 404 — endpoint {endpoint} not found")
+                raise requests.HTTPError(f"404 Not Found: {endpoint}", response=resp)
+            if resp.status_code >= 500:
+                logger.warning(f"[DATA] BGeometrics {resp.status_code} server error on {endpoint}")
+                raise requests.HTTPError(f"{resp.status_code} Server Error: {endpoint}", response=resp)
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
@@ -236,6 +244,51 @@ class BGeometricsFetcher:
         except Exception as e:
             logger.debug(f"[DATA] Field discovery failed for {endpoint}: {e}")
         return []
+
+    def _fetch_csv_metric(self, metric_name: str, endpoint: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """Fetch a CSV-only endpoint (e.g. /v1/etf-btc-total/csv)."""
+        import io
+
+        self._rate_limit()
+        url = f"{BASE_URL}{endpoint}"
+        params = {"startday": start_date, "endday": end_date}
+        if self.token:
+            params["token"] = self.token
+
+        try:
+            resp = self.session.get(url, params=params, timeout=30)
+            self._last_request_time = time.time()
+            self._request_count += 1
+            self._save_rate_limit_state()
+
+            if resp.status_code in (401, 403, 404, 429, 500, 502, 503):
+                logger.warning(f"[DATA] {metric_name} CSV returned {resp.status_code}, skipping")
+                if resp.status_code == 429:
+                    self._rate_limited = True
+                return pd.DataFrame()
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f"[DATA] BGeometrics CSV request failed: {e}")
+            raise
+
+        df = pd.read_csv(io.StringIO(resp.text))
+        if df.empty:
+            return pd.DataFrame()
+
+        # Expect a date column (d or date) + value columns
+        date_col = "d" if "d" in df.columns else "date" if "date" in df.columns else df.columns[0]
+        df[date_col] = pd.to_datetime(df[date_col], utc=True)
+        df = df.set_index(date_col)
+        df.index.name = "date"
+        # Rename columns to metric_name prefix
+        df.columns = [f"{metric_name}_{c}" if c != metric_name else c for c in df.columns]
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        df = df.sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+
+        logger.info(f"[DATA] Fetched {len(df)} rows for BGeometrics {metric_name} (CSV)")
+        return df
 
     def fetch_metric(
         self,
@@ -261,13 +314,16 @@ class BGeometricsFetcher:
         config = METRIC_ENDPOINTS[metric_name]
         endpoint = config["endpoint"]
         field = config["field"]
-        is_best_effort = config.get("best_effort", False)
         is_multi_field = config.get("multi_field", False)
+        is_csv = config.get("csv_endpoint", False)
 
         if end_date is None:
             end_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         logger.info(f"[DATA] Fetching BGeometrics {metric_name} ({start_date} to {end_date})")
+
+        if is_csv:
+            return self._fetch_csv_metric(metric_name, endpoint, start_date, end_date)
 
         all_records = []
         page = 0
@@ -283,15 +339,9 @@ class BGeometricsFetcher:
             try:
                 data = self._get(endpoint, params)
             except requests.HTTPError as e:
-                if (
-                    is_best_effort
-                    and hasattr(e, "response")
-                    and e.response is not None
-                    and e.response.status_code in (401, 403)
-                ):
-                    logger.warning(
-                        f"[DATA] Best-effort metric {metric_name} returned {e.response.status_code}, skipping"
-                    )
+                status = e.response.status_code if hasattr(e, "response") and e.response is not None else 0
+                if status in (401, 403, 404, 500, 502, 503):
+                    logger.warning(f"[DATA] {metric_name} returned {status}, skipping")
                     return pd.DataFrame()
                 raise
 
@@ -425,7 +475,7 @@ def sync_bgeometrics(
     store = DataStore()
     fetcher = BGeometricsFetcher(token=token)
     if metrics is None:
-        metrics = list(METRIC_ENDPOINTS.keys())
+        metrics = [k for k, v in METRIC_ENDPOINTS.items() if not v.get("deprecated")]
 
     results = {}
     all_dfs = []

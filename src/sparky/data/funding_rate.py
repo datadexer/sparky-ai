@@ -15,14 +15,17 @@ __all__ = ["FundingRateFetcher", "sync_funding_rates"]
 
 MAX_RECORDS_PER_REQUEST = 1000
 
+# Exchanges that ignore the `since` param and need offset-based pagination.
+_OFFSET_EXCHANGES = {"coinbaseinternational"}
+
 
 class FundingRateFetcher:
     """Fetch historical funding rates via CCXT.
 
     Factory methods:
-        .binance() — 8h granularity, BTC/USDT:USDT
-        .hyperliquid() — 1h granularity, BTC/USDC:USDC
-        .coinbase() — 1h granularity, BTC/USD:USD
+        .binance() — 8h, BTC/USDT:USDT (geo-restricted from US)
+        .hyperliquid() — 1h, BTC/USDC:USDC
+        .coinbase_intl() — 1h, BTC/USDC:USDC (Coinbase International Exchange)
     """
 
     def __init__(self, exchange_id: str, symbol: str, granularity: str):
@@ -44,8 +47,9 @@ class FundingRateFetcher:
         return cls("hyperliquid", f"{asset}/USDC:USDC", "1h")
 
     @classmethod
-    def coinbase(cls, asset: str = "BTC") -> "FundingRateFetcher":
-        return cls("coinbase", f"{asset}/USD:USD", "1h")
+    def coinbase_intl(cls, asset: str = "BTC") -> "FundingRateFetcher":
+        """Coinbase International Exchange (institutional, non-US)."""
+        return cls("coinbaseinternational", f"{asset}/USDC:USDC", "1h")
 
     def fetch_funding_rates(
         self,
@@ -66,7 +70,10 @@ class FundingRateFetcher:
 
         logger.info(f"[DATA] Fetching {self.symbol} funding rates from {self.exchange_id}")
 
-        all_records = self._paginated_fetch(start_ts, end_ts)
+        if self.exchange_id in _OFFSET_EXCHANGES:
+            all_records = self._paginated_fetch_offset(start_ts, end_ts)
+        else:
+            all_records = self._paginated_fetch_since(start_ts, end_ts)
 
         if not all_records:
             logger.warning(f"[DATA] No funding rates returned for {self.symbol}")
@@ -76,7 +83,8 @@ class FundingRateFetcher:
         df = self._validate(df)
         return df
 
-    def _paginated_fetch(self, start_ts: int, end_ts: int) -> list:
+    def _paginated_fetch_since(self, start_ts: int, end_ts: int) -> list:
+        """Standard since-based pagination (Binance, Hyperliquid)."""
         all_records = []
         since = start_ts
         while since < end_ts:
@@ -98,6 +106,34 @@ class FundingRateFetcher:
             since = last_ts + 1
 
         return all_records
+
+    def _paginated_fetch_offset(self, start_ts: int, end_ts: int) -> list:
+        """Offset-based pagination for exchanges that ignore `since` param."""
+        all_records = []
+        offset = 0
+        while True:
+            try:
+                records = self.exchange.fetch_funding_rate_history(
+                    self.symbol,
+                    limit=MAX_RECORDS_PER_REQUEST,
+                    params={"result_offset": offset},
+                )
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                logger.warning(f"[DATA] Funding rate fetch failed at offset {offset}: {e}")
+                break
+
+            if not records:
+                break
+
+            all_records.extend(records)
+            offset += len(records)
+
+            if len(records) < MAX_RECORDS_PER_REQUEST:
+                break
+
+        # Offset pagination returns newest-first; filter to [start_ts, end_ts]
+        filtered = [r for r in all_records if start_ts <= r.get("timestamp", 0) <= end_ts]
+        return filtered
 
     def _records_to_dataframe(self, records: list) -> pd.DataFrame:
         rows = []
@@ -146,14 +182,14 @@ def sync_funding_rates(
     """
     store = DataStore()
     if exchanges is None:
-        exchanges = ["hyperliquid", "coinbase"]
+        exchanges = ["hyperliquid", "coinbase_intl"]
 
     # Binance factory preserved but excluded from default sync (451 geo-restriction).
-    # Coinbase fetchFundingRateHistory not supported by CCXT — will log warning and skip.
+    # coinbase_intl = Coinbase International Exchange (BTC/USDC:USDC, 1h).
     factory = {
         "binance": FundingRateFetcher.binance,
         "hyperliquid": FundingRateFetcher.hyperliquid,
-        "coinbase": FundingRateFetcher.coinbase,
+        "coinbase_intl": FundingRateFetcher.coinbase_intl,
     }
 
     results = {}

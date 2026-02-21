@@ -98,8 +98,8 @@ _DATASET_ALIASES = {
     "funding_rate_eth_binance": Path("data/raw/funding_rates/eth_binance.parquet"),
     "funding_rate_btc_hyperliquid": Path("data/raw/funding_rates/btc_hyperliquid.parquet"),
     "funding_rate_eth_hyperliquid": Path("data/raw/funding_rates/eth_hyperliquid.parquet"),
-    "funding_rate_btc_coinbase": Path("data/raw/funding_rates/btc_coinbase.parquet"),
-    "funding_rate_eth_coinbase": Path("data/raw/funding_rates/eth_coinbase.parquet"),
+    "funding_rate_btc_coinbase_intl": Path("data/raw/funding_rates/btc_coinbase_intl.parquet"),
+    "funding_rate_eth_coinbase_intl": Path("data/raw/funding_rates/eth_coinbase_intl.parquet"),
     # BGeometrics advanced on-chain metrics
     "btc_sth_sopr": Path("data/raw/onchain/bgeometrics/sth_sopr.parquet"),
     "btc_lth_sopr": Path("data/raw/onchain/bgeometrics/lth_sopr.parquet"),
@@ -115,7 +115,7 @@ _DATASET_ALIASES = {
     "btc_open_interest_futures": Path("data/raw/onchain/bgeometrics/open_interest_futures.parquet"),
     "btc_funding_rate_aggregate": Path("data/raw/onchain/bgeometrics/funding_rate_aggregate.parquet"),
     "btc_stablecoin_supply": Path("data/raw/onchain/bgeometrics/stablecoin_supply.parquet"),
-    "btc_etf_aggregate": Path("data/raw/onchain/bgeometrics/etf_aggregate.parquet"),
+    "btc_etf_btc_total": Path("data/raw/onchain/bgeometrics/etf_btc_total.parquet"),
     "btc_vdd_multiple": Path("data/raw/onchain/bgeometrics/vdd_multiple.parquet"),
     "btc_realized_pl_ratio": Path("data/raw/onchain/bgeometrics/realized_pl_ratio.parquet"),
 }
