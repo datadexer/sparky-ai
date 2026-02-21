@@ -13,5 +13,90 @@
     "sha256": "f68c4106490a84cc760dd16ccdb55f3e6c8a2cc23b993186694bcb3c7ad8cbdd",
     "updated_at": "2026-02-16T00:13:03.763652+00:00",
     "size_bytes": 3797073
+  },
+  "data/raw/onchain/bgeometrics/sth_sopr.parquet": {
+    "sha256": "61c104564d3a8d80652eada736b1c979ef84a8465b434654c2011677e04a7386",
+    "updated_at": "2026-02-21T03:32:37.274026+00:00",
+    "size_bytes": 107094
+  },
+  "data/raw/onchain/bgeometrics/sth_mvrv.parquet": {
+    "sha256": "dc599adf3a58c80ab14d58f25d98476b996be448611138f99ef0a07f819a76b8",
+    "updated_at": "2026-02-21T03:32:37.266728+00:00",
+    "size_bytes": 56261
+  },
+  "data/raw/onchain/bgeometrics/exchange_inflow_btc.parquet": {
+    "sha256": "234cea8b8264eabde7957a06c5bfb4e662c176954802a723441832d86c6c055e",
+    "updated_at": "2026-02-21T03:32:37.186298+00:00",
+    "size_bytes": 96589
+  },
+  "data/raw/onchain/bgeometrics/exchange_netflow_btc.parquet": {
+    "sha256": "3fcd24e659a0e5d7069db96ba76d5841af3d1aa3f2415919f4695a149bb24440",
+    "updated_at": "2026-02-21T03:32:37.193195+00:00",
+    "size_bytes": 96602
+  },
+  "data/raw/onchain/bgeometrics/exchange_outflow_btc.parquet": {
+    "sha256": "0c270da7a64d25f6d33f238e2d3fa15915bab87d98a3b4bf1f0ccd5ceec1f314",
+    "updated_at": "2026-02-21T03:32:37.199455+00:00",
+    "size_bytes": 95907
+  },
+  "data/raw/onchain/bgeometrics/exchange_reserve_btc.parquet": {
+    "sha256": "d723504182ac0e94a4112a466ef807f69a74e563fa11a5db2ea740d800782e5b",
+    "updated_at": "2026-02-21T03:32:37.207653+00:00",
+    "size_bytes": 96630
+  },
+  "data/raw/onchain/bgeometrics/funding_rate_aggregate.parquet": {
+    "sha256": "ca70d2e4efc78e5ac0c2e88aec2f356fbc3ae540aa5ff329ebd775f784d3dcb0",
+    "updated_at": "2026-02-21T03:32:37.212523+00:00",
+    "size_bytes": 47369
+  },
+  "data/raw/onchain/bgeometrics/lth_mvrv.parquet": {
+    "sha256": "3eb49b4dd2ae6faba11042c6132f8248c1e1b5b58151538ee32adb97ecce3b22",
+    "updated_at": "2026-02-21T03:32:37.221064+00:00",
+    "size_bytes": 77307
+  },
+  "data/raw/onchain/bgeometrics/lth_sopr.parquet": {
+    "sha256": "8e20c6855a5ee06b879c80e56e7375dfe9c4abdefdca3ecf5b0a5e34763feb25",
+    "updated_at": "2026-02-21T03:32:37.228640+00:00",
+    "size_bytes": 104292
+  },
+  "data/raw/onchain/bgeometrics/nupl_lth.parquet": {
+    "sha256": "03083aba649fc595e97a61722d9c987a71979e8e18d387e9a868d0e7ccdbb863",
+    "updated_at": "2026-02-21T03:32:37.235614+00:00",
+    "size_bytes": 72708
+  },
+  "data/raw/onchain/bgeometrics/nupl_sth.parquet": {
+    "sha256": "3043d0af18680fcb9d749ea0fd06f479e79841a43bfff3bfbac5d51057bf36a1",
+    "updated_at": "2026-02-21T03:32:37.242691+00:00",
+    "size_bytes": 81180
+  },
+  "data/raw/onchain/bgeometrics/open_interest_futures.parquet": {
+    "sha256": "141532184723ca1a81f8a62492a09fe870d19cc74d7ce509a1d31a10461cf69f",
+    "updated_at": "2026-02-21T03:32:37.247895+00:00",
+    "size_bytes": 15395
+  },
+  "data/raw/onchain/bgeometrics/stablecoin_supply.parquet": {
+    "sha256": "8e43b68edb0a203cede11f1e4b2d3fc173f1a026da6fcee259ae9911438b2fba",
+    "updated_at": "2026-02-21T03:32:37.259826+00:00",
+    "size_bytes": 170785
+  },
+  "data/raw/onchain/bgeometrics/vdd_multiple.parquet": {
+    "sha256": "036b7f9c0b925fc6405da37aa2470223bd9470f7510f68d14fbecce0f4161a56",
+    "updated_at": "2026-02-21T03:32:37.281203+00:00",
+    "size_bytes": 84433
+  },
+  "data/raw/onchain/bgeometrics/etf_btc_total.parquet": {
+    "sha256": "c9edbda2b7527661c5ffb3797997bfb65e721f5d839d1e81ad19966fee64440b",
+    "updated_at": "2026-02-21T03:32:37.175071+00:00",
+    "size_bytes": 12191
+  },
+  "data/raw/funding_rates/btc_coinbase.parquet": {
+    "sha256": "dfd67bfea02e0d711e8b09c2439ea8bc29dc0a683821648073fafd2119048e98",
+    "updated_at": "2026-02-21T03:39:22.181588+00:00",
+    "size_bytes": 273044
+  },
+  "data/raw/funding_rates/eth_coinbase.parquet": {
+    "sha256": "3663dd3ad9300db2cb3b3dae34d1c1a49923b035d55960e6aa0676c863fb52db",
+    "updated_at": "2026-02-21T03:39:31.072081+00:00",
+    "size_bytes": 267198
   }
 }

@@ -101,10 +101,7 @@ def get_changed_files() -> list[dict]:
     )
     all_files = [f for f in result.stdout.strip().split("\n") if f.strip()]
     reviewable = [
-        f
-        for f in all_files
-        if any(f.endswith(ext) for ext in (".py", ".yaml", ".yml", ".sh"))
-        and Path(f).exists()
+        f for f in all_files if any(f.endswith(ext) for ext in (".py", ".yaml", ".yml", ".sh")) and Path(f).exists()
     ]
 
     changes = []
@@ -168,9 +165,7 @@ def run_validation(changes: list[dict], context: dict[str, str]) -> dict:
     context_text = ""
     ctx_per_file = max(500, _MAX_CONTEXT_CHARS // max(len(context), 1))
     for path, content in context.items():
-        context_text += (
-            f"\n### {path} (for reference):\n```python\n{content[:ctx_per_file]}\n```\n"
-        )
+        context_text += f"\n### {path} (for reference):\n```python\n{content[:ctx_per_file]}\n```\n"
 
     user_message = (
         "Review the following staged code changes. Be specific and technical — "
@@ -189,15 +184,15 @@ def run_validation(changes: list[dict], context: dict[str, str]) -> dict:
         "{\n"
         '  "summary": "one-sentence overall verdict",\n'
         '  "issues": [\n'
-        '    {\n'
+        "    {\n"
         '      "severity": "HIGH|MEDIUM|LOW",\n'
         '      "file": "path/to/file.py",\n'
         '      "line": "approx line or function name",\n'
         '      "section": "rubric section number",\n'
         '      "description": "what is wrong and why it matters",\n'
         '      "fix": "concrete suggested fix"\n'
-        '    }\n'
-        '  ],\n'
+        "    }\n"
+        "  ],\n"
         '  "positive_observations": ["well-implemented aspects worth noting"],\n'
         '  "recommendations": ["actionable improvements beyond the flagged issues"],\n'
         '  "passed": true\n'
@@ -268,9 +263,7 @@ def main() -> None:
     if issues:
         print()
         for issue in issues:
-            icon = {"HIGH": "[CRITICAL]", "MEDIUM": "[MAJOR]", "LOW": "[MINOR]"}.get(
-                issue.get("severity", "?"), "[?]"
-            )
+            icon = {"HIGH": "[CRITICAL]", "MEDIUM": "[MAJOR]", "LOW": "[MINOR]"}.get(issue.get("severity", "?"), "[?]")
             section = issue.get("section", "")
             section_tag = f" [{section}]" if section else ""
             print(f"  {icon}{section_tag} {issue.get('file', '?')}: {issue.get('description', '')}")

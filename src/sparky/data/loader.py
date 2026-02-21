@@ -98,8 +98,18 @@ _DATASET_ALIASES = {
     "funding_rate_eth_binance": Path("data/raw/funding_rates/eth_binance.parquet"),
     "funding_rate_btc_hyperliquid": Path("data/raw/funding_rates/btc_hyperliquid.parquet"),
     "funding_rate_eth_hyperliquid": Path("data/raw/funding_rates/eth_hyperliquid.parquet"),
-    "funding_rate_btc_coinbase": Path("data/raw/funding_rates/btc_coinbase.parquet"),
-    "funding_rate_eth_coinbase": Path("data/raw/funding_rates/eth_coinbase.parquet"),
+    "funding_rate_btc_coinbase_intl": Path("data/raw/funding_rates/btc_coinbase_intl.parquet"),
+    "funding_rate_eth_coinbase_intl": Path("data/raw/funding_rates/eth_coinbase_intl.parquet"),
+    # Funding rates — CCXT (OKX only; Binance/Bybit geo-blocked)
+    "funding_rate_btc_okx": Path("data/raw/funding_rates/btc_okx.parquet"),
+    "funding_rate_eth_okx": Path("data/raw/funding_rates/eth_okx.parquet"),
+    # CoinAPI derivatives (historical backfill — manual pulls only)
+    "coinapi_funding_rate_btc_binance": Path("data/coinapi/funding_rate_btc_binance.parquet"),
+    "coinapi_funding_rate_eth_binance": Path("data/coinapi/funding_rate_eth_binance.parquet"),
+    "coinapi_oi_btc_binance": Path("data/coinapi/oi_btc_binance.parquet"),
+    "coinapi_oi_eth_binance": Path("data/coinapi/oi_eth_binance.parquet"),
+    "coinapi_oi_btc_okx": Path("data/coinapi/oi_btc_okx.parquet"),
+    "coinapi_oi_eth_okx": Path("data/coinapi/oi_eth_okx.parquet"),
     # BGeometrics advanced on-chain metrics
     "btc_sth_sopr": Path("data/raw/onchain/bgeometrics/sth_sopr.parquet"),
     "btc_lth_sopr": Path("data/raw/onchain/bgeometrics/lth_sopr.parquet"),
@@ -115,9 +125,17 @@ _DATASET_ALIASES = {
     "btc_open_interest_futures": Path("data/raw/onchain/bgeometrics/open_interest_futures.parquet"),
     "btc_funding_rate_aggregate": Path("data/raw/onchain/bgeometrics/funding_rate_aggregate.parquet"),
     "btc_stablecoin_supply": Path("data/raw/onchain/bgeometrics/stablecoin_supply.parquet"),
-    "btc_etf_aggregate": Path("data/raw/onchain/bgeometrics/etf_aggregate.parquet"),
+    "btc_etf_btc_total": Path("data/raw/onchain/bgeometrics/etf_btc_total.parquet"),
     "btc_vdd_multiple": Path("data/raw/onchain/bgeometrics/vdd_multiple.parquet"),
     "btc_realized_pl_ratio": Path("data/raw/onchain/bgeometrics/realized_pl_ratio.parquet"),
+}
+
+# Earliest usable date for datasets with known early-period quality issues.
+# Coinbase INTX: first 6 months (Mar-Sep 2023) have extreme negative funding
+# rates from low liquidity at exchange launch. See reports/p002/funding_rate_investigation.md.
+_START_DATE_OVERRIDES = {
+    "funding_rate_btc_coinbase_intl": pd.Timestamp("2023-10-01", tz="UTC"),
+    "funding_rate_eth_coinbase_intl": pd.Timestamp("2023-10-01", tz="UTC"),
 }
 
 _guard = HoldoutGuard()
@@ -336,6 +354,17 @@ def load(
         df = df.set_index("timestamp")
         if df.index.tz is None:
             df.index = df.index.tz_localize("UTC")
+
+    # Apply data quality start-date filters
+    if dataset in _START_DATE_OVERRIDES and isinstance(df.index, pd.DatetimeIndex):
+        min_date = _START_DATE_OVERRIDES[dataset]
+        before = len(df)
+        df = df[df.index >= min_date]
+        if len(df) < before:
+            logger.info(
+                f"[LOADER] Data quality filter: excluded {before - len(df)} early rows "
+                f"before {min_date.date()} for {dataset}"
+            )
 
     # Apply holdout enforcement
     resolved_asset = asset or _detect_asset(dataset)

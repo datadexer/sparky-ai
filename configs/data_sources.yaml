@@ -19,15 +19,28 @@ price:
       - okx
       - coinbase
 
-  derivatives:
-    provider: binance
+  funding_rates:
     interface: ccxt
-    data_types:
-      - funding_rate
-      - open_interest
-    symbols: ["BTC/USDT:USDT", "ETH/USDT:USDT"]
-    history_start: "2019-09-01"
-    note: "Derivatives features deferred to Phase 3 experimentation"
+    sources:
+      hyperliquid:
+        exchange_id: hyperliquid
+        symbols: ["BTC/USDC:USDC", "ETH/USDC:USDC"]
+        granularity: 1h
+        history_start: "2023-01-01"
+      coinbase_intl:
+        exchange_id: coinbaseinternational
+        symbols: ["BTC/USDC:USDC", "ETH/USDC:USDC"]
+        granularity: 1h
+        history_start: "2023-03-22"
+        note: "Coinbase International Exchange (institutional). Uses offset-based pagination."
+      binance:
+        exchange_id: binance
+        symbols: ["BTC/USDT:USDT", "ETH/USDT:USDT"]
+        granularity: 8h
+        history_start: "2019-09-01"
+        status: disabled
+        note: "451 geo-restriction from US IPs. Factory preserved for non-US use."
+    note: "Coinbase Advanced nano perps are the same INTX instruments — coinbase_intl data covers both."
 
 # =============================================================
 # ON-CHAIN DATA — DUAL SOURCE WITH CROSS-VALIDATION
@@ -69,24 +82,20 @@ onchain_coinmetrics:
       - HashRate
       - AdrActCnt
       - TxCnt
-      - TxTfrValAdjUSD
-      - FeeTotUSD
-      - RevUSD
       - SplyCur
       - CapMrktCurUSD
-      - NVTAdj
       - PriceUSD
+      - FlowInExNtv
+      - FlowOutExNtv
     eth:
       - HashRate
       - AdrActCnt
       - TxCnt
-      - TxTfrValAdjUSD
-      - FeeTotUSD
       - SplyCur
       - CapMrktCurUSD
-      - NVTAdj
       - PriceUSD
       - AdrBalCnt
+    note: "Paid-tier metrics removed: TxTfrValAdjUSD, FeeTotUSD, RevUSD, NVTAdj"
   note: "CoinMetrics Community does NOT provide computed indicators (MVRV, SOPR, etc).
          That's why we need BGeometrics. CoinMetrics is our ETH on-chain source and BTC fallback."
 
