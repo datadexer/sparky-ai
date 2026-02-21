@@ -51,9 +51,7 @@ class TestFetchFgi:
         cache_file = tmp_path / "fgi.parquet"
         sample_df = pd.DataFrame(
             {"fgi": [50], "fgi_class": ["Neutral"]},
-            index=pd.DatetimeIndex(
-                [datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"
-            ),
+            index=pd.DatetimeIndex([datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"),
         )
         sample_df.to_parquet(cache_file)
 
@@ -70,9 +68,7 @@ class TestFetchFgi:
         cache_file = tmp_path / "fgi.parquet"
         sample_df = pd.DataFrame(
             {"fgi": [50], "fgi_class": ["Neutral"]},
-            index=pd.DatetimeIndex(
-                [datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"
-            ),
+            index=pd.DatetimeIndex([datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"),
         )
         sample_df.to_parquet(cache_file)
         old_time = datetime.now(tz=timezone.utc).timestamp() - 25 * 3600
@@ -164,9 +160,7 @@ class TestLoadFgi:
         """Parquet with wrong columns raises ValueError."""
         bad_df = pd.DataFrame(
             {"wrong_col": [1]},
-            index=pd.DatetimeIndex(
-                [datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"
-            ),
+            index=pd.DatetimeIndex([datetime(2024, 1, 1, tzinfo=timezone.utc)], name="date"),
         )
         path = tmp_path / "bad.parquet"
         bad_df.to_parquet(path)

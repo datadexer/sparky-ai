@@ -33,8 +33,7 @@ def fetch_fgi(cache_path: Optional[Path] = None) -> pd.DataFrame:
         cache_path = Path(cache_path)
         if cache_path.exists():
             age_hours = (
-                datetime.now(tz=timezone.utc)
-                - datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
+                datetime.now(tz=timezone.utc) - datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
             ).total_seconds() / 3600
             if age_hours < 24:
                 logger.info("Loading FGI from cache: %s (%.1fh old)", cache_path, age_hours)
@@ -53,9 +52,7 @@ def fetch_fgi(cache_path: Optional[Path] = None) -> pd.DataFrame:
     try:
         data = resp.json()
     except ValueError as exc:
-        raise ValueError(
-            f"FGI API returned non-JSON response: {resp.text[:200]!r}"
-        ) from exc
+        raise ValueError(f"FGI API returned non-JSON response: {resp.text[:200]!r}") from exc
     if "data" not in data:
         raise ValueError("FGI API response missing 'data' key")
 

@@ -31,9 +31,7 @@ def fgi_extreme_signal(
         Signal values: +1.0, -1.0, or 0.0.
     """
     if fear_threshold >= greed_threshold:
-        raise ValueError(
-            f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})"
-        )
+        raise ValueError(f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})")
     lagged = fgi.shift(1)
     signal = pd.Series(0.0, index=fgi.index)
     signal[lagged <= fear_threshold] = 1.0
@@ -71,9 +69,7 @@ def fgi_exposure_adjustment(
         Exposure multiplier values.
     """
     if fear_threshold >= greed_threshold:
-        raise ValueError(
-            f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})"
-        )
+        raise ValueError(f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})")
     if not (0.0 < adjustment < 1.0):
         raise ValueError(f"adjustment must be in (0, 1), got {adjustment}")
     lagged = fgi.shift(1)
