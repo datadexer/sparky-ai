@@ -146,8 +146,10 @@ def sync_funding_rates(
     """
     store = DataStore()
     if exchanges is None:
-        exchanges = ["binance", "hyperliquid", "coinbase"]
+        exchanges = ["hyperliquid", "coinbase"]
 
+    # Binance factory preserved but excluded from default sync (451 geo-restriction).
+    # Coinbase fetchFundingRateHistory not supported by CCXT — will log warning and skip.
     factory = {
         "binance": FundingRateFetcher.binance,
         "hyperliquid": FundingRateFetcher.hyperliquid,
