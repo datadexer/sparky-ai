@@ -15,10 +15,15 @@ from sparky.features.onchain import (
     # BTC features
     hash_ribbon,
     mvrv_signal,
+    mvrv_signal_adaptive,
+    netflow_signal,
     nupl_regime,
     nvt_zscore,
     puell_signal,
     sopr_signal,
+    sopr_signal_adaptive,
+    sth_mvrv_signal,
+    sth_sopr_signal,
     supply_in_profit_extreme,
     volume_momentum,
 )
@@ -493,6 +498,90 @@ def test_eth_btc_correlation_regime_insufficient_data():
 
 
 # =============================================================================
+# Adaptive Threshold Tests
+# =============================================================================
+
+
+def test_mvrv_signal_adaptive_needs_warmup():
+    """Adaptive MVRV needs 730 days warmup."""
+    data = pd.Series(np.random.uniform(0.5, 3.0, 800))
+    result = mvrv_signal_adaptive(data, window=730)
+    assert result.iloc[:729].eq(0.0).all()
+
+
+def test_mvrv_signal_adaptive_extreme_values():
+    """Extreme MVRV values trigger adaptive signals."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(1.0, 2.0, 800))
+    data.iloc[-5:] = 5.0
+    result = mvrv_signal_adaptive(data, window=730)
+    assert result.iloc[-1] == -1.0
+
+
+def test_mvrv_signal_adaptive_low_values():
+    """Low MVRV values trigger buy signal."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(1.0, 2.0, 800))
+    data.iloc[-5:] = 0.1
+    result = mvrv_signal_adaptive(data, window=730)
+    assert result.iloc[-1] == 1.0
+
+
+def test_sopr_signal_adaptive_capitulation():
+    """SOPR < 1 always triggers capitulation signal."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(0.98, 1.05, 800))
+    data.iloc[-5:] = 0.95
+    result = sopr_signal_adaptive(data, window=730)
+    assert (result.iloc[-5:] == 1.0).all()
+
+
+def test_sopr_signal_adaptive_profit_taking():
+    """High SOPR triggers sell signal."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(0.99, 1.02, 800))
+    data.iloc[-5:] = 1.5
+    result = sopr_signal_adaptive(data, window=730)
+    assert result.iloc[-1] == -1.0
+
+
+def test_netflow_signal_shape():
+    """Netflow signal has same shape as input."""
+    flow_in = pd.Series(np.random.uniform(1000, 5000, 100))
+    flow_out = pd.Series(np.random.uniform(1000, 5000, 100))
+    result = netflow_signal(flow_in, flow_out, window=30)
+    assert len(result) == 100
+    # Warm-up period filled with 0 (NaN replaced by fillna(0))
+    assert (result.iloc[:29] == 0.0).all()
+
+
+def test_netflow_signal_bullish_outflow():
+    """Net outflow (more leaving exchanges) is bullish."""
+    flow_in = pd.Series([1000.0] * 40)
+    flow_out = pd.Series([1000.0] * 30 + [5000.0] * 10)
+    result = netflow_signal(flow_in, flow_out, window=30)
+    assert result.iloc[-1] > 0
+
+
+def test_sth_mvrv_signal_matches_adaptive_pattern():
+    """STH MVRV follows same adaptive pattern as regular MVRV."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(0.8, 1.5, 500))
+    data.iloc[-5:] = 3.0
+    result = sth_mvrv_signal(data, window=365)
+    assert result.iloc[-1] == -1.0
+
+
+def test_sth_sopr_signal_capitulation():
+    """STH SOPR < 1 triggers capitulation."""
+    np.random.seed(42)
+    data = pd.Series(np.random.uniform(0.99, 1.05, 500))
+    data.iloc[-3:] = 0.9
+    result = sth_sopr_signal(data, window=365)
+    assert (result.iloc[-3:] == 1.0).all()
+
+
+# =============================================================================
 # Edge Cases and NaN Handling
 # =============================================================================
 
@@ -511,6 +600,13 @@ def test_all_functions_handle_empty_series():
     assert nupl_regime(empty).empty
     assert puell_signal(empty).empty
     assert supply_in_profit_extreme(empty).empty
+
+    # Adaptive functions
+    assert mvrv_signal_adaptive(empty).empty
+    assert sopr_signal_adaptive(empty).empty
+    assert netflow_signal(empty, empty).empty
+    assert sth_mvrv_signal(empty).empty
+    assert sth_sopr_signal(empty).empty
 
     # ETH features
     assert gas_fee_zscore(empty).empty

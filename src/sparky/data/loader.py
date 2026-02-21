@@ -93,6 +93,31 @@ _DATASET_ALIASES = {
     "btc_onchain_coinmetrics": Path("data/raw/onchain/coinmetrics_btc_daily.parquet"),
     # On-chain metrics (Blockchain.com)
     "btc_onchain_blockchain_com": Path("data/raw/onchain/blockchain_com_btc_daily.parquet"),
+    # Funding rates
+    "funding_rate_btc_binance": Path("data/raw/funding_rates/btc_binance.parquet"),
+    "funding_rate_eth_binance": Path("data/raw/funding_rates/eth_binance.parquet"),
+    "funding_rate_btc_hyperliquid": Path("data/raw/funding_rates/btc_hyperliquid.parquet"),
+    "funding_rate_eth_hyperliquid": Path("data/raw/funding_rates/eth_hyperliquid.parquet"),
+    "funding_rate_btc_coinbase": Path("data/raw/funding_rates/btc_coinbase.parquet"),
+    "funding_rate_eth_coinbase": Path("data/raw/funding_rates/eth_coinbase.parquet"),
+    # BGeometrics advanced on-chain metrics
+    "btc_sth_sopr": Path("data/raw/onchain/bgeometrics/sth_sopr.parquet"),
+    "btc_lth_sopr": Path("data/raw/onchain/bgeometrics/lth_sopr.parquet"),
+    "btc_sth_mvrv": Path("data/raw/onchain/bgeometrics/sth_mvrv.parquet"),
+    "btc_lth_mvrv": Path("data/raw/onchain/bgeometrics/lth_mvrv.parquet"),
+    "btc_nupl_sth": Path("data/raw/onchain/bgeometrics/nupl_sth.parquet"),
+    "btc_nupl_lth": Path("data/raw/onchain/bgeometrics/nupl_lth.parquet"),
+    "btc_exchange_inflow": Path("data/raw/onchain/bgeometrics/exchange_inflow_btc.parquet"),
+    "btc_exchange_outflow": Path("data/raw/onchain/bgeometrics/exchange_outflow_btc.parquet"),
+    "btc_exchange_netflow": Path("data/raw/onchain/bgeometrics/exchange_netflow_btc.parquet"),
+    "btc_exchange_reserve": Path("data/raw/onchain/bgeometrics/exchange_reserve_btc.parquet"),
+    "btc_lth_position_change_30d": Path("data/raw/onchain/bgeometrics/lth_position_change_30d.parquet"),
+    "btc_open_interest_futures": Path("data/raw/onchain/bgeometrics/open_interest_futures.parquet"),
+    "btc_funding_rate_aggregate": Path("data/raw/onchain/bgeometrics/funding_rate_aggregate.parquet"),
+    "btc_stablecoin_supply": Path("data/raw/onchain/bgeometrics/stablecoin_supply.parquet"),
+    "btc_etf_aggregate": Path("data/raw/onchain/bgeometrics/etf_aggregate.parquet"),
+    "btc_vdd_multiple": Path("data/raw/onchain/bgeometrics/vdd_multiple.parquet"),
+    "btc_realized_pl_ratio": Path("data/raw/onchain/bgeometrics/realized_pl_ratio.parquet"),
 }
 
 _guard = HoldoutGuard()

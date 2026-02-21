@@ -54,6 +54,60 @@ METRIC_ENDPOINTS = {
     "active_addresses": {"endpoint": "/v1/active-addresses", "field": "activeAddresses"},
     "hash_rate": {"endpoint": "/v1/hashrate", "field": "hashrate"},
     "supply_in_profit": {"endpoint": "/v1/supply-in-profit", "field": "supplyInProfit"},
+    # Holder-segmented metrics
+    "sth_sopr": {"endpoint": "/v1/sth-sopr", "field": "sthSopr"},
+    "lth_sopr": {"endpoint": "/v1/lth-sopr", "field": "lthSopr"},
+    "sth_mvrv": {"endpoint": "/v1/sth-mvrv", "field": "sthMvrv"},
+    "lth_mvrv": {"endpoint": "/v1/lth-mvrv", "field": "lthMvrv"},
+    "nupl_sth": {"endpoint": "/v1/nupl-sth", "field": "nuplSth"},
+    "nupl_lth": {"endpoint": "/v1/nupl-lth", "field": "nuplLth"},
+    # Exchange flows
+    "exchange_inflow_btc": {"endpoint": "/v1/exchange-inflow-btc", "field": "exchangeInflowBtc"},
+    "exchange_outflow_btc": {
+        "endpoint": "/v1/exchange-outflow-btc",
+        "field": "exchangeOutflowBtc",
+    },
+    "exchange_netflow_btc": {
+        "endpoint": "/v1/exchange-netflow-btc",
+        "field": "exchangeNetflowBtc",
+    },
+    "exchange_reserve_btc": {
+        "endpoint": "/v1/exchange-reserve-btc",
+        "field": "exchangeReserveBtc",
+    },
+    # Whale / LTH behavior
+    "lth_position_change_30d": {
+        "endpoint": "/v1/lth-net-position-change-30d-btc",
+        "field": "lthNetPositionChange30dBtc",
+    },
+    # Derivatives (best-effort — may 403 on free tier)
+    "open_interest_futures": {
+        "endpoint": "/v1/open-interest-futures",
+        "field": "openInterestFutures",
+        "best_effort": True,
+    },
+    "funding_rate_aggregate": {
+        "endpoint": "/v1/funding-rate",
+        "field": "fundingRate",
+        "best_effort": True,
+    },
+    # Stablecoin & ETF (multi-field)
+    "stablecoin_supply": {
+        "endpoint": "/v1/stablecoin-supply",
+        "field": None,
+        "multi_field": True,
+    },
+    "etf_aggregate": {
+        "endpoint": "/v1/etf-aggregate",
+        "field": None,
+        "multi_field": True,
+    },
+    # Additional indicators
+    "vdd_multiple": {"endpoint": "/v1/vdd-multiple", "field": "vddMultiple"},
+    "realized_pl_ratio": {
+        "endpoint": "/v1/realized-profit-loss-ratio",
+        "field": "realizedProfitLossRatio",
+    },
 }
 
 # Polite rate limiting: 1 request/second + respect 8 req/hour limit
@@ -172,6 +226,17 @@ class BGeometricsFetcher:
             logger.error(f"[DATA] BGeometrics request failed: {e}")
             raise
 
+    def _discover_field(self, endpoint: str) -> list[str]:
+        """Fetch 1 record from endpoint and return non-'d' field names."""
+        try:
+            data = self._get(endpoint, {"page": 0, "size": 1})
+            content = data if isinstance(data, list) else data.get("content", [])
+            if content:
+                return [k for k in content[0].keys() if k != "d"]
+        except Exception as e:
+            logger.debug(f"[DATA] Field discovery failed for {endpoint}: {e}")
+        return []
+
     def fetch_metric(
         self,
         metric_name: str,
@@ -186,7 +251,8 @@ class BGeometricsFetcher:
             end_date: End date "YYYY-MM-DD" (default: today).
 
         Returns:
-            DataFrame with DatetimeIndex (UTC) and single column named metric_name.
+            DataFrame with DatetimeIndex (UTC) and column(s) for the metric.
+            Multi-field endpoints return multiple columns named {metric}_{field}.
         """
         if metric_name not in METRIC_ENDPOINTS:
             available = ", ".join(METRIC_ENDPOINTS.keys())
@@ -195,6 +261,8 @@ class BGeometricsFetcher:
         config = METRIC_ENDPOINTS[metric_name]
         endpoint = config["endpoint"]
         field = config["field"]
+        is_best_effort = config.get("best_effort", False)
+        is_multi_field = config.get("multi_field", False)
 
         if end_date is None:
             end_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -212,7 +280,20 @@ class BGeometricsFetcher:
                 "size": MAX_PAGE_SIZE,
             }
 
-            data = self._get(endpoint, params)
+            try:
+                data = self._get(endpoint, params)
+            except requests.HTTPError as e:
+                if (
+                    is_best_effort
+                    and hasattr(e, "response")
+                    and e.response is not None
+                    and e.response.status_code in (401, 403)
+                ):
+                    logger.warning(
+                        f"[DATA] Best-effort metric {metric_name} returned {e.response.status_code}, skipping"
+                    )
+                    return pd.DataFrame()
+                raise
 
             # Handle both paginated dict and raw list responses
             if isinstance(data, list):
@@ -225,19 +306,35 @@ class BGeometricsFetcher:
             if not content:
                 break
 
-            for record in content:
-                date_str = record.get("d")
-                value_str = record.get(field)
-                if date_str and value_str is not None:
-                    try:
-                        all_records.append(
-                            {
-                                "date": pd.Timestamp(date_str, tz="UTC"),
-                                metric_name: float(value_str),
-                            }
-                        )
-                    except (ValueError, TypeError):
+            if is_multi_field:
+                for record in content:
+                    date_str = record.get("d")
+                    if not date_str:
                         continue
+                    row = {"date": pd.Timestamp(date_str, tz="UTC")}
+                    for k, v in record.items():
+                        if k == "d":
+                            continue
+                        try:
+                            row[f"{metric_name}_{k}"] = float(v)
+                        except (ValueError, TypeError):
+                            continue
+                    if len(row) > 1:
+                        all_records.append(row)
+            else:
+                for record in content:
+                    date_str = record.get("d")
+                    value_str = record.get(field)
+                    if date_str and value_str is not None:
+                        try:
+                            all_records.append(
+                                {
+                                    "date": pd.Timestamp(date_str, tz="UTC"),
+                                    metric_name: float(value_str),
+                                }
+                            )
+                        except (ValueError, TypeError):
+                            continue
 
             if is_last:
                 break

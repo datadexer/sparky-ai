@@ -112,6 +112,83 @@ def supply_in_profit_extreme(sip: pd.Series) -> pd.Series:
 
 
 # =============================================================================
+# BTC Adaptive Threshold + STH Features
+# =============================================================================
+
+
+def mvrv_signal_adaptive(mvrv: pd.Series, window: int = 730, upper_pct: int = 90, lower_pct: int = 10) -> pd.Series:
+    """Adaptive MVRV signal using rolling percentile thresholds.
+
+    +1 below lower percentile (undervalued), -1 above upper (overvalued), 0 else.
+    """
+    upper = mvrv.rolling(window=window, min_periods=window).quantile(upper_pct / 100)
+    lower = mvrv.rolling(window=window, min_periods=window).quantile(lower_pct / 100)
+    result = pd.Series(0.0, index=mvrv.index)
+    result[mvrv < lower] = 1.0
+    result[mvrv > upper] = -1.0
+    return result
+
+
+def sopr_signal_adaptive(sopr: pd.Series, window: int = 730, upper_pct: int = 95, lower_pct: int = 5) -> pd.Series:
+    """Adaptive SOPR signal respecting SOPR=1 as regime boundary.
+
+    +1 below lower percentile (capitulation), -1 above upper (profit taking), 0 else.
+    Additionally: SOPR < 1 always gets +1 (capitulation regardless of percentile).
+    """
+    upper = sopr.rolling(window=window, min_periods=window).quantile(upper_pct / 100)
+    lower = sopr.rolling(window=window, min_periods=window).quantile(lower_pct / 100)
+    result = pd.Series(0.0, index=sopr.index)
+    result[sopr < lower] = 1.0
+    result[sopr > upper] = -1.0
+    result[(sopr < 1.0) & (result == 0.0)] = 1.0  # SOPR < 1 elevates neutral, not bearish
+    return result
+
+
+def netflow_signal(flow_in: pd.Series, flow_out: pd.Series, window: int = 30) -> pd.Series:
+    """Net exchange flow z-score signal.
+
+    Positive z-score (net inflow) = bearish (coins moving to exchanges for selling).
+    Negative z-score (net outflow) = bullish (coins leaving exchanges).
+    Returns z-score (not clipped to [-1,1]).
+    """
+    net = flow_in - flow_out
+    rolling_mean = net.rolling(window=window, min_periods=window).mean()
+    rolling_std = net.rolling(window=window, min_periods=window).std()
+    zscore = (net - rolling_mean) / rolling_std.replace(0, np.nan)
+    return -zscore.fillna(0)
+
+
+def sth_mvrv_signal(sth_mvrv: pd.Series, window: int = 365, upper_pct: int = 90, lower_pct: int = 10) -> pd.Series:
+    """Short-term holder MVRV signal with adaptive thresholds.
+
+    Same pattern as mvrv_signal_adaptive but shorter default window
+    since STH cycles are faster.
+    """
+    upper = sth_mvrv.rolling(window=window, min_periods=window).quantile(upper_pct / 100)
+    lower = sth_mvrv.rolling(window=window, min_periods=window).quantile(lower_pct / 100)
+    result = pd.Series(0.0, index=sth_mvrv.index)
+    result[sth_mvrv < lower] = 1.0
+    result[sth_mvrv > upper] = -1.0
+    return result
+
+
+def sth_sopr_signal(sth_sopr: pd.Series, window: int = 365, upper_pct: int = 95, lower_pct: int = 5) -> pd.Series:
+    """Short-term holder SOPR signal for capitulation detection.
+
+    STH capitulation is cleaner signal than aggregate SOPR.
+    +1 below lower percentile, -1 above upper, 0 else.
+    STH SOPR < 1 always gets +1 (capitulation).
+    """
+    upper = sth_sopr.rolling(window=window, min_periods=window).quantile(upper_pct / 100)
+    lower = sth_sopr.rolling(window=window, min_periods=window).quantile(lower_pct / 100)
+    result = pd.Series(0.0, index=sth_sopr.index)
+    result[sth_sopr < lower] = 1.0
+    result[sth_sopr > upper] = -1.0
+    result[(sth_sopr < 1.0) & (result == 0.0)] = 1.0
+    return result
+
+
+# =============================================================================
 # ETH-Specific On-Chain Features
 # =============================================================================
 
