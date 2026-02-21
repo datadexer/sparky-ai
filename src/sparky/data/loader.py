@@ -128,6 +128,8 @@ _DATASET_ALIASES = {
     "btc_etf_btc_total": Path("data/raw/onchain/bgeometrics/etf_btc_total.parquet"),
     "btc_vdd_multiple": Path("data/raw/onchain/bgeometrics/vdd_multiple.parquet"),
     "btc_realized_pl_ratio": Path("data/raw/onchain/bgeometrics/realized_pl_ratio.parquet"),
+    # Sentiment
+    "btc_fgi_daily": Path("data/raw/sentiment/fgi_daily.parquet"),
 }
 
 # Earliest usable date for datasets with known early-period quality issues.
