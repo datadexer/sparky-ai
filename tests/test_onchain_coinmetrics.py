@@ -56,6 +56,12 @@ def sample_api_response_with_strings():
     )
 
 
+class TestAssetMetricsConfig:
+    def test_btc_metrics_include_exchange_flows(self):
+        assert "FlowInExNtv" in ASSET_METRICS["btc"]
+        assert "FlowOutExNtv" in ASSET_METRICS["btc"]
+
+
 class TestCoinMetricsFetcherInit:
     def test_init_creates_client(self, mock_client):
         fetcher = CoinMetricsFetcher()

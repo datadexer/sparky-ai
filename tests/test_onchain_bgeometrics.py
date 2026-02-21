@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+import requests
 
 from sparky.data.onchain_bgeometrics import (
     BASE_URL,
@@ -481,15 +482,44 @@ class TestMetricEndpoints:
     def test_all_metrics_have_correct_structure(self):
         """Test METRIC_ENDPOINTS has correct structure for all metrics."""
         for metric_name, config in METRIC_ENDPOINTS.items():
-            assert "endpoint" in config
-            assert "field" in config
+            assert "endpoint" in config, f"{metric_name} missing endpoint"
+            assert "field" in config, f"{metric_name} missing field"
             assert isinstance(config["endpoint"], str)
-            assert isinstance(config["field"], str)
+            if config.get("multi_field"):
+                assert config["field"] is None, f"{metric_name}: multi_field should have field=None"
+            else:
+                assert isinstance(config["field"], str), f"{metric_name}: field must be str"
             assert config["endpoint"].startswith("/v1/")
 
+    def test_new_metric_endpoints_present(self):
+        """Test that P002 metric endpoints are registered."""
+        expected = [
+            "sth_sopr",
+            "lth_sopr",
+            "sth_mvrv",
+            "lth_mvrv",
+            "nupl_sth",
+            "nupl_lth",
+            "exchange_inflow_btc",
+            "exchange_outflow_btc",
+            "exchange_netflow_btc",
+            "exchange_reserve_btc",
+            "lth_position_change_30d",
+            "open_interest_futures",
+            "funding_rate_aggregate",
+            "stablecoin_supply",
+            "etf_aggregate",
+            "vdd_multiple",
+            "realized_pl_ratio",
+        ]
+        for name in expected:
+            assert name in METRIC_ENDPOINTS, f"{name} not in METRIC_ENDPOINTS"
+
     def test_fetch_uses_correct_endpoint_and_field(self, fetcher):
-        """Test fetch_metric uses correct endpoint and field for each metric."""
-        for metric_name, config in METRIC_ENDPOINTS.items():
+        """Test fetch_metric uses correct endpoint and field for standard metrics."""
+        # Only test standard (non-multi-field, non-best-effort) metrics
+        standard = {k: v for k, v in METRIC_ENDPOINTS.items() if not v.get("multi_field") and not v.get("best_effort")}
+        for metric_name, config in standard.items():
             with patch.object(fetcher.session, "get") as mock_get:
                 mock_resp = Mock()
                 mock_resp.json.return_value = {
@@ -503,11 +533,8 @@ class TestMetricEndpoints:
 
                 df = fetcher.fetch_metric(metric_name, "2024-01-01", "2024-01-01")
 
-                # Verify correct endpoint was called
                 expected_url = f"{BASE_URL}{config['endpoint']}"
                 assert mock_get.call_args[0][0] == expected_url
-
-                # Verify correct field name in DataFrame
                 assert metric_name in df.columns
 
 
@@ -521,6 +548,7 @@ class TestSyncBgeometrics:
         )
         MockFetcherCls.return_value.fetch_metric.return_value = mock_df
         MockStoreCls.return_value.get_last_timestamp.return_value = None
+        MockStoreCls.return_value.load.return_value = (mock_df, {})
 
         results = sync_bgeometrics(metrics=["sopr"])
 
@@ -536,6 +564,7 @@ class TestSyncBgeometrics:
 
         MockFetcherCls.return_value.fetch_metric.return_value = pd.DataFrame()
         MockStoreCls.return_value.get_last_timestamp.return_value = dt(2024, 1, 15, tzinfo=timezone.utc)
+        MockStoreCls.return_value.load.return_value = (pd.DataFrame(), {})
 
         sync_bgeometrics(metrics=["sopr"])
 
@@ -551,3 +580,174 @@ class TestSyncBgeometrics:
         results = sync_bgeometrics(metrics=["sopr", "nupl"])
 
         assert MockFetcherCls.return_value.fetch_metric.call_count == 1
+
+
+class TestDiscoverField:
+    def test_discover_field_returns_non_d_keys(self, fetcher):
+        """Test _discover_field returns field names excluding 'd'."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {
+                "content": [{"d": "2024-01-01", "usdtSupply": "100", "usdcSupply": "50"}],
+                "last": True,
+            }
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            fields = fetcher._discover_field("/v1/stablecoin-supply")
+            assert "usdtSupply" in fields
+            assert "usdcSupply" in fields
+            assert "d" not in fields
+
+    def test_discover_field_handles_list_response(self, fetcher):
+        """Test _discover_field handles raw list responses."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = [{"d": "2024-01-01", "val": "1.0"}]
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            fields = fetcher._discover_field("/v1/test")
+            assert fields == ["val"]
+
+    def test_discover_field_returns_empty_on_error(self, fetcher):
+        """Test _discover_field returns empty list on error."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_get.side_effect = Exception("fail")
+            fields = fetcher._discover_field("/v1/test")
+            assert fields == []
+
+    def test_discover_field_returns_empty_for_empty_response(self, fetcher):
+        """Test _discover_field returns empty list for empty content."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {"content": [], "last": True}
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            fields = fetcher._discover_field("/v1/test")
+            assert fields == []
+
+
+class TestBestEffortMetrics:
+    def test_best_effort_returns_empty_on_403(self, fetcher):
+        """Test best-effort metrics return empty DataFrame on 403."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.status_code = 403
+            mock_resp.raise_for_status.side_effect = requests.HTTPError("403 Forbidden", response=mock_resp)
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("open_interest_futures", "2024-01-01", "2024-01-03")
+            assert isinstance(df, pd.DataFrame)
+            assert df.empty
+
+    def test_best_effort_returns_empty_on_401(self, fetcher):
+        """Test best-effort metrics return empty DataFrame on 401."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.status_code = 401
+            mock_resp.raise_for_status.side_effect = requests.HTTPError("401 Unauthorized", response=mock_resp)
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("funding_rate_aggregate", "2024-01-01", "2024-01-03")
+            assert isinstance(df, pd.DataFrame)
+            assert df.empty
+
+    def test_non_best_effort_still_raises_on_403(self, fetcher):
+        """Test regular metrics still raise on 403."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.status_code = 403
+            mock_resp.raise_for_status.side_effect = requests.HTTPError("403 Forbidden", response=mock_resp)
+            mock_get.return_value = mock_resp
+
+            with pytest.raises(requests.HTTPError):
+                fetcher.fetch_metric("sopr", "2024-01-01", "2024-01-03")
+
+    def test_best_effort_works_when_api_succeeds(self, fetcher):
+        """Test best-effort metrics work normally when API returns data."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {
+                "content": [
+                    {"d": "2024-01-01", "openInterestFutures": "25000000000"},
+                ],
+                "last": True,
+            }
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("open_interest_futures", "2024-01-01", "2024-01-01")
+            assert len(df) == 1
+            assert "open_interest_futures" in df.columns
+
+
+class TestMultiFieldMetrics:
+    def test_multi_field_extracts_all_non_d_keys(self, fetcher):
+        """Test multi-field endpoints extract all non-'d' keys."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {
+                "content": [
+                    {"d": "2024-01-01", "usdt": "80000000000", "usdc": "30000000000"},
+                    {"d": "2024-01-02", "usdt": "81000000000", "usdc": "31000000000"},
+                ],
+                "last": True,
+            }
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("stablecoin_supply", "2024-01-01", "2024-01-02")
+
+            assert len(df) == 2
+            assert "stablecoin_supply_usdt" in df.columns
+            assert "stablecoin_supply_usdc" in df.columns
+            assert df["stablecoin_supply_usdt"].iloc[0] == 80000000000.0
+
+    def test_multi_field_etf_aggregate(self, fetcher):
+        """Test etf_aggregate multi-field extraction."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {
+                "content": [
+                    {"d": "2024-01-01", "totalNetFlow": "500", "totalHoldings": "900000"},
+                ],
+                "last": True,
+            }
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("etf_aggregate", "2024-01-01", "2024-01-01")
+
+            assert "etf_aggregate_totalNetFlow" in df.columns
+            assert "etf_aggregate_totalHoldings" in df.columns
+
+    def test_multi_field_skips_non_numeric(self, fetcher):
+        """Test multi-field skips non-numeric values gracefully."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {
+                "content": [
+                    {"d": "2024-01-01", "val1": "100", "val2": "not_a_number"},
+                ],
+                "last": True,
+            }
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("stablecoin_supply", "2024-01-01", "2024-01-01")
+
+            assert len(df) == 1
+            assert "stablecoin_supply_val1" in df.columns
+
+    def test_multi_field_empty_response(self, fetcher):
+        """Test multi-field returns empty DataFrame for empty API response."""
+        with patch.object(fetcher.session, "get") as mock_get:
+            mock_resp = Mock()
+            mock_resp.json.return_value = {"content": [], "last": True}
+            mock_resp.raise_for_status = Mock()
+            mock_get.return_value = mock_resp
+
+            df = fetcher.fetch_metric("stablecoin_supply", "2024-01-01", "2024-01-01")
+            assert df.empty

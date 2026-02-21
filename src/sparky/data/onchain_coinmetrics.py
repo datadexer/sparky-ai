@@ -37,6 +37,8 @@ ASSET_METRICS = {
         "CapMrktCurUSD",
         "NVTAdj",
         "PriceUSD",
+        "FlowInExNtv",
+        "FlowOutExNtv",
     ],
     "eth": [
         "HashRate",

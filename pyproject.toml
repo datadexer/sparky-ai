@@ -23,6 +23,8 @@ dependencies = [
     "psutil>=6.0",
     "matplotlib>=3.8",
     "hmmlearn>=0.3",
+    "arch>=8.0",
+    "statsmodels>=0.14",
 ]
 
 [project.optional-dependencies]
