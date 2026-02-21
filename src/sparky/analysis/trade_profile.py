@@ -17,9 +17,11 @@ def extract_trades(
     for i in range(len(pos)):
         p = pos.iloc[i]
         if not in_trade and p != 0:
+            if i + 1 >= len(px):
+                break
             in_trade = True
             entry_date = idx[i]
-            entry_price = px.iloc[min(i + 1, len(px) - 1)]
+            entry_price = px.iloc[i + 1]
             direction = int(np.sign(p))
         elif in_trade and (p == 0 or (p != 0 and int(np.sign(p)) != direction)):
             exit_date = idx[i]
@@ -39,8 +41,11 @@ def extract_trades(
             )
             # If we flipped direction, start new trade
             if p != 0 and int(np.sign(p)) != direction:
-                entry_date = idx[i]
-                entry_price = px.iloc[min(i + 1, len(px) - 1)]
+                if i + 1 >= len(px):
+                    in_trade = False
+                else:
+                    entry_date = idx[i]
+                    entry_price = px.iloc[i + 1]
                 direction = int(np.sign(p))
             else:
                 in_trade = False

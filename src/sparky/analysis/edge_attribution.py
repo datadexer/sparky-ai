@@ -10,8 +10,9 @@ def regime_attribution(
 ) -> pd.DataFrame:
     """Break down strategy performance by market regime."""
     idx = returns.index.intersection(positions.index).intersection(regime_labels.index)
-    r, p, reg = returns.loc[idx], positions.loc[idx], regime_labels.loc[idx]
-    strat_ret = r * p.shift(1).fillna(0)
+    r, reg = returns.loc[idx], regime_labels.loc[idx]
+    lagged_p = positions.shift(1).fillna(0).loc[idx]
+    strat_ret = r * lagged_p
     total_pnl = strat_ret.sum()
 
     rows = []
@@ -46,16 +47,16 @@ def signal_contribution(
         idx = idx.intersection(s.index)
 
     r = returns.loc[idx]
-    p = positions.loc[idx]
-    strat_ret = r * p.shift(1).fillna(0)
+    lagged_p = positions.shift(1).fillna(0).loc[idx]
+    strat_ret = r * lagged_p
     forward_r = r.shift(-1)
 
     rows = []
     for name, sig in signal_dict.items():
         s = sig.loc[idx]
         corr_ret = float(np.corrcoef(s.values, strat_ret.values)[0, 1]) if s.std() > 0 else 0.0
-        corr_pos = float(np.corrcoef(s.values, p.values)[0, 1]) if s.std() > 0 else 0.0
-        valid = s.index[forward_r.notna()]
+        corr_pos = float(np.corrcoef(s.values, lagged_p.values)[0, 1]) if s.std() > 0 else 0.0
+        valid = s.index[forward_r.notna() & s.notna()]
         marginal_ic = float(s.loc[valid].rank().corr(forward_r.loc[valid].rank()))
         rows.append(
             {
@@ -72,15 +73,19 @@ def temporal_stability(
     returns: pd.Series,
     positions: pd.Series,
     window: int = 252,
+    periods_per_year: int = 365,
 ) -> pd.DataFrame:
     """Compute rolling performance metrics for temporal stability analysis."""
     idx = returns.index.intersection(positions.index)
-    r, p = returns.loc[idx], positions.loc[idx]
-    strat_ret = r * p.shift(1).fillna(0)
+    r = returns.loc[idx]
+    lagged_p = positions.shift(1).fillna(0).loc[idx]
+    strat_ret = r * lagged_p
 
-    rolling_ret = strat_ret.rolling(window).mean() * window
-    rolling_vol = strat_ret.rolling(window).std(ddof=1) * np.sqrt(window)
-    rolling_sharpe = rolling_ret / rolling_vol
+    rolling_mean = strat_ret.rolling(window).mean()
+    rolling_std = strat_ret.rolling(window).std(ddof=1)
+    rolling_sharpe = rolling_mean / rolling_std * np.sqrt(periods_per_year)
+    rolling_ret = rolling_mean * periods_per_year
+    rolling_vol = rolling_std * np.sqrt(periods_per_year)
 
     df = pd.DataFrame(
         {
