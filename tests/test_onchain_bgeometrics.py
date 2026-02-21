@@ -93,6 +93,7 @@ class TestFetchMetric:
         """Test fetch_metric returns DataFrame with correct structure."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -112,6 +113,7 @@ class TestFetchMetric:
         """Test fetch_metric makes API call with correct parameters."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -131,6 +133,7 @@ class TestFetchMetric:
         """Test fetch_metric uses current date as default end_date."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -157,6 +160,7 @@ class TestFetchMetric:
         """Test fetch_metric returns empty DataFrame when API returns no data."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {"content": [], "last": True}
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -176,10 +180,12 @@ class TestFetchMetric:
         """Test fetch_metric correctly handles paginated responses."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp1 = Mock()
+            mock_resp1.status_code = 200
             mock_resp1.json.return_value = mock_paginated_response_page1
             mock_resp1.raise_for_status = Mock()
 
             mock_resp2 = Mock()
+            mock_resp2.status_code = 200
             mock_resp2.json.return_value = mock_paginated_response_page2
             mock_resp2.raise_for_status = Mock()
 
@@ -204,6 +210,7 @@ class TestFetchMetric:
         """Test fetch_metric skips records with invalid/missing values."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-01", "sopr": "1.05"},
@@ -228,6 +235,7 @@ class TestFetchMetric:
         """Test fetch_metric removes duplicate dates, keeping last value."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-01", "sopr": "1.05"},
@@ -249,6 +257,7 @@ class TestFetchMetric:
         """Test fetch_metric returns sorted DataFrame."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-03", "sopr": "1.12"},
@@ -273,10 +282,12 @@ class TestFetchAllMetrics:
         with patch.object(fetcher.session, "get") as mock_get:
             # Set up responses for two metrics
             mock_resp1 = Mock()
+            mock_resp1.status_code = 200
             mock_resp1.json.return_value = mock_sopr_response
             mock_resp1.raise_for_status = Mock()
 
             mock_resp2 = Mock()
+            mock_resp2.status_code = 200
             mock_resp2.json.return_value = mock_mvrv_response
             mock_resp2.raise_for_status = Mock()
 
@@ -327,10 +338,12 @@ class TestFetchAllMetrics:
             }
 
             mock_resp1 = Mock()
+            mock_resp1.status_code = 200
             mock_resp1.json.return_value = sopr_response
             mock_resp1.raise_for_status = Mock()
 
             mock_resp2 = Mock()
+            mock_resp2.status_code = 200
             mock_resp2.json.return_value = nupl_response
             mock_resp2.raise_for_status = Mock()
 
@@ -407,6 +420,7 @@ class TestTokenAuthentication:
         """Test token is included in URL parameters when provided."""
         with patch.object(fetcher_with_token.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -420,6 +434,7 @@ class TestTokenAuthentication:
         """Test token is not included in parameters when not provided."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -435,6 +450,7 @@ class TestTokenAuthentication:
         env_fetcher = BGeometricsFetcher()
         with patch.object(env_fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -450,6 +466,7 @@ class TestTokenAuthentication:
         explicit_fetcher = BGeometricsFetcher(token="explicit_token_xyz")
         with patch.object(explicit_fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = mock_sopr_response
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -508,7 +525,7 @@ class TestMetricEndpoints:
             "open_interest_futures",
             "funding_rate_aggregate",
             "stablecoin_supply",
-            "etf_aggregate",
+            "etf_btc_total",
             "vdd_multiple",
             "realized_pl_ratio",
         ]
@@ -518,10 +535,15 @@ class TestMetricEndpoints:
     def test_fetch_uses_correct_endpoint_and_field(self, fetcher):
         """Test fetch_metric uses correct endpoint and field for standard metrics."""
         # Only test standard (non-multi-field, non-best-effort) metrics
-        standard = {k: v for k, v in METRIC_ENDPOINTS.items() if not v.get("multi_field") and not v.get("best_effort")}
+        standard = {
+            k: v
+            for k, v in METRIC_ENDPOINTS.items()
+            if not v.get("multi_field") and not v.get("best_effort") and not v.get("csv_endpoint")
+        }
         for metric_name, config in standard.items():
             with patch.object(fetcher.session, "get") as mock_get:
                 mock_resp = Mock()
+                mock_resp.status_code = 200
                 mock_resp.json.return_value = {
                     "content": [
                         {"d": "2024-01-01", config["field"]: "1.0"},
@@ -587,6 +609,7 @@ class TestDiscoverField:
         """Test _discover_field returns field names excluding 'd'."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [{"d": "2024-01-01", "usdtSupply": "100", "usdcSupply": "50"}],
                 "last": True,
@@ -603,6 +626,7 @@ class TestDiscoverField:
         """Test _discover_field handles raw list responses."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = [{"d": "2024-01-01", "val": "1.0"}]
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -621,6 +645,7 @@ class TestDiscoverField:
         """Test _discover_field returns empty list for empty content."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {"content": [], "last": True}
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
@@ -654,21 +679,23 @@ class TestBestEffortMetrics:
             assert isinstance(df, pd.DataFrame)
             assert df.empty
 
-    def test_non_best_effort_still_raises_on_403(self, fetcher):
-        """Test regular metrics still raise on 403."""
+    def test_non_best_effort_returns_empty_on_403(self, fetcher):
+        """Test regular metrics return empty DataFrame on 403 (graceful skip)."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
             mock_resp.status_code = 403
             mock_resp.raise_for_status.side_effect = requests.HTTPError("403 Forbidden", response=mock_resp)
             mock_get.return_value = mock_resp
 
-            with pytest.raises(requests.HTTPError):
-                fetcher.fetch_metric("sopr", "2024-01-01", "2024-01-03")
+            df = fetcher.fetch_metric("sopr", "2024-01-01", "2024-01-03")
+            assert isinstance(df, pd.DataFrame)
+            assert len(df) == 0
 
     def test_best_effort_works_when_api_succeeds(self, fetcher):
         """Test best-effort metrics work normally when API returns data."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-01", "openInterestFutures": "25000000000"},
@@ -688,6 +715,7 @@ class TestMultiFieldMetrics:
         """Test multi-field endpoints extract all non-'d' keys."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-01", "usdt": "80000000000", "usdc": "30000000000"},
@@ -705,28 +733,30 @@ class TestMultiFieldMetrics:
             assert "stablecoin_supply_usdc" in df.columns
             assert df["stablecoin_supply_usdt"].iloc[0] == 80000000000.0
 
-    def test_multi_field_etf_aggregate(self, fetcher):
-        """Test etf_aggregate multi-field extraction."""
+    def test_multi_field_stablecoin_supply(self, fetcher):
+        """Test stablecoin_supply multi-field extraction."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
-                    {"d": "2024-01-01", "totalNetFlow": "500", "totalHoldings": "900000"},
+                    {"d": "2024-01-01", "usdt": "83000000000", "usdc": "25000000000"},
                 ],
                 "last": True,
             }
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
 
-            df = fetcher.fetch_metric("etf_aggregate", "2024-01-01", "2024-01-01")
+            df = fetcher.fetch_metric("stablecoin_supply", "2024-01-01", "2024-01-01")
 
-            assert "etf_aggregate_totalNetFlow" in df.columns
-            assert "etf_aggregate_totalHoldings" in df.columns
+            assert "stablecoin_supply_usdt" in df.columns
+            assert "stablecoin_supply_usdc" in df.columns
 
     def test_multi_field_skips_non_numeric(self, fetcher):
         """Test multi-field skips non-numeric values gracefully."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {
                 "content": [
                     {"d": "2024-01-01", "val1": "100", "val2": "not_a_number"},
@@ -745,6 +775,7 @@ class TestMultiFieldMetrics:
         """Test multi-field returns empty DataFrame for empty API response."""
         with patch.object(fetcher.session, "get") as mock_get:
             mock_resp = Mock()
+            mock_resp.status_code = 200
             mock_resp.json.return_value = {"content": [], "last": True}
             mock_resp.raise_for_status = Mock()
             mock_get.return_value = mock_resp
