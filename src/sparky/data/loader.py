@@ -100,6 +100,16 @@ _DATASET_ALIASES = {
     "funding_rate_eth_hyperliquid": Path("data/raw/funding_rates/eth_hyperliquid.parquet"),
     "funding_rate_btc_coinbase_intl": Path("data/raw/funding_rates/btc_coinbase_intl.parquet"),
     "funding_rate_eth_coinbase_intl": Path("data/raw/funding_rates/eth_coinbase_intl.parquet"),
+    # Funding rates — CCXT (OKX only; Binance/Bybit geo-blocked)
+    "funding_rate_btc_okx": Path("data/raw/funding_rates/btc_okx.parquet"),
+    "funding_rate_eth_okx": Path("data/raw/funding_rates/eth_okx.parquet"),
+    # CoinAPI derivatives (historical backfill — manual pulls only)
+    "coinapi_funding_rate_btc_binance": Path("data/coinapi/funding_rate_btc_binance.parquet"),
+    "coinapi_funding_rate_eth_binance": Path("data/coinapi/funding_rate_eth_binance.parquet"),
+    "coinapi_oi_btc_binance": Path("data/coinapi/oi_btc_binance.parquet"),
+    "coinapi_oi_eth_binance": Path("data/coinapi/oi_eth_binance.parquet"),
+    "coinapi_oi_btc_okx": Path("data/coinapi/oi_btc_okx.parquet"),
+    "coinapi_oi_eth_okx": Path("data/coinapi/oi_eth_okx.parquet"),
     # BGeometrics advanced on-chain metrics
     "btc_sth_sopr": Path("data/raw/onchain/bgeometrics/sth_sopr.parquet"),
     "btc_lth_sopr": Path("data/raw/onchain/bgeometrics/lth_sopr.parquet"),

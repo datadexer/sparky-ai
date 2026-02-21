@@ -37,6 +37,27 @@ class TestFactoryMethods:
             f = FundingRateFetcher.binance()
             assert f.symbol == "BTC/USDT:USDT"
 
+    def test_binanceusdm_factory(self):
+        with patch.object(FundingRateFetcher, "_create_exchange", return_value=Mock()):
+            f = FundingRateFetcher.binanceusdm("BTC")
+            assert f.exchange_id == "binanceusdm"
+            assert f.symbol == "BTC/USDT:USDT"
+            assert f.granularity == "8h"
+
+    def test_okx_factory(self):
+        with patch.object(FundingRateFetcher, "_create_exchange", return_value=Mock()):
+            f = FundingRateFetcher.okx("BTC")
+            assert f.exchange_id == "okx"
+            assert f.symbol == "BTC/USDT:USDT"
+            assert f.granularity == "8h"
+
+    def test_bybit_factory(self):
+        with patch.object(FundingRateFetcher, "_create_exchange", return_value=Mock()):
+            f = FundingRateFetcher.bybit("ETH")
+            assert f.exchange_id == "bybit"
+            assert f.symbol == "ETH/USDT:USDT"
+            assert f.granularity == "8h"
+
 
 class TestFetchFundingRates:
     @pytest.fixture

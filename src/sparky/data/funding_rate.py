@@ -197,10 +197,10 @@ def sync_funding_rates(
     """
     store = DataStore()
     if exchanges is None:
-        exchanges = ["hyperliquid", "coinbase_intl"]
+        exchanges = ["hyperliquid", "coinbase_intl", "okx"]
 
-    # Binance factory preserved but excluded from default sync (451 geo-restriction).
-    # coinbase_intl = Coinbase International Exchange (BTC/USDC:USDC, 1h).
+    # Binance/binanceusdm: 451 geo-restricted. Bybit: 403 geo-restricted.
+    # OKX: works from US (8h funding). coinbase_intl: Coinbase Intl (1h).
     factory = {
         "binance": FundingRateFetcher.binance,
         "hyperliquid": FundingRateFetcher.hyperliquid,
