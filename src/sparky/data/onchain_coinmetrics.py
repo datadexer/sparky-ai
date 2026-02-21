@@ -24,18 +24,15 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# Metrics per asset (from configs/data_sources.yaml)
+# Free-tier metrics per asset (Community API).
+# Paid metrics removed: TxTfrValAdjUSD, FeeTotUSD, RevUSD, NVTAdj
 ASSET_METRICS = {
     "btc": [
         "HashRate",
         "AdrActCnt",
         "TxCnt",
-        "TxTfrValAdjUSD",
-        "FeeTotUSD",
-        "RevUSD",
         "SplyCur",
         "CapMrktCurUSD",
-        "NVTAdj",
         "PriceUSD",
         "FlowInExNtv",
         "FlowOutExNtv",
@@ -44,11 +41,8 @@ ASSET_METRICS = {
         "HashRate",
         "AdrActCnt",
         "TxCnt",
-        "TxTfrValAdjUSD",
-        "FeeTotUSD",
         "SplyCur",
         "CapMrktCurUSD",
-        "NVTAdj",
         "PriceUSD",
         "AdrBalCnt",
     ],
