@@ -13,6 +13,7 @@ def _make_index(n):
 
 class TestRegimeAttribution:
     def test_known_regime_split(self):
+        np.random.seed(42)
         idx = _make_index(100)
         returns = pd.Series(np.random.randn(100) * 0.01, index=idx)
         positions = pd.Series(np.ones(100), index=idx)
@@ -21,7 +22,7 @@ class TestRegimeAttribution:
         result = regime_attribution(returns, positions, regimes)
         assert set(result["regime"]) == {"bear", "bull"}
         assert result["n_obs"].sum() == 100
-        assert abs(result["frac_pnl"].sum() - 1.0) < 1e-6 or returns.sum() == 0
+        assert abs(result["frac_pnl"].sum() - 1.0) < 1e-6
 
     def test_single_regime(self):
         idx = _make_index(50)
@@ -52,6 +53,7 @@ class TestSignalContribution:
 
 class TestTemporalStability:
     def test_detects_structural_break(self):
+        np.random.seed(123)
         idx = _make_index(600)
         # First 300: positive strategy returns; last 300: negative
         strat_ret = np.concatenate([np.abs(np.random.randn(300)) * 0.01, -np.abs(np.random.randn(300)) * 0.01])

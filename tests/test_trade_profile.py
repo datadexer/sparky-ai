@@ -18,10 +18,12 @@ class TestExtractTrades:
 
         trades = extract_trades(positions, prices)
         assert len(trades) == 3
-        # First trade: long from day 1 to day 4
+        # First trade: long, signal at day 1, entry fills at day 2 price (105), exit day 4 (108)
         assert trades.iloc[0]["direction"] == 1
         assert trades.iloc[0]["entry_date"] == idx[1]
         assert trades.iloc[0]["exit_date"] == idx[4]
+        assert trades.iloc[0]["entry_price"] == 105.0
+        assert abs(trades.iloc[0]["return_pct"] - (108 / 105 - 1)) < 1e-10
         # Second trade: short from day 5 to day 7
         assert trades.iloc[1]["direction"] == -1
         # Third trade: long from day 8 to day 9
@@ -40,7 +42,8 @@ class TestExtractTrades:
         prices = pd.Series([100, 100, 110, 120], index=idx)
         trades = extract_trades(positions, prices)
         assert len(trades) == 1
-        assert abs(trades.iloc[0]["return_pct"] - 0.20) < 1e-10
+        # Signal at idx[1], entry fills at idx[2] price (110), exit at idx[3] (120)
+        assert abs(trades.iloc[0]["return_pct"] - (120 / 110 - 1)) < 1e-10
 
 
 class TestTradeStatistics:

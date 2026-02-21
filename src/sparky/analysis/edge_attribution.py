@@ -6,11 +6,12 @@ def regime_attribution(
     returns: pd.Series,
     positions: pd.Series,
     regime_labels: pd.Series,
+    periods_per_year: int = 365,
 ) -> pd.DataFrame:
     """Break down strategy performance by market regime."""
     idx = returns.index.intersection(positions.index).intersection(regime_labels.index)
     r, p, reg = returns.loc[idx], positions.loc[idx], regime_labels.loc[idx]
-    strat_ret = r * p
+    strat_ret = r * p.shift(1).fillna(0)
     total_pnl = strat_ret.sum()
 
     rows = []
@@ -20,7 +21,7 @@ def regime_attribution(
         n = int(mask.sum())
         mean_r = sr.mean()
         std_r = sr.std(ddof=1)
-        sharpe = float(mean_r / std_r) if std_r > 0 else 0.0
+        sharpe = float(mean_r / std_r * np.sqrt(periods_per_year)) if std_r > 0 else 0.0
         rows.append(
             {
                 "regime": regime,
@@ -46,15 +47,16 @@ def signal_contribution(
 
     r = returns.loc[idx]
     p = positions.loc[idx]
-    strat_ret = r * p
+    strat_ret = r * p.shift(1).fillna(0)
+    forward_r = r.shift(-1)
 
     rows = []
     for name, sig in signal_dict.items():
         s = sig.loc[idx]
         corr_ret = float(np.corrcoef(s.values, strat_ret.values)[0, 1]) if s.std() > 0 else 0.0
         corr_pos = float(np.corrcoef(s.values, p.values)[0, 1]) if s.std() > 0 else 0.0
-        # marginal IC: rank correlation of signal with forward returns
-        marginal_ic = float(s.rank().corr(r.rank()))
+        valid = s.index[forward_r.notna()]
+        marginal_ic = float(s.loc[valid].rank().corr(forward_r.loc[valid].rank()))
         rows.append(
             {
                 "signal": name,
@@ -74,7 +76,7 @@ def temporal_stability(
     """Compute rolling performance metrics for temporal stability analysis."""
     idx = returns.index.intersection(positions.index)
     r, p = returns.loc[idx], positions.loc[idx]
-    strat_ret = r * p
+    strat_ret = r * p.shift(1).fillna(0)
 
     rolling_ret = strat_ret.rolling(window).mean() * window
     rolling_vol = strat_ret.rolling(window).std(ddof=1) * np.sqrt(window)

@@ -21,8 +21,10 @@ def parameter_plateau_test(
 ) -> PlateauResult:
     """Test whether Sharpe values form a plateau (robust) or a spike (fragile)."""
     sharpes = sharpe_by_config["sharpe"].values
+    if len(sharpes) == 0:
+        raise ValueError("sharpe_by_config is empty — no configurations to evaluate")
     best = float(np.max(sharpes))
-    lower = best * (1 - threshold_frac)
+    lower = best - abs(best) * threshold_frac
     n_in = int(np.sum(sharpes >= lower))
     n_total = len(sharpes)
     coverage = n_in / n_total if n_total > 0 else 0.0
@@ -55,8 +57,10 @@ def parameter_sensitivity_1d(
         }
 
     diffs = np.diff(mean_sharpes)
+    param_steps = np.diff(np.array(values, dtype=float))
     is_mono = bool(np.all(diffs >= 0) or np.all(diffs <= 0))
-    max_grad = float(np.max(np.abs(diffs)))
+    nonzero_steps = np.where(param_steps != 0, param_steps, 1.0)
+    max_grad = float(np.max(np.abs(diffs / nonzero_steps)))
 
     return {
         "param_values": values,
