@@ -44,11 +44,18 @@ def fetch_fgi(cache_path: Optional[Path] = None) -> pd.DataFrame:
     # Fetch from API
     url = "https://api.alternative.me/fng/?limit=0&format=json"
     logger.info("Fetching Fear & Greed Index from %s", url)
-    resp = requests.get(url, timeout=30)  # noqa: S113
-    if resp.status_code != 200:
-        raise RuntimeError(f"FGI API returned status {resp.status_code}")
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"FGI API request failed: {exc}") from exc
 
-    data = resp.json()
+    try:
+        data = resp.json()
+    except ValueError as exc:
+        raise ValueError(
+            f"FGI API returned non-JSON response: {resp.text[:200]!r}"
+        ) from exc
     if "data" not in data:
         raise ValueError("FGI API response missing 'data' key")
 
@@ -62,6 +69,9 @@ def fetch_fgi(cache_path: Optional[Path] = None) -> pd.DataFrame:
                 "fgi_class": entry["value_classification"],
             }
         )
+
+    if not records:
+        raise ValueError("FGI API returned zero usable records after parsing")
 
     df = pd.DataFrame(records)
     df = df.set_index("date").sort_index()
@@ -77,7 +87,9 @@ def fetch_fgi(cache_path: Optional[Path] = None) -> pd.DataFrame:
     # Save cache
     if cache_path is not None:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(cache_path)
+        tmp = cache_path.with_suffix(".tmp")
+        df.to_parquet(tmp)
+        tmp.rename(cache_path)
         logger.info("Saved FGI cache to %s", cache_path)
 
     return df
@@ -96,4 +108,10 @@ def load_fgi(path: Path) -> pd.DataFrame:
     pd.DataFrame
         DatetimeIndex (UTC), columns: fgi (int), fgi_class (str).
     """
-    return pd.read_parquet(path)
+    df = pd.read_parquet(path)
+    expected_cols = {"fgi", "fgi_class"}
+    if not expected_cols.issubset(df.columns):
+        raise ValueError(f"FGI cache at {path} has unexpected schema: {list(df.columns)}")
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError(f"FGI cache at {path} does not have a DatetimeIndex")
+    return df

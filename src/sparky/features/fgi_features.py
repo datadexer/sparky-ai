@@ -12,9 +12,9 @@ def fgi_extreme_signal(
 ) -> pd.Series:
     """Generate a contrarian signal from FGI extremes.
 
-    Returns +1.0 when FGI <= fear_threshold (extreme fear = buy signal),
-    -1.0 when FGI >= greed_threshold (extreme greed = sell signal),
-    0.0 otherwise.
+    Returns +1.0 when previous day's FGI <= fear_threshold (extreme fear = buy),
+    -1.0 when previous day's FGI >= greed_threshold (extreme greed = sell),
+    0.0 otherwise. Uses a 1-bar lag to prevent look-ahead bias.
 
     Parameters
     ----------
@@ -30,9 +30,15 @@ def fgi_extreme_signal(
     pd.Series
         Signal values: +1.0, -1.0, or 0.0.
     """
+    if fear_threshold >= greed_threshold:
+        raise ValueError(
+            f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})"
+        )
+    lagged = fgi.shift(1)
     signal = pd.Series(0.0, index=fgi.index)
-    signal[fgi <= fear_threshold] = 1.0
-    signal[fgi >= greed_threshold] = -1.0
+    signal[lagged <= fear_threshold] = 1.0
+    signal[lagged >= greed_threshold] = -1.0
+    signal[lagged.isna()] = float("nan")
     return signal
 
 
@@ -44,9 +50,9 @@ def fgi_exposure_adjustment(
 ) -> pd.Series:
     """Adjust position exposure based on FGI extremes.
 
-    Returns a multiplier: 1.0 + adjustment during extreme fear (increase
-    exposure), 1.0 - adjustment during extreme greed (reduce exposure),
-    1.0 otherwise (no change).
+    Returns a multiplier based on previous day's FGI: 1.0 + adjustment during
+    extreme fear (increase exposure), 1.0 - adjustment during extreme greed
+    (reduce exposure), 1.0 otherwise. Uses a 1-bar lag to prevent look-ahead bias.
 
     Parameters
     ----------
@@ -64,7 +70,15 @@ def fgi_exposure_adjustment(
     pd.Series
         Exposure multiplier values.
     """
+    if fear_threshold >= greed_threshold:
+        raise ValueError(
+            f"fear_threshold ({fear_threshold}) must be < greed_threshold ({greed_threshold})"
+        )
+    if not (0.0 < adjustment < 1.0):
+        raise ValueError(f"adjustment must be in (0, 1), got {adjustment}")
+    lagged = fgi.shift(1)
     adj = pd.Series(1.0, index=fgi.index)
-    adj[fgi <= fear_threshold] = 1.0 + adjustment
-    adj[fgi >= greed_threshold] = 1.0 - adjustment
+    adj[lagged <= fear_threshold] = 1.0 + adjustment
+    adj[lagged >= greed_threshold] = 1.0 - adjustment
+    adj[lagged.isna()] = float("nan")
     return adj
