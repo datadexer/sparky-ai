@@ -45,6 +45,13 @@ class TestExtractTrades:
         # Signal at idx[1], entry fills at idx[2] price (110), exit at idx[3] (120)
         assert abs(trades.iloc[0]["return_pct"] - (120 / 110 - 1)) < 1e-10
 
+    def test_signal_on_last_bar_skipped(self):
+        idx = _make_index(3)
+        positions = pd.Series([0, 0, 1], index=idx)
+        prices = pd.Series([100, 105, 110], index=idx)
+        trades = extract_trades(positions, prices)
+        assert len(trades) == 0
+
 
 class TestTradeStatistics:
     def test_known_win_rate(self):
