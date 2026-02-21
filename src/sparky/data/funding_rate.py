@@ -26,6 +26,9 @@ class FundingRateFetcher:
         .binance() — 8h, BTC/USDT:USDT (geo-restricted from US)
         .hyperliquid() — 1h, BTC/USDC:USDC
         .coinbase_intl() — 1h, BTC/USDC:USDC (Coinbase International Exchange)
+        .binanceusdm() — 8h, BTC/USDT:USDT (Binance USDM futures)
+        .okx() — 8h, BTC/USDT:USDT
+        .bybit() — 8h, BTC/USDT:USDT
     """
 
     def __init__(self, exchange_id: str, symbol: str, granularity: str):
@@ -50,6 +53,18 @@ class FundingRateFetcher:
     def coinbase_intl(cls, asset: str = "BTC") -> "FundingRateFetcher":
         """Coinbase International Exchange (institutional, non-US)."""
         return cls("coinbaseinternational", f"{asset}/USDC:USDC", "1h")
+
+    @classmethod
+    def binanceusdm(cls, asset: str = "BTC") -> "FundingRateFetcher":
+        return cls("binanceusdm", f"{asset}/USDT:USDT", "8h")
+
+    @classmethod
+    def okx(cls, asset: str = "BTC") -> "FundingRateFetcher":
+        return cls("okx", f"{asset}/USDT:USDT", "8h")
+
+    @classmethod
+    def bybit(cls, asset: str = "BTC") -> "FundingRateFetcher":
+        return cls("bybit", f"{asset}/USDT:USDT", "8h")
 
     def fetch_funding_rates(
         self,
@@ -190,6 +205,9 @@ def sync_funding_rates(
         "binance": FundingRateFetcher.binance,
         "hyperliquid": FundingRateFetcher.hyperliquid,
         "coinbase_intl": FundingRateFetcher.coinbase_intl,
+        "binanceusdm": FundingRateFetcher.binanceusdm,
+        "okx": FundingRateFetcher.okx,
+        "bybit": FundingRateFetcher.bybit,
     }
 
     results = {}

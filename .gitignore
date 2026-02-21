@@ -36,3 +36,4 @@ reports/**/candidates/*/report.html
 reports/**/candidates/*/results.json
 
 coinbase_api_key.json
+coinapi_key.txt
