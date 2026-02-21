@@ -59,8 +59,8 @@ def parameter_sensitivity_1d(
     diffs = np.diff(mean_sharpes)
     param_steps = np.diff(np.array(values, dtype=float))
     is_mono = bool(np.all(diffs >= 0) or np.all(diffs <= 0))
-    nonzero_steps = np.where(param_steps != 0, param_steps, 1.0)
-    max_grad = float(np.max(np.abs(diffs / nonzero_steps)))
+    # groupby aggregates duplicate param values, so param_steps should be nonzero
+    max_grad = float(np.max(np.abs(diffs / param_steps)))
 
     return {
         "param_values": values,
