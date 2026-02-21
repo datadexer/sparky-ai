@@ -50,14 +50,24 @@ class TransactionCostModel:
         return cls(fee_pct=0.001, slippage_pct=0.003, spread_pct=0.001)
 
     @classmethod
+    def futures(cls) -> "TransactionCostModel":
+        """Futures cost model: 7.5 bps (0.075%) per side — Coinbase perps."""
+        return cls(fee_pct=0.00075, slippage_pct=0.0, spread_pct=0.0)
+
+    @classmethod
+    def spot_maker(cls) -> "TransactionCostModel":
+        """Spot maker cost model: 15 bps (0.15%) per side — Coinbase limit orders."""
+        return cls(fee_pct=0.0015, slippage_pct=0.0, spread_pct=0.0)
+
+    @classmethod
     def for_btc(cls) -> "TransactionCostModel":
-        """Return the standard cost model for Bitcoin (30 bps per side)."""
-        return cls.standard()
+        """Return the default cost model for Bitcoin (15 bps spot maker)."""
+        return cls.spot_maker()
 
     @classmethod
     def for_eth(cls) -> "TransactionCostModel":
-        """Return the standard cost model for Ethereum (30 bps per side)."""
-        return cls.standard()
+        """Return the default cost model for Ethereum (15 bps spot maker)."""
+        return cls.spot_maker()
 
     def compute_cost(self, position_change: int, asset: str) -> float:
         """Compute fractional cost for a position change.
