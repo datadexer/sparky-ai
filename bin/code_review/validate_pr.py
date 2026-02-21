@@ -15,6 +15,7 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 _MAX_CODE_CHARS = 40000
@@ -228,6 +229,57 @@ def run_validation(changes: list[dict], context: dict[str, str]) -> dict:
     return result
 
 
+def _format_findings(result: dict) -> str:
+    """Format non-blocking issues, recommendations, and observations for display."""
+    lines: list[str] = []
+    issues = [i for i in result.get("issues", []) if i.get("severity") in ("MEDIUM", "LOW")]
+    recommendations = result.get("recommendations", [])
+    observations = result.get("positive_observations", [])
+
+    if not issues and not recommendations and not observations:
+        return ""
+
+    total = len(issues)
+    header = f"Code Review — non-blocking findings ({total} issue{'s' if total != 1 else ''}):"
+    lines.append(f"\n{'=' * 60}")
+    lines.append(header)
+    lines.append(f"Summary: {result.get('summary', 'N/A')}")
+
+    if issues:
+        lines.append("")
+        for issue in issues:
+            icon = {"MEDIUM": "[MAJOR]", "LOW": "[MINOR]"}.get(issue.get("severity", "?"), "[?]")
+            section = issue.get("section", "")
+            section_tag = f" [{section}]" if section else ""
+            lines.append(f"  {icon}{section_tag} {issue.get('file', '?')}: {issue.get('description', '')}")
+            if issue.get("fix"):
+                lines.append(f"    Fix: {issue['fix']}")
+
+    if observations:
+        lines.append("\nPositive observations:")
+        for obs in observations:
+            lines.append(f"  [+] {obs}")
+
+    if recommendations:
+        lines.append("\nRecommendations:")
+        for rec in recommendations:
+            lines.append(f"  [>] {rec}")
+
+    lines.append(f"{'=' * 60}\n")
+    return "\n".join(lines)
+
+
+def _save_findings(text: str) -> None:
+    """Persist review findings to logs/code_review/. Never raises."""
+    try:
+        log_dir = Path(__file__).resolve().parents[2] / "logs" / "code_review"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        (log_dir / f"review_{ts}.txt").write_text(text)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def main() -> None:
     if not shutil.which("claude"):
         print("claude CLI not found — skipping code review")
@@ -253,41 +305,50 @@ def main() -> None:
         print("Skipping code review due to error (non-blocking)")
         sys.exit(0)
 
-    print(f"\n{'=' * 60}")
-    print(f"Summary: {result.get('summary', 'N/A')}")
-
     issues = result.get("issues", [])
-    print(f"Issues: {len(issues)}")
-    print(f"Passed: {result.get('passed', True)}")
 
-    if issues:
-        print()
-        for issue in issues:
-            icon = {"HIGH": "[CRITICAL]", "MEDIUM": "[MAJOR]", "LOW": "[MINOR]"}.get(issue.get("severity", "?"), "[?]")
-            section = issue.get("section", "")
-            section_tag = f" [{section}]" if section else ""
-            print(f"  {icon}{section_tag} {issue.get('file', '?')}: {issue.get('description', '')}")
-            if issue.get("fix"):
-                print(f"    Fix: {issue['fix']}")
-
-    observations = result.get("positive_observations", [])
-    if observations:
-        print("\nPositive observations:")
-        for obs in observations:
-            print(f"  [+] {obs}")
-
-    recommendations = result.get("recommendations", [])
-    if recommendations:
-        print("\nRecommendations:")
-        for rec in recommendations:
-            print(f"  [>] {rec}")
-
+    # --- Blocking path: HIGH severity issues present ---
     if not result.get("passed", True):
+        print(f"\n{'=' * 60}")
+        print(f"Summary: {result.get('summary', 'N/A')}")
+        print(f"Issues: {len(issues)}")
+        print("Passed: False")
+
+        if issues:
+            print()
+            for issue in issues:
+                icon = {"HIGH": "[CRITICAL]", "MEDIUM": "[MAJOR]", "LOW": "[MINOR]"}.get(
+                    issue.get("severity", "?"), "[?]"
+                )
+                section = issue.get("section", "")
+                section_tag = f" [{section}]" if section else ""
+                print(f"  {icon}{section_tag} {issue.get('file', '?')}: {issue.get('description', '')}")
+                if issue.get("fix"):
+                    print(f"    Fix: {issue['fix']}")
+
+        observations = result.get("positive_observations", [])
+        if observations:
+            print("\nPositive observations:")
+            for obs in observations:
+                print(f"  [+] {obs}")
+
+        recommendations = result.get("recommendations", [])
+        if recommendations:
+            print("\nRecommendations:")
+            for rec in recommendations:
+                print(f"  [>] {rec}")
+
         critical_count = len([i for i in issues if i.get("severity") == "HIGH"])
         print(f"\nBLOCKED: {critical_count} critical issue(s) must be resolved before committing")
         sys.exit(1)
 
-    print("\nCode review passed ✓")
+    # --- Passing path: surface non-blocking findings via stderr ---
+    findings_text = _format_findings(result)
+    if findings_text:
+        print(findings_text, file=sys.stderr)
+        _save_findings(findings_text)
+
+    print("Code review passed")
 
 
 if __name__ == "__main__":
