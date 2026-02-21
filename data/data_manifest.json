@@ -98,5 +98,30 @@
     "sha256": "3663dd3ad9300db2cb3b3dae34d1c1a49923b035d55960e6aa0676c863fb52db",
     "updated_at": "2026-02-21T03:39:31.072081+00:00",
     "size_bytes": 267198
+  },
+  "data/raw/onchain/bgeometrics_combined.parquet": {
+    "sha256": "a5ee363051d2ccb4b882704595c81283718e1951d5e94412f53174b45f0bd763",
+    "updated_at": "2026-02-21T05:05:11.609511+00:00",
+    "size_bytes": 296146
+  },
+  "data/raw/funding_rates/btc_okx.parquet": {
+    "sha256": "90d7589cd991c32709d62cf891e3cdc658df92bb90996849ce651fd5cf698aaf",
+    "updated_at": "2026-02-21T05:10:57.911437+00:00",
+    "size_bytes": 8111
+  },
+  "data/raw/funding_rates/eth_okx.parquet": {
+    "sha256": "24a329d066f63abfe33f4c59ea75b51b5230d6ace2d9b1c1257a61087578f1a0",
+    "updated_at": "2026-02-21T05:10:59.776058+00:00",
+    "size_bytes": 8135
+  },
+  "data/coinapi/funding_rate_btc_binance.parquet": {
+    "sha256": "cafe59399b74c53b1da2361f63537dae42e230623603c52b9281b1587d5b0bbd",
+    "updated_at": "2026-02-21T05:28:33.864534+00:00",
+    "size_bytes": 74634
+  },
+  "data/coinapi/funding_rate_eth_binance.parquet": {
+    "sha256": "794f4ca6cdc3fc1f90906a1c9030aa2c954bc50f75f4e4f251e05ef4b3fdedc7",
+    "updated_at": "2026-02-21T05:28:44.778579+00:00",
+    "size_bytes": 75809
   }
 }
