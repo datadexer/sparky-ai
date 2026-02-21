@@ -42,7 +42,7 @@ def funding_rate_regime(
     window: int = 56,
 ) -> pd.Series:
     """Classify funding rate regime as positive/negative/neutral."""
-    smoothed = funding_rates.rolling(window=window, min_periods=1).mean()
+    smoothed = funding_rates.rolling(window=window, min_periods=window).mean()
     result = pd.Series("neutral", index=funding_rates.index)
     result[smoothed > positive_threshold] = "positive"
     result[smoothed < -positive_threshold] = "negative"
@@ -59,6 +59,6 @@ def funding_rate_carry_signal(
     Threshold is in per-period units (e.g., 0.065% per 8h for Binance).
     Signal = 1 when shorting earns carry, 0 otherwise.
     """
-    smoothed = funding_rates.rolling(window=window, min_periods=1).mean()
+    smoothed = funding_rates.rolling(window=window, min_periods=window).mean()
     threshold = cost_threshold_pct / 100
     return (smoothed > threshold).astype(float)

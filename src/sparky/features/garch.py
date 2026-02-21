@@ -96,12 +96,16 @@ def garch_parameter_stability(
                 model = arch_model(train, vol="Garch", p=1, q=1, dist="Normal", rescale=False)
                 result = model.fit(disp="off")
                 params = result.params
+                alpha = params.get("alpha[1]", np.nan)
+                beta = params.get("beta[1]", np.nan)
+                if np.isnan(alpha) or np.isnan(beta):
+                    logger.warning("[GARCH] Unexpected param names at window %d: %s", i, list(params.index))
                 records.append(
                     {
                         "date": returns.index[i],
                         "omega": params.get("omega", np.nan),
-                        "alpha": params.get("alpha[1]", np.nan),
-                        "beta": params.get("beta[1]", np.nan),
+                        "alpha": alpha,
+                        "beta": beta,
                         "persistence": params.get("alpha[1]", 0) + params.get("beta[1]", 0),
                     }
                 )
@@ -121,6 +125,9 @@ def garch_parameter_stability(
     return pd.DataFrame(records).set_index("date")
 
 
-def ewma_volatility(returns: pd.Series, span: int = 30) -> pd.Series:
+def ewma_volatility(returns: pd.Series, span: int = 30, annualize: bool = False) -> pd.Series:
     """Exponentially weighted moving average volatility."""
-    return returns.ewm(span=span).std()
+    vol = returns.ewm(span=span).std()
+    if annualize:
+        vol = vol * np.sqrt(365)
+    return vol

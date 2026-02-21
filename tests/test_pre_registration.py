@@ -84,3 +84,10 @@ class TestTrialBudget:
 
     def test_unknown_family_uses_global(self, sample_reg):
         assert check_trial_budget(sample_reg, 10, family="unknown") is True
+
+    def test_unknown_family_logs_warning(self, sample_reg, caplog):
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="sparky.tracking.pre_registration"):
+            check_trial_budget(sample_reg, 10, family="nonexistent")
+        assert any("not found in pre-registration" in r.message for r in caplog.records)

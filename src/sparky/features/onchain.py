@@ -140,7 +140,7 @@ def sopr_signal_adaptive(sopr: pd.Series, window: int = 730, upper_pct: int = 95
     result = pd.Series(0.0, index=sopr.index)
     result[sopr < lower] = 1.0
     result[sopr > upper] = -1.0
-    result[sopr < 1.0] = 1.0  # SOPR < 1 always capitulation
+    result[(sopr < 1.0) & (result == 0.0)] = 1.0  # SOPR < 1 elevates neutral, not bearish
     return result
 
 
@@ -155,7 +155,7 @@ def netflow_signal(flow_in: pd.Series, flow_out: pd.Series, window: int = 30) ->
     rolling_mean = net.rolling(window=window, min_periods=window).mean()
     rolling_std = net.rolling(window=window, min_periods=window).std()
     zscore = (net - rolling_mean) / rolling_std.replace(0, np.nan)
-    return -zscore
+    return -zscore.fillna(0)
 
 
 def sth_mvrv_signal(sth_mvrv: pd.Series, window: int = 365, upper_pct: int = 90, lower_pct: int = 10) -> pd.Series:
@@ -184,7 +184,7 @@ def sth_sopr_signal(sth_sopr: pd.Series, window: int = 365, upper_pct: int = 95,
     result = pd.Series(0.0, index=sth_sopr.index)
     result[sth_sopr < lower] = 1.0
     result[sth_sopr > upper] = -1.0
-    result[sth_sopr < 1.0] = 1.0
+    result[(sth_sopr < 1.0) & (result == 0.0)] = 1.0
     return result
 
 

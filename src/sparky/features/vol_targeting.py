@@ -29,10 +29,11 @@ def apply_vol_targeting(
     target_vol: float = 0.20,
     max_leverage: float = 1.0,
 ) -> pd.Series:
-    """Apply vol targeting to returns.
+    """Apply vol targeting to a return series.
 
-    Returns position-sized returns: returns * position_size.
-    No look-ahead: forecast_vol is already a forward forecast.
+    IMPORTANT: forecast_vol must be a genuine one-step-ahead forecast (e.g. from
+    rolling_garch_forecast), NOT in-sample fitted volatility. No additional lag
+    is applied here — the forecast at index i must use only data up to index i-1.
     """
     pos_size = vol_target_position_size(forecast_vol, target_vol, max_leverage)
     return returns * pos_size

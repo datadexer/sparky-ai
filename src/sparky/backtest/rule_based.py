@@ -34,8 +34,13 @@ def net_ret(
     """
     if not isinstance(prices.index, pd.DatetimeIndex) or not isinstance(positions.index, pd.DatetimeIndex):
         raise ValueError("prices and positions must have DatetimeIndex")
+    if cost_frac < 0:
+        raise ValueError(f"cost_frac must be non-negative, got {cost_frac}")
+    positions = positions.reindex(prices.index).ffill().fillna(0)
     pr = prices.pct_change()
     lp = positions.shift(1).fillna(0)
+    # Cost at T = |positions[T-1] - positions[T-2]| — charged on the bar where
+    # the resulting position (lp[T] = positions[T-1]) is held.
     costs = positions.diff().abs().fillna(0).shift(1).fillna(0) * cost_frac
     return (lp * pr - costs).dropna()
 
@@ -55,17 +60,18 @@ def subperiod_analysis(
     bh_ret = prices.pct_change().dropna()
     out = {}
     for label, start in SUB_PERIODS:
-        r = ret if start is None else ret[ret.index >= start]
-        b = bh_ret if start is None else bh_ret[bh_ret.index >= start]
+        start_ts = pd.Timestamp(start, tz="UTC") if start else None
+        r = ret if start_ts is None else ret[ret.index >= start_ts]
+        b = bh_ret if start_ts is None else bh_ret[bh_ret.index >= start_ts]
         if len(r) < 30:
             continue
         m = compute_all_metrics(r, n_trials=1, periods_per_year=periods_per_year)
         bh_m = compute_all_metrics(b, n_trials=1, periods_per_year=periods_per_year)
-        p_slice = positions[positions.index >= start] if start else positions
+        p_slice = positions[positions.index >= start_ts] if start_ts else positions
         out[label] = {
             "sharpe": round(m["sharpe"], 4),
             "max_drawdown": round(m["max_drawdown"], 4),
-            "annual_return": round(m["mean_return"] * periods_per_year, 4),
+            "annual_return": round((1 + m["mean_return"]) ** periods_per_year - 1, 4),
             "n_trades": int((p_slice.diff().abs().fillna(0) > 0.01).sum()),
             "win_rate": round(m["win_rate"], 4),
             "bh_sharpe": round(bh_m["sharpe"], 4),

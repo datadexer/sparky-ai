@@ -272,4 +272,4 @@ class TestSyncFundingRates:
         sync_funding_rates(asset="BTC", exchanges=["binance"])
 
         start_arg = mock_instance.fetch_funding_rates.call_args[0][0]
-        assert start_arg == "2024-06-15"
+        assert start_arg == "2024-06-15T00:00:00+00:00"

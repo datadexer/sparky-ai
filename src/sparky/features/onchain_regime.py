@@ -16,6 +16,9 @@ def onchain_regime_signal(
 ) -> pd.Series:
     """Combine multiple on-chain signals into regime signal.
 
+    Returns a long-or-flat signal: 1 (long) when weighted score > threshold,
+    0 (flat) otherwise. Does not produce short signals (-1).
+
     Args:
         signals: Dict mapping names to Series in [-1, 0, +1].
         weights: Dict mapping names to weights. Default: equal weights.
@@ -70,6 +73,26 @@ def onchain_regime_with_positions(
 
     df = pd.DataFrame(signals)
     df["composite_score"] = sum(df[k] * weights[k] for k in signals)
-    df["regime_signal"] = onchain_regime_signal(signals, weights, threshold, persistence_days)
+
+    raw = (df["composite_score"] > threshold).astype(float)
+
+    if persistence_days <= 1:
+        df["regime_signal"] = raw
+    else:
+        result = pd.Series(0.0, index=raw.index)
+        current_state = 0.0
+        consecutive = 0
+        for i in range(len(raw)):
+            if raw.iloc[i] == current_state:
+                consecutive = 0
+                result.iloc[i] = current_state
+            else:
+                consecutive += 1
+                if consecutive >= persistence_days:
+                    current_state = raw.iloc[i]
+                    consecutive = 0
+                result.iloc[i] = current_state
+        df["regime_signal"] = result
+
     df["position"] = df["regime_signal"]
     return df

@@ -5,12 +5,15 @@ running experiments. Tamper-evident via SHA-256 hash.
 """
 
 import hashlib
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "StrategyFamily",
@@ -95,4 +98,8 @@ def check_trial_budget(
         for sf in reg.strategy_families:
             if sf.name == family:
                 return current_trial_count < sf.max_configs
+        logger.warning(
+            "Strategy family %r not found in pre-registration, using global budget",
+            family,
+        )
     return True

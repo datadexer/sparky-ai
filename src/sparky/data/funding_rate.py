@@ -57,9 +57,10 @@ class FundingRateFetcher:
         Returns DataFrame with DatetimeIndex (UTC) and columns:
         funding_rate, exchange, granularity
         """
-        start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+        start_dt = pd.Timestamp(start_date, tz="UTC")
+        start_ts = int(start_dt.timestamp() * 1000)
         if end_date:
-            end_ts = int(datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+            end_ts = int(pd.Timestamp(end_date, tz="UTC").timestamp() * 1000)
         else:
             end_ts = int(datetime.now(timezone.utc).timestamp() * 1000)
 
@@ -163,7 +164,7 @@ def sync_funding_rates(
         parquet_path = f"data/raw/funding_rates/{asset.lower()}_{exch}.parquet"
 
         last_ts = store.get_last_timestamp(parquet_path)
-        start = last_ts.strftime("%Y-%m-%d") if last_ts else "2019-01-01"
+        start = last_ts.isoformat() if last_ts else "2019-01-01"
 
         try:
             df = fetcher.fetch_funding_rates(start)

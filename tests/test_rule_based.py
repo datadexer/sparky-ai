@@ -73,6 +73,11 @@ class TestNetRet:
         with pytest.raises(ValueError, match="DatetimeIndex"):
             net_ret(prices, positions, 0.003)
 
+    def test_negative_cost_frac_raises(self, prices, daily_index):
+        pos = pd.Series(1.0, index=daily_index)
+        with pytest.raises(ValueError, match="non-negative"):
+            net_ret(prices, pos, -0.001)
+
     def test_hand_computed_costs(self):
         idx = pd.date_range("2020-01-01", periods=5, freq="D", tz="UTC")
         prices = pd.Series([100, 102, 101, 103, 105], index=idx, dtype=float)

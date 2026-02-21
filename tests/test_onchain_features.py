@@ -551,7 +551,8 @@ def test_netflow_signal_shape():
     flow_out = pd.Series(np.random.uniform(1000, 5000, 100))
     result = netflow_signal(flow_in, flow_out, window=30)
     assert len(result) == 100
-    assert result.iloc[:29].isna().all()
+    # Warm-up period filled with 0 (NaN replaced by fillna(0))
+    assert (result.iloc[:29] == 0.0).all()
 
 
 def test_netflow_signal_bullish_outflow():
