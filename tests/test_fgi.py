@@ -253,9 +253,24 @@ class TestFgiExtremeSignal:
 
 class TestFgiExposureAdjustment:
     def test_basic_adjustment_with_lag(self):
-        """Adjustment reflects previous bar's FGI due to shift(1)."""
+        """Default fear_only=True: only fear side adjusts, greed side unchanged."""
         fgi = pd.Series([10, 50, 90, 20, 80])
         adj = fgi_exposure_adjustment(fgi)
+        # Lagged: [NaN, 10, 50, 90, 20]
+        # fear_only=True: greed side -> 1.0
+        # Adj:    [NaN, 1.25, 1.0, 1.0, 1.25]
+        assert pd.isna(adj.iloc[0])
+        expected_rest = pd.Series([1.25, 1.0, 1.0, 1.25], index=[1, 2, 3, 4])
+        pd.testing.assert_series_equal(
+            adj.iloc[1:].reset_index(drop=True),
+            expected_rest.reset_index(drop=True),
+            check_names=False,
+        )
+
+    def test_symmetric_mode(self):
+        """fear_only=False: both fear and greed sides adjust."""
+        fgi = pd.Series([10, 50, 90, 20, 80])
+        adj = fgi_exposure_adjustment(fgi, fear_only=False)
         # Lagged: [NaN, 10, 50, 90, 20]
         # Adj:    [NaN, 1.25, 1.0, 0.75, 1.25]
         assert pd.isna(adj.iloc[0])

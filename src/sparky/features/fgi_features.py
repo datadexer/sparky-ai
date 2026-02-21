@@ -45,6 +45,7 @@ def fgi_exposure_adjustment(
     fear_threshold: int = 20,
     greed_threshold: int = 80,
     adjustment: float = 0.25,
+    fear_only: bool = True,
 ) -> pd.Series:
     """Adjust position exposure based on FGI extremes.
 
@@ -62,6 +63,9 @@ def fgi_exposure_adjustment(
         Values at or above this reduce exposure.
     adjustment : float
         How much to adjust exposure by (default 0.25 = +/- 25%).
+    fear_only : bool
+        If True (default), only adjust on the fear side. Greed returns 1.0
+        because extreme greed is momentum-confirming, not reversal.
 
     Returns
     -------
@@ -75,6 +79,7 @@ def fgi_exposure_adjustment(
     lagged = fgi.shift(1)
     adj = pd.Series(1.0, index=fgi.index)
     adj[lagged <= fear_threshold] = 1.0 + adjustment
-    adj[lagged >= greed_threshold] = 1.0 - adjustment
+    if not fear_only:
+        adj[lagged >= greed_threshold] = 1.0 - adjustment
     adj[lagged.isna()] = float("nan")
     return adj

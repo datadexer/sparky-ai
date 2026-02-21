@@ -1,0 +1,193 @@
+name: p002_screening
+objective: |
+  # P002 Overnight Screening — On-Chain Regime + Carry + Vol Targeting + FGI
+
+  ## Mission
+  Develop and validate (in-sample) a multi-strategy BTC trading system combining
+  on-chain regime detection, regime-gated funding rate carry, volatility targeting,
+  and Fear & Greed sentiment overlay. Produce a ranked list of IS-validated
+  candidates ready for one-shot OOS testing.
+
+  Dry-run baseline: Naive on-chain regime composite Sharpe 0.529 IS, 72 trades.
+  Any optimized variant that cannot beat this is fitting noise.
+
+  ## Data Partitions
+  - Development: 2015-01-01 to 2021-12-31 — ALL exploration tonight
+  - Validation: 2022-01-01 to 2023-12-01 — LOCKED
+  - Holdout: 2023-12-02 to present — SEALED
+  Before ANY backtest, verify data end date <= 2021-12-31.
+  Log every backtest to wandb with tag `p002_dev_only`.
+
+  ## Transaction Costs (three-tier model)
+  - Family A/B/D (spot strategies): cost_frac=0.0015 (15 bps spot maker)
+    Stress test: cost_frac=0.003 (30 bps spot taker)
+  - Family C (funding carry): cost_frac=0.00075 (7.5 bps futures)
+    Stress test: cost_frac=0.0015 (15 bps spot maker)
+
+  ## Phase 0: Pre-Registration (~20 min)
+  1. Verify holdout enforcement (max training date <= 2021-12-31).
+  2. Verify module availability:
+     ```python
+     from sparky.validation.cpcv import run_cpcv, probability_of_overfitting
+     from sparky.validation.monte_carlo import permutation_test, block_permutation_test
+     from sparky.validation.walk_forward import run_walk_forward, walk_forward_summary
+     from sparky.validation.parameter_plateau import parameter_plateau_test
+     from sparky.analysis.edge_attribution import regime_attribution, signal_contribution, temporal_stability
+     from sparky.analysis.trade_profile import extract_trades, trade_statistics
+     from sparky.data.fgi import fetch_fgi, load_fgi
+     from sparky.features.fgi_features import fgi_extreme_signal, fgi_exposure_adjustment
+     ```
+     If critical modules missing -> STOP and report.
+  3. Pre-register research plan to wandb artifact.
+     Trial counter N=0. Max configs: 350.
+
+  ## Phase 1: Signal Research on Dev Set (~1.5-2 hours)
+
+  ### 1.1 Individual signal statistics (20 min)
+  For each on-chain signal (MVRV, SOPR, exchange netflow):
+  - Distribution stats, autocorrelation at lags 1/7/14/30/60d
+  - ADF stationarity test
+  - Correlation with BTC forward returns at 1d/7d/14d/30d horizons
+
+  ### 1.2 Cross-signal analysis (15 min)
+  - Pairwise correlation matrix. Rolling 1-year correlation stability.
+  - If MVRV-SOPR rolling correlation > 0.85 -> signals redundant.
+
+  ### 1.3 Naive regime baseline (30 min)
+  Simplest composite (DO NOT OPTIMIZE):
+  - MVRV > rolling 50th percentile (730d) -> bullish
+  - SOPR > 1.0 (7d SMA) -> bullish
+  - Exchange netflow < 0 (14d SMA) -> accumulation
+  - Majority vote -> long if 2/3 bullish, else flat
+  Report: Sharpe, trades, hold period, win rate, MaxDD, regime split
+
+  ### 1.4 Funding rate characterization (30 min)
+  Binance CoinAPI data (2021-01 to 2021-12-31):
+  - Distribution, autocorrelation, fraction above thresholds
+  - Theoretical cumulative carry PnL
+
+  ### 1.5 Volatility characterization (15 min)
+  BTC realized vol (30d, 60d EWMA), vol-of-vol distribution
+
+  ### 1.6 FGI characterization (10 min)
+  Verify pre-research findings on dev set partition.
+  Cross-correlate FGI with MVRV/SOPR.
+
+  Phase 1 Gate: "Explain the Edge" docs for each family.
+  Kill if ALL signals show zero correlation with forward returns (p > 0.10).
+
+  ## Phase 2: Exploration with Iterative Deepening (~3 hours)
+
+  ### Round 1 — Coarse screening (all families)
+  Family A variants (each fixes 2 params, varies 2):
+  - A1: percentile_window x persistence (16 configs)
+  - A2: persistence x combination (12 configs)
+  - A3: percentile_window x sopr_smooth (16 configs)
+  - A4: combination x sopr_smooth (12 configs)
+  Family B: 24-config vol targeting grid
+  Family C: 24-config funding carry grid
+  Family D: wait for Round 3
+
+  Classify: Sharpe < 0.3 -> NULL, 0.3-0.5 -> SCREEN COMPLETE, > 0.5 -> PROMISING
+
+  ### Round 2 — Fine grid around promising regions
+  For promising Family A variants: +/-1 step fine grid + parameter_plateau_test
+
+  ### Round 3 — Robustness + combinations
+  - Neighbor test (4 nearest params, flag >40% drop)
+  - Apply best Family B vol targeting on Family A candidates
+  - Apply Family D FGI fear-only overlay (16 configs) on top 2-3 Family A candidates
+    Optional: 4 regime-conditioned greed configs
+  - Regime-gated carry if Family C produced active periods
+  - Trade clustering analysis (flag max gap > 365 days)
+
+  ### Round 4 — Cross-analysis
+  Correlation matrix of daily returns across survivors.
+  Rank by: Sharpe, plateau, clustering, neighbor robustness.
+  Select top 3-5 for Investigation.
+
+  Phase 2 Gate: N ~ 200-300, at least 1 candidate Sharpe > 0.4 + plateau pass
+
+  ## Phase 3: Investigation + IS Validation (~3 hours)
+
+  For each candidate (3-5 configs):
+  - Edge attribution: regime_attribution, signal_contribution, temporal_stability
+  - Trade profile: extract_trades, trade_statistics, trade_clustering
+  - Vol-targeted overlay: apply best Family B
+
+  ### IS Validation Battery
+  - CPCV: run_cpcv(prices, positions_func, n_groups=12, cost_frac=0.0015)
+    Gate: PBO < 0.40, median path Sharpe > 0.25
+  - Monte Carlo: permutation_test(prices, positions, n_permutations=1000)
+    Gate: p-value < 0.05
+  - DSR with actual trial counter N. Gate: DSR > 0.95
+  - Parameter plateau: coverage >= 50%
+
+  Phase 3 Gate (overnight stopping point):
+  - PBO < 0.40
+  - MC p < 0.05
+  - DSR > 0.95
+  - Plateau coverage >= 50%
+  - Profitable in >=2/3 regimes
+  - No severe temporal decay
+
+  ## Deliverable
+  For each passing candidate, produce summary card with:
+  IS Sharpe, MaxDD, DSR(N=), PBO, MC p-value, plateau coverage,
+  regime attribution, temporal trend, trade count, win rate,
+  vol-targeted Sharpe, risk flags.
+  Save to reports/p002_overnight_summary.md and log to wandb.
+
+  ## Operating Rules
+  1. Log everything to wandb. Tag p002 + phase number.
+  2. Increment trial counter for EVERY backtest.
+  3. Dev set only (<= 2021-12-31).
+  4. Do not install packages.
+  5. Do not modify validation module source code.
+  6. Respect kill criteria.
+  7. Negative results are results.
+  8. Annualization: 365 days/year.
+
+constraints:
+  assets: [btc]
+  timeframes: [daily]
+  gpu_required: false
+  dev_set_end: "2021-12-31"
+
+strategy_space:
+  - family: onchain_regime
+    description: "On-chain regime detection (MVRV, SOPR, exchange netflow)"
+    priority: 0
+    parameter_ranges:
+      percentile_window: [365, 500, 730, 1000]
+      persistence: [1, 3, 5, 7]
+      combination: [majority_vote, weighted_average, min_signal]
+      sopr_smooth: [1, 3, 7, 14]
+
+  - family: vol_targeting
+    description: "Volatility targeting overlay"
+    priority: 1
+    parameter_ranges:
+      target_vol: [0.15, 0.20, 0.25, 0.30]
+      vol_method: [ewma_30, ewma_60]
+      vol_window: [30, 60, 90]
+
+  - family: funding_carry
+    description: "Regime-gated funding rate carry (Binance 8h)"
+    priority: 1
+    parameter_ranges:
+      funding_threshold: [0.00003, 0.00005, 0.00008, 0.0001]
+      funding_lookback: [3, 7, 14]
+      regime_gate: [true, false]
+
+  - family: fgi_overlay
+    description: "Fear & Greed sentiment overlay (fear-only primary)"
+    priority: 2
+    parameter_ranges:
+      fear_threshold: [10, 15, 20, 25]
+      adjustment: [0.15, 0.20, 0.25, 0.30]
+
+max_sessions: 1
+max_session_minutes: 540
+max_cost_usd: 80
+wandb_tags: [project_002, screening, p002_dev_only]
