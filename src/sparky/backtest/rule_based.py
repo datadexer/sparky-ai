@@ -36,7 +36,7 @@ def net_ret(
         raise ValueError("prices and positions must have DatetimeIndex")
     pr = prices.pct_change()
     lp = positions.shift(1).fillna(0)
-    costs = lp.diff().abs().fillna(0) * cost_frac
+    costs = positions.diff().abs().fillna(0).shift(1).fillna(0) * cost_frac
     return (lp * pr - costs).dropna()
 
 
