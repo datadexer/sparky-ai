@@ -120,6 +120,14 @@ _DATASET_ALIASES = {
     "btc_realized_pl_ratio": Path("data/raw/onchain/bgeometrics/realized_pl_ratio.parquet"),
 }
 
+# Earliest usable date for datasets with known early-period quality issues.
+# Coinbase INTX: first 6 months (Mar-Sep 2023) have extreme negative funding
+# rates from low liquidity at exchange launch. See reports/p002/funding_rate_investigation.md.
+_START_DATE_OVERRIDES = {
+    "funding_rate_btc_coinbase_intl": pd.Timestamp("2023-10-01", tz="UTC"),
+    "funding_rate_eth_coinbase_intl": pd.Timestamp("2023-10-01", tz="UTC"),
+}
+
 _guard = HoldoutGuard()
 
 
@@ -336,6 +344,17 @@ def load(
         df = df.set_index("timestamp")
         if df.index.tz is None:
             df.index = df.index.tz_localize("UTC")
+
+    # Apply data quality start-date filters
+    if dataset in _START_DATE_OVERRIDES and isinstance(df.index, pd.DatetimeIndex):
+        min_date = _START_DATE_OVERRIDES[dataset]
+        before = len(df)
+        df = df[df.index >= min_date]
+        if len(df) < before:
+            logger.info(
+                f"[LOADER] Data quality filter: excluded {before - len(df)} early rows "
+                f"before {min_date.date()} for {dataset}"
+            )
 
     # Apply holdout enforcement
     resolved_asset = asset or _detect_asset(dataset)
