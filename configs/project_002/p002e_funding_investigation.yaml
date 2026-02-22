@@ -1,0 +1,222 @@
+name: p002e_funding_investigation
+objective: |
+  # P002-E: Funding Rate Carry — Quick Investigation
+
+  **Type:** Focused investigation (NOT a full research project)
+  **Scope:** 1 session, ~15 minutes
+  **Objective:** Confirm or challenge the claim that funding rate carry is currently unviable, identify what conditions signal viability returning, and validate data quality
+  **Wandb tags:** `project_002`, `p002e`, `funding_rate_investigation`
+
+  ---
+
+  ## Context
+
+  The P002 Strategy Blueprint (written ~Feb 2026) claims:
+  - Average perpetual swap funding is **-0.001826% per 8h** as of Feb 2026
+  - Total open interest down **43% over 30 days**
+  - The institutional basis trade unwound violently in Oct–Nov 2025 when basis compressed below ~5% breakeven
+  - **$4B+ in ETF outflows** followed
+
+  These claims drove the decision to deprioritize funding rate carry as a P002 research direction. **We need to verify these claims against actual data, not trust a narrative written at a single point in time.**
+
+  ---
+
+  ## Phase 1: Data Discovery & Quality (5 min)
+
+  ### 1.1 Locate Existing Funding Rate Data
+
+  Funding rate data has already been downloaded. Find it:
+
+  ```bash
+  # Known locations:
+  # data/raw/onchain/bgeometrics/funding_rate_aggregate.parquet
+  # data/coinapi/funding_rate_btc_binance.parquet
+  # data/coinapi/funding_rate_eth_binance.parquet
+  ```
+
+  Report what you find: file paths, date ranges, columns, assets covered, source exchange(s).
+
+  If multiple exchanges are available, use Binance as primary and cross-validate against the secondary source. If only one exchange is available, note this as a limitation but proceed.
+
+  ### 1.2 Data Quality Checks
+
+  **Report ALL of the following before any analysis:**
+
+  ```
+  For each exchange x asset:
+  - Total records fetched
+  - Date range covered
+  - Expected vs actual record count (should be 3 per day)
+  - Number of gaps > 12 hours
+  - Largest gap (date and duration)
+  - Null/NaN rate count
+  - Zero rate count
+  - Any constant-value runs > 5 consecutive readings
+  ```
+
+  **Cross-exchange validation (if multiple exchanges available):**
+  - Merge Binance and aggregate funding rates by timestamp
+  - Compute correlation over overlapping period
+  - Report mean absolute difference
+  - Flag any periods where exchanges diverge by > 0.02% (would indicate data quality issue on one side)
+
+  **If data quality issues found:** Stop and report. Do not proceed to analysis on bad data.
+
+  ---
+
+  ## Phase 2: Current State Analysis (5 min)
+
+  ### 2.1 Full History Summary Table
+
+  Produce a quarterly breakdown table for BTC:
+
+  ```
+  Quarter | Mean Rate (8h) | Annualized % | % Negative | Cumulative % | Gross P&L ($10K)
+  ```
+
+  Annualization: `rate_8h * 3 * 365 * 100`
+
+  ### 2.2 Monthly Detail (2024-present)
+
+  Same table at monthly granularity for the recent period. This is where the blueprint's claims get tested.
+
+  **Specific claims to verify:**
+  1. "By 2025, carry turned negative" — Is mean funding actually negative for 2025 overall? Or was this a snapshot at a specific bad moment?
+  2. "-0.001826% per 8h as of Feb 2026" — What is the actual rolling 30d average as of the most recent data point?
+  3. Is there a visible structural break at ETF launch (Jan 2024)?
+
+  ### 2.3 Distribution Analysis
+
+  For three periods — pre-ETF (2020-2023), post-ETF year 1 (2024), and recent (2025-present):
+  - Mean, median, std, skewness
+  - % negative readings
+  - % readings above cost threshold (0.005% per 8h ~ 5.5% annualized)
+  - Longest consecutive negative streak (in days)
+  - Longest consecutive positive streak
+
+  ### 2.4 ETH Comparison
+
+  Repeat 2.2 and 2.3 for ETH. Is the compression BTC-specific (ETF-driven) or market-wide?
+
+  ---
+
+  ## Phase 3: Viability Indicators (5 min)
+
+  ### 3.1 Cost Threshold Analysis
+
+  Delta-neutral carry costs ~24 bps round-trip entry/exit. For carry to be net positive after costs on a 30-day hold:
+  - **Minimum viable rate:** 0.24% / 90 readings = 0.00267% per 8h period ~ **2.9% annualized**
+  - **Comfortable margin (2x costs):** ~0.005% per 8h ~ **5.5% annualized**
+
+  Compute rolling 30-day average funding rate. Report:
+  - What % of the time since 2020 has the 30d avg been above the minimum viable threshold?
+  - What % of the time has it been above the comfortable threshold?
+  - What is the current 30d avg?
+  - When was the last time the 30d avg crossed above the comfortable threshold?
+
+  ### 3.2 Regime Identification
+
+  Tabulate the rolling 30-day average funding rate alongside BTC price (monthly averages are fine). Identify the funding regimes:
+
+  ```
+  Regime     | Funding Characteristics              | Market Context
+  -----------|--------------------------------------|------------------
+  Bull carry | 30d avg > 0.01% (>11% ann)          | Usually strong uptrend
+  Normal     | 30d avg 0.003-0.01% (3-11% ann)     | Moderate trend / range
+  Compressed | 30d avg 0-0.003% (0-3% ann)         | Post-ETF / range
+  Inverted   | 30d avg < 0%                         | Bear market / deleveraging
+  ```
+
+  Report time spent in each regime by year.
+
+  ### 3.3 Leading Indicators for Regime Transition
+
+  When funding transitions from compressed/inverted back to normal/bull, what leads?
+
+  Check correlation (or simple lead/lag) between:
+  - **BTC price momentum** (30d return) — does price lead funding?
+  - **Funding rate momentum** (7d avg crossing above 30d avg) — mean-reversion signal?
+
+  This doesn't need to be rigorous — just eyeball whether there's a readable leading indicator. We want to know what to monitor.
+
+  ---
+
+  ## Deliverables
+
+  ### Required Output: Single Results JSON
+
+  ```python
+  results = {
+      "data_quality": {
+          "files_found": [str],
+          "exchanges_available": [str],
+          "btc_records": int,
+          "eth_records": int,
+          "cross_exchange_correlation": float | None,
+          "gaps_found": int,
+          "quality_verdict": "PASS" | "FAIL" | "WARN"
+      },
+      "blueprint_claims": {
+          "claim_carry_negative_2025": {"verdict": True/False, "actual_mean_2025": float},
+          "claim_negative_0018_feb2026": {"verdict": True/False, "actual_30d_avg": float},
+          "claim_structural_break_etf": {"verdict": True/False, "pre_etf_mean": float, "post_etf_mean": float}
+      },
+      "current_state": {
+          "btc_30d_avg_rate": float,
+          "btc_30d_avg_annualized": float,
+          "eth_30d_avg_rate": float,
+          "eth_30d_avg_annualized": float,
+          "above_viable_threshold": True/False,
+          "above_comfortable_threshold": True/False,
+          "last_comfortable_crossing_date": str,
+          "current_regime": str
+      },
+      "viability_assessment": {
+          "verdict": "VIABLE_NOW" | "MONITOR" | "NOT_VIABLE",
+          "reasoning": str,
+          "leading_indicators_to_watch": [str],
+          "estimated_activation_conditions": str
+      },
+      "quarterly_table": [...],
+      "monthly_table_recent": [...]
+  }
+  ```
+
+  Save to `results/p002e/funding_investigation.json`
+
+  ### Required Output: Summary Table to Console
+
+  Print the quarterly and monthly tables so they're visible in the session log.
+
+  ---
+
+  ## Operating Rules
+
+  - This is a **read-only investigation.** No strategy backtesting, no position sizing, no walk-forward.
+  - Do NOT access holdout data. This analysis uses only funding rate data (derivatives metadata, not price returns).
+  - If funding rate data cannot be located, search `data/`, `data/raw/`, and `data/processed/` directories and report what's available. Do not fetch from APIs — the data is already downloaded.
+  - Cross-validate with a secondary source if available in existing data. If only one exchange's data exists, note this as a limitation.
+  - Report honestly. If the blueprint's claims are wrong and carry is actually viable, say so.
+  - Keep it to 1 session. This informs a go/no-go decision, not a research program.
+
+  ---
+
+  ## Decision Framework
+
+  Based on results, one of three outcomes:
+
+  1. **VIABLE_NOW:** 30d avg funding above comfortable threshold (0.005%/8h), both BTC and ETH, data quality passes. -> Scope a carry research project.
+
+  2. **MONITOR:** Funding compressed but not structurally dead. Clear leading indicators identified. -> Build a monitoring dashboard, revisit when indicators trigger.
+
+  3. **NOT_VIABLE:** Funding structurally negative, no recovery signal, or data quality too poor to assess. -> Confirm carry is parked, move to P003.
+
+max_sessions: 1
+max_session_minutes: 30
+max_cost_usd: 10
+wandb_tags:
+  - project_002
+  - p002e
+  - funding_rate_investigation
+constraints:
+  dev_set_end: "2023-12-31"

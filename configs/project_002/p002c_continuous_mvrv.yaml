@@ -1,0 +1,243 @@
+name: p002c_continuous_mvrv
+objective: |
+  # P002-C: Continuous MVRV Tilt — Beyond Binary Signals
+
+  ## Context
+
+  P002-B established two findings:
+  1. **Vol targeting works.** Holdout Sharpe 0.618, MaxDD -15.7%. Deployable standalone.
+  2. **MVRV has real continuous information** (IC -0.24 on validation, strengthening from dev).
+     But every approach that converts this into a binary decision fails — the original threshold
+     was too insensitive, the momentum gate was too sensitive.
+
+  The momentum gate's failure mode is instructive: it correctly identified 22/22 corrections but
+  was flat 54% of holdout days, missing half the bull market. The crash protection was spectacular
+  (MaxDD -7.1%) but the opportunity cost exceeded the savings.
+
+  **Key insight:** Vol targeting already provides crash protection mechanically (vol spikes →
+  position shrinks → drawdown limited). VT-only held MaxDD to -15.7% through a -49.5% BTC crash
+  without any signal intelligence. The MVRV layer does NOT need to do crash protection. It just
+  needs to continuously tilt sizing — lean in when cheap, lean out when expensive — and let vol
+  targeting handle the drawdown management.
+
+  **This session tests continuous MVRV approaches that avoid binary decisions entirely.**
+  All variants sit on top of the vol-targeting base (EWMA 60, tv=0.10).
+  Dev set (2019-2021) and validation set (2022-2023) only. Holdout remains sealed.
+
+  ## Design Principles
+
+  1. **No binary gates.** No thresholds that flip between "long" and "flat." Every variant
+     produces a continuous tilt_factor that smoothly adjusts position size.
+  2. **Vol targeting handles crash protection.** The tilt layer's job is valuation-based sizing,
+     not regime detection or crash avoidance.
+  3. **Tilt factor range: [floor, ceiling].** Floor > 0 (always maintain some position — never
+     fully flat). Ceiling capped (no extreme leverage). The range determines how much MVRV can
+     move the needle.
+  4. **Fewer parameters is better.** Each variant should have 2-3 tunable parameters max.
+
+  ## Common Infrastructure
+
+  All variants produce:
+  ```
+  final_position_t = vol_target_position_t × tilt_factor_t
+  ```
+
+  Where vol_target_position_t = min(0.10 / realized_vol_t, 1.0) using EWMA(60).
+  Annualize vol: `ewma_vol = price_ret.ewm(span=60, min_periods=20).std() * np.sqrt(365)`
+
+  **MVRV percentile rank:** Computed with full BGeometrics history (back to 2012).
+  Produces value in [0, 1] where 0 = MVRV at historical low within lookback window,
+  1 = at historical high.
+
+  **Cost model:** 15 bps maker (cost_frac=0.0015), daily rebalancing, 1-day position shift.
+  **No lookahead:** All positions must be shift(1) before computing returns.
+
+  ## Reference Code
+
+  The existing script at `scratch/p002b_mvrv_tilt.py` shows the exact pattern for:
+  - Loading data, computing EWMA vol, building VT baseline
+  - Computing MVRV percentile ranks with rolling windows
+  - Running configs through `net_ret()` and `compute_all_metrics()`
+  - Dev/val split: DEV_END=2021-12-31, VAL_START=2022-01-01, VAL_END=2023-12-01
+
+  Key imports:
+  ```python
+  from sparky.data.loader import load
+  from sparky.backtest.rule_based import net_ret
+  from sparky.tracking.metrics import compute_all_metrics
+  from sparky.features.vol_targeting import vol_target_position_size
+  import pandas as pd
+  import numpy as np
+  ```
+
+  SOPR data: `pd.read_parquet("data/raw/onchain/bgeometrics/sopr.parquet")`
+
+  ## Variant Definitions (99 total configs)
+
+  ### Variant A: Linear Tilt (9 configs)
+  ```
+  tilt_factor = 1.0 + tilt_magnitude × (0.5 - mvrv_pctrank)
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  lookback [730, 1095, 1460] × tilt_magnitude [0.5, 1.0, 1.5]
+
+  ### Variant C: Vol-Target Multiplier (9 configs)
+  ```
+  adjusted_tv = 0.10 × (1.0 + tilt_magnitude × (0.5 - mvrv_pctrank))
+  adjusted_tv = max(adjusted_tv, 0.02)
+  position_t = min(adjusted_tv / realized_vol_t, 1.0)
+  ```
+  lookback [730, 1095, 1460] × tilt_magnitude [0.3, 0.5, 0.8]
+
+  ### Variant D: Sigmoid Mapping (9 configs)
+  ```
+  z = (0.5 - mvrv_pctrank) × steepness
+  tilt_factor = 0.2 + 1.6 × sigmoid(z)
+  ```
+  lookback [730, 1095, 1460] × steepness [2, 4, 8]
+
+  ### Variant E: Multi-Horizon Percentile (12 configs)
+  ```
+  combined = weight × pctrank_long + (1 - weight) × pctrank_short
+  tilt_factor = 1.0 + 0.5 × (0.5 - combined)
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  short_window [365, 730] × long_window [1095, 1460] × weight [0.3, 0.5, 0.7]
+
+  ### Variant F: Continuous Momentum Modifier (12 configs)
+  ```
+  mvrv_mom = (mvrv_t - mvrv_{t-momentum_window}) / rolling_std(mvrv, momentum_window)
+  momentum_modifier = sigmoid(mvrv_mom × sensitivity)
+  base_tilt = 1.0 + 0.5 × (0.5 - mvrv_pctrank)
+  tilt_factor = 1.0 + (base_tilt - 1.0) × momentum_modifier
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  lookback [1095, 1460] × momentum_window [30, 60] × sensitivity [1, 3, 5]
+
+  ### Variant G: Asymmetric Tilt (12 configs)
+  ```
+  if mvrv_pctrank > 0.5:
+      tilt_factor = 1.0 - expensive_magnitude × (mvrv_pctrank - 0.5) × 2
+  else:
+      tilt_factor = 1.0 + cheap_magnitude × (0.5 - mvrv_pctrank) × 2
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  lookback [1095, 1460] × cheap_magnitude [0.3, 0.5] × expensive_magnitude [0.5, 0.8, 1.0]
+
+  ### Variant H: Z-Score Tilt (12 configs)
+  ```
+  mvrv_zscore = (mvrv - rolling_mean(mvrv, lookback)) / rolling_std(mvrv, lookback)
+  tilt_factor = 1.0 - tilt_magnitude × tanh(mvrv_zscore × sensitivity)
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  lookback [730, 1095, 1460] × tilt_magnitude [0.5, 0.8] × sensitivity [0.5, 1.0]
+
+  ### Variant I: MVRV + SOPR Dual Continuous Tilt (16 configs)
+  ```
+  mvrv_tilt = tilt_magnitude × (0.5 - mvrv_pctrank)
+  sopr_smoothed = sma(sopr, sopr_window)
+  sopr_centered = sopr_smoothed - 1.0
+  sopr_tilt = sopr_weight × tanh(sopr_centered × 10)
+  tilt_factor = 1.0 + mvrv_tilt + sopr_tilt
+  tilt_factor = clip(tilt_factor, 0.1, 2.0)
+  ```
+  lookback [1095, 1460] × tilt_magnitude [0.3, 0.5] × sopr_window [3, 7] × sopr_weight [0.3, 0.5]
+
+  ### Variant J: Floor/Ceiling Sensitivity Test (8 configs)
+  ```
+  tilt_factor = 1.0 + 1.0 × (0.5 - mvrv_pctrank)
+  tilt_factor = clip(tilt_factor, floor, ceiling)
+  ```
+  lookback=1460, tilt=1.0 (fixed). floor [0.0, 0.1, 0.3, 0.5] × ceiling [1.5, 2.0]
+
+  ## Phase 1: Signal Characterization
+
+  For one representative config per variant (use lb=1460, mid-range params), compute:
+  - Tilt factor distribution: mean, std, min, max, % days > 1.5, % days < 0.5
+  - Pairwise tilt correlation matrix (9×9)
+  - Tilt factor on key event dates:
+    - Dev: 2020-03-12 (COVID), 2020-03-13, 2021-04-14 (first top), 2021-11-10 (ATH)
+    - Val: 2022-05-09 (LUNA), 2022-06-18 (capitulation), 2022-11-08 (FTX), 2023-01-01, 2023-10-01
+
+  ## Phase 2: Dev Set Backtests
+
+  Run all 99 configs on dev (2019-2021). Report Sharpe, MaxDD, Return, Delta vs VT-only,
+  mean tilt, tilt turnover. Rank by dev Sharpe. Top 10, worst 5, best per variant.
+  Parameter sensitivity analysis per variant.
+
+  ## Phase 3: Validation Set Backtests
+
+  Run all 99 configs on val (2022-2023). Same metrics. Critical comparison table.
+
+  Key questions:
+  1. Does ANY variant beat VT-only on val Sharpe while keeping MaxDD < VT's?
+  2. Does sigmoid (D) outperform linear (A)?
+  3. Does multi-horizon (E) outperform single-horizon (A)?
+  4. Does continuous momentum (F) capture crash protection without opportunity cost?
+  5. Does asymmetric (G) protect better during 2022 bear?
+  6. Does z-score (H) outperform percentile rank (A)?
+  7. Does MVRV+SOPR (I) outperform single-MVRV variants?
+  8. What floor/ceiling (J) is optimal?
+  9. Which variant has smoothest parameter plateau on validation?
+
+  Crash-period diagnostics for top 3 + best I:
+  - LUNA crash (Apr-Jun 2022): avg tilt, avg position, MaxDD
+  - FTX crash (Oct-Nov 2022): avg tilt, avg position, MaxDD
+  - 2023 recovery: avg tilt, avg position, return captured
+
+  ## Phase 4: Candidate Selection
+
+  Select 0-2 candidates for holdout based on:
+  1. Val Sharpe delta > 0 vs VT-only
+  2. Val MaxDD no worse than VT-only
+  3. Parameter plateau (not isolated spike)
+  4. Dev-set-best selection (pick dev-best, check val)
+  5. Prefer different variant types
+
+  If NO variant beats VT-only on validation: close this research direction.
+  VT-only is the P002 strategy. Report honestly.
+
+  ## Output
+
+  1. Save results JSON to `scratch/p002c_results.json`
+  2. Write report to `reports/p002/p002c_continuous_mvrv.md` (create dir if needed)
+  3. Log all runs to wandb with tag `p002c_continuous_mvrv`
+
+  ## Operating Rules
+
+  1. Dev + val only. Holdout sealed until AK approves.
+  2. 15 bps maker costs, daily rebalancing throughout.
+  3. Pre-registered N=99. No additional configs.
+  4. No binary gates except Variant J floor=0.0.
+  5. Report honestly. Negative results are results.
+  6. Do NOT access holdout data.
+
+constraints:
+  assets: [btc]
+  timeframes: [daily]
+  gpu_required: false
+  dev_set_end: "2021-12-31"
+
+strategy_space:
+  - family: continuous_mvrv_tilt
+    description: "Continuous MVRV-based position tilt on vol-targeting baseline"
+    priority: 0
+
+stopping_criteria:
+  stop_on_success: false
+  budget:
+    max_sessions: 1
+    max_hours: 4
+    max_cost_usd: 40
+  stall:
+    sessions_without_improvement: 1
+
+session_limits:
+  max_session_minutes: 180
+  max_cost_per_session: 40
+  min_session_minutes: 5
+
+max_sessions: 1
+max_session_minutes: 180
+max_cost_usd: 40
+wandb_tags: [project_002, p002c, p002c_continuous_mvrv]

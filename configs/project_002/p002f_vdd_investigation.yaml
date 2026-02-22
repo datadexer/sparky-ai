@@ -1,0 +1,355 @@
+name: p002f_vdd_investigation
+objective: |
+  # P002-F: VDD (Value Days Destroyed) Investigation
+
+  ## Execution
+
+  **This is a research agent task.** Run via research agent (Claude Sonnet) as a standard research session. Do NOT run in an orchestrator (Opus) session.
+
+  **Workflow:**
+  1. Research agent executes Phases 0-4 autonomously
+  2. Research agent writes report to `results/p002f/p002f_vdd_report.md` and logs all runs to wandb with tag `p002f_vdd`
+  3. **STOP.** Do not proceed to holdout. AK and orchestrator will review results and make holdout decisions.
+
+  **Estimated session time:** 2-3 hours. Signal characterization + continuous tilt sweep + ML feature substitution + assessment.
+
+  ---
+
+  ## Context
+
+  VDD (Value Days Destroyed) was the strongest single signal discovered across all P002 research — IC of -0.149 at 30-day lag, statistically significant. However, it was tested only as a binary regime gate in the overnight screening session, where it produced a champion with just 5 trades (disqualified for insufficient sample size and protocol violations).
+
+  VDD was then excluded from P002-D's ML feature candidates with the one-line note "CDD/VDD: tested and killed in P002 overnight session." This exclusion was premature — VDD was killed as a *binary 5-trade signal*, not as a continuous tilt multiplier (P002-C framework) or as an ML feature (P002-D framework).
+
+  **This session fills that gap with two tracks:**
+
+  1. **Track 1: VDD Continuous Tilt** — Apply the P002-C framework (functional form transformations as position multipliers on VT) using VDD instead of MVRV. VDD does NOT have the cheap trap problem because it measures old coin movement, not price relative to a lookback window containing the prior ATH.
+
+  2. **Track 2: VDD as ML Feature** — Re-run the P002-D Track B tilt prediction framework with VDD replacing the weakest feature. P002-D found SOPR had negative marginal IC and was likely adding noise. VDD's IC (-0.149) is stronger than several features that were included.
+
+  **Why VDD might behave differently from MVRV:**
+
+  MVRV's cheap trap: MVRV reads "cheap" during crashes because the 1460-day rolling percentile window includes the prior ATH. The percentile mechanically drops when price crashes, causing every MVRV tilt to increase exposure at the worst time.
+
+  VDD doesn't have this mechanism. VDD measures the destruction of accumulated holding time — when old, dormant coins suddenly move, it signals distribution by long-term holders. High VDD = old coins moving = potential distribution. Low VDD = dormant market = accumulation phase. The signal is about *behavior* (who is moving coins), not *valuation* (price vs historical average). During crashes, VDD can spike (panic selling by long-term holders) OR stay low (long-term holders sitting tight while short-term speculators panic). This behavioral distinction is what MVRV cannot make.
+
+  ---
+
+  ## Constraints
+
+  **These are hard constraints. Respect them throughout.**
+
+  1. **Dev set: 2019-01-01 to 2021-12-31. Val set: 2022-01-01 to 2023-12-31.** Holdout (2024+) sealed.
+  2. **15 bps maker costs** (cost_frac=0.0015) for all backtests, daily rebalancing.
+  3. **VT-only baseline: val Sharpe 0.303, val MaxDD -0.151.** Both must be beaten for a candidate to pass.
+  4. **Honest trial counting.** Every config = 1 trial for DSR.
+  5. **Report honestly.** If VDD behaves the same as MVRV (increases exposure during crashes), say so.
+
+  ---
+
+  ## Phase 0: VDD Signal Characterization (20 min)
+
+  Before any optimization, understand what VDD actually does.
+
+  ### 0.1 Data Discovery
+
+  ```bash
+  # Find VDD data in existing files
+  find data/ -name "*.parquet" -o -name "*.csv" | xargs -I{} python3 -c "
+  import pandas as pd
+  try:
+      df = pd.read_parquet('{}') if '{}' .endswith('.parquet') else pd.read_csv('{}')
+      cols = [c for c in df.columns if 'vdd' in c.lower() or 'value_days' in c.lower()]
+      if cols: print(f'{}: {cols}, rows={len(df)}, range={df.index[0]} to {df.index[-1]}')
+  except: pass
+  " 2>/dev/null
+  ```
+
+  Also check the processed feature matrix:
+  ```bash
+  python3 -c "
+  import pandas as pd
+  df = pd.read_parquet('data/processed/onchain_features_hourly.parquet')
+  cols = [c for c in df.columns if 'vdd' in c.lower() or 'value_days' in c.lower()]
+  print(f'Columns with VDD: {cols}')
+  print(f'Date range: {df.index[0]} to {df.index[-1]}')
+  "
+  ```
+
+  **If VDD data is not found:** Check BGeometrics raw data in `data/raw/`. The metric name on BGeometrics is `vdd_multiple`. If no VDD data exists at all, report this and STOP — cannot proceed without data. Do NOT fetch from API.
+
+  ### 0.2 VDD Signal Profile
+
+  Compute on the **full available history** (not just dev set):
+
+  1. **Time series plot:** VDD over full history with BTC price overlay. Visual inspection — does VDD spike at market tops? At crashes? At both?
+
+  2. **Distribution by regime:**
+     - Bull markets (2017, 2020-2021): mean VDD, std, median
+     - Bear markets (2018, 2022): mean VDD, std, median
+     - Crashes specifically (COVID Mar 2020, China ban May 2021, LUNA May 2022, FTX Nov 2022): VDD values during crash onset week
+
+  3. **Autocorrelation:** lag-1, lag-5, lag-21, lag-60. Report ac1 — if ac1 ~ 0.97 like MVRV, the effective sample size is ~150, same constraint.
+
+  4. **Lead-lag IC against forward returns:**
+
+  ```python
+  # Spearman IC at horizons 1, 5, 10, 21, 30, 60 days
+  for h in [1, 5, 10, 21, 30, 60]:
+      ic = spearman_correlation(vdd_t, returns_t_to_t+h)
+      print(f"H={h}: IC={ic:.4f}, p={p_value:.4f}")
+  ```
+
+  5. **Critical diagnostic — does VDD have the cheap trap?**
+
+  For each major crash in the val set (LUNA Apr-Jun 2022, FTX Oct-Nov 2022), report:
+  - VDD percentile rank (rolling 1460d) during the crash months
+  - Does VDD read "high" (distribution phase, suggesting reduce exposure) or "low" (dormant, suggesting increase exposure)?
+  - Compare to MVRV percentile rank during the same periods
+
+  **This is the key question.** If VDD percentile rank is LOW during crashes (like MVRV), it has a variant of the cheap trap and Track 1 will fail the same way P002-C did. If VDD is HIGH or NEUTRAL during crashes, it has fundamentally different behavior and the continuous tilt may work.
+
+  6. **Correlation with MVRV:** Pearson and Spearman correlation between VDD and MVRV on the dev set. If |r| > 0.7, VDD is largely redundant with MVRV and unlikely to provide new information.
+
+  ### 0.3 Phase 0 Go/No-Go
+
+  **STOP if any of these are true:**
+  - VDD data doesn't exist or has insufficient history (need >= 2015 for dev set)
+  - VDD percentile rank is LOW during both LUNA and FTX crashes (same cheap trap as MVRV)
+  - VDD and MVRV correlation |r| > 0.85 (redundant signal)
+  - VDD ac1 > 0.98 AND effective N < 100 (too few independent observations)
+
+  **If any STOP condition is met:** Write the Phase 0 report, explain why VDD won't work, and exit. Do not proceed to Track 1 or Track 2. This is a valid outcome.
+
+  **If all STOP conditions are clear:** Proceed to Track 1.
+
+  ---
+
+  ## Phase 1: Track 1 — VDD Continuous Tilt (45 min)
+
+  This is the P002-C framework applied to VDD. P002-C tested 9 functional forms x 11 parameter sets = 99 configs of MVRV as a continuous position multiplier on VT. All 99 failed because MVRV's cheap trap increased exposure during crashes.
+
+  ### 1.1 VDD Tilt Construction
+
+  The base position is VT (inverse volatility targeting with EWMA(60)). The VDD tilt multiplies the VT position by a factor in [0.5, 1.5]:
+
+  ```python
+  position = vt_position * vdd_tilt(vdd_t)
+  position = clip(position, 0, max_leverage)
+  ```
+
+  ### 1.2 Functional Forms
+
+  Apply these transformations to VDD. The key economic logic: **high VDD = distribution phase = reduce exposure. Low VDD = accumulation = maintain/increase exposure.** This is the OPPOSITE direction from MVRV (where low MVRV = cheap = increase exposure).
+
+  **Important:** Confirm the sign direction empirically in Phase 0. If VDD's IC is negative (high VDD -> lower returns), then high VDD should map to tilt < 1.0. Adjust all forms accordingly.
+
+  | # | Form | Description | Free Parameters | Configs |
+  |---|------|-------------|-----------------|---------|
+  | 1 | Linear | `tilt = 1.0 + slope * (vdd_pctrank - 0.5)` | slope [-0.8, -0.6, -0.4, -0.2] | 4 |
+  | 2 | Sigmoid | `tilt = 0.5 + 1.0 / (1 + exp(k * (vdd_pctrank - center)))` | k [3, 5, 8], center [0.4, 0.5, 0.6] | 9 |
+  | 3 | Asymmetric | Penalize high VDD (distribution) more than reward low VDD | penalty_mult [1.5, 2.0, 2.5], threshold [0.6, 0.7, 0.8] | 9 |
+  | 4 | Z-score | `tilt = 1.0 - scale * vdd_zscore_365d` | scale [0.1, 0.2, 0.3, 0.4] | 4 |
+  | 5 | Momentum | `tilt = f(vdd_change_30d)` — rate of change, not level | slope [-0.6, -0.4, -0.2], norm_window [30, 60] | 6 |
+  | 6 | Level + Momentum | Both VDD level and VDD momentum combined | weight_level [0.3, 0.5, 0.7], weight_mom [0.3, 0.5, 0.7] (where they sum to 1.0) | 3 |
+  | 7 | Threshold | Flat at 1.0 unless VDD above threshold, then reduce | threshold_pctrank [0.7, 0.8, 0.9], reduction [0.3, 0.5, 0.7] | 9 |
+  | 8 | VDD + SOPR | Combined: reduce on high VDD AND distressed SOPR | vdd_weight [0.4, 0.6], sopr_weight [0.4, 0.6] | 4 |
+  | 9 | VDD + Vol | Combined: reduce on high VDD AND expanding vol | vdd_weight [0.4, 0.6], vol_weight [0.4, 0.6] | 4 |
+
+  **VDD percentile window:** Use 1460 days (4 years, same as MVRV in P002-C) as baseline. Also test 730 days (2 years) for forms 1-4 only. That adds 4 + 9 + 9 + 4 = 26 configs with the shorter window.
+
+  **Total Track 1 configs: 52 (1460d) + 26 (730d window variants) = 78**
+
+  ### 1.3 Evaluation
+
+  For each config, compute on BOTH dev and val sets:
+
+  - Sharpe ratio (annualized, net of 15 bps costs)
+  - MaxDD
+  - Total return
+  - Number of "active" days (where tilt != 1.0 by more than +/-0.05)
+
+  **Pass criteria (both must be met on val set):**
+  - Val Sharpe > 0.303 (VT-only baseline)
+  - Val MaxDD > -0.151 (VT-only baseline, i.e., less negative)
+
+  ### 1.4 Cheap Trap Diagnostic
+
+  For EVERY config (not just candidates), report the average tilt during:
+  - LUNA crash months (Apr-Jun 2022): mean tilt
+  - FTX crash months (Oct-Nov 2022): mean tilt
+  - 2023 recovery (Jan-Jun 2023): mean tilt
+
+  Categorize each config:
+  - **CORRECT:** tilt < 0.9 during both crashes AND tilt > 1.0 during recovery
+  - **PARTIAL:** tilt < 1.0 during crashes but only modestly
+  - **TRAPPED:** tilt > 1.0 during crashes (same failure mode as MVRV)
+  - **FLAT:** tilt ~ 1.0 throughout (signal too weak to differentiate)
+
+  ---
+
+  ## Phase 2: Track 2 — VDD as ML Feature (45 min)
+
+  This extends P002-D by substituting VDD into the feature set.
+
+  ### 2.1 Feature Substitution Logic
+
+  P002-D Session 1 found these feature diagnostics:
+  - SOPR had **negative marginal IC** — it was likely adding noise
+  - ac1 ~ 0.97 for all on-chain features -> effective N ~ 150
+
+  **Substitution:** Replace `sopr_smooth` with `vdd_zscore` (VDD z-scored over 365d rolling window) in each of the three P002-D feature sets. Keep all other features identical.
+
+  If P002-D's feature sets are accessible from prior session artifacts, load them directly. Otherwise reconstruct:
+
+  **Feature Set Alpha-V (VDD variant):**
+  | # | Feature | Same as P002-D? |
+  |---|---------|-----------------|
+  | 1 | `mvrv_pctrank` | Same |
+  | 2 | `mvrv_mom30` | Same |
+  | 3 | **`vdd_zscore`** | **REPLACES sopr_smooth** |
+  | 4 | `rvol_60` | Same |
+  | 5 | `vol_ratio` | Same |
+  | 6 | `ret_mom30` | Same |
+
+  Also construct VDD-specific interactions:
+  - `vdd_x_volratio` = vdd_zscore * vol_ratio (distribution + vol expanding = crash signature)
+  - `vdd_x_mom` = vdd_zscore * ret_mom30 (distribution + negative momentum = confirmed selling)
+
+  **Feature Set Beta-V:** Replace sopr_smooth with vdd_zscore, replace sopr_x_mom interaction with vdd_x_mom.
+
+  **Feature Set Gamma-V:** Include vdd_zscore in the 12-candidate pool and let automated IC-based selection decide. VDD should compete against SOPR — if VDD's IC is stronger (expected, given -0.149 vs SOPR's weaker IC), it will be selected automatically.
+
+  ### 2.2 Model Specifications
+
+  **Track B only** (tilt prediction). Track A (vol forecasting) doesn't benefit from on-chain signal substitution — VDD has no theoretical reason to predict forward volatility better than SOPR.
+
+  Same model grid as P002-D:
+
+  | Model | Key Hyperparameters | Configs |
+  |-------|-------------------|---------|
+  | Ridge | alpha [0.1, 1.0, 10.0, 100.0] | 4 |
+  | Lasso | alpha [0.001, 0.01, 0.1, 1.0] | 4 |
+  | ElasticNet | alpha [0.01, 0.1], l1_ratio [0.25, 0.5, 0.75] | 6 |
+  | XGBoost (shallow) | max_depth [2, 3], n_est [50, 100], lr [0.05, 0.1], min_child [50, 100] | 16 |
+
+  30 models x 2 horizons (H=10, 21) x 2 targets (Sharpe-based, MaxDD-based) = **120 configs per feature set**
+
+  Test with Alpha-V and Gamma-V only (Beta-V is likely redundant with Alpha-V):
+  **Total Track 2 configs: 120 x 2 feature sets = 240**
+
+  ### 2.3 Training Protocol
+
+  Identical to P002-D:
+  1. Standardize features using dev-set-only mean and std
+  2. Fit on dev set (2019-01-01 to 2021-12-31)
+  3. Predict on dev and val sets
+  4. Evaluate: RMSE, rank correlation, crash-month multiplier diagnostic
+
+  ### 2.4 Cheap Trap Diagnostic (same as P002-D)
+
+  For each model, report predicted multiplier during:
+  - LUNA crash months (Apr-Jun 2022): does the model predict < 1.0?
+  - FTX crash months (Oct-Nov 2022): does the model predict < 1.0?
+  - 2023 recovery months (Jan-Mar 2023): does the model predict > 1.0?
+
+  **Key comparison:** Did substituting VDD for SOPR change the crash-month predictions? If P002-D models predicted tilt > 1.0 during crashes (they did — this was the cheap trap), does the VDD substitution fix this?
+
+  ### 2.5 Walk-Forward (Top 3 only)
+
+  For the top 3 configs by val Sharpe:
+  - Walk-forward with expanding window, 365d initial, 63d step, 10d embargo
+  - Report stability across folds
+  - Report crash-month accuracy per fold
+
+  ---
+
+  ## Phase 3: Head-to-Head Assessment (15 min)
+
+  ### 3.1 Combined Results Table
+
+  | Strategy | Val Sharpe | Val MaxDD | LUNA Tilt | FTX Tilt | Recovery Tilt | Mechanism |
+  |----------|-----------|----------|-----------|----------|---------------|-----------|
+  | VT-only (baseline) | 0.303 | -0.151 | 1.00 | 1.00 | 1.00 | No tilt |
+  | P002-C best (MVRV sigmoid) | 0.473 | -0.217 | >1.0 | >1.0 | >1.0 | MVRV cheap trap |
+  | P002-D best (ML tilt, no VDD) | 0.347 | -0.153 | ~1.01 | ~1.01 | ~1.01 | ML tilt (neutral) |
+  | **Track 1 best (VDD continuous)** | ___ | ___ | ___ | ___ | ___ | VDD tilt |
+  | **Track 2 best (ML + VDD feature)** | ___ | ___ | ___ | ___ | ___ | ML tilt with VDD |
+
+  ### 3.2 Key Questions
+
+  1. **Does VDD avoid the cheap trap?** This is the primary question. If VDD tilt < 1.0 during both LUNA and FTX, it has genuinely different behavior from MVRV.
+
+  2. **Does the continuous tilt (Track 1) outperform the binary signal?** The overnight session's VDD binary signal had only 5 trades. The continuous tilt should produce more granular position adjustment.
+
+  3. **Does VDD improve ML models?** Compare P002-D best (without VDD) to Track 2 best (with VDD). If VDD substitution improves crash-month behavior, SOPR was indeed the wrong feature.
+
+  4. **Does anything beat VT-only on both Sharpe AND MaxDD?** This is the deployment gate.
+
+  ### 3.3 Candidate Selection
+
+  If any config beats VT-only on BOTH val Sharpe (>0.303) AND val MaxDD (>-0.151):
+
+  ```
+  CANDIDATE [n]: Track [1/2], Form [type]
+    Val Sharpe:          ___ (delta: +___ vs VT)
+    Val MaxDD:           ___
+    LUNA crash tilt:     ___ [CORRECT/PARTIAL/TRAPPED/FLAT]
+    FTX crash tilt:      ___ [CORRECT/PARTIAL/TRAPPED/FLAT]
+    Recovery tilt:       ___
+    Walk-forward stable: [YES/NO] (Track 2 only)
+
+    READY FOR HOLDOUT: [YES/NO]
+  ```
+
+  Maximum 2 candidates. AK reviews before holdout.
+
+  ### 3.4 If Nothing Works
+
+  If VDD continuous tilt shows the same cheap trap behavior as MVRV, or if no config beats VT-only:
+
+  **Close the on-chain tilt direction for P002 definitively.** Document that both MVRV and VDD fail to provide crash-discriminating information at daily frequency. The structural problem is likely that ALL on-chain metrics are regime-lagged — they reflect conditions from days-to-weeks ago, not the current crash state, making them fundamentally unable to react fast enough.
+
+  VT-only (holdout Sharpe 0.618, MaxDD -15.7%) is the final P002 strategy.
+
+  ---
+
+  ## Trial Budget
+
+  | Track | Configs |
+  |-------|---------|
+  | Track 1 (VDD continuous tilt) | 78 |
+  | Track 2 (VDD as ML feature) | 240 |
+  | **Total** | **318** |
+
+  Pre-registered N=318 for DSR. Combined with prior P002 research (P002-D N=630), the cumulative N is 948. Report DSR at both N=318 (this session only) and N=948 (full P002 history including D and F).
+
+  **Note:** The Phase 0 go/no-go gate may terminate this session before any optimization runs. If VDD has the same cheap trap as MVRV, the correct outcome is 0 configs tested and a 20-minute session. Do not proceed past Phase 0 just to fill the trial budget.
+
+  ---
+
+  ## Operating Rules
+
+  1. **Dev + val only.** Holdout sealed until AK approves specific candidates.
+  2. **15 bps maker costs, daily rebalancing** for all backtests.
+  3. **Pre-registered N=318.** No additional configs beyond those defined above.
+  4. **Phase 0 is a hard gate.** If any STOP condition is met, exit immediately. Do not proceed to optimization.
+  5. **VDD percentile lookback:** Use full available history for rolling percentile computation (same as MVRV full-history approach from P002-C).
+  6. **Standardize ML features using dev-set-only statistics.** Do not fit scalers on val data.
+  7. **10-day embargo** in all walk-forward splits.
+  8. **Report crash-month diagnostics for EVERY config,** not just candidates. The cheap trap test is the primary diagnostic.
+  9. **Log all configs, predictions, and metrics to wandb** with tag `p002f_vdd`.
+  10. **Do NOT access holdout data.**
+  11. **Do NOT fetch from BGeometrics API.** Use only data already downloaded and stored locally.
+
+max_sessions: 2
+max_session_minutes: 240
+max_cost_usd: 40
+gpu_required: true
+wandb_tags:
+  - project_002
+  - p002f
+  - p002f_vdd
+constraints:
+  dev_set_end: "2021-12-31"
+  val_set_end: "2023-12-31"

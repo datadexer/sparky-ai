@@ -35,5 +35,8 @@ reports/**/dry_run/
 reports/**/candidates/*/report.html
 reports/**/candidates/*/results.json
 
+# Funding monitor runtime data
+coordination/data/
+
 coinbase_api_key.json
 coinapi_key.txt

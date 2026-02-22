@@ -1,0 +1,84 @@
+name: p002_validation
+objective: |
+  # P002 Validation — Bear Market Robustness Test
+
+  ## Mission
+  Validate the IS-screened champion strategy on the locked 2022-2023 period (bear market).
+  Determine if the candidate is OOS-ready. This is a ONE-SHOT validation — no tuning allowed.
+
+  ## Champion Config (from IS screening, N=1728 trials)
+  ```
+  VDD(0.75) + INV_MVRV(pw=900) + SOPR(ss=3), pers=11
+  FGI overlay: ft=28, adj=0.4
+  Vol targeting: ewma_60, target_vol=0.10
+  Cost: 30 bps per side (spot maker)
+  ```
+  IS metrics: S@30=2.590, MaxDD=-2.7%, 2020+=2.333, DSR=0.923, MC p=0.005, PBO=0.000
+
+  ## Data Partitions
+  - Training/IS: 2015-01-01 to 2021-12-31 (used in screening — DO NOT re-optimize)
+  - **Validation: 2022-01-01 to 2023-12-01** — the focus of this session
+  - Holdout/OOS: 2024-01-01+ — DO NOT TOUCH
+
+  ## Phase 1: Reproduce IS Champion (~15 min)
+  1. Load on-chain data (MVRV, SOPR, VDD) via `load("btc_onchain_bgeometrics")`
+  2. Load FGI via `load_fgi()`
+  3. Load BTC daily prices via `load("btc_daily")`
+  4. Reconstruct the champion signal EXACTLY as documented
+  5. Verify IS metrics match screening results (S@30 ≈ 2.59 on 2019-2021)
+  6. If IS metrics diverge > 5%, STOP and report discrepancy
+
+  ## Phase 2: Validation Period Test (~30 min)
+  1. Run champion on 2022-01-01 to 2023-12-01 (bear market + recovery)
+  2. Report: Sharpe, MaxDD, annual return, n_trades, win rate, hold periods
+  3. Sub-period breakdown: 2022H1 (crash), 2022H2 (bear), 2023H1 (recovery), 2023H2
+  4. Compare to BTC buy-and-hold on same period
+  5. Equity curve visualization (save to results/)
+
+  ## Phase 3: Combined IS+Val Validation Battery (~45 min)
+  Run full battery on IS+Val combined period (2019-2023):
+  1. CPCV: `run_cpcv(prices, positions_func, n_groups=12, cost_frac=0.003)`
+     Gate: PBO < 0.40, median path Sharpe > 0.25
+  2. Monte Carlo: `permutation_test(prices, positions, n_permutations=2000, cost_frac=0.003)`
+     Gate: p-value < 0.05
+  3. Walk-forward: `run_walk_forward(prices, signal_fn, n_folds=5, cost_frac=0.003)`
+     Gate: retention_ratio > 0.50, all_folds_positive
+  4. DSR with N=1728 (cumulative trial count from screening)
+     Gate: DSR > 0.95
+  5. Parameter plateau: test 8 nearest neighbors
+     Gate: coverage >= 50%
+
+  ## Phase 4: Secondary Candidate (~30 min)
+  Also validate Candidate B: VDD(1.05)+MVRV(900)+SOPR, pers=9, vol(tv=0.15)
+  - IS metrics: S@30=2.234, DD=-10.0%, 2020+=2.715
+  Same validation battery as Phase 3.
+
+  ## Phase 5: OOS Readiness Assessment (~15 min)
+  For each candidate, produce a verdict:
+  - **OOS READY**: Val Sharpe > 0.5 AND all Phase 3 gates pass AND val DD < 40%
+  - **CONDITIONAL**: Val Sharpe > 0 AND ≥3/5 Phase 3 gates pass
+  - **FAIL**: Val Sharpe < 0 OR ≥2 Phase 3 gates fail
+
+  Write final report to `results/p002_validation/validation_report.md`
+  Log all results to wandb with tags [project_002, validation]
+
+  ## Operating Rules
+  1. NO re-optimization. Configs are fixed from screening.
+  2. Log everything to wandb.
+  3. Validation set boundary: 2023-12-01 max. DO NOT touch 2024+ data.
+  4. Do not install packages or modify source code.
+  5. Annualization: 365 days/year.
+  6. Cost model: 30 bps primary, 50 bps stress.
+
+constraints:
+  assets: [btc]
+  timeframes: [daily]
+  gpu_required: false
+  dev_set_end: "2023-12-01"
+
+strategy_space: []
+
+max_sessions: 1
+max_session_minutes: 180
+max_cost_usd: 20
+wandb_tags: [project_002, validation, p002_val]
