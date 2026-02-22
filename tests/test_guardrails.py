@@ -153,10 +153,14 @@ class TestCheckCostsSpecified:
         result = check_costs_specified({"transaction_costs_bps": 10.0})
         assert not result.passed
 
-    def test_fails_below_30bps(self):
-        result = check_costs_specified({"transaction_costs_bps": 29.0})
+    def test_fails_below_15bps(self):
+        result = check_costs_specified({"transaction_costs_bps": 14.0})
         assert not result.passed
         assert result.severity == "block"
+
+    def test_passes_futures_at_7_5bps(self):
+        result = check_costs_specified({"transaction_costs_bps": 7.5}, min_costs_bps=7.5)
+        assert result.passed
 
 
 class TestCheckParamDataRatio:

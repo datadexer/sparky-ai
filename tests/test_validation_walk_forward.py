@@ -44,6 +44,7 @@ class TestRunWalkForward:
             assert "n_trades" in fold
             assert "train_end" in fold
             assert "test_start" in fold
+            assert "test_end" in fold
 
 
 class TestWalkForwardSummary:

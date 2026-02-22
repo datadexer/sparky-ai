@@ -146,8 +146,8 @@ def check_no_lookahead(data: pd.DataFrame, config: dict) -> GuardrailResult:
     )
 
 
-def check_costs_specified(config: dict, min_costs_bps: float = 7.5) -> GuardrailResult:
-    """BLOCK: Ensure transaction costs are specified at >= 7.5 bps per side.
+def check_costs_specified(config: dict, min_costs_bps: float = 15.0) -> GuardrailResult:
+    """BLOCK: Ensure transaction costs are specified at >= 15 bps per side.
 
     Futures: 7.5 bps. Spot maker: 15 bps. Spot taker: 30 bps. Stress: 50 bps.
     """

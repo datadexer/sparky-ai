@@ -37,7 +37,8 @@ def run_walk_forward(
         train_prices = prices.iloc[: train_end_idx + 1]
         positions = signal_fn(train_prices)
         # Reindex positions to test period (forward-fill from last known position)
-        test_positions = positions.reindex(test_prices.index).ffill().fillna(0)
+        full_idx = positions.index.append(test_prices.index)
+        test_positions = positions.reindex(full_idx).ffill().reindex(test_prices.index).fillna(0)
 
         test_ret = net_ret(test_prices, test_positions, cost_frac)
         if len(test_ret) < 10:
@@ -67,8 +68,11 @@ def run_walk_forward(
     combined = pd.concat(all_test_returns)
     agg_metrics = compute_all_metrics(combined, n_trials=n_trials, periods_per_year=ppy)
     fold_sharpes = [f["sharpe"] for f in folds]
+    max_train_end = min_train_periods + (n_folds - 1) * fold_size - 1
+    is_prices = prices.iloc[: max_train_end + 1]
+    is_positions = signal_fn(is_prices)
     is_sharpe = compute_all_metrics(
-        net_ret(prices, signal_fn(prices), cost_frac), n_trials=n_trials, periods_per_year=ppy
+        net_ret(is_prices, is_positions, cost_frac), n_trials=n_trials, periods_per_year=ppy
     )["sharpe"]
 
     return {
