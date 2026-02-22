@@ -1,4 +1,4 @@
-#!/home/akamath/sparky-ai/.venv/bin/python3
+#!/usr/bin/env python3
 """Funding rate carry monitor.
 
 Runs every 8h via systemd timer. Syncs OKX funding rates using the existing
@@ -129,9 +129,12 @@ def load_previous_status() -> dict | None:
 
 
 def check_alerts(indicators: dict, prev_status: dict | None) -> list[dict]:
+    if prev_status is None:
+        return []  # no transitions to detect on first run
+
     alerts = []
     now = datetime.now(timezone.utc)
-    prev_alerts = prev_status.get("last_alert_times", {}) if prev_status else {}
+    prev_alerts = prev_status.get("last_alert_times", {})
 
     def cooled_down(alert_type: str) -> bool:
         last = prev_alerts.get(alert_type)
@@ -139,7 +142,7 @@ def check_alerts(indicators: dict, prev_status: dict | None) -> list[dict]:
             return True
         return (now - datetime.fromisoformat(last)).total_seconds() > COOLDOWN_HOURS * 3600
 
-    prev_regime = prev_status.get("regime", "INVERTED") if prev_status else "INVERTED"
+    prev_regime = prev_status.get("regime", "INVERTED")
     curr_regime = indicators["regime"]
 
     if (
@@ -165,9 +168,9 @@ def check_alerts(indicators: dict, prev_status: dict | None) -> list[dict]:
             }
         )
 
-    if indicators["activation_signal"] and cooled_down("ACTIVATION_SIGNAL"):
-        prev_activation = prev_status.get("activation_signal", False) if prev_status else False
-        if not prev_activation:
+    prev_activation = prev_status.get("activation_signal", False) if prev_status else False
+    if indicators["activation_signal"] and not prev_activation:
+        if cooled_down("ACTIVATION_SIGNAL"):
             alerts.append(
                 {
                     "type": "ACTIVATION_SIGNAL",
@@ -208,7 +211,7 @@ def send_alerts(alerts: list[dict]) -> None:
     for alert in alerts:
         try:
             subprocess.run(
-                ["bash", str(ALERT_SCRIPT), alert["severity"], alert["message"]],
+                [str(ALERT_SCRIPT), alert["severity"], alert["message"]],
                 timeout=10,
                 capture_output=True,
             )
@@ -255,7 +258,11 @@ def check_mode() -> int:
     if not STATUS_FILE.exists():
         print("No status file found. Run without --check first.")
         return 1
-    status = json.loads(STATUS_FILE.read_text())
+    try:
+        status = json.loads(STATUS_FILE.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"ERROR: Status file unreadable: {e}")
+        return 1
     print_summary(status, cached=True)
     return 0
 
