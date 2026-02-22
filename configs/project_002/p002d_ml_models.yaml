@@ -1,0 +1,417 @@
+name: p002d_ml_models
+objective: |
+  # P002-D: ML Vol Forecasting + Tilt Prediction
+
+  ## Execution
+
+  **This is a research agent task.** Run via research agent (Claude Sonnet) as a standard research session. Do NOT run in an orchestrator (Opus) session.
+
+  **Workflow:**
+  1. Research agent executes Phases 1-5 autonomously
+  2. Research agent writes report to `reports/p002/p002d_ml_models.md` and logs all runs to wandb with tag `p002d_ml`
+  3. **STOP.** Do not proceed to holdout. AK and orchestrator will review results and make holdout decisions.
+
+  **Estimated session time:** 4-5 hours. Data acquisition + feature engineering + 630 model fits across 2 tracks × 3 feature sets + walk-forward validation + diagnostics.
+
+  ---
+
+  ## Context
+
+  P002-C definitively showed that no static transformation of MVRV (linear, sigmoid, asymmetric, z-score, multi-horizon, SOPR-weighted) can solve the "cheap trap" — MVRV reads cheap during crashes, causing every tilt variant to increase exposure at exactly the wrong time. 0/99 configs passed both val Sharpe AND val MaxDD criteria.
+
+  However, the counterfactual analysis reveals the opportunity: if the tilt correctly reduced exposure during crash months and maintained it during recovery months, val Sharpe would jump from 0.343 to 1.453 — a +1.11 improvement. The alpha exists in the *interaction* between features, not in any single feature.
+
+  The cheap trap has a learnable signature:
+  - **Crash:** MVRV cheap + vol rising + SOPR < 1.0 + negative price momentum
+  - **Recovery:** MVRV cheap + vol falling + SOPR recovering above 1.0 + positive price momentum
+
+  No single feature separates these states. The conditional structure (MVRV level matters differently depending on vol regime and SOPR state) is exactly what nonlinear models can capture — if the sample size supports it.
+
+  **This session tests two parallel tracks:**
+  1. **Track A: ML vol forecasting** — predict forward realized vol better than EWMA(60). A better vol forecast directly improves the VT base strategy without needing to solve the cheap trap.
+  2. **Track B: ML tilt prediction** — predict the optimal position multiplier directly. If the model learns "cheap MVRV + rising vol = reduce exposure," it solves the cheap trap through learned interactions.
+
+  Both tracks use the same features and validation framework but different target variables.
+
+  **Data improvements over P002-B/C:**
+  1. **Extended dev set (2015-2021).** ~2,555 daily observations instead of 1,095. Critically, this includes the 2018 bear market (-84% from $20K peak to ~$3.2K), giving the model TWO major crash events to train on (2018 bear + COVID March 2020) instead of just one. The 2018 bear is structurally more similar to the 2022 bear than COVID was (prolonged decline vs V-bottom).
+  2. **Mixed-frequency features.** Hourly BTC price data for computing vol and momentum features (more precise estimates), while on-chain features (MVRV, SOPR) remain daily where they're economically meaningful. Models predict at daily granularity.
+
+  ---
+
+  ## Constraints
+
+  **These are hard constraints. Respect them throughout.**
+
+  1. **Sample size: ~2,555 daily observations in dev (2015-2021), ~730 in val (2022-2023).** Substantially improved from prior P002 work (was 1,095). Includes two major crash events in training data (2018 bear, COVID). Note: pre-2017 BTC was a different market (no futures, thin liquidity) — features may behave differently in that period.
+
+  2. **Maximum 6 features.** With 2,555 observations, the sample size constraint is relaxed but not eliminated. Each feature must have economic justification.
+
+  3. **Simple models only.**
+     - Ridge / Lasso / ElasticNet regression
+     - Shallow gradient boosting: max_depth ≤ 3, n_estimators ≤ 100, min_child_weight ≥ 50
+     - No deep learning, no large ensembles, no stacking
+
+  4. **Time-series validation only.** No random splits. All validation must respect temporal ordering:
+     - Combinatorial Purged Cross-Validation (CPCV) with embargo ≥ 10 days
+     - Walk-forward with expanding window (min train 730 days, step 63 days)
+
+  5. **Honest trial counting.** Every model × hyperparameter combination = 1 trial for DSR. Pre-register the total before any fitting.
+
+  6. **VT-only (holdout Sharpe 0.618) is the bar.** Any ML model that can't beat this on validation is not worth deploying over a transparent, mechanically-understood strategy.
+
+  ---
+
+  ## Phase 0: Data Acquisition (20 min)
+
+  ### 0.1 Hourly BTC Price Data
+
+  Hourly BTC OHLCV is already available at `data/raw/btc/ohlcv_hourly_max_coverage.parquet`:
+  - 95,689 rows, 2013-01-01 to 2023-12-02 (UTC, tz-aware)
+  - Columns: open, high, low, close, volume
+  - Full coverage for 2015-2021 dev and 2022-2023 val sets
+
+  Load directly — no fetching needed.
+
+  ### 0.2 On-Chain Data (Daily)
+
+  All required BGeometrics metrics are locally available with full coverage:
+  - `mvrv_zscore`: 5164 rows, from 2012
+  - `sopr`: 5665 rows, from 2010
+  - `sth_mvrv`: 4798 rows, from 2013
+  - `sth_sopr`: 5627 rows, from 2010
+  - `exchange_netflow_btc`: 5070 rows, from 2012
+  - `puell_multiple`: 5036 rows, from 2012
+  - `lth_sopr`: 5469 rows, from 2011
+
+  All located at `data/raw/onchain/bgeometrics/{metric}.parquet`.
+  FGI at `data/raw/fgi/fgi_daily.parquet` (2939 rows, 2018-02 to 2026-02).
+
+  No fetching needed. Proceed directly to feature engineering.
+
+  ### 0.3 Data Alignment
+
+  All features are computed at daily granularity for modeling. Hourly data is used only to compute more precise daily-frequency features (vol estimates, momentum). On-chain features stay at their native daily frequency.
+
+  ```
+  Hourly prices → compute hourly returns → aggregate to daily features (rvol, vol_ratio)
+  Daily on-chain → compute daily features (mvrv, sopr, sth_mvrv, sth_sopr, exflow, puell, lth_sopr)
+  Daily prices → compute daily features (ret_mom30)
+  FGI → optional for Gamma feature set only
+  Join on date → daily feature matrix (2015-01-01 to 2023-12-31)
+  ```
+
+  Verify: no lookahead in any feature. Feature at date t uses only data available at close of day t.
+
+  ---
+
+  ## Phase 1: Feature Engineering (45 min)
+
+  ### 1.1 Candidate Features (12 total — 6 selected per feature set)
+
+  Construct these 12 candidate features. All must be computable without lookahead (use only data available at time t to compute feature at time t). **6 will be selected per feature set in Phase 1.4.**
+
+  | # | Feature | Construction | Data Source | Start | Economic Rationale |
+  |---|---------|-------------|------------|-------|-------------------|
+  | 1 | `mvrv_pctrank` | MVRV 1460-day percentile rank | BGeometrics mvrv_zscore | 2012 | Valuation level — cheap vs expensive relative to cycle |
+  | 2 | `mvrv_mom30` | (MVRV_t - MVRV_{t-30}) / rolling_std(MVRV, 60) | BGeometrics mvrv_zscore | 2012 | Valuation momentum — is MVRV rising or falling? Normalized by its own volatility |
+  | 3 | `sopr_smooth` | SMA(SOPR, 7) centered at 1.0 | BGeometrics sopr | 2010 | Holder profit/loss — negative = spending at loss (stress) |
+  | 4 | `rvol_60` | EWMA(60) annualized vol from **hourly** returns, sampled daily | Hourly prices | 2015+ | Current vol regime — more precise than daily-return EWMA |
+  | 5 | `vol_ratio` | EWMA(10) vol / EWMA(60) vol, both from **hourly** returns | Hourly prices | 2015+ | Vol regime change — >1.0 = vol expanding, <1.0 = compressing |
+  | 6 | `ret_mom30` | 30-day rolling BTC return | Daily prices | 2010 | Price momentum — trending up or down |
+  | 7 | `sth_mvrv` | Short-Term Holder MVRV, raw value | BGeometrics sth_mvrv | 2013 | Fast-reacting valuation stress. STH_MVRV < 1.0 = recent buyers at a loss |
+  | 8 | `sth_sopr_smooth` | SMA(STH_SOPR, 7) centered at 1.0 | BGeometrics sth_sopr | 2010 | Capitulation speed. STH_SOPR < 1.0 = recent buyers selling at loss |
+  | 9 | `exflow_net_z` | 14-day SMA of exchange netflow, z-scored over 365d rolling window | BGeometrics exchange_netflow_btc | 2012 | Selling pressure. Large inflows to exchanges precede selling |
+  | 10 | `puell_mult` | Puell Multiple, z-scored over 365d rolling window | BGeometrics puell_multiple | 2012 | Miner stress (supply-side). Independent of demand-side metrics |
+  | 11 | `lth_sopr_smooth` | SMA(LTH_SOPR, 14) centered at 1.0. Use 14d SMA because LTH transactions are sparser | BGeometrics lth_sopr | 2011 | Deep capitulation. LTH selling at loss is extremely rare — signals maximum pain |
+  | 12 | `fgi_norm` | Fear & Greed Index / 100 (scaled to [0, 1]) | Alternative.me FGI | **2018-02** | Sentiment composite. Independent of on-chain metrics |
+
+  **Data availability notes:**
+  - Features 1-3, 6, 8-11: Available from ≤2013, full coverage for 2015-2021 dev set.
+  - Features 4-5: Require hourly price data. Available from 2013+ (via ohlcv_hourly_max_coverage.parquet).
+  - Feature 12 (FGI): Only available from 2018-02-01. Models using FGI have ~1,430 dev observations (2018-2021) instead of ~2,555 (2015-2021). Feature Sets Alpha and Beta should NOT include FGI. Feature Set Gamma's automated selection may include it if IC justifies the sample size cost.
+  - Feature 11 (LTH_SOPR): May have many days near exactly 1.0 due to sparse LTH transactions. Check for zero-variance periods.
+
+  **Excluded metrics (with justification):**
+  - NUPL / STH_NUPL / LTH_NUPL: Highly correlated with MVRV variants. Redundant.
+  - CDD / VDD_multiple: Tested and killed in P002 overnight session. No predictive value.
+  - Active addresses / hash rate: Slow-moving, gameable, not useful for daily-frequency prediction.
+  - Exchange reserve: Integral of netflow. Redundant.
+  - Stablecoin supply: Only from 2017-11, slow-moving. Not useful for daily prediction.
+  - Funding rates: Binance starts 2021, aggregate starts 2023. Insufficient dev coverage.
+  - ETF AUM: Only from 2024-01 — holdout period only.
+  - LTH_MVRV: Highly correlated with aggregate MVRV. LTH_SOPR is more informative.
+
+  **Note on hourly vol computation:** EWMA span refers to daily equivalent. For hourly: EWMA(span=60×24) for rvol_60, EWMA(span=10×24) for the short vol. Annualize using √(365.25×24) for hourly returns. Sample the result at daily close for the feature matrix.
+
+  ### 1.2 Transformations
+
+  For each base feature, compute these transformations where economically sensible:
+
+  | Transform | Applied To | Feature Name | Rationale |
+  |-----------|-----------|-------------|-----------|
+  | Log | `rvol_60` | `log_rvol_60` | Vol is log-normally distributed; log transform linearizes |
+  | Log | `vol_ratio` | `log_vol_ratio` | Symmetrizes the ratio around 0 |
+  | Rank | `sopr_smooth` | `sopr_rank` | 365-day rolling percentile rank. Reduces outlier sensitivity |
+  | Rank | `ret_mom30` | `ret_mom30_rank` | 365-day percentile rank. Normalizes across vol regimes |
+  | Abs value | `mvrv_mom30` | `mvrv_mom30_abs` | Magnitude of MVRV change — large moves may predict higher vol |
+  | Difference | `rvol_60` | `vol_accel` | EWMA(10) of daily |return| minus EWMA(60). Vol accelerating |
+  | Z-score | `mvrv` (raw) | `mvrv_zscore` | (MVRV - rolling_mean(1460)) / rolling_std(1460) |
+  | Centered | `sth_mvrv` | `sth_mvrv_centered` | sth_mvrv - 1.0. Centers at breakeven |
+  | Rank | `sth_sopr_smooth` | `sth_sopr_rank` | 365-day rolling percentile rank |
+  | Rank | `puell_mult` | `puell_rank` | 1460-day percentile rank. Normalizes across halvings |
+  | Binary | `lth_sopr_smooth` | `lth_sopr_stress` | 1.0 if SMA(LTH_SOPR,14) < 0.98, else 0.0. Sparse binary indicator |
+
+  ### 1.3 Pre-Computed Interactions
+
+  Linear models cannot capture interactions unless explicitly provided.
+
+  | # | Feature | Construction | Hypothesis |
+  |---|---------|-------------|-----------|
+  | I1 | `cheap_x_volup` | mvrv_pctrank × vol_ratio | Crash signature: MVRV cheap AND vol expanding |
+  | I2 | `sth_stress_x_volup` | max(0, 1.0 - sth_mvrv) × max(0, vol_ratio - 1.0) | STH capitulation + vol spike |
+  | I3 | `stress_combo` | max(0, -sth_sopr_smooth) × max(0, vol_ratio - 1) × max(0, -ret_mom30) | Triple stress. Only nonzero when ALL three in stress |
+  | I4 | `sopr_x_mom` | sopr_smooth × ret_mom30 | Capitulation vs euphoria |
+  | I5 | `mvrv_x_mom_dir` | mvrv_pctrank × sign(mvrv_mom30) | Directional valuation |
+  | I6 | `lth_capitul_x_flow` | lth_sopr_stress × max(0, exflow_net_z) | Deep capitulation + exchange selling |
+
+  ### 1.4 Feature Selection — Three Feature Sets
+
+  **Feature Set Alpha (STH-centric + interactions for linear models):**
+  ```
+  sth_mvrv_centered, sth_sopr_smooth, rvol_60, vol_ratio, sth_stress_x_volup (I2), stress_combo (I3)
+  ```
+
+  **Feature Set Beta (transformed + diverse signals):**
+  ```
+  mvrv_zscore, mvrv_mom30, sopr_rank, log_rvol_60, puell_rank, ret_mom30_rank
+  ```
+
+  **Feature Set Gamma (kitchen sink → selection):**
+  Start with all base + transforms + interactions (~30 features), then:
+  1. Compute univariate IC (Spearman) with each target variable on dev set
+  2. For any pair with |r| > 0.80, drop the one with lower IC
+  3. Rank remaining by |IC|, take top 6
+  4. Report the selected set for each target
+
+  ### 1.5 Feature Diagnostics
+
+  For ALL candidate features:
+  1. Distribution stats on dev set: mean, std, skew, kurtosis, min, max
+  2. Stationarity: ADF test. Flag any with p > 0.05.
+  3. Autocorrelation: lag-1, lag-5, lag-21
+  4. Pairwise correlation matrix. Flag pairs with |r| > 0.80.
+  5. Univariate IC with both targets.
+
+  Flag non-stationary features. Compute effective sample size after autocorrelation.
+
+  **Pre-2017 stationarity check:** Compare feature distributions for 2015-2016 vs 2017-2021. If distributions differ substantially (KS test p < 0.01 for multiple features), flag.
+
+  ---
+
+  ## Phase 2: Target Variable Construction (15 min)
+
+  ### Track A Target: Forward Realized Volatility
+
+  ```python
+  target_A = realized_vol(returns[t+1 : t+H+1], annualized=True)
+  ```
+  Test H = [5, 10, 21].
+  Benchmark: EWMA(60) forecast. ML model must beat this.
+
+  ### Track B Target: Optimal Tilt Multiplier
+
+  **Sharpe-based target:**
+  ```python
+  fwd_return = cumulative_return(returns[t+1 : t+H+1])
+  fwd_vol = realized_vol(returns[t+1 : t+H+1])
+  fwd_sharpe_proxy = fwd_return / (fwd_vol + epsilon)
+  target_B = 0.5 + (rank(fwd_sharpe_proxy) / N) × 1.0  # [0.5, 1.5]
+  ```
+
+  **MaxDD-based target:**
+  ```python
+  fwd_maxdd = max_drawdown(prices[t+1 : t+H+1])
+  target_B_alt = 1.0 + 0.5 × tanh(-(fwd_maxdd / 0.10))
+  ```
+  Test both target constructions. H = [10, 21].
+
+  ---
+
+  ## Phase 3: Model Training — Track A (Vol Forecasting) (60 min)
+
+  ### 3.1 Model Specifications
+
+  | Model | Key Hyperparameters | Config Count |
+  |-------|-------------------|-------------|
+  | Ridge | alpha [0.1, 1.0, 10.0, 100.0] | 4 |
+  | Lasso | alpha [0.001, 0.01, 0.1, 1.0] | 4 |
+  | ElasticNet | alpha [0.01, 0.1], l1_ratio [0.25, 0.5, 0.75] | 6 |
+  | XGBoost (shallow) | max_depth [2, 3], n_est [50, 100], lr [0.05, 0.1], min_child [50, 100] | 16 |
+
+  30 model configs × 3 horizons (H=5, 10, 21) × 3 feature sets (Alpha, Beta, Gamma) = **270 configs**
+
+  For XGBoost: subsample=0.8, colsample_bytree=0.8, device="cuda".
+
+  ### 3.2 Training Protocol
+
+  For each config:
+  1. Standardize features using dev-set-only mean and std.
+  2. Fit on dev set (2015-01-01 to 2021-12-31).
+  3. Predict on dev and val sets.
+  4. Evaluate: RMSE, MAE vs EWMA(60) benchmark, directional accuracy, Spearman correlation.
+
+  ### 3.3 Backtest: ML Vol Targeting
+
+  For configs where ML forecast beats EWMA(60) on dev set:
+  ```python
+  position_ml = min(target_vol / predicted_vol_t, max_leverage)
+  ```
+  Compare to VT-only: Sharpe, MaxDD, Return.
+
+  ### 3.4 Walk-Forward Validation
+
+  For the top 3 configs (by val forecast accuracy):
+  - Initial training window: 730 days, step size: 63 days, 10-day embargo
+  - Report forecast accuracy per fold and Sharpe per fold
+
+  ---
+
+  ## Phase 4: Model Training — Track B (Tilt Prediction) (60 min)
+
+  ### 4.1 Model Specifications
+
+  30 model configs × 2 horizons (H=10, 21) × 2 targets (Sharpe-based, MaxDD-based) × 3 feature sets = **360 configs**
+
+  ### 4.2 Training Protocol
+
+  Same as Track A. Evaluate: RMSE, MAE, rank correlation, crash-month multiplier predictions.
+
+  ### 4.3 Backtest: ML Tilt
+
+  ```python
+  position_ml_tilt = vt_position_t × predicted_multiplier_t
+  position_ml_tilt = clip(position_ml_tilt, 0, max_leverage)
+  ```
+
+  **Cheap trap diagnostic:** For each model, report predicted multiplier during:
+  - Dev: 2018 bear market, COVID crash, 2020-2021 bull
+  - Val: LUNA crash, FTX crash, 2023 recovery
+
+  ### 4.4 Walk-Forward Validation
+
+  Same protocol as Track A, for top 3 Track B configs.
+
+  ### 4.5 Feature Importance
+
+  For the top XGBoost and top linear model from each track:
+  - SHAP values or permutation importance
+  - Coefficient signs and magnitudes for linear models
+
+  ---
+
+  ## Phase 5: Combined Assessment (20 min)
+
+  ### 5.1 Head-to-Head Comparison
+
+  | Strategy | Dev Sharpe | Val Sharpe | Val MaxDD | Val Return | Mechanism |
+  |----------|-----------|-----------|----------|-----------|-----------|
+  | VT-only (EWMA 60) | ___ | 0.329 | -15.4% | +5.8% | Inverse vol scaling |
+  | Best Track A (ML vol) | ___ | ___ | ___ | ___ | ML-improved vol forecast |
+  | Best Track B (ML tilt) | ___ | ___ | ___ | ___ | ML-predicted multiplier |
+  | Best A + B combined | ___ | ___ | ___ | ___ | ML vol + ML tilt |
+  | P002-B Variant B (momentum gate) | 2.240 | 0.545 | -11.8% | +8.4% | Binary MVRV momentum |
+  | P002-C best (sigmoid) | — | 0.473 | -21.7% | — | Static continuous tilt |
+  | Perfect timing (counterfactual) | — | 1.453 | -6.85% | +31.3% | Oracle |
+
+  ### 5.2 Feature Set Comparison
+
+  Break down best val Sharpe by feature set for each track. Interpret which set dominates and why.
+
+  ### 5.3 Key Questions
+
+  1. Does ML vol forecasting improve on EWMA(60)?
+  2. Does ML tilt prediction solve the cheap trap?
+  3. Val Sharpe improvement over VT-only?
+  4. Is the improvement robust in walk-forward?
+  5. Does combining Track A + Track B help?
+  6. Is the result feature-set-dependent?
+
+  ### 5.4 Candidate Selection
+
+  If any strategy beats VT-only on BOTH val Sharpe AND val MaxDD:
+  ```
+  CANDIDATE [n]: Track [A/B/A+B], Model [type], Feature Set [Alpha/Beta/Gamma], Horizon [H]
+    Dev Sharpe, Val Sharpe, Val MaxDD, LUNA/FTX crash MaxDD
+    Walk-forward stable: [YES/NO]
+    Cheap trap solved: [YES/NO]
+    Feature set robust: [YES/NO]
+    READY FOR HOLDOUT: [YES/NO]
+  ```
+  Maximum 2 candidates. AK reviews before holdout.
+
+  ### 5.5 If Nothing Works
+
+  If 0 configs beat VT-only on both val Sharpe and val MaxDD:
+  **Close the ML direction for P002.** VT-only (holdout Sharpe 0.618) is the P002 strategy. Proceed to paper trading.
+
+  ---
+
+  ## Trial Budget
+
+  | Track | Configs |
+  |-------|---------|
+  | Track A: 30 models × 3 horizons × 3 feature sets | 270 |
+  | Track B: 30 models × 2 horizons × 2 targets × 3 feature sets | 360 |
+  | **Total** | **630** |
+
+  Pre-registered N=630 for DSR. Walk-forward stability and crash diagnostics are the primary evaluation criteria, not DSR.
+
+  ---
+
+  ## Operating Rules
+
+  1. **Dev (2015-2021) + val (2022-2023) only.** Holdout sealed until AK approves.
+  2. **15 bps maker costs, daily rebalancing** for all backtests.
+  3. **Pre-registered N=630.** No additional model configs.
+  4. **Standardize features using dev-set-only statistics.**
+  5. **10-day embargo** in all CPCV and walk-forward splits.
+  6. **Report honestly.** Negative results are results.
+  7. **Do NOT access holdout data.**
+  8. **Three feature sets are pre-registered** and frozen before modeling.
+  9. **Log all model configs and metrics to wandb** with tag `p002d_ml`.
+  10. **Report results broken down by feature set.**
+  11. **Hourly data is for feature computation only.** Models predict at daily granularity.
+
+constraints:
+  assets: [btc]
+  timeframes: [daily]
+  gpu_required: true
+  dev_set_end: "2021-12-31"
+
+strategy_space:
+  - family: ml_vol_forecasting
+    description: "ML models to predict forward realized vol (Track A)"
+    priority: 0
+  - family: ml_tilt_prediction
+    description: "ML models to predict optimal position multiplier (Track B)"
+    priority: 0
+
+stopping_criteria:
+  stop_on_success: false
+  budget:
+    max_sessions: 1
+    max_hours: 6
+    max_cost_usd: 80
+  stall:
+    sessions_without_improvement: 1
+
+session_limits:
+  max_session_minutes: 360
+  max_cost_per_session: 80
+  min_session_minutes: 5
+
+max_sessions: 1
+max_session_minutes: 360
+max_cost_usd: 80
+wandb_tags: [project_002, p002d, p002d_ml]

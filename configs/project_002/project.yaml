@@ -1,0 +1,7 @@
+project: project_002
+description: "On-chain regime + carry + vol targeting + FGI overlay strategies"
+created: 2026-02-21
+phases:
+  screening:
+    status: pending
+    config: screening.yaml
