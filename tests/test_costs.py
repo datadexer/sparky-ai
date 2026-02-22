@@ -26,16 +26,16 @@ class TestTransactionCostModel:
         assert model.total_cost_pct == 0.0028
 
     def test_for_btc(self):
-        """Test BTC cost model delegates to standard() — 30 bps per side."""
+        """Test BTC cost model delegates to spot_maker() — 15 bps per side."""
         model = TransactionCostModel.for_btc()
-        assert abs(model.total_cost_pct - 0.003) < 1e-10
-        assert abs(model.round_trip_cost - 0.006) < 1e-10
+        assert abs(model.total_cost_pct - 0.0015) < 1e-10
+        assert abs(model.round_trip_cost - 0.003) < 1e-10
 
     def test_for_eth(self):
-        """Test ETH cost model delegates to standard() — 30 bps per side."""
+        """Test ETH cost model delegates to spot_maker() — 15 bps per side."""
         model = TransactionCostModel.for_eth()
-        assert abs(model.total_cost_pct - 0.003) < 1e-10
-        assert abs(model.round_trip_cost - 0.006) < 1e-10
+        assert abs(model.total_cost_pct - 0.0015) < 1e-10
+        assert abs(model.round_trip_cost - 0.003) < 1e-10
 
     def test_standard(self):
         """Standard model: 30 bps (0.30%) per side, 60 bps round trip."""
@@ -48,6 +48,18 @@ class TestTransactionCostModel:
         model = TransactionCostModel.stress_test()
         assert abs(model.total_cost_pct - 0.005) < 1e-10
         assert abs(model.round_trip_cost - 0.01) < 1e-10
+
+    def test_futures(self):
+        """Futures model: 7.5 bps (0.075%) per side, 15 bps round trip."""
+        model = TransactionCostModel.futures()
+        assert abs(model.total_cost_pct - 0.00075) < 1e-10
+        assert abs(model.round_trip_cost - 0.0015) < 1e-10
+
+    def test_spot_maker(self):
+        """Spot maker model: 15 bps (0.15%) per side, 30 bps round trip."""
+        model = TransactionCostModel.spot_maker()
+        assert abs(model.total_cost_pct - 0.0015) < 1e-10
+        assert abs(model.round_trip_cost - 0.003) < 1e-10
 
     def test_no_trade_no_cost(self):
         """Test that holding position incurs no costs."""

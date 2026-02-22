@@ -37,15 +37,19 @@ df = load("btc_1h_features", purpose="analysis")    # full data, warning logged
 NEVER use raw `pd.read_parquet()` for model work. The loader enforces holdout boundaries.
 
 ## Transaction Costs (MANDATORY)
-Two-tier cost model. Guardrail blocks anything below 30 bps.
-- **Standard: 30 bps per side** (60 bps round trip) — Coinbase Advanced Trade with limit orders at modest volume, or DEX on L2 (Base/Arbitrum). Realistic without assuming discounts.
-- **Stress test: 50 bps per side** (100 bps round trip) — Coinbase market orders at lowest tier. Worst case.
+Three-tier cost model reflecting actual Coinbase rates. Guardrail default floor: 15 bps (spot). Pass `min_costs_bps=7.5` for futures.
+- **Futures: 7.5 bps per side** (15 bps round trip) — Coinbase perpetuals
+- **Spot maker: 15 bps per side** (30 bps round trip) — Coinbase limit orders. Default for low-frequency strategies.
+- **Spot taker: 30 bps per side** (60 bps round trip) — Coinbase market orders
+- **Stress test: 50 bps per side** (100 bps round trip) — worst case
 ```python
-costs_standard = TransactionCostModel.standard()    # 30 bps
+costs_futures = TransactionCostModel.futures()       # 7.5 bps
+costs_maker = TransactionCostModel.spot_maker()      # 15 bps
+costs_taker = TransactionCostModel.standard()        # 30 bps
 costs_stress = TransactionCostModel.stress_test()    # 50 bps
-config = {"transaction_costs_bps": 30, ...}          # guardrail enforces >= 30
+config = {"transaction_costs_bps": 15, ...}          # guardrail default >= 15 (pass min_costs_bps=7.5 for futures)
 ```
-Research agents run winners at BOTH 30 bps and 50 bps and report both.
+Research agents run winners at primary cost tier AND one tier up (stress test).
 
 ## Annualization Convention
 - Default `periods_per_year=365` (daily crypto, 24/7 markets)
