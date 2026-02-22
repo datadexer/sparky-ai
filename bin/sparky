@@ -241,6 +241,49 @@ def _get_recent_alerts() -> str:
     return "none"
 
 
+def _get_funding_monitor_data() -> dict | None:
+    """Read funding monitor status JSON. Returns None on any error."""
+    status_file = PROJECT_ROOT / "coordination" / "data" / "funding_monitor.json"
+    try:
+        if not status_file.exists():
+            return None
+        return json.loads(status_file.read_text())
+    except Exception:
+        return None
+
+
+def _format_funding_status(status: dict) -> str:
+    """Format funding monitor status into a one-line summary."""
+    regime = status.get("regime", "UNKNOWN")
+    ann = status.get("annualized_30d_pct", 0)
+    icons = {
+        "BULL_CARRY": "\U0001f7e2",
+        "NORMAL": "\U0001f7e1",
+        "COMPRESSED": "\U0001f7e0",
+        "INVERTED": "\U0001f534",
+    }
+    icon = icons.get(regime, "\u26aa")
+    sign = "+" if ann >= 0 else ""
+    line = f"{icon} {regime} ({sign}{ann:.1f}% ann)"
+
+    if status.get("activation_signal"):
+        line += " \U0001f6a8 CARRY ACTIVATION"
+    alerts = status.get("active_alerts", [])
+    if alerts:
+        line += f" [{len(alerts)} alert(s)]"
+
+    ts = status.get("timestamp")
+    if ts:
+        ts_dt = datetime.fromisoformat(ts)
+        if ts_dt.tzinfo is None:
+            ts_dt = ts_dt.replace(tzinfo=timezone.utc)
+        age = datetime.now(timezone.utc) - ts_dt
+        if age.total_seconds() > 86400:
+            line += " \u26a0\ufe0f STALE"
+
+    return line
+
+
 def cmd_status(_args):
     """Print workflow status dashboard."""
     state = _load_state()
@@ -299,6 +342,16 @@ def cmd_status(_args):
     print(f"GPU: {gpu_stats}")
     print(f'Last log: "{last_log}"')
     print(f"Alerts: {alerts}")
+
+    funding_data = _get_funding_monitor_data()
+    if funding_data:
+        print(f"Funding Monitor: {_format_funding_status(funding_data)}")
+        if funding_data.get("activation_signal"):
+            mom = funding_data.get("btc_momentum_30d_pct", 0)
+            fm = funding_data.get("funding_momentum", "?")
+            print(
+                f"  \u26a0\ufe0f  CARRY ACTIVATION SIGNAL: BTC momentum {mom:+.1f}% + funding {fm}. Consider scoping carry research project."
+            )
 
 
 def cmd_logs(_args):
