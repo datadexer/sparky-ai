@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 DATA_DIRS = [
     Path("data/features"),
     Path("data/processed"),
+    Path("data/p003/binance_perps"),
+    Path("data/p003/funding_rates"),
     Path("data"),
 ]
 
@@ -61,6 +63,7 @@ _ASSET_PATTERNS = {
     "ada": "cross_asset",
     "avax": "cross_asset",
     "matic": "cross_asset",
+    "p003": "cross_asset",
 }
 
 _DATASET_ALIASES = {
