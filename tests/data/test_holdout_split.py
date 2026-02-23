@@ -73,13 +73,11 @@ class TestSplitParquetAtHoldout:
         assert result["skipped"]
         assert "timestamp" in result["reason"]
 
-    def test_all_is_data(self, tmp_path):
+    def test_all_is_data(self, tmp_path, oos_boundary):
         """File with only IS data — no holdout file created."""
         import pandas as pd
 
-        guard = HoldoutGuard()
-        oos_start, _ = guard.get_oos_boundary("cross_asset")
-        oos_ts = pd.Timestamp(oos_start, tz="UTC")
+        oos_ts = pd.Timestamp(oos_boundary, tz="UTC")
         timestamps = pd.date_range(oos_ts - pd.Timedelta(days=10), oos_ts - pd.Timedelta(days=1), freq="D", tz="UTC")
         df = pl.DataFrame({"timestamp": timestamps.tolist(), "v": list(range(len(timestamps)))})
         path = tmp_path / "is_only.parquet"
@@ -91,14 +89,40 @@ class TestSplitParquetAtHoldout:
         assert result["is_rows"] == len(timestamps)
         assert not (holdout_dir / "is_only.parquet").exists()
 
+    def test_atomic_write_survives_holdout_failure(self, sample_parquet, tmp_path, monkeypatch):
+        """If os.replace fails after writing holdout temp, source file is untouched."""
+        import os
+
+        src, expected_is, expected_holdout = sample_parquet
+        holdout_dir = tmp_path / "holdout"
+        original_data = pl.read_parquet(src)
+
+        call_count = [0]
+        real_replace = os.replace
+
+        def failing_replace(src_path, dst_path):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # First call is holdout rename — let it succeed
+                return real_replace(src_path, dst_path)
+            # Second call is IS rename — simulate crash
+            raise OSError("simulated crash")
+
+        monkeypatch.setattr("os.replace", failing_replace)
+
+        with pytest.raises(OSError, match="simulated crash"):
+            split_parquet_at_holdout(src, holdout_dir, timestamp_col="timestamp", asset="cross_asset")
+
+        # Source file should be untouched (still has both IS and holdout rows)
+        after = pl.read_parquet(src)
+        assert len(after) == len(original_data)
+
 
 class TestSplitDirectory:
-    def test_processes_multiple_files(self, tmp_path):
+    def test_processes_multiple_files(self, tmp_path, oos_boundary):
         import pandas as pd
 
-        guard = HoldoutGuard()
-        oos_start, _ = guard.get_oos_boundary("cross_asset")
-        oos_ts = pd.Timestamp(oos_start, tz="UTC")
+        oos_ts = pd.Timestamp(oos_boundary, tz="UTC")
 
         src_dir = tmp_path / "src"
         src_dir.mkdir()
@@ -125,12 +149,10 @@ class TestValidateDirectory:
         assert len(violations) > 0
         assert "test_data.parquet" in violations[0]["file"]
 
-    def test_passes_clean_dir(self, tmp_path):
+    def test_passes_clean_dir(self, tmp_path, oos_boundary):
         import pandas as pd
 
-        guard = HoldoutGuard()
-        oos_start, _ = guard.get_oos_boundary("cross_asset")
-        oos_ts = pd.Timestamp(oos_start, tz="UTC")
+        oos_ts = pd.Timestamp(oos_boundary, tz="UTC")
         timestamps = pd.date_range(oos_ts - pd.Timedelta(days=10), oos_ts - pd.Timedelta(days=1), freq="D", tz="UTC")
         df = pl.DataFrame({"timestamp": timestamps.tolist(), "v": list(range(len(timestamps)))})
         df.write_parquet(tmp_path / "clean.parquet")
@@ -140,12 +162,10 @@ class TestValidateDirectory:
 
 
 class TestScanAll:
-    def test_excludes_holdout_dir(self, tmp_path):
+    def test_excludes_holdout_dir(self, tmp_path, oos_boundary):
         import pandas as pd
 
-        guard = HoldoutGuard()
-        oos_start, _ = guard.get_oos_boundary("cross_asset")
-        oos_ts = pd.Timestamp(oos_start, tz="UTC")
+        oos_ts = pd.Timestamp(oos_boundary, tz="UTC")
         future_ts = pd.date_range(oos_ts, oos_ts + pd.Timedelta(days=5), freq="D", tz="UTC")
         df = pl.DataFrame({"timestamp": future_ts.tolist(), "v": list(range(len(future_ts)))})
 
@@ -162,12 +182,10 @@ class TestScanAll:
         violations = scan_all(tmp_path)
         assert len(violations) == 0
 
-    def test_detects_violation_outside_excluded(self, tmp_path):
+    def test_detects_violation_outside_excluded(self, tmp_path, oos_boundary):
         import pandas as pd
 
-        guard = HoldoutGuard()
-        oos_start, _ = guard.get_oos_boundary("cross_asset")
-        oos_ts = pd.Timestamp(oos_start, tz="UTC")
+        oos_ts = pd.Timestamp(oos_boundary, tz="UTC")
         future_ts = pd.date_range(oos_ts, oos_ts + pd.Timedelta(days=5), freq="D", tz="UTC")
         df = pl.DataFrame({"timestamp": future_ts.tolist(), "v": list(range(len(future_ts)))})
 

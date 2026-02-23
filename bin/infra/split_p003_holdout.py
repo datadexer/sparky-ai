@@ -2,7 +2,7 @@
 """Split P003 data at the holdout boundary.
 
 Processes binance_perps/, funding_rates/, dvol/ directories.
-Skips unlocks/ (event metadata, no time series to split).
+Directories not listed in SPLIT_DIRS (e.g. unlocks/) are not processed.
 
 Usage:
     .venv/bin/python bin/infra/split_p003_holdout.py
