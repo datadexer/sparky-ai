@@ -274,3 +274,39 @@ class TestEvaluationPurpose:
         ):
             with pytest.raises(FileNotFoundError, match="No holdout data"):
                 load("btc_ohlcv_8h", purpose="evaluation")
+
+
+class TestP003DataPaths:
+    """Test that P003 data directories are properly integrated."""
+
+    def test_p003_asset_pattern(self):
+        from sparky.data.loader import _detect_asset
+
+        assert _detect_asset("p003_INJUSDT") == "cross_asset"
+
+    def test_p003_binance_perps_in_data_dirs(self):
+        from sparky.data.loader import DATA_DIRS
+
+        dir_strs = [str(d) for d in DATA_DIRS]
+        assert "data/p003/binance_perps" in dir_strs
+        assert "data/p003/funding_rates" in dir_strs
+
+    def test_find_parquet_resolves_p003(self, tmp_path, monkeypatch):
+        import pandas as pd
+
+        from sparky.data.loader import DATA_DIRS, _find_parquet
+
+        p003_dir = tmp_path / "binance_perps"
+        p003_dir.mkdir()
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2023-01-01", "2023-12-31", freq="D", tz="UTC"),
+                "close": range(365),
+            }
+        )
+        df.to_parquet(p003_dir / "TESTUSDT.parquet")
+
+        monkeypatch.setattr("sparky.data.loader.DATA_DIRS", [p003_dir] + list(DATA_DIRS))
+        result = _find_parquet("TESTUSDT")
+        assert result is not None
+        assert "TESTUSDT.parquet" in str(result)

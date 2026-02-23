@@ -104,6 +104,9 @@ def _is_exempt_vault(filepath: str) -> bool:
         "orchestrator.py",
         "oos_evaluate.py",
         "build_holdout_resampled.py",
+        "holdout_split.py",
+        "scan_data_holdout.py",
+        "split_p003_holdout.py",
     }
     return any(e in filepath for e in exempt) or _is_self(filepath) or any(e in filepath for e in _HOLDOUT_EXEMPT)
 
