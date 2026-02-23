@@ -9,7 +9,7 @@ from sparky.data.holdout_split import (
     split_parquet_at_holdout,
     validate_directory,
 )
-from sparky.oversight.holdout_guard import HoldoutGuard, HoldoutViolation
+from sparky.oversight.holdout_guard import HoldoutGuard
 
 
 @pytest.fixture
@@ -119,10 +119,11 @@ class TestSplitDirectory:
 
 
 class TestValidateDirectory:
-    def test_raises_on_violation(self, sample_parquet):
+    def test_returns_violations(self, sample_parquet):
         src, _, _ = sample_parquet
-        with pytest.raises(HoldoutViolation):
-            validate_directory(src.parent, timestamp_col="timestamp", asset="cross_asset")
+        violations = validate_directory(src.parent, timestamp_col="timestamp", asset="cross_asset")
+        assert len(violations) > 0
+        assert "test_data.parquet" in violations[0]["file"]
 
     def test_passes_clean_dir(self, tmp_path):
         import pandas as pd

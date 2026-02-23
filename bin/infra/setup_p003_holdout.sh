@@ -22,6 +22,12 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Verify sparky-oos user exists
+if ! id -u sparky-oos &>/dev/null; then
+    echo "ERROR: sparky-oos user does not exist. Run bin/infra/setup_holdout.sh first."
+    exit 1
+fi
+
 # Detect the non-root user who owns the project
 PROJECT_OWNER=$(stat -c '%U' "$PROJECT_ROOT")
 echo "Project owner: $PROJECT_OWNER"

@@ -5,12 +5,13 @@ All functions read the OOS boundary dynamically from HoldoutGuard.
 """
 
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
 import polars as pl
 
-from sparky.oversight.holdout_guard import HoldoutGuard, HoldoutViolation
+from sparky.oversight.holdout_guard import HoldoutGuard
 
 logger = logging.getLogger(__name__)
 
@@ -71,18 +72,19 @@ def split_parquet_at_holdout(
     df_is = df.filter(is_mask)
     df_holdout = df.filter(~is_mask)
 
-    # Write IS back to source
-    if len(df_is) > 0:
-        df_is.write_parquet(src_path)
-    else:
-        # Schema-preserving empty parquet
-        df.head(0).write_parquet(src_path)
+    # Atomic write: both files must exist before either original is modified
+    tmp_is = src_path.with_suffix(".is_tmp.parquet")
+    df_is_out = df_is if len(df_is) > 0 else df.head(0)
+    df_is_out.write_parquet(tmp_is)
 
-    # Write holdout
     if len(df_holdout) > 0:
         holdout_dest_dir.mkdir(parents=True, exist_ok=True)
         dest_path = holdout_dest_dir / src_path.name
-        df_holdout.write_parquet(dest_path)
+        tmp_holdout = dest_path.with_suffix(".hold_tmp.parquet")
+        df_holdout.write_parquet(tmp_holdout)
+        os.replace(tmp_holdout, dest_path)
+
+    os.replace(tmp_is, src_path)
 
     return {
         "is_rows": len(df_is),
@@ -120,10 +122,7 @@ def validate_directory(
     timestamp_col: str = "timestamp",
     asset: str = "cross_asset",
 ) -> list[dict]:
-    """Scan a directory for holdout violations. Returns list of violations.
-
-    Raises HoldoutViolation if any file has post-holdout timestamps.
-    """
+    """Scan a directory for holdout violations. Returns list of violations (empty = clean)."""
     data_dir = Path(data_dir)
     oos_start = _get_oos_start(asset)
     violations = []
@@ -133,7 +132,6 @@ def validate_directory(
             df = pl.read_parquet(pq, columns=[timestamp_col] if timestamp_col else None)
         except Exception:  # noqa: S112
             continue
-
         if timestamp_col not in df.columns:
             continue
 
@@ -157,12 +155,6 @@ def validate_directory(
                 }
             )
 
-    if violations:
-        raise HoldoutViolation(
-            f"{len(violations)} file(s) in {data_dir} contain post-holdout data. "
-            f"Run split_directory() or setup script to fix."
-        )
-
     return violations
 
 
@@ -184,7 +176,8 @@ def scan_all(data_root: Path = Path("data")) -> list[dict]:
         try:
             # Try reading just the timestamp column for efficiency
             schema = pl.read_parquet_schema(pq)
-        except Exception:  # noqa: S112
+        except Exception as exc:
+            logger.warning("scan_all: skipping %s: %s", pq, exc)
             continue
 
         # Find a timestamp-like column
@@ -199,14 +192,16 @@ def scan_all(data_root: Path = Path("data")) -> list[dict]:
 
         try:
             df = pl.read_parquet(pq, columns=[ts_col])
-        except Exception:  # noqa: S112
+        except Exception as exc:
+            logger.warning("scan_all: skipping %s: %s", pq, exc)
             continue
 
         ts = df[ts_col]
         if ts.dtype == pl.Utf8:
             try:
                 ts = ts.str.to_datetime()
-            except Exception:  # noqa: S112
+            except Exception as exc:
+                logger.warning("scan_all: skipping %s: %s", pq, exc)
                 continue
 
         max_ts = ts.max()
@@ -215,7 +210,8 @@ def scan_all(data_root: Path = Path("data")) -> list[dict]:
 
         try:
             max_ts_pd = _to_utc_timestamp(max_ts)
-        except Exception:  # noqa: S112
+        except Exception as exc:
+            logger.warning("scan_all: skipping %s: %s", pq, exc)
             continue
 
         if max_ts_pd >= oos_start:

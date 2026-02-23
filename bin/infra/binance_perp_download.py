@@ -14,6 +14,7 @@ import requests
 
 BASE_URL = "https://data.binance.vision/data/futures/um/monthly/klines"
 
+# As of 2026-02-22. Update periodically as market cap rankings shift.
 TOP_50_SYMBOLS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -202,7 +203,8 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     start = (2020, 1)
-    end = (2026, 2)
+    _now = datetime.now(timezone.utc)
+    end = (_now.year, _now.month)
 
     print(f"Downloading {len(symbols)} symbols, {start[0]}-{start[1]:02d} to {end[0]}-{end[1]:02d}")
     print(f"Output: {output_dir.resolve()}\n")

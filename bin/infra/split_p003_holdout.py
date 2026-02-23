@@ -15,7 +15,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from sparky.data.holdout_split import split_directory  # noqa: E402
+from sparky.data.holdout_split import scan_all, split_directory  # noqa: E402
 from sparky.oversight.holdout_guard import HoldoutGuard  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -68,8 +68,6 @@ def main():
     print()
 
     # Verify no violations remain
-    from sparky.data.holdout_split import scan_all
-
     violations = [v for v in scan_all(PROJECT_ROOT / "data") if "p003" in v["file"]]
     if violations:
         print(f"ERROR: {len(violations)} P003 violations remain after split!")

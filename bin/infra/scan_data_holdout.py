@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 # Ensure project root is importable
@@ -32,8 +33,6 @@ def main():
         return 0
 
     # Group by directory
-    from collections import defaultdict
-
     by_dir = defaultdict(list)
     for v in violations:
         parent = str(Path(v["file"]).parent)
