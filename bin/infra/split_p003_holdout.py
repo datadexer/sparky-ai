@@ -30,9 +30,6 @@ SPLIT_DIRS = {
     "dvol": "timestamp",
 }
 
-# Directories to skip (no time series)
-SKIP_DIRS = {"unlocks"}
-
 
 def main():
     guard = HoldoutGuard()

@@ -25,6 +25,14 @@ def _get_oos_start(asset: str = "cross_asset") -> pd.Timestamp:
     return pd.Timestamp(oos_start_str, tz="UTC")
 
 
+def _to_utc_timestamp(ts) -> pd.Timestamp:
+    """Convert a polars scalar (datetime/Timestamp/str) to a UTC pd.Timestamp."""
+    result = pd.Timestamp(ts)
+    if result.tz is None:
+        return result.tz_localize("UTC")
+    return result.tz_convert("UTC")
+
+
 def split_parquet_at_holdout(
     src_path: Path,
     holdout_dest_dir: Path,
@@ -51,10 +59,12 @@ def split_parquet_at_holdout(
 
     oos_start = _get_oos_start(asset)
 
-    # Ensure timestamp column is comparable — cast to datetime if needed
+    # Ensure timestamp column is comparable
     ts = df[timestamp_col]
     if ts.dtype == pl.Utf8:
         df = df.with_columns(pl.col(timestamp_col).str.to_datetime().alias(timestamp_col))
+    elif hasattr(ts.dtype, "time_zone") and ts.dtype.time_zone is None:
+        df = df.with_columns(pl.col(timestamp_col).dt.replace_time_zone("UTC").alias(timestamp_col))
 
     # Split
     is_mask = pl.col(timestamp_col) < oos_start
@@ -135,11 +145,7 @@ def validate_directory(
         if max_ts is None:
             continue
 
-        # Convert to pandas Timestamp for comparison
-        if hasattr(max_ts, "replace"):
-            max_ts_pd = pd.Timestamp(max_ts, tz="UTC")
-        else:
-            max_ts_pd = pd.Timestamp(str(max_ts), tz="UTC")
+        max_ts_pd = _to_utc_timestamp(max_ts)
 
         if max_ts_pd >= oos_start:
             holdout_count = ts.filter(ts >= oos_start).len()
@@ -208,10 +214,7 @@ def scan_all(data_root: Path = Path("data")) -> list[dict]:
             continue
 
         try:
-            if hasattr(max_ts, "replace"):
-                max_ts_pd = pd.Timestamp(max_ts, tz="UTC")
-            else:
-                max_ts_pd = pd.Timestamp(str(max_ts), tz="UTC")
+            max_ts_pd = _to_utc_timestamp(max_ts)
         except Exception:  # noqa: S112
             continue
 
